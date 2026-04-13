@@ -29,9 +29,16 @@ export function AppShell() {
   return (
     <div className="flex h-screen w-screen bg-slate-950 text-slate-100">
       <aside className="flex w-60 shrink-0 flex-col border-r border-slate-800 bg-slate-900">
-        <div className="flex flex-col border-b border-slate-800 px-4 py-4">
-          <span className="text-lg font-bold tracking-tight">{t("app.name")}</span>
-          <span className="text-xs text-slate-400">{t("app.tagline")}</span>
+        <div className="flex items-center gap-3 border-b border-slate-800 px-4 py-4">
+          <img
+            src="/logo.png"
+            alt="PumaSoft"
+            className="h-9 w-9 shrink-0 rounded-full"
+          />
+          <div className="flex flex-col">
+            <span className="text-lg font-bold tracking-tight">{t("app.name")}</span>
+            <span className="text-xs text-slate-400">{t("app.tagline")}</span>
+          </div>
         </div>
         <nav className="flex-1 overflow-y-auto px-2 py-3">
           <ul className="space-y-1">
