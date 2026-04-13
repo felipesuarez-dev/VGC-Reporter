@@ -44,7 +44,19 @@
     "tournaments_used": "Tournaments analyzed",
     "total_entries": "Total entries",
     "refresh": "Refresh",
-    "format_favorite": "Mark as favorite (appears first when opening)"
+    "format_favorite": "Mark as favorite (appears first when opening)",
+    "champions_report": "Recent Champions tournaments",
+    "view_standings": "View standings",
+    "view_more": "View more",
+    "players": "players",
+    "open_on_x": "Open on X"
+  },
+  "tournament": {
+    "standings": "Standings",
+    "winner": "Champion",
+    "organizer": "Organizer",
+    "loading": "Loading standings...",
+    "no_standings": "Standings not available yet"
   },
   "drawer": {
     "top_items": "Items",

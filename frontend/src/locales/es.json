@@ -44,7 +44,19 @@
     "tournaments_used": "Torneos analizados",
     "total_entries": "Entradas totales",
     "refresh": "Actualizar",
-    "format_favorite": "Marca como favorito (aparece primero al abrir)"
+    "format_favorite": "Marca como favorito (aparece primero al abrir)",
+    "champions_report": "Torneos recientes de Champions",
+    "view_standings": "Ver standings",
+    "view_more": "Ver más",
+    "players": "jugadores",
+    "open_on_x": "Abrir en X"
+  },
+  "tournament": {
+    "standings": "Standings",
+    "winner": "Campeón",
+    "organizer": "Organizador",
+    "loading": "Cargando standings...",
+    "no_standings": "Standings no disponibles todavía"
   },
   "drawer": {
     "top_items": "Objetos",
