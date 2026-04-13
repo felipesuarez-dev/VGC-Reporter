@@ -58,4 +58,30 @@ impl PokedexService {
         let all = self.all().await?;
         Ok(all.into_iter().find(|p| p.id == id))
     }
+
+    pub async fn list_items(&self) -> Result<Vec<String>, AppError> {
+        const KEY: &str = "showdown::items";
+        if let Some(bytes) = self.cache.get(KEY)? {
+            if let Ok(list) = serde_json::from_slice::<Vec<String>>(&bytes) {
+                return Ok(list);
+            }
+        }
+        let list = self.showdown.fetch_items().await?;
+        let bytes = serde_json::to_vec(&list)?;
+        self.cache.put(KEY, &bytes, config::TTL_SHOWDOWN_DATA)?;
+        Ok(list)
+    }
+
+    pub async fn list_moves(&self) -> Result<Vec<String>, AppError> {
+        const KEY: &str = "showdown::moves";
+        if let Some(bytes) = self.cache.get(KEY)? {
+            if let Ok(list) = serde_json::from_slice::<Vec<String>>(&bytes) {
+                return Ok(list);
+            }
+        }
+        let list = self.showdown.fetch_moves().await?;
+        let bytes = serde_json::to_vec(&list)?;
+        self.cache.put(KEY, &bytes, config::TTL_SHOWDOWN_DATA)?;
+        Ok(list)
+    }
 }

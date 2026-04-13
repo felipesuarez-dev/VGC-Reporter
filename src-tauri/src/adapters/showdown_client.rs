@@ -61,6 +61,44 @@ impl ShowdownClient {
         pokemon.sort_by(|a, b| a.name.cmp(&b.name));
         Ok(ShowdownPokedex { pokemon })
     }
+
+    /// Returns the deduplicated, alphabetised list of every item display name
+    /// known to Showdown (~600 entries). Used by the Team Builder & Damage
+    /// Calc combos.
+    pub async fn fetch_items(&self) -> Result<Vec<String>, AppError> {
+        let url = format!("{}/items.json", config::SHOWDOWN_DATA);
+        let raw: HashMap<String, RawNamed> =
+            self.http.get_json(&url, config::TTL_SHOWDOWN_DATA).await?;
+        let mut names: Vec<String> = raw
+            .into_iter()
+            .filter_map(|(_, e)| e.name.filter(|n| !n.is_empty()))
+            .collect();
+        names.sort();
+        names.dedup();
+        Ok(names)
+    }
+
+    /// Returns the deduplicated, alphabetised list of every move display name
+    /// known to Showdown (~1k entries). Used by the Team Builder & Damage
+    /// Calc combos.
+    pub async fn fetch_moves(&self) -> Result<Vec<String>, AppError> {
+        let url = format!("{}/moves.json", config::SHOWDOWN_DATA);
+        let raw: HashMap<String, RawNamed> =
+            self.http.get_json(&url, config::TTL_SHOWDOWN_DATA).await?;
+        let mut names: Vec<String> = raw
+            .into_iter()
+            .filter_map(|(_, e)| e.name.filter(|n| !n.is_empty()))
+            .collect();
+        names.sort();
+        names.dedup();
+        Ok(names)
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct RawNamed {
+    #[serde(default)]
+    name: Option<String>,
 }
 
 pub struct ShowdownPokedex {

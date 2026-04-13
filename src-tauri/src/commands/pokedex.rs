@@ -31,3 +31,13 @@ pub async fn get_pokemon(
         .await?
         .ok_or_else(|| AppError::NotFound(format!("pokemon {id}")))
 }
+
+#[tauri::command]
+pub async fn list_items(state: State<'_, AppState>) -> Result<Vec<String>, AppError> {
+    state.pokedex.list_items().await
+}
+
+#[tauri::command]
+pub async fn list_moves(state: State<'_, AppState>) -> Result<Vec<String>, AppError> {
+    state.pokedex.list_moves().await
+}
