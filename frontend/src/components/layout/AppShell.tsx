@@ -12,7 +12,7 @@ import {
 import { cn } from "../../lib/cn";
 import { LanguageToggle } from "./LanguageToggle";
 
-const VERSION = "0.0.1.20260412";
+const VERSION = "0.0.2.20260412";
 
 export function AppShell() {
   const { t } = useTranslation();
