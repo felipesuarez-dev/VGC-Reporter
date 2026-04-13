@@ -140,6 +140,7 @@ fn seed_from_smogon(
         pokemon,
         top_items: Vec::new(),
         top_moves: Vec::new(),
+        top_abilities: Vec::new(),
         top_tera: Vec::new(),
     }
 }

@@ -50,5 +50,24 @@ pub struct MetaSnapshot {
     pub pokemon: Vec<PokemonUsage>,
     pub top_items: Vec<UsageEntry>,
     pub top_moves: Vec<UsageEntry>,
+    #[serde(default)]
+    pub top_abilities: Vec<UsageEntry>,
     pub top_tera: Vec<UsageEntry>,
+}
+
+impl MetaSnapshot {
+    pub fn empty(format: Format) -> Self {
+        Self {
+            format,
+            generated_at: Utc::now(),
+            source: "no data".into(),
+            tournaments_used: 0,
+            total_entries: 0,
+            pokemon: Vec::new(),
+            top_items: Vec::new(),
+            top_moves: Vec::new(),
+            top_abilities: Vec::new(),
+            top_tera: Vec::new(),
+        }
+    }
 }

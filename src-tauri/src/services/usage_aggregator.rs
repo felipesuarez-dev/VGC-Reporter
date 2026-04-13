@@ -16,6 +16,7 @@ pub fn aggregate(
     let mut pokemon_count: HashMap<String, PokemonAccumulator> = HashMap::new();
     let mut items_count: HashMap<String, u32> = HashMap::new();
     let mut moves_count: HashMap<String, u32> = HashMap::new();
+    let mut abilities_count: HashMap<String, u32> = HashMap::new();
     let mut tera_count: HashMap<String, u32> = HashMap::new();
     let mut total_entries: u32 = 0;
 
@@ -58,6 +59,10 @@ pub fn aggregate(
                         *moves_count.entry(mv).or_insert(0) += 1;
                     }
                 }
+                if let Some(ability) = entry.ability.as_deref() {
+                    let ability = prettify(ability);
+                    *abilities_count.entry(ability).or_insert(0) += 1;
+                }
                 if let Some(tera) = entry.tera_value() {
                     let tera = prettify(tera);
                     *tera_count.entry(tera).or_insert(0) += 1;
@@ -86,6 +91,7 @@ pub fn aggregate(
 
     let top_items = top_n(&items_count, 15);
     let top_moves = top_n(&moves_count, 20);
+    let top_abilities = top_n(&abilities_count, 10);
     let top_tera = top_n(&tera_count, 10);
 
     MetaSnapshot {
@@ -100,6 +106,7 @@ pub fn aggregate(
         pokemon,
         top_items,
         top_moves,
+        top_abilities,
         top_tera,
     }
 }
