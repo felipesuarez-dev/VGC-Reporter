@@ -55,7 +55,12 @@
   },
   "pokedex": {
     "title": "Pokédex",
-    "placeholder": "Buscar por nombre..."
+    "placeholder": "Buscar por nombre...",
+    "sort": "Ordenar",
+    "sort_generation": "Por generación",
+    "sort_alphabetical": "Alfabético",
+    "sort_usage": "Por uso en el meta",
+    "gen_header": "Gen {{n}}"
   },
   "team_builder": {
     "title": "Constructor de equipos",

@@ -55,7 +55,12 @@
   },
   "pokedex": {
     "title": "Pokédex",
-    "placeholder": "Search by name..."
+    "placeholder": "Search by name...",
+    "sort": "Sort",
+    "sort_generation": "By generation",
+    "sort_alphabetical": "Alphabetical",
+    "sort_usage": "By meta usage",
+    "gen_header": "Gen {{n}}"
   },
   "team_builder": {
     "title": "Team Builder",
