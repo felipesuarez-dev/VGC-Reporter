@@ -1,0 +1,95 @@
+{
+  "app": {
+    "name": "VGC-Reporter",
+    "tagline": "Estadísticas competitivas de Pokémon Champions",
+    "version": "Versión",
+    "by": "por"
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "pokedex": "Pokédex",
+    "team_builder": "Constructor de equipos",
+    "my_teams": "Mis equipos",
+    "top_teams": "Top equipos",
+    "damage_calc": "Calculador de daño",
+    "settings": "Ajustes"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "empty": "No hay datos todavía",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "all_types": "Todos los tipos",
+    "new": "Nuevo",
+    "format": "Formato",
+    "source": "Fuente",
+    "usage": "Uso",
+    "count": "Cantidad"
+  },
+  "dashboard": {
+    "title": "Panel del meta",
+    "top_pokemon": "Top Pokémon",
+    "top_items": "Top objetos",
+    "top_moves": "Top movimientos",
+    "top_tera": "Top Tera Types",
+    "tournaments_used": "Torneos analizados",
+    "total_entries": "Entradas totales",
+    "refresh": "Actualizar"
+  },
+  "pokedex": {
+    "title": "Pokédex",
+    "placeholder": "Buscar por nombre..."
+  },
+  "team_builder": {
+    "title": "Constructor de equipos",
+    "new_team": "Nuevo equipo",
+    "team_name": "Nombre del equipo",
+    "notes": "Notas",
+    "species": "Especie",
+    "item": "Objeto",
+    "ability": "Habilidad",
+    "nature": "Naturaleza",
+    "tera_type": "Tera Type",
+    "moves": "Movimientos",
+    "evs": "EVs",
+    "saved": "Equipo guardado"
+  },
+  "my_teams": {
+    "title": "Mis equipos",
+    "empty": "Aún no has guardado ningún equipo. Crea uno en el constructor."
+  },
+  "top_teams": {
+    "title": "Top equipos del meta",
+    "placing": "Posición",
+    "player": "Jugador",
+    "record": "Récord"
+  },
+  "damage_calc": {
+    "title": "Calculador de daño",
+    "attacker": "Atacante",
+    "defender": "Defensor",
+    "move": "Movimiento",
+    "level": "Nivel",
+    "result": "Resultado",
+    "min": "Mín",
+    "max": "Máx"
+  },
+  "settings": {
+    "title": "Ajustes",
+    "language": "Idioma",
+    "spanish": "Español",
+    "english": "Inglés",
+    "active_format": "Formato activo",
+    "external_sources": "Otras fuentes",
+    "open_pikalytics": "Abrir Pikalytics",
+    "open_pokemonzone": "Abrir Pokemon Zone",
+    "open_porygonlabs": "Abrir Porygon Labs",
+    "open_championslab": "Abrir Champions Lab",
+    "open_limitless": "Abrir Limitless VGC"
+  }
+}

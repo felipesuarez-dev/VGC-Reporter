@@ -1,0 +1,95 @@
+{
+  "app": {
+    "name": "VGC-Reporter",
+    "tagline": "Pokémon Champions competitive stats",
+    "version": "Version",
+    "by": "by"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "pokedex": "Pokédex",
+    "team_builder": "Team Builder",
+    "my_teams": "My Teams",
+    "top_teams": "Top Teams",
+    "damage_calc": "Damage Calc",
+    "settings": "Settings"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "empty": "No data yet",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "filter": "Filter",
+    "all_types": "All types",
+    "new": "New",
+    "format": "Format",
+    "source": "Source",
+    "usage": "Usage",
+    "count": "Count"
+  },
+  "dashboard": {
+    "title": "Meta Dashboard",
+    "top_pokemon": "Top Pokémon",
+    "top_items": "Top Items",
+    "top_moves": "Top Moves",
+    "top_tera": "Top Tera Types",
+    "tournaments_used": "Tournaments analyzed",
+    "total_entries": "Total entries",
+    "refresh": "Refresh"
+  },
+  "pokedex": {
+    "title": "Pokédex",
+    "placeholder": "Search by name..."
+  },
+  "team_builder": {
+    "title": "Team Builder",
+    "new_team": "New team",
+    "team_name": "Team name",
+    "notes": "Notes",
+    "species": "Species",
+    "item": "Item",
+    "ability": "Ability",
+    "nature": "Nature",
+    "tera_type": "Tera Type",
+    "moves": "Moves",
+    "evs": "EVs",
+    "saved": "Team saved"
+  },
+  "my_teams": {
+    "title": "My Teams",
+    "empty": "You haven't saved any teams yet. Create one in the Team Builder."
+  },
+  "top_teams": {
+    "title": "Top teams in the meta",
+    "placing": "Placing",
+    "player": "Player",
+    "record": "Record"
+  },
+  "damage_calc": {
+    "title": "Damage Calculator",
+    "attacker": "Attacker",
+    "defender": "Defender",
+    "move": "Move",
+    "level": "Level",
+    "result": "Result",
+    "min": "Min",
+    "max": "Max"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "spanish": "Spanish",
+    "english": "English",
+    "active_format": "Active format",
+    "external_sources": "Other sources",
+    "open_pikalytics": "Open Pikalytics",
+    "open_pokemonzone": "Open Pokemon Zone",
+    "open_porygonlabs": "Open Porygon Labs",
+    "open_championslab": "Open Champions Lab",
+    "open_limitless": "Open Limitless VGC"
+  }
+}

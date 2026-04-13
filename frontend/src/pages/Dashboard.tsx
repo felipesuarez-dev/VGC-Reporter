@@ -1,0 +1,120 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { RefreshCw } from "lucide-react";
+import { ipc } from "../lib/ipc";
+import { queryKeys } from "../lib/queryKeys";
+import type { Format } from "../lib/types";
+import { UsageBarChart } from "../components/charts/UsageBarChart";
+import { PokemonSprite } from "../components/pokemon/PokemonSprite";
+
+const FORMAT: Format = "regulation-m-a";
+
+export function Dashboard() {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: queryKeys.meta(FORMAT),
+    queryFn: () => ipc.getMetaStats(FORMAT),
+  });
+
+  const topPokemon = data?.pokemon.slice(0, 15) ?? [];
+  const chartPokemon = topPokemon.map((p) => ({
+    name: p.species,
+    usage_percent: p.usage_percent,
+  }));
+  const chartItems = (data?.top_items ?? []).slice(0, 10).map((e) => ({
+    name: e.name,
+    usage_percent: e.usage_percent,
+  }));
+  const chartMoves = (data?.top_moves ?? []).slice(0, 10).map((e) => ({
+    name: e.name,
+    usage_percent: e.usage_percent,
+  }));
+  const chartTera = (data?.top_tera ?? []).slice(0, 10).map((e) => ({
+    name: e.name,
+    usage_percent: e.usage_percent,
+  }));
+
+  return (
+    <div className="space-y-6">
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">{t("dashboard.title")}</h1>
+          {data && (
+            <p className="mt-1 text-xs text-slate-400">
+              {t("dashboard.tournaments_used")}: {data.tournaments_used} ·{" "}
+              {t("dashboard.total_entries")}: {data.total_entries} ·{" "}
+              {t("common.source")}: {data.source}
+            </p>
+          )}
+        </div>
+        <button
+          className="btn-ghost"
+          onClick={() => qc.invalidateQueries({ queryKey: queryKeys.meta(FORMAT) })}
+        >
+          <RefreshCw size={14} className="mr-1" />
+          {t("dashboard.refresh")}
+        </button>
+      </header>
+
+      {isLoading && <div className="card text-slate-400">{t("common.loading")}</div>}
+      {isError && (
+        <div className="card text-red-400">
+          {t("common.error")}: {(error as Error)?.message ?? "unknown"}
+        </div>
+      )}
+      {data && data.pokemon.length === 0 && (
+        <div className="card text-slate-400">{t("common.empty")}</div>
+      )}
+
+      {data && data.pokemon.length > 0 && (
+        <>
+          <section className="card">
+            <h2 className="mb-2 text-sm font-semibold text-slate-200">
+              {t("dashboard.top_pokemon")}
+            </h2>
+            <UsageBarChart data={chartPokemon} height={380} />
+          </section>
+
+          <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="card">
+              <h2 className="mb-2 text-sm font-semibold text-slate-200">
+                {t("dashboard.top_items")}
+              </h2>
+              <UsageBarChart data={chartItems} height={280} />
+            </div>
+            <div className="card">
+              <h2 className="mb-2 text-sm font-semibold text-slate-200">
+                {t("dashboard.top_moves")}
+              </h2>
+              <UsageBarChart data={chartMoves} height={280} />
+            </div>
+            <div className="card">
+              <h2 className="mb-2 text-sm font-semibold text-slate-200">
+                {t("dashboard.top_tera")}
+              </h2>
+              <UsageBarChart data={chartTera} height={280} />
+            </div>
+          </section>
+
+          <section>
+            <h2 className="mb-2 text-sm font-semibold text-slate-200">
+              {t("dashboard.top_pokemon")}
+            </h2>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+              {topPokemon.map((p) => (
+                <div key={p.species} className="card flex flex-col items-center gap-1">
+                  <PokemonSprite url={p.sprite_url} name={p.species} size={64} />
+                  <div className="text-xs font-semibold text-slate-100">{p.species}</div>
+                  <div className="text-[10px] text-brand-300">
+                    {p.usage_percent.toFixed(1)}%
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
+    </div>
+  );
+}

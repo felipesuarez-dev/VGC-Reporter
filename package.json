@@ -1,0 +1,19 @@
+{
+  "name": "vgc-reporter",
+  "version": "0.0.1-20260412",
+  "description": "VGC-Reporter - Pokémon Champions competitive stats & team builder",
+  "author": "PumaSoft",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --workspace frontend",
+    "build": "npm run build --workspace frontend",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
+  },
+  "workspaces": ["frontend"],
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.4.0"
+  }
+}
