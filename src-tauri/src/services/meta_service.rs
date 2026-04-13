@@ -24,7 +24,7 @@ impl MetaService {
     }
 
     pub async fn get_meta(&self, format: Format) -> Result<MetaSnapshot, AppError> {
-        let cache_key = format!("meta-snapshot::{}", format.limitless_code());
+        let cache_key = format!("meta-snapshot::{}", format.cache_id());
         if let Some(bytes) = self.cache.get(&cache_key)? {
             if let Ok(snap) = serde_json::from_slice::<MetaSnapshot>(&bytes) {
                 return Ok(snap);

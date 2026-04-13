@@ -15,15 +15,19 @@ impl LimitlessClient {
     }
 
     /// List recent VGC tournaments for a given format code (e.g. "M2A").
+    /// Returns an empty list if the format does not live on Limitless.
     pub async fn list_tournaments(
         &self,
         format: Format,
         limit: usize,
     ) -> Result<Vec<LimitlessTournamentSummary>, AppError> {
+        let Some(code) = format.limitless_code() else {
+            return Ok(Vec::new());
+        };
         let url = format!(
             "{}/tournaments?game=VGC&format={}&limit={}",
             config::LIMITLESS_API,
-            format.limitless_code(),
+            code,
             limit
         );
         let list: Vec<LimitlessTournamentSummary> = self

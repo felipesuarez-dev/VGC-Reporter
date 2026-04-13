@@ -39,7 +39,7 @@ impl TopTeamsService {
     }
 
     pub async fn get_top_teams(&self, format: Format, limit: usize) -> Result<Vec<TopTeam>, AppError> {
-        let key = format!("top-teams::{}::{}", format.limitless_code(), limit);
+        let key = format!("top-teams::{}::{}", format.cache_id(), limit);
         if let Some(bytes) = self.cache.get(&key)? {
             if let Ok(list) = serde_json::from_slice::<Vec<TopTeam>>(&bytes) {
                 return Ok(list);

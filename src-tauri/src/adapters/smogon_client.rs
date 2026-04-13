@@ -28,7 +28,7 @@ impl SmogonClient {
                 config::SMOGON_STATS,
                 year,
                 month,
-                format.smogon_id()
+                format.default_smogon_slug()
             );
             match self
                 .http

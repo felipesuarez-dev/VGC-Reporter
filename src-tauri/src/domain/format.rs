@@ -1,37 +1,74 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-/// Competitive format. Only `RegulationMA` is active in v0.0.1; the enum is kept
-/// multi-variant so additional formats can be enabled later without migrations.
+/// Competitive format. Multi-variant: frontend can switch freely.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
 #[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
 pub enum Format {
     #[serde(rename = "regulation-m-a")]
     RegulationMA,
+    #[serde(rename = "regulation-i")]
+    RegulationI,
+    #[serde(rename = "gen9-ou")]
+    Gen9Ou,
 }
 
 impl Format {
-    pub fn limitless_code(&self) -> &'static str {
+    /// Stable internal slug used as cache key. Never changes — decoupled from
+    /// upstream Limitless/Smogon naming.
+    pub fn cache_id(&self) -> &'static str {
         match self {
-            Format::RegulationMA => "M2A",
+            Format::RegulationMA => "reg-m-a",
+            Format::RegulationI => "reg-i",
+            Format::Gen9Ou => "gen9-ou",
         }
     }
 
-    pub fn smogon_id(&self) -> &'static str {
-        // VGC 2026 Champions / Regulation M-A — Smogon format slug.
+    /// `None` = format does not live on Limitless (e.g. singles OU).
+    pub fn limitless_code(&self) -> Option<&'static str> {
         match self {
-            Format::RegulationMA => "gen9vgc2026regulationma",
+            Format::RegulationMA => Some("M2A"),
+            Format::RegulationI => Some("I"),
+            Format::Gen9Ou => None,
         }
+    }
+
+    /// Default Smogon slug. For Reg M-A this is a guess that can be replaced
+    /// dynamically via SettingsRepo (`smogon_slug::<cache_id>`) once discovery
+    /// finds the real slug.
+    pub fn default_smogon_slug(&self) -> &'static str {
+        match self {
+            Format::RegulationMA => "gen9vgc2026regma",
+            Format::RegulationI => "gen9vgc2026regi",
+            Format::Gen9Ou => "gen9ou",
+        }
+    }
+
+    /// Rating cutoffs to probe in order (high → low). VGC and singles use
+    /// different ladder tiers.
+    pub fn rating_ladder(&self) -> &'static [u32] {
+        match self {
+            Format::Gen9Ou => &[1825, 1695, 1500, 0],
+            _ => &[1760, 1630, 1500, 0],
+        }
+    }
+
+    /// Closed formats pin a specific month; active formats return `None` and
+    /// rewind from the current month.
+    pub fn anchor_month(&self) -> Option<(i32, u32)> {
+        None
     }
 
     pub fn label(&self) -> &'static str {
         match self {
             Format::RegulationMA => "Regulation M-A",
+            Format::RegulationI => "Regulation I",
+            Format::Gen9Ou => "Gen 9 OU",
         }
     }
 
     pub fn all_active() -> Vec<Format> {
-        vec![Format::RegulationMA]
+        vec![Format::RegulationMA, Format::RegulationI, Format::Gen9Ou]
     }
 }
 
@@ -44,5 +81,34 @@ impl Default for Format {
 impl std::fmt::Display for Format {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.label())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashSet;
+
+    #[test]
+    fn cache_ids_are_unique() {
+        let ids: HashSet<&str> = Format::all_active().iter().map(|f| f.cache_id()).collect();
+        assert_eq!(ids.len(), Format::all_active().len());
+    }
+
+    #[test]
+    fn gen9_ou_is_singles_only() {
+        assert!(Format::Gen9Ou.limitless_code().is_none());
+        assert!(Format::RegulationMA.limitless_code().is_some());
+        assert!(Format::RegulationI.limitless_code().is_some());
+    }
+
+    #[test]
+    fn rating_ladder_descends() {
+        for f in Format::all_active() {
+            let ladder = f.rating_ladder();
+            for w in ladder.windows(2) {
+                assert!(w[0] >= w[1], "ladder not descending for {:?}", f);
+            }
+        }
     }
 }
