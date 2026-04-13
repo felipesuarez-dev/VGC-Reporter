@@ -1,6 +1,8 @@
 use crate::adapters::{HttpClient, LimitlessClient, PkmnDataClient, ShowdownClient, SmogonClient};
 use crate::error::AppError;
-use crate::services::{MetaService, PokedexService, SetsService, TeamService, TopTeamsService};
+use crate::services::{
+    ChampionsReportService, MetaService, PokedexService, SetsService, TeamService, TopTeamsService,
+};
 use crate::storage::{init_pool, CacheRepo, DbPool, SettingsRepo, TeamRepo};
 use std::path::Path;
 use std::sync::Arc;
@@ -12,6 +14,7 @@ pub struct AppState {
     pub sets: SetsService,
     pub teams: TeamService,
     pub top_teams: TopTeamsService,
+    pub champions: ChampionsReportService,
     pub settings: Arc<SettingsRepo>,
 }
 
@@ -38,6 +41,7 @@ impl AppState {
         let sets = SetsService::new(pkmn.clone(), cache.clone());
         let teams = TeamService::new(team_repo);
         let top_teams = TopTeamsService::new(limitless.clone(), cache.clone());
+        let champions = ChampionsReportService::new(limitless.clone());
 
         Ok(Self {
             db: pool,
@@ -46,6 +50,7 @@ impl AppState {
             sets,
             teams,
             top_teams,
+            champions,
             settings,
         })
     }

@@ -1,3 +1,4 @@
+pub mod champions_report_service;
 pub mod meta_service;
 pub mod pokedex_service;
 pub mod sets_service;
@@ -5,6 +6,7 @@ pub mod team_service;
 pub mod top_teams_service;
 pub mod usage_aggregator;
 
+pub use champions_report_service::ChampionsReportService;
 pub use meta_service::MetaService;
 pub use pokedex_service::PokedexService;
 pub use sets_service::SetsService;

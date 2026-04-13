@@ -1,4 +1,5 @@
 pub mod ability;
+pub mod champions;
 pub mod evs;
 pub mod format;
 pub mod item;
@@ -11,6 +12,7 @@ pub mod tera_type;
 pub mod usage_stats;
 
 pub use ability::Ability;
+pub use champions::{ChampionsReport, ChampionsTournament, DecklistPokemon, TournamentStanding};
 pub use evs::{EvSpread, EV_MAX_PER_STAT, EV_MAX_TOTAL};
 pub use format::Format;
 pub use item::Item;

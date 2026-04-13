@@ -77,7 +77,7 @@ impl TopTeamsService {
                     tournament: t.name.clone(),
                     placing: s.placing,
                     player: s.name.clone(),
-                    record: s.record.clone(),
+                    record: s.record.as_ref().map(|r| r.display()),
                     members,
                 });
                 if out.len() >= limit {

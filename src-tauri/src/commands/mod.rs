@@ -1,3 +1,4 @@
+pub mod champions;
 pub mod meta;
 pub mod pokedex;
 pub mod settings;

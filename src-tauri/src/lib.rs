@@ -50,6 +50,8 @@ pub fn run() {
             commands::top_teams::get_top_teams,
             commands::settings::get_settings,
             commands::settings::set_setting,
+            commands::champions::list_champions_tournaments,
+            commands::champions::get_tournament_standings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running VGC-Reporter");

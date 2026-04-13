@@ -52,6 +52,39 @@ impl LimitlessClient {
             .await?;
         Ok(standings)
     }
+
+    /// Lists tournaments and keeps only the ones that look like Champions
+    /// Regulation M-A. Limitless's `format` field is inconsistent across
+    /// listings, so the filter accepts:
+    ///   - exact `M-A` / `M2A` / starts-with `M-A`
+    ///   - tournament name containing "champions"
+    /// Fetches a wider window than `limit` to account for filtered-out rows.
+    pub async fn list_tournaments_by_format(
+        &self,
+        format: Format,
+        limit: usize,
+    ) -> Result<Vec<LimitlessTournamentSummary>, AppError> {
+        let all = self.list_tournaments(format, 100).await?;
+        let filtered = filter_champions(all, limit);
+        Ok(filtered)
+    }
+}
+
+fn filter_champions(
+    list: Vec<LimitlessTournamentSummary>,
+    limit: usize,
+) -> Vec<LimitlessTournamentSummary> {
+    list.into_iter()
+        .filter(|t| {
+            let f = t.format.as_deref().unwrap_or("").trim();
+            let name_lc = t.name.to_lowercase();
+            f == "M-A"
+                || f == "M2A"
+                || f.starts_with("M-A")
+                || name_lc.contains("champions")
+        })
+        .take(limit)
+        .collect()
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -63,22 +96,86 @@ pub struct LimitlessTournamentSummary {
     pub date: Option<String>,
     #[serde(default)]
     pub players: Option<u32>,
+    #[serde(default)]
+    pub format: Option<String>,
+    #[serde(default, alias = "organizer")]
+    pub organizer_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct LimitlessStanding {
     #[serde(default)]
     pub placing: Option<u32>,
+    /// Player display name (Limitless calls this `name`).
     #[serde(default)]
     pub name: Option<String>,
+    /// Player id (slug). Useful for linking back to Limitless profiles.
+    #[serde(default)]
+    pub player: Option<String>,
+    #[serde(default)]
+    pub country: Option<String>,
     #[serde(default)]
     pub decklist: Option<Vec<LimitlessDecklistEntry>>,
+    /// Record may arrive as a struct (`{wins,losses,ties}`) or a flat string.
     #[serde(default)]
-    pub record: Option<String>,
+    pub record: Option<LimitlessRecord>,
+    #[serde(default)]
+    pub drop: Option<u32>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(untagged)]
+pub enum LimitlessRecord {
+    Parts(LimitlessRecordParts),
+    String(String),
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct LimitlessRecordParts {
+    #[serde(default)]
+    pub wins: u32,
+    #[serde(default)]
+    pub losses: u32,
+    #[serde(default)]
+    pub ties: u32,
+}
+
+impl LimitlessRecord {
+    pub fn display(&self) -> String {
+        match self {
+            Self::Parts(p) => format!("{}-{}-{}", p.wins, p.losses, p.ties),
+            Self::String(s) => s.clone(),
+        }
+    }
+
+    pub fn wins(&self) -> u32 {
+        match self {
+            Self::Parts(p) => p.wins,
+            Self::String(_) => 0,
+        }
+    }
+    pub fn losses(&self) -> u32 {
+        match self {
+            Self::Parts(p) => p.losses,
+            Self::String(_) => 0,
+        }
+    }
+    pub fn ties(&self) -> u32 {
+        match self {
+            Self::Parts(p) => p.ties,
+            Self::String(_) => 0,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct LimitlessDecklistEntry {
+    /// Showdown slug id (e.g. "incineroar").
+    #[serde(default)]
+    pub id: Option<String>,
+    /// Display name as Limitless serves it (e.g. "Incineroar").
+    #[serde(default)]
+    pub name: Option<String>,
     #[serde(default)]
     pub species: Option<String>,
     #[serde(default, alias = "pokemon")]
@@ -91,7 +188,8 @@ pub struct LimitlessDecklistEntry {
     pub tera: Option<String>,
     #[serde(default, alias = "tera_type", alias = "teraType")]
     pub tera_type: Option<String>,
-    #[serde(default)]
+    /// Limitless calls these `attacks`; older fixtures use `moves`.
+    #[serde(default, alias = "attacks")]
     pub moves: Option<Vec<String>>,
     #[serde(default)]
     pub nature: Option<String>,
@@ -102,9 +200,109 @@ impl LimitlessDecklistEntry {
         self.species
             .as_deref()
             .or(self.pokemon.as_deref())
+            .or(self.name.as_deref())
+            .or(self.id.as_deref())
     }
 
     pub fn tera_value(&self) -> Option<&str> {
         self.tera.as_deref().or(self.tera_type.as_deref())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const FIXTURE: &str = r#"[
+        {
+            "placing": 1,
+            "name": "Alice",
+            "player": "alice123",
+            "country": "US",
+            "record": { "wins": 8, "losses": 1, "ties": 0 },
+            "decklist": [
+                {
+                    "id": "incineroar",
+                    "name": "Incineroar",
+                    "item": "Safety Goggles",
+                    "ability": "Intimidate",
+                    "tera": "Ghost",
+                    "attacks": ["Fake Out", "Knock Off", "Parting Shot", "Flare Blitz"]
+                }
+            ]
+        },
+        {
+            "placing": 2,
+            "name": "Bob",
+            "country": "JP",
+            "record": "7-2-0"
+        }
+    ]"#;
+
+    #[test]
+    fn standings_parse_record_struct_and_string() {
+        let standings: Vec<LimitlessStanding> = serde_json::from_str(FIXTURE).unwrap();
+        assert_eq!(standings.len(), 2);
+        assert_eq!(standings[0].country.as_deref(), Some("US"));
+        assert_eq!(standings[0].record.as_ref().unwrap().display(), "8-1-0");
+        assert_eq!(standings[0].record.as_ref().unwrap().wins(), 8);
+        assert_eq!(standings[1].record.as_ref().unwrap().display(), "7-2-0");
+
+        let deck = standings[0].decklist.as_ref().unwrap();
+        assert_eq!(deck.len(), 1);
+        assert_eq!(deck[0].species_name(), Some("Incineroar"));
+        let moves = deck[0].moves.as_ref().unwrap();
+        assert_eq!(moves.len(), 4);
+        assert_eq!(moves[0], "Fake Out");
+    }
+
+    #[test]
+    fn filter_champions_keeps_format_ma_and_named_champions() {
+        let list = vec![
+            LimitlessTournamentSummary {
+                id: "1".into(),
+                name: "Local Reg I Cup".into(),
+                date: None,
+                players: Some(50),
+                format: Some("I".into()),
+                organizer_id: None,
+            },
+            LimitlessTournamentSummary {
+                id: "2".into(),
+                name: "Regional".into(),
+                date: None,
+                players: Some(120),
+                format: Some("M-A".into()),
+                organizer_id: None,
+            },
+            LimitlessTournamentSummary {
+                id: "3".into(),
+                name: "Champions Battle".into(),
+                date: None,
+                players: Some(80),
+                format: None,
+                organizer_id: None,
+            },
+        ];
+        let kept = filter_champions(list, 10);
+        assert_eq!(kept.len(), 2);
+        assert_eq!(kept[0].id, "2");
+        assert_eq!(kept[1].id, "3");
+    }
+
+    #[test]
+    fn filter_champions_respects_limit() {
+        let list = (0..30)
+            .map(|i| LimitlessTournamentSummary {
+                id: i.to_string(),
+                name: format!("Champions {}", i),
+                date: None,
+                players: None,
+                format: None,
+                organizer_id: None,
+            })
+            .collect();
+        let kept = filter_champions(list, 10);
+        assert_eq!(kept.len(), 10);
     }
 }

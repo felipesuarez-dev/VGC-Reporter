@@ -154,6 +154,43 @@ export interface MetaSnapshot {
   top_tera: UsageEntry[];
 }
 
+export interface ChampionsTournament {
+  id: string;
+  name: string;
+  date: string | null;
+  players: number | null;
+  format: string | null;
+  organizer_id: string | null;
+}
+
+export interface ChampionsReport {
+  tournaments: ChampionsTournament[];
+  fetched_at: string;
+}
+
+export interface DecklistPokemon {
+  id: string | null;
+  name: string;
+  item: string | null;
+  ability: string | null;
+  tera_type: string | null;
+  moves: string[];
+  sprite_url: string;
+  sprite_fallback_url: string | null;
+}
+
+export interface TournamentStanding {
+  placing: number | null;
+  player_name: string | null;
+  player_id: string | null;
+  country: string | null;
+  record: string | null;
+  wins: number;
+  losses: number;
+  ties: number;
+  decklist: DecklistPokemon[];
+}
+
 export interface PokemonSet {
   name: string;
   item: string | null;
