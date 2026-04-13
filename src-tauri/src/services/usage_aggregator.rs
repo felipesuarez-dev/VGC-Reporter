@@ -144,6 +144,31 @@ fn top_n(map: &HashMap<String, u32>, n: usize) -> Vec<UsageEntry> {
         .collect()
 }
 
+/// Normalised `top N` from a float-weighted histogram.
+///
+/// Shared between the Limitless path (raw counts cast to f64) and the Smogon
+/// path (`usage * ratio` sums). Both produce "% of this field's universe"
+/// with identical semantics.
+pub fn top_n_normalized(counts: &HashMap<String, f64>, n: usize) -> Vec<UsageEntry> {
+    let total: f64 = counts.values().sum();
+    let total = if total > 0.0 { total } else { 1.0 };
+    let mut items: Vec<(&String, &f64)> = counts.iter().collect();
+    items.sort_by(|a, b| b.1.partial_cmp(a.1).unwrap_or(std::cmp::Ordering::Equal));
+    items
+        .into_iter()
+        .take(n)
+        .map(|(name, value)| UsageEntry {
+            name: name.clone(),
+            usage_percent: ((value / total) * 100.0) as f32,
+            count: value.round() as u32,
+        })
+        .collect()
+}
+
+pub fn prettify_public(s: &str) -> String {
+    prettify(s)
+}
+
 fn prettify(s: &str) -> String {
     // Replace underscores/dashes with spaces and Title Case words.
     let cleaned = s.replace(['_', '-'], " ");

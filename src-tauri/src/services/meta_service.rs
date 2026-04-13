@@ -1,11 +1,17 @@
-use crate::adapters::{LimitlessClient, SmogonClient};
+use crate::adapters::smogon_client::{ChaosStats, SmogonClient};
+use crate::adapters::sprite_resolver::sprite_url;
+use crate::adapters::LimitlessClient;
 use crate::config;
 use crate::domain::format::Format;
-use crate::domain::usage_stats::MetaSnapshot;
+use crate::domain::usage_stats::{MetaSnapshot, PokemonUsage, UsageEntry};
 use crate::error::AppError;
-use crate::services::usage_aggregator;
+use crate::services::usage_aggregator::{self, top_n_normalized};
 use crate::storage::CacheRepo;
+use chrono::Utc;
+use std::collections::HashMap;
 use std::sync::Arc;
+
+const MIN_LIMITLESS_ENTRIES: u32 = 50;
 
 #[derive(Clone)]
 pub struct MetaService {
@@ -31,48 +37,83 @@ impl MetaService {
             }
         }
 
-        let tournaments = self
-            .limitless
-            .list_tournaments(format, config::TOURNAMENTS_PER_SNAPSHOT)
+        let lim_snap = if format.limitless_code().is_some() {
+            let tournaments = self
+                .limitless
+                .list_tournaments(format, config::TOURNAMENTS_PER_SNAPSHOT)
+                .await
+                .unwrap_or_default();
+            let mut all_standings = Vec::new();
+            for t in &tournaments {
+                match self.limitless.get_standings(&t.id).await {
+                    Ok(s) => all_standings.push(s),
+                    Err(e) => tracing::warn!(tournament = %t.id, error = %e, "standings fetch failed"),
+                }
+            }
+            Some(usage_aggregator::aggregate(format, all_standings))
+        } else {
+            None
+        };
+
+        let sm_snap = self
+            .smogon
+            .fetch_chaos(format)
             .await
-            .unwrap_or_default();
+            .ok()
+            .flatten()
+            .map(|chaos| snapshot_from_smogon(format, chaos, format.default_smogon_slug()));
 
-        let mut all_standings = Vec::new();
-        for t in &tournaments {
-            match self.limitless.get_standings(&t.id).await {
-                Ok(s) => all_standings.push(s),
-                Err(e) => tracing::warn!(tournament = %t.id, error = %e, "standings fetch failed"),
-            }
-        }
+        let final_snap = match (lim_snap, sm_snap) {
+            (Some(lim), _) if lim.total_entries >= MIN_LIMITLESS_ENTRIES => lim,
+            (_, Some(sm)) => sm,
+            (Some(lim), None) => lim,
+            (None, None) => MetaSnapshot::empty(format),
+        };
 
-        let mut snapshot = usage_aggregator::aggregate(format, all_standings);
-
-        // Smogon fallback: if Limitless yielded no data, seed top items/moves from ladder stats.
-        if snapshot.total_entries == 0 {
-            if let Ok(Some(chaos)) = self.smogon.fetch_chaos(format).await {
-                snapshot = seed_from_smogon(format, chaos);
-            }
-        }
-
-        let bytes = serde_json::to_vec(&snapshot)?;
+        let bytes = serde_json::to_vec(&final_snap)?;
         self.cache.put(&cache_key, &bytes, config::TTL_META_SNAPSHOT)?;
-        Ok(snapshot)
+        Ok(final_snap)
     }
 }
 
-fn seed_from_smogon(
+pub(crate) fn snapshot_from_smogon(
     format: Format,
-    chaos: crate::adapters::smogon_client::ChaosStats,
+    chaos: ChaosStats,
+    slug_used: &str,
 ) -> MetaSnapshot {
-    use crate::adapters::sprite_resolver::sprite_url;
-    use crate::domain::usage_stats::{PokemonUsage, UsageEntry};
-    use chrono::Utc;
+    let mut global_items: HashMap<String, f64> = HashMap::new();
+    let mut global_moves: HashMap<String, f64> = HashMap::new();
+    let mut global_abilities: HashMap<String, f64> = HashMap::new();
+    let mut global_tera: HashMap<String, f64> = HashMap::new();
+
+    for (_species, entry) in &chaos.data {
+        for (item, ratio) in &entry.items {
+            *global_items
+                .entry(usage_aggregator::prettify_public(item))
+                .or_insert(0.0) += entry.usage * ratio;
+        }
+        for (mv, ratio) in &entry.moves {
+            *global_moves
+                .entry(usage_aggregator::prettify_public(mv))
+                .or_insert(0.0) += entry.usage * ratio;
+        }
+        for (ab, ratio) in &entry.abilities {
+            *global_abilities
+                .entry(usage_aggregator::prettify_public(ab))
+                .or_insert(0.0) += entry.usage * ratio;
+        }
+        for (tera, ratio) in &entry.tera_types {
+            *global_tera
+                .entry(usage_aggregator::prettify_public(tera))
+                .or_insert(0.0) += entry.usage * ratio;
+        }
+    }
 
     let mut pokemon: Vec<PokemonUsage> = chaos
         .data
         .into_iter()
         .map(|(name, entry)| PokemonUsage {
-            species: name.clone(),
+            species: usage_aggregator::prettify_public(&name),
             usage_percent: (entry.usage * 100.0) as f32,
             count: 0,
             top_items: entry
@@ -80,7 +121,7 @@ fn seed_from_smogon(
                 .into_iter()
                 .take(5)
                 .map(|(k, v)| UsageEntry {
-                    name: k,
+                    name: usage_aggregator::prettify_public(&k),
                     usage_percent: (v * 100.0) as f32,
                     count: 0,
                 })
@@ -90,7 +131,7 @@ fn seed_from_smogon(
                 .into_iter()
                 .take(6)
                 .map(|(k, v)| UsageEntry {
-                    name: k,
+                    name: usage_aggregator::prettify_public(&k),
                     usage_percent: (v * 100.0) as f32,
                     count: 0,
                 })
@@ -100,7 +141,7 @@ fn seed_from_smogon(
                 .into_iter()
                 .take(3)
                 .map(|(k, v)| UsageEntry {
-                    name: k,
+                    name: usage_aggregator::prettify_public(&k),
                     usage_percent: (v * 100.0) as f32,
                     count: 0,
                 })
@@ -110,7 +151,7 @@ fn seed_from_smogon(
                 .into_iter()
                 .take(5)
                 .map(|(k, v)| UsageEntry {
-                    name: k,
+                    name: usage_aggregator::prettify_public(&k),
                     usage_percent: (v * 100.0) as f32,
                     count: 0,
                 })
@@ -120,7 +161,7 @@ fn seed_from_smogon(
                 .into_iter()
                 .take(5)
                 .map(|(k, v)| UsageEntry {
-                    name: k,
+                    name: usage_aggregator::prettify_public(&k),
                     usage_percent: (v * 100.0) as f32,
                     count: 0,
                 })
@@ -128,19 +169,99 @@ fn seed_from_smogon(
             sprite_url: sprite_url(&name),
         })
         .collect();
-
     pokemon.sort_by(|a, b| b.usage_percent.partial_cmp(&a.usage_percent).unwrap());
 
     MetaSnapshot {
         format,
         generated_at: Utc::now(),
-        source: "Smogon ladder (fallback)".into(),
+        source: format!("Smogon ladder ({})", slug_used),
         tournaments_used: 0,
-        total_entries: pokemon.iter().map(|p| p.count).sum(),
+        total_entries: 0,
         pokemon,
-        top_items: Vec::new(),
-        top_moves: Vec::new(),
-        top_abilities: Vec::new(),
-        top_tera: Vec::new(),
+        top_items: top_n_normalized(&global_items, 15),
+        top_moves: top_n_normalized(&global_moves, 20),
+        top_abilities: top_n_normalized(&global_abilities, 10),
+        top_tera: top_n_normalized(&global_tera, 10),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::adapters::smogon_client::{ChaosEntry, ChaosStats};
+    use std::collections::BTreeMap;
+
+    fn chaos_entry(
+        usage: f64,
+        moves: &[(&str, f64)],
+        items: &[(&str, f64)],
+        abilities: &[(&str, f64)],
+        tera: &[(&str, f64)],
+    ) -> ChaosEntry {
+        ChaosEntry {
+            usage,
+            moves: moves.iter().map(|(k, v)| (k.to_string(), *v)).collect(),
+            items: items.iter().map(|(k, v)| (k.to_string(), *v)).collect(),
+            abilities: abilities.iter().map(|(k, v)| (k.to_string(), *v)).collect(),
+            teammates: BTreeMap::new(),
+            tera_types: tera.iter().map(|(k, v)| (k.to_string(), *v)).collect(),
+        }
+    }
+
+    #[test]
+    fn snapshot_from_smogon_populates_top_level() {
+        let mut data = BTreeMap::new();
+        data.insert(
+            "Incineroar".into(),
+            chaos_entry(
+                0.5,
+                &[("Fake Out", 0.9), ("Knock Off", 0.8)],
+                &[("Safety Goggles", 0.4), ("Assault Vest", 0.3)],
+                &[("Intimidate", 1.0)],
+                &[("Ghost", 0.4), ("Dark", 0.3)],
+            ),
+        );
+        data.insert(
+            "Urshifu".into(),
+            chaos_entry(
+                0.3,
+                &[("Wicked Blow", 0.95), ("Close Combat", 0.8)],
+                &[("Focus Sash", 0.5), ("Choice Scarf", 0.2)],
+                &[("Unseen Fist", 1.0)],
+                &[("Fighting", 0.5), ("Dark", 0.3)],
+            ),
+        );
+        data.insert(
+            "Rillaboom".into(),
+            chaos_entry(
+                0.25,
+                &[("Grassy Glide", 0.9), ("Fake Out", 0.6)],
+                &[("Assault Vest", 0.4), ("Sitrus Berry", 0.3)],
+                &[("Grassy Surge", 1.0)],
+                &[("Fire", 0.4), ("Grass", 0.3)],
+            ),
+        );
+        let chaos = ChaosStats { data };
+        let snap = snapshot_from_smogon(Format::RegulationI, chaos, "gen9vgc2026regi");
+        assert!(!snap.top_items.is_empty(), "top_items should be populated");
+        assert!(!snap.top_moves.is_empty(), "top_moves should be populated");
+        assert!(
+            !snap.top_abilities.is_empty(),
+            "top_abilities should be populated"
+        );
+        assert!(!snap.top_tera.is_empty(), "top_tera should be populated");
+        assert_eq!(snap.pokemon.len(), 3);
+        assert!(snap.pokemon[0].usage_percent >= snap.pokemon[1].usage_percent);
+    }
+
+    #[test]
+    fn top_n_normalized_percentages_sum_to_about_100() {
+        let mut counts: HashMap<String, f64> = HashMap::new();
+        counts.insert("A".into(), 3.0);
+        counts.insert("B".into(), 2.0);
+        counts.insert("C".into(), 1.0);
+        let top = top_n_normalized(&counts, 10);
+        let sum: f32 = top.iter().map(|e| e.usage_percent).sum();
+        assert!((sum - 100.0).abs() < 0.5, "sum was {}", sum);
     }
 }
