@@ -1,15 +1,16 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { ExternalLink, RefreshCw } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
-import { ALL_FORMATS, type Format, type PokemonUsage } from "../lib/types";
+import { type PokemonUsage } from "../lib/types";
 import { UsageBarChart } from "../components/charts/UsageBarChart";
 import { TopList } from "../components/charts/TopList";
 import { PokemonSprite } from "../components/pokemon/PokemonSprite";
 import { PokemonMetaDrawer } from "../components/pokemon/PokemonMetaDrawer";
+import { FormatSelector } from "../components/ui/FormatSelector";
 import { useDashboardStore } from "../stores/dashboardStore";
 
 const EXTERNAL_SITES: { name: string; url: string }[] = [
@@ -32,7 +33,15 @@ export function Dashboard() {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const format = useDashboardStore((s) => s.format);
+  const favoriteFormat = useDashboardStore((s) => s.favoriteFormat);
   const setFormat = useDashboardStore((s) => s.setFormat);
+  const setFavoriteFormat = useDashboardStore((s) => s.setFavoriteFormat);
+  const initRef = useRef(false);
+  useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
+    if (format !== favoriteFormat) setFormat(favoriteFormat);
+  }, [favoriteFormat, format, setFormat]);
   const [selected, setSelected] = useState<PokemonUsage | null>(null);
   const { data, isLoading, isError, error } = useQuery({
     queryKey: queryKeys.meta(format),
@@ -63,21 +72,13 @@ export function Dashboard() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <label className="sr-only" htmlFor="format-select">
-            {t("dashboard.format")}
-          </label>
-          <select
-            id="format-select"
-            className="input h-9 text-sm"
+          <FormatSelector
             value={format}
-            onChange={(e) => setFormat(e.target.value as Format)}
-          >
-            {ALL_FORMATS.map((f) => (
-              <option key={f.value} value={f.value}>
-                {f.label}
-              </option>
-            ))}
-          </select>
+            favorite={favoriteFormat}
+            onChange={setFormat}
+            onFavoriteChange={setFavoriteFormat}
+            className="w-72"
+          />
           <button
             className="btn-ghost"
             onClick={() => qc.invalidateQueries({ queryKey: queryKeys.meta(format) })}
@@ -95,7 +96,7 @@ export function Dashboard() {
         </div>
       )}
       {data && data.pokemon.length === 0 && (
-        <div className="card text-slate-400">{t("common.empty")}</div>
+        <div className="card text-slate-400">{t("dashboard.empty_format")}</div>
       )}
 
       {data && data.pokemon.length > 0 && (

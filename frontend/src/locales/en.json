@@ -43,7 +43,8 @@
     "format": "Format",
     "tournaments_used": "Tournaments analyzed",
     "total_entries": "Total entries",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "format_favorite": "Mark as favorite (appears first when opening)"
   },
   "drawer": {
     "top_items": "Items",
