@@ -8,11 +8,16 @@
  * generated.
  */
 
-export type Format = "regulation-m-a" | "regulation-i" | "gen9-ou";
+export type Format =
+  | "regulation-m-a"
+  | "champions-singles"
+  | "regulation-i"
+  | "gen9-ou";
 
 export const ALL_FORMATS: { value: Format; label: string }[] = [
-  { value: "regulation-i", label: "Regulation I (doubles, active)" },
   { value: "regulation-m-a", label: "Regulation M-A (Champions doubles)" },
+  { value: "champions-singles", label: "Champions Singles" },
+  { value: "regulation-i", label: "Regulation I (doubles, active)" },
   { value: "gen9-ou", label: "Gen 9 OU (singles)" },
 ];
 

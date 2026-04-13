@@ -70,6 +70,17 @@ impl SmogonClient {
                 candidates.push(extra.to_string());
             }
         }
+        if matches!(format, Format::ChampionsSingles) {
+            for extra in [
+                "gen9vgc2026regmasingles",
+                "gen9vgc2026regmasingle",
+                "gen9vgc2026masingle",
+                "gen9championssingles",
+                "gen9championssingle",
+            ] {
+                candidates.push(extra.to_string());
+            }
+        }
         candidates.dedup();
 
         let months: Vec<(i32, u32)> = match format.anchor_month() {
