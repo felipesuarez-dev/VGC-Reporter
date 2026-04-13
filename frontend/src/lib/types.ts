@@ -82,10 +82,25 @@ export interface EvSpread {
 export interface Pokemon {
   id: string;
   name: string;
+  num: number;
   types: PokemonType[];
   base_stats: Stats;
   abilities: string[];
   sprite_url: string;
+  sprite_fallback_url: string | null;
+}
+
+export function generationOf(num: number): number {
+  if (num >= 1 && num <= 151) return 1;
+  if (num <= 251) return 2;
+  if (num <= 386) return 3;
+  if (num <= 493) return 4;
+  if (num <= 649) return 5;
+  if (num <= 721) return 6;
+  if (num <= 809) return 7;
+  if (num <= 905) return 8;
+  if (num <= 1025) return 9;
+  return 0;
 }
 
 export interface TeamMember {

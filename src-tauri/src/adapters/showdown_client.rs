@@ -1,3 +1,4 @@
+use crate::adapters::sprite_resolver::{fallback_sprite_url, primary_sprite_url};
 use crate::adapters::HttpClient;
 use crate::config;
 use crate::domain::pokemon::{Pokemon, PokemonType, Stats};
@@ -36,10 +37,13 @@ impl ShowdownClient {
                 .values()
                 .cloned()
                 .collect::<Vec<_>>();
-            let sprite_url = crate::adapters::sprite_url(&id);
+            let display = entry.name.clone().unwrap_or_else(|| id.clone());
+            let sprite_url = primary_sprite_url(&display);
+            let sprite_fallback_url = fallback_sprite_url(&display);
             pokemon.push(Pokemon {
                 id: id.clone(),
-                name: entry.name.clone().unwrap_or(id),
+                name: display,
+                num: entry.num.max(0) as u16,
                 types,
                 base_stats: Stats {
                     hp: entry.base_stats.hp,
@@ -51,6 +55,7 @@ impl ShowdownClient {
                 },
                 abilities,
                 sprite_url,
+                sprite_fallback_url,
             });
         }
         pokemon.sort_by(|a, b| a.name.cmp(&b.name));

@@ -8,4 +8,4 @@ pub use http_client::HttpClient;
 pub use limitless_client::{LimitlessClient, LimitlessDecklistEntry, LimitlessStanding};
 pub use showdown_client::{ShowdownClient, ShowdownPokedex};
 pub use smogon_client::SmogonClient;
-pub use sprite_resolver::sprite_url;
+pub use sprite_resolver::{fallback_sprite_url, primary_sprite_url, sprite_url};
