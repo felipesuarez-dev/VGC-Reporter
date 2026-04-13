@@ -3,18 +3,19 @@ import { useTranslation } from "react-i18next";
 import { RefreshCw } from "lucide-react";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
-import type { Format } from "../lib/types";
+import { ALL_FORMATS, type Format } from "../lib/types";
 import { UsageBarChart } from "../components/charts/UsageBarChart";
 import { PokemonSprite } from "../components/pokemon/PokemonSprite";
-
-const FORMAT: Format = "regulation-m-a";
+import { useDashboardStore } from "../stores/dashboardStore";
 
 export function Dashboard() {
   const { t } = useTranslation();
   const qc = useQueryClient();
+  const format = useDashboardStore((s) => s.format);
+  const setFormat = useDashboardStore((s) => s.setFormat);
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: queryKeys.meta(FORMAT),
-    queryFn: () => ipc.getMetaStats(FORMAT),
+    queryKey: queryKeys.meta(format),
+    queryFn: () => ipc.getMetaStats(format),
   });
 
   const topPokemon = data?.pokemon.slice(0, 15) ?? [];
@@ -37,7 +38,7 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between">
+      <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">{t("dashboard.title")}</h1>
           {data && (
@@ -48,13 +49,30 @@ export function Dashboard() {
             </p>
           )}
         </div>
-        <button
-          className="btn-ghost"
-          onClick={() => qc.invalidateQueries({ queryKey: queryKeys.meta(FORMAT) })}
-        >
-          <RefreshCw size={14} className="mr-1" />
-          {t("dashboard.refresh")}
-        </button>
+        <div className="flex items-center gap-2">
+          <label className="sr-only" htmlFor="format-select">
+            {t("dashboard.format")}
+          </label>
+          <select
+            id="format-select"
+            className="input h-9 text-sm"
+            value={format}
+            onChange={(e) => setFormat(e.target.value as Format)}
+          >
+            {ALL_FORMATS.map((f) => (
+              <option key={f.value} value={f.value}>
+                {f.label}
+              </option>
+            ))}
+          </select>
+          <button
+            className="btn-ghost"
+            onClick={() => qc.invalidateQueries({ queryKey: queryKeys.meta(format) })}
+          >
+            <RefreshCw size={14} className="mr-1" />
+            {t("dashboard.refresh")}
+          </button>
+        </div>
       </header>
 
       {isLoading && <div className="card text-slate-400">{t("common.loading")}</div>}

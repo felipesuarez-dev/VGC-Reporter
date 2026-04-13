@@ -8,7 +8,13 @@
  * generated.
  */
 
-export type Format = "regulation-m-a";
+export type Format = "regulation-m-a" | "regulation-i" | "gen9-ou";
+
+export const ALL_FORMATS: { value: Format; label: string }[] = [
+  { value: "regulation-i", label: "Regulation I (doubles, active)" },
+  { value: "regulation-m-a", label: "Regulation M-A (Champions doubles)" },
+  { value: "gen9-ou", label: "Gen 9 OU (singles)" },
+];
 
 export type PokemonType =
   | "Normal"
@@ -124,6 +130,7 @@ export interface MetaSnapshot {
   pokemon: PokemonUsage[];
   top_items: UsageEntry[];
   top_moves: UsageEntry[];
+  top_abilities: UsageEntry[];
   top_tera: UsageEntry[];
 }
 
