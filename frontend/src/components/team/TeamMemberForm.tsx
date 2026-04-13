@@ -1,26 +1,32 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import type { Pokemon, PokemonType, TeamMember } from "../../lib/types";
 import { ALL_NATURES, ALL_TYPES } from "../../lib/types";
 import { EVSliders } from "./EVSliders";
 import { PokemonSprite } from "../pokemon/PokemonSprite";
+import { SearchSelect } from "../ui/SearchSelect";
 
 interface Props {
   slot: number;
   value: TeamMember;
   pokedex: Pokemon[];
+  items: string[];
+  moves: string[];
   onChange: (m: TeamMember) => void;
 }
 
-export function TeamMemberForm({ slot, value, pokedex, onChange }: Props) {
+export function TeamMemberForm({ slot, value, pokedex, items, moves, onChange }: Props) {
+  const { t } = useTranslation();
+
   const selected = useMemo(
     () => pokedex.find((p) => p.id === value.species || p.name === value.species),
     [pokedex, value.species],
   );
 
-  const setMove = (i: number, mv: string) => {
-    const moves = [...value.moves];
-    moves[i] = mv;
-    onChange({ ...value, moves });
+  const setMove = (i: number, mv: string | null) => {
+    const next = [...value.moves];
+    next[i] = mv ?? "";
+    onChange({ ...value, moves: next });
   };
 
   return (
@@ -28,105 +34,93 @@ export function TeamMemberForm({ slot, value, pokedex, onChange }: Props) {
       <div className="flex items-center gap-3">
         <div className="flex h-16 w-16 items-center justify-center">
           {selected ? (
-            <PokemonSprite url={selected.sprite_url} name={selected.name} size={64} />
+            <PokemonSprite
+              url={selected.sprite_url}
+              fallbackUrl={selected.sprite_fallback_url}
+              name={selected.name}
+              size={64}
+            />
           ) : (
             <div className="h-16 w-16 rounded-full border-2 border-dashed border-slate-700" />
           )}
         </div>
         <div className="flex-1">
           <label className="label">Slot {slot + 1}</label>
-          <input
-            type="text"
-            list={`species-list-${slot}`}
-            placeholder="Species"
-            className="input mt-1"
-            value={value.species}
-            onChange={(e) => onChange({ ...value, species: e.target.value })}
+          <SearchSelect<Pokemon>
+            value={selected ?? null}
+            options={pokedex}
+            onChange={(p) => onChange({ ...value, species: p?.name ?? "" })}
+            getOptionLabel={(p) => p.name}
+            getOptionKey={(p) => p.id}
+            placeholder={t("team_builder.pokemon")}
+            className="mt-1"
           />
-          <datalist id={`species-list-${slot}`}>
-            {pokedex.slice(0, 500).map((p) => (
-              <option key={p.id} value={p.name} />
-            ))}
-          </datalist>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="label">Item</label>
-          <input
-            className="input mt-1"
-            value={value.item ?? ""}
-            onChange={(e) => onChange({ ...value, item: e.target.value || null })}
+          <label className="label">{t("team_builder.item")}</label>
+          <SearchSelect<string>
+            value={value.item}
+            options={items}
+            onChange={(it) => onChange({ ...value, item: it })}
+            placeholder={t("team_builder.item")}
+            className="mt-1"
           />
         </div>
         <div>
-          <label className="label">Ability</label>
-          <input
-            className="input mt-1"
-            list={`abilities-${slot}`}
-            value={value.ability ?? ""}
-            onChange={(e) => onChange({ ...value, ability: e.target.value || null })}
+          <label className="label">{t("team_builder.ability")}</label>
+          <SearchSelect<string>
+            value={value.ability}
+            options={selected?.abilities ?? []}
+            onChange={(ab) => onChange({ ...value, ability: ab })}
+            placeholder={t("team_builder.ability")}
+            disabled={!selected}
+            className="mt-1"
           />
-          <datalist id={`abilities-${slot}`}>
-            {(selected?.abilities ?? []).map((a) => (
-              <option key={a} value={a} />
-            ))}
-          </datalist>
         </div>
         <div>
-          <label className="label">Nature</label>
-          <select
-            className="input mt-1"
-            value={value.nature ?? ""}
-            onChange={(e) =>
-              onChange({ ...value, nature: (e.target.value || null) as TeamMember["nature"] })
+          <label className="label">{t("team_builder.nature")}</label>
+          <SearchSelect<string>
+            value={value.nature}
+            options={[...ALL_NATURES]}
+            onChange={(n) =>
+              onChange({ ...value, nature: (n ?? null) as TeamMember["nature"] })
             }
-          >
-            <option value="">—</option>
-            {ALL_NATURES.map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
+            placeholder={t("team_builder.nature")}
+            className="mt-1"
+          />
         </div>
         <div>
-          <label className="label">Tera Type</label>
-          <select
-            className="input mt-1"
-            value={value.tera_type ?? ""}
-            onChange={(e) =>
-              onChange({ ...value, tera_type: (e.target.value || null) as PokemonType | null })
-            }
-          >
-            <option value="">—</option>
-            {ALL_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
+          <label className="label">{t("team_builder.tera_type")}</label>
+          <SearchSelect<PokemonType>
+            value={value.tera_type}
+            options={[...ALL_TYPES]}
+            onChange={(ty) => onChange({ ...value, tera_type: ty })}
+            placeholder={t("team_builder.tera_type")}
+            className="mt-1"
+          />
         </div>
       </div>
 
       <div>
-        <label className="label">Moves</label>
+        <label className="label">{t("team_builder.moves")}</label>
         <div className="mt-1 grid grid-cols-2 gap-2">
           {[0, 1, 2, 3].map((i) => (
-            <input
+            <SearchSelect<string>
               key={i}
-              className="input"
-              placeholder={`Move ${i + 1}`}
-              value={value.moves[i] ?? ""}
-              onChange={(e) => setMove(i, e.target.value)}
+              value={value.moves[i] || null}
+              options={moves}
+              onChange={(mv) => setMove(i, mv)}
+              placeholder={`${t("team_builder.moves")} ${i + 1}`}
             />
           ))}
         </div>
       </div>
 
       <div>
-        <label className="label">EVs</label>
+        <label className="label">{t("team_builder.evs")}</label>
         <div className="mt-1">
           <EVSliders value={value.evs} onChange={(evs) => onChange({ ...value, evs })} />
         </div>

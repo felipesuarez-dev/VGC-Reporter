@@ -80,6 +80,7 @@
     "team_name": "Nombre del equipo",
     "notes": "Notas",
     "species": "Especie",
+    "pokemon": "Pokémon",
     "item": "Objeto",
     "ability": "Habilidad",
     "nature": "Naturaleza",

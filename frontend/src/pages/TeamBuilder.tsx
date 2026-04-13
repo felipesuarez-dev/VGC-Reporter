@@ -22,6 +22,20 @@ export function TeamBuilder() {
     queryFn: () => ipc.listPokemon(),
   });
 
+  const { data: items = [] } = useQuery({
+    queryKey: queryKeys.items.all,
+    queryFn: () => ipc.listItems(),
+    staleTime: Infinity,
+    gcTime: 24 * 60 * 60 * 1000,
+  });
+
+  const { data: moves = [] } = useQuery({
+    queryKey: queryKeys.moves.all,
+    queryFn: () => ipc.listMoves(),
+    staleTime: Infinity,
+    gcTime: 24 * 60 * 60 * 1000,
+  });
+
   const { data: loaded } = useQuery({
     queryKey: queryKeys.teams.detail(teamId ?? -1),
     queryFn: () => ipc.getTeam(teamId as number),
@@ -86,6 +100,8 @@ export function TeamBuilder() {
             slot={i}
             value={m}
             pokedex={pokedex}
+            items={items}
+            moves={moves}
             onChange={(next) => setMember(i, next)}
           />
         ))}
