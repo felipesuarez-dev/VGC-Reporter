@@ -107,7 +107,10 @@
     "level": "Nivel",
     "result": "Resultado",
     "min": "Mín",
-    "max": "Máx"
+    "max": "Máx",
+    "field": "Campo",
+    "weather": "Clima",
+    "terrain": "Terreno"
   },
   "settings": {
     "title": "Ajustes",

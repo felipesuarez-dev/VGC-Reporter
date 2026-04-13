@@ -1,40 +1,121 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { calculate, Generations, Pokemon as CalcPokemon, Move as CalcMove } from "@smogon/calc";
+import {
+  calculate,
+  Generations,
+  Pokemon as CalcPokemon,
+  Move as CalcMove,
+  Field,
+} from "@smogon/calc";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
+import {
+  ALL_NATURES,
+  ALL_TYPES,
+  type EvSpread,
+  type Nature,
+  type Pokemon,
+  type PokemonType,
+} from "../lib/types";
+import { SearchSelect } from "../components/ui/SearchSelect";
+import { EVSliders } from "../components/team/EVSliders";
 
 const GEN = Generations.get(9);
 
+const WEATHERS = ["", "Sun", "Rain", "Sand", "Snow"] as const;
+const TERRAINS = ["", "Electric", "Grassy", "Misty", "Psychic"] as const;
+
+interface SideState {
+  species: Pokemon | null;
+  item: string | null;
+  ability: string | null;
+  nature: Nature | null;
+  tera: PokemonType | null;
+  level: number;
+  evs: EvSpread;
+  moves: (string | null)[];
+}
+
+const emptyEvs: EvSpread = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
+
+const makeSide = (level = 50): SideState => ({
+  species: null,
+  item: null,
+  ability: null,
+  nature: null,
+  tera: null,
+  level,
+  evs: { ...emptyEvs },
+  moves: [null, null, null, null],
+});
+
+function buildCalcPokemon(side: SideState): CalcPokemon | null {
+  if (!side.species) return null;
+  return new CalcPokemon(GEN, side.species.name, {
+    level: side.level,
+    item: side.item ?? undefined,
+    ability: side.ability ?? undefined,
+    nature: side.nature ?? undefined,
+    teraType: side.tera ?? undefined,
+    evs: side.evs,
+  });
+}
+
 export function DamageCalc() {
   const { t } = useTranslation();
+
   const { data: pokedex = [] } = useQuery({
     queryKey: queryKeys.pokedex.all,
     queryFn: () => ipc.listPokemon(),
   });
+  const { data: items = [] } = useQuery({
+    queryKey: queryKeys.items.all,
+    queryFn: () => ipc.listItems(),
+    staleTime: Infinity,
+    gcTime: 24 * 60 * 60 * 1000,
+  });
+  const { data: moves = [] } = useQuery({
+    queryKey: queryKeys.moves.all,
+    queryFn: () => ipc.listMoves(),
+    staleTime: Infinity,
+    gcTime: 24 * 60 * 60 * 1000,
+  });
 
-  const [attackerName, setAttackerName] = useState("Incineroar");
-  const [defenderName, setDefenderName] = useState("Urshifu");
-  const [moveName, setMoveName] = useState("Knock Off");
-  const [level, setLevel] = useState(50);
+  const [attacker, setAttacker] = useState<SideState>(makeSide());
+  const [defender, setDefender] = useState<SideState>(makeSide());
+  const [weather, setWeather] = useState<(typeof WEATHERS)[number]>("");
+  const [terrain, setTerrain] = useState<(typeof TERRAINS)[number]>("");
 
-  const result = useMemo(() => {
-    try {
-      const attacker = new CalcPokemon(GEN, attackerName, { level });
-      const defender = new CalcPokemon(GEN, defenderName, { level });
-      const move = new CalcMove(GEN, moveName);
-      const r = calculate(GEN, attacker, defender, move);
-      const dmg = r.damage;
-      const arr = Array.isArray(dmg) ? (dmg as number[]) : [dmg as number];
-      const min = arr[0] ?? 0;
-      const max = arr[arr.length - 1] ?? 0;
-      const desc = typeof r.desc === "function" ? r.desc() : String(r.desc ?? "");
-      return { min, max, desc };
-    } catch (e) {
-      return { min: 0, max: 0, desc: (e as Error).message };
-    }
-  }, [attackerName, defenderName, moveName, level]);
+  const results = useMemo(() => {
+    if (!attacker.species || !defender.species) return [];
+    const atk = buildCalcPokemon(attacker);
+    const def = buildCalcPokemon(defender);
+    if (!atk || !def) return [];
+    const field = new Field({
+      weather: (weather || undefined) as never,
+      terrain: (terrain || undefined) as never,
+    });
+    return attacker.moves
+      .filter((m): m is string => Boolean(m))
+      .map((mv) => {
+        try {
+          const move = new CalcMove(GEN, mv);
+          const r = calculate(GEN, atk, def, move, field);
+          const dmg = r.damage;
+          const arr = Array.isArray(dmg) ? (dmg as number[]) : [dmg as number];
+          const min = arr[0] ?? 0;
+          const max = arr[arr.length - 1] ?? 0;
+          const hp = def.maxHP();
+          const minPct = ((min / hp) * 100).toFixed(1);
+          const maxPct = ((max / hp) * 100).toFixed(1);
+          const desc = typeof r.desc === "function" ? r.desc() : String(r.desc ?? "");
+          return { move: mv, min, max, minPct, maxPct, desc };
+        } catch (e) {
+          return { move: mv, min: 0, max: 0, minPct: "0", maxPct: "0", desc: (e as Error).message };
+        }
+      });
+  }, [attacker, defender, weather, terrain]);
 
   return (
     <div className="space-y-4">
@@ -42,31 +123,143 @@ export function DamageCalc() {
         <h1 className="text-2xl font-bold">{t("damage_calc.title")}</h1>
       </header>
 
-      <div className="card grid grid-cols-1 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <SidePanel
+          title={t("damage_calc.attacker")}
+          side={attacker}
+          setSide={setAttacker}
+          pokedex={pokedex}
+          items={items}
+          moves={moves}
+          showMoves
+        />
+        <SidePanel
+          title={t("damage_calc.defender")}
+          side={defender}
+          setSide={setDefender}
+          pokedex={pokedex}
+          items={items}
+          moves={moves}
+        />
+      </div>
+
+      <div className="card grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
-          <label className="label">{t("damage_calc.attacker")}</label>
-          <input
-            list="dc-pkm"
+          <label className="label">{t("damage_calc.weather")}</label>
+          <select
             className="input mt-1"
-            value={attackerName}
-            onChange={(e) => setAttackerName(e.target.value)}
+            value={weather}
+            onChange={(e) => setWeather(e.target.value as (typeof WEATHERS)[number])}
+          >
+            {WEATHERS.map((w) => (
+              <option key={w || "none"} value={w}>
+                {w || "—"}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="label">{t("damage_calc.terrain")}</label>
+          <select
+            className="input mt-1"
+            value={terrain}
+            onChange={(e) => setTerrain(e.target.value as (typeof TERRAINS)[number])}
+          >
+            {TERRAINS.map((tr) => (
+              <option key={tr || "none"} value={tr}>
+                {tr || "—"}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="card space-y-3">
+        <div className="label">{t("damage_calc.result")}</div>
+        {results.length === 0 && (
+          <p className="text-xs text-slate-500">—</p>
+        )}
+        {results.map((r) => (
+          <div key={r.move} className="rounded border border-slate-800 bg-slate-950/40 p-3">
+            <div className="flex items-baseline justify-between">
+              <span className="font-semibold text-slate-100">{r.move}</span>
+              <span className="text-sm text-brand-300">
+                {r.min}–{r.max} ({r.minPct}–{r.maxPct}%)
+              </span>
+            </div>
+            <pre className="mt-1 whitespace-pre-wrap text-[11px] text-slate-400">{r.desc}</pre>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+interface SideProps {
+  title: string;
+  side: SideState;
+  setSide: (s: SideState) => void;
+  pokedex: Pokemon[];
+  items: string[];
+  moves: string[];
+  showMoves?: boolean;
+}
+
+function SidePanel({ title, side, setSide, pokedex, items, moves, showMoves }: SideProps) {
+  const { t } = useTranslation();
+  const update = (patch: Partial<SideState>) => setSide({ ...side, ...patch });
+  return (
+    <div className="card space-y-3">
+      <h2 className="text-sm font-semibold text-slate-200">{title}</h2>
+
+      <div>
+        <label className="label">{t("team_builder.pokemon")}</label>
+        <SearchSelect<Pokemon>
+          value={side.species}
+          options={pokedex}
+          onChange={(p) => update({ species: p, ability: null })}
+          getOptionLabel={(p) => p.name}
+          getOptionKey={(p) => p.id}
+          className="mt-1"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="label">{t("team_builder.item")}</label>
+          <SearchSelect<string>
+            value={side.item}
+            options={items}
+            onChange={(it) => update({ item: it })}
+            className="mt-1"
           />
         </div>
         <div>
-          <label className="label">{t("damage_calc.defender")}</label>
-          <input
-            list="dc-pkm"
-            className="input mt-1"
-            value={defenderName}
-            onChange={(e) => setDefenderName(e.target.value)}
+          <label className="label">{t("team_builder.ability")}</label>
+          <SearchSelect<string>
+            value={side.ability}
+            options={side.species?.abilities ?? []}
+            onChange={(ab) => update({ ability: ab })}
+            disabled={!side.species}
+            className="mt-1"
           />
         </div>
         <div>
-          <label className="label">{t("damage_calc.move")}</label>
-          <input
-            className="input mt-1"
-            value={moveName}
-            onChange={(e) => setMoveName(e.target.value)}
+          <label className="label">{t("team_builder.nature")}</label>
+          <SearchSelect<string>
+            value={side.nature}
+            options={[...ALL_NATURES]}
+            onChange={(n) => update({ nature: (n ?? null) as Nature | null })}
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <label className="label">{t("team_builder.tera_type")}</label>
+          <SearchSelect<PokemonType>
+            value={side.tera}
+            options={[...ALL_TYPES]}
+            onChange={(ty) => update({ tera: ty })}
+            className="mt-1"
           />
         </div>
         <div>
@@ -76,24 +269,39 @@ export function DamageCalc() {
             min={1}
             max={100}
             className="input mt-1"
-            value={level}
-            onChange={(e) => setLevel(Number(e.target.value) || 50)}
+            value={side.level}
+            onChange={(e) => update({ level: Number(e.target.value) || 50 })}
           />
         </div>
-        <datalist id="dc-pkm">
-          {pokedex.slice(0, 500).map((p) => (
-            <option key={p.id} value={p.name} />
-          ))}
-        </datalist>
       </div>
 
-      <div className="card space-y-2">
-        <div className="label">{t("damage_calc.result")}</div>
-        <div className="text-lg font-semibold text-brand-300">
-          {t("damage_calc.min")}: {result.min} · {t("damage_calc.max")}: {result.max}
+      <div>
+        <label className="label">{t("team_builder.evs")}</label>
+        <div className="mt-1">
+          <EVSliders value={side.evs} onChange={(evs) => update({ evs })} />
         </div>
-        <pre className="whitespace-pre-wrap text-xs text-slate-400">{result.desc}</pre>
       </div>
+
+      {showMoves && (
+        <div>
+          <label className="label">{t("team_builder.moves")}</label>
+          <div className="mt-1 grid grid-cols-2 gap-2">
+            {[0, 1, 2, 3].map((i) => (
+              <SearchSelect<string>
+                key={i}
+                value={side.moves[i]}
+                options={moves}
+                onChange={(mv) => {
+                  const next = [...side.moves];
+                  next[i] = mv;
+                  update({ moves: next });
+                }}
+                placeholder={`${t("team_builder.moves")} ${i + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

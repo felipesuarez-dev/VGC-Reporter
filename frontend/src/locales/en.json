@@ -107,7 +107,10 @@
     "level": "Level",
     "result": "Result",
     "min": "Min",
-    "max": "Max"
+    "max": "Max",
+    "field": "Field",
+    "weather": "Weather",
+    "terrain": "Terrain"
   },
   "settings": {
     "title": "Settings",
