@@ -27,8 +27,8 @@ VGC-Reporter is the tool I wanted while team-building for Regulation M-A: one wi
 
 ## Solution
 
-- **Real tournament data, not just ladder** — aggregates Limitless VGC standings into usage stats, with Smogon chaos as fallback when the format is too fresh.
-- **Format switcher, multi-region aware** — Regulation I (doubles, data-rich today), Regulation M-A (Champions doubles, ramping up), Gen 9 OU (singles from Smogon).
+- **Real tournament data, not just ladder** — aggregates Limitless VGC standings into usage stats, with Smogon chaos as fallback when the format is too fresh. Recent Champions tournaments are listed with full decklists rendered inline.
+- **Format switcher with favorite** — Regulation M-A (Champions doubles), Champions Singles, Regulation I, Gen 9 OU. Pin one as favorite so it opens first every time.
 - **Offline-friendly by design** — SQLite-backed HTTP cache, all network I/O on the Rust side, zero CORS pain.
 
 ## Quick Start
@@ -44,24 +44,24 @@ First launch downloads and caches Pokédex, moves, items, abilities and usage st
 
 | Area | What it does |
 |---|---|
-| **Dashboard** | Top Pokémon hero chart + Top Items / Moves / Abilities / Tera lists, per-format, with click-through drill-down per Pokémon |
-| **Pokédex** | Searchable Pokédex with type filter + usage badges |
-| **Team Builder** | 6 slots with species / item / ability / nature / EVs / Tera / moves, validated against VGC rules |
+| **Dashboard** | Format selector with favorite star, top Pokémon hero chart, Top Items / Moves / Abilities / Tera lists with click-through drill-down, recent Champions tournaments with **inline decklists**, Twitter cards for `@VGCdata` / `@VGChampStats` |
+| **Pokédex** | Sortable by generation / alphabetical / meta usage; click any Pokémon for a large modal with curated competitive sets (Doubles & Singles tabs), live meta usage and **type matchups** (weak/strong against) |
+| **Team Builder** | 6 slots with searchable comboboxes for Pokémon / item / ability / nature / Tera / moves, EV sliders, validated against VGC rules |
 | **My Teams** | Local SQLite persistence with rename / duplicate / delete |
 | **Top Teams** | Tournament-winning teams from Limitless rendered as mini-grids |
-| **Damage Calc** | `@smogon/calc` integration for Gen 9 |
+| **Damage Calc** | `@smogon/calc` Gen 9 with searchable inputs for every field, real items & moves loaded from Showdown |
 | **External sources** | Quick-launch panel for Pikalytics / Pokebase / Pokemon-Zone / Champions Lab / Munchstats (no scraping — just links) |
-| **i18n** | Full ES/EN toggle, persisted locally |
+| **UX polish** | Window opens maximized, splash screen visible from the first frame, full ES/EN toggle persisted locally |
 
 ## Data Sources
 
 | Source | Use | Notes |
 |---|---|---|
-| [Limitless VGC API](https://play.limitlesstcg.com/api/) | Tournaments, standings, decklists | Authoritative for VGC — aggregated in-app |
+| [Limitless VGC API](https://play.limitlesstcg.com/api/) | Tournaments, standings, decklists | Authoritative for VGC — aggregated in-app, decklists rendered inline |
 | [Pokémon Showdown](https://play.pokemonshowdown.com/data/) | Pokédex, moves, items, abilities, sprites | Fetched on first run, cached 7 days |
 | [Smogon chaos JSON](https://www.smogon.com/stats/) | Ladder usage fallback | Slug auto-discovery + rating ladder rewind |
-| [pkmn/smogon data](https://data.pkmn.cc/) | Curated sets | |
-| [PokéAPI](https://pokeapi.co/) | Sprite fallback | |
+| [pkmn/smogon data](https://data.pkmn.cc/) | Curated competitive sets | Doubles + Singles slugs per format |
+| [Showdown dex sprites](https://play.pokemonshowdown.com/sprites/dex/) | Sprite fallback | Variant-aware HD render for Mega/Regional forms |
 
 **Not integrated** (no public API): Pikalytics, Pokemon-Zone, Porygon Labs, Champions Lab, Pokebase, Munchstats. Exposed as one-click external links — no scraping.
 
@@ -170,7 +170,7 @@ VGC-Reporter/
 MIT © 2026 PumaSoft — see [LICENSE](LICENSE).
 
 <!-- Reference-style definitions -->
-[version-badge]: https://img.shields.io/badge/version-0.0.2.20260412-2b86ff?style=flat-square&labelColor=0a0e14
+[version-badge]: https://img.shields.io/badge/version-0.0.3.20260413-2b86ff?style=flat-square&labelColor=0a0e14
 [version-link]: #
 [tauri-badge]: https://img.shields.io/badge/Tauri-2.4-24c8db?style=flat-square&labelColor=0a0e14&logo=tauri
 [tauri-link]: https://tauri.app
