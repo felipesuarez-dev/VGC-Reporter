@@ -36,7 +36,9 @@
     "top_pokemon": "Top Pokémon",
     "top_items": "Top objetos",
     "top_moves": "Top movimientos",
+    "top_abilities": "Top habilidades",
     "top_tera": "Top Tera Types",
+    "format": "Formato",
     "tournaments_used": "Torneos analizados",
     "total_entries": "Entradas totales",
     "refresh": "Actualizar"

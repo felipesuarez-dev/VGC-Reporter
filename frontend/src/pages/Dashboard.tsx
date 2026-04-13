@@ -5,6 +5,7 @@ import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
 import { ALL_FORMATS, type Format } from "../lib/types";
 import { UsageBarChart } from "../components/charts/UsageBarChart";
+import { TopList } from "../components/charts/TopList";
 import { PokemonSprite } from "../components/pokemon/PokemonSprite";
 import { useDashboardStore } from "../stores/dashboardStore";
 
@@ -23,18 +24,10 @@ export function Dashboard() {
     name: p.species,
     usage_percent: p.usage_percent,
   }));
-  const chartItems = (data?.top_items ?? []).slice(0, 10).map((e) => ({
-    name: e.name,
-    usage_percent: e.usage_percent,
-  }));
-  const chartMoves = (data?.top_moves ?? []).slice(0, 10).map((e) => ({
-    name: e.name,
-    usage_percent: e.usage_percent,
-  }));
-  const chartTera = (data?.top_tera ?? []).slice(0, 10).map((e) => ({
-    name: e.name,
-    usage_percent: e.usage_percent,
-  }));
+  const topItems = data?.top_items ?? [];
+  const topMoves = data?.top_moves ?? [];
+  const topAbilities = data?.top_abilities ?? [];
+  const topTera = data?.top_tera ?? [];
 
   return (
     <div className="space-y-6">
@@ -96,29 +89,33 @@ export function Dashboard() {
 
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div className="card">
-              <h2 className="mb-2 text-sm font-semibold text-slate-200">
+              <h2 className="mb-3 text-sm font-semibold text-slate-200">
                 {t("dashboard.top_items")}
               </h2>
-              <UsageBarChart data={chartItems} height={280} />
+              <TopList data={topItems} limit={10} />
             </div>
             <div className="card">
-              <h2 className="mb-2 text-sm font-semibold text-slate-200">
+              <h2 className="mb-3 text-sm font-semibold text-slate-200">
                 {t("dashboard.top_moves")}
               </h2>
-              <UsageBarChart data={chartMoves} height={280} />
+              <TopList data={topMoves} limit={10} />
             </div>
             <div className="card">
-              <h2 className="mb-2 text-sm font-semibold text-slate-200">
-                {t("dashboard.top_tera")}
+              <h2 className="mb-3 text-sm font-semibold text-slate-200">
+                {t("dashboard.top_abilities")}
               </h2>
-              <UsageBarChart data={chartTera} height={280} />
+              <TopList data={topAbilities} limit={10} />
             </div>
           </section>
 
-          <section>
-            <h2 className="mb-2 text-sm font-semibold text-slate-200">
-              {t("dashboard.top_pokemon")}
+          <section className="card">
+            <h2 className="mb-3 text-sm font-semibold text-slate-200">
+              {t("dashboard.top_tera")}
             </h2>
+            <TopList data={topTera} limit={10} />
+          </section>
+
+          <section>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
               {topPokemon.map((p) => (
                 <div key={p.species} className="card flex flex-col items-center gap-1">
