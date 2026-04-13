@@ -62,6 +62,18 @@
     "sort_usage": "Por uso en el meta",
     "gen_header": "Gen {{n}}"
   },
+  "pokemon_detail": {
+    "doubles": "Doubles",
+    "singles": "Singles",
+    "curated_sets": "Sets competitivos",
+    "meta_usage": "Uso en el meta actual",
+    "source": "Fuente",
+    "no_sets": "Sin sets para este formato todavía",
+    "matchups": "Matchups",
+    "weak_against": "Débil contra",
+    "strong_against": "Fuerte contra",
+    "close": "Cerrar"
+  },
   "team_builder": {
     "title": "Constructor de equipos",
     "new_team": "Nuevo equipo",

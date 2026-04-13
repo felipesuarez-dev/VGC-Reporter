@@ -10,6 +10,7 @@ import {
   type PokemonType,
 } from "../lib/types";
 import { PokemonCard } from "../components/pokemon/PokemonCard";
+import { PokemonDetailModal } from "../components/pokemon/PokemonDetailModal";
 import { cn } from "../lib/cn";
 import { useDashboardStore } from "../stores/dashboardStore";
 import { usePokedexStore, type PokedexSort } from "../stores/pokedexStore";
@@ -170,6 +171,8 @@ export function Pokedex() {
           ))}
         </div>
       )}
+
+      <PokemonDetailModal />
     </div>
   );
 }
