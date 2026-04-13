@@ -43,6 +43,13 @@
     "total_entries": "Entradas totales",
     "refresh": "Actualizar"
   },
+  "drawer": {
+    "top_items": "Objetos",
+    "top_moves": "Movimientos",
+    "top_abilities": "Habilidades",
+    "top_tera": "Tera",
+    "top_teammates": "Compañeros frecuentes"
+  },
   "pokedex": {
     "title": "Pokédex",
     "placeholder": "Buscar por nombre..."

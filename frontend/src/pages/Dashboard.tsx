@@ -1,12 +1,14 @@
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { RefreshCw } from "lucide-react";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
-import { ALL_FORMATS, type Format } from "../lib/types";
+import { ALL_FORMATS, type Format, type PokemonUsage } from "../lib/types";
 import { UsageBarChart } from "../components/charts/UsageBarChart";
 import { TopList } from "../components/charts/TopList";
 import { PokemonSprite } from "../components/pokemon/PokemonSprite";
+import { PokemonMetaDrawer } from "../components/pokemon/PokemonMetaDrawer";
 import { useDashboardStore } from "../stores/dashboardStore";
 
 export function Dashboard() {
@@ -14,6 +16,7 @@ export function Dashboard() {
   const qc = useQueryClient();
   const format = useDashboardStore((s) => s.format);
   const setFormat = useDashboardStore((s) => s.setFormat);
+  const [selected, setSelected] = useState<PokemonUsage | null>(null);
   const { data, isLoading, isError, error } = useQuery({
     queryKey: queryKeys.meta(format),
     queryFn: () => ipc.getMetaStats(format),
@@ -118,18 +121,25 @@ export function Dashboard() {
           <section>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
               {topPokemon.map((p) => (
-                <div key={p.species} className="card flex flex-col items-center gap-1">
+                <button
+                  key={p.species}
+                  type="button"
+                  onClick={() => setSelected(p)}
+                  className="card flex flex-col items-center gap-1 text-center transition hover:border-brand-500 hover:bg-slate-800/50"
+                >
                   <PokemonSprite url={p.sprite_url} name={p.species} size={64} />
                   <div className="text-xs font-semibold text-slate-100">{p.species}</div>
                   <div className="text-[10px] text-brand-300">
                     {p.usage_percent.toFixed(1)}%
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </section>
         </>
       )}
+
+      <PokemonMetaDrawer usage={selected} onClose={() => setSelected(null)} />
     </div>
   );
 }
