@@ -1,64 +1,183 @@
+<div align="center">
+
+<img src="docs/logo.png" alt="VGC-Reporter" width="180" />
+
 # VGC-Reporter
 
-**Versión:** 0.0.1.20260412
-**Autor:** PumaSoft
+**Pokémon Champions competitive stats & team builder, as a native desktop app.**
 
-Aplicación de escritorio (Tauri 2 + Rust + React) para consultar estadísticas competitivas de **Pokémon Champions** (VGC 2026, Regulation M-A) y construir tus propios equipos.
+[![Version][version-badge]][version-link]
+[![Tauri][tauri-badge]][tauri-link]
+[![Rust][rust-badge]][rust-link]
+[![React][react-badge]][react-link]
+[![License][license-badge]](LICENSE)
+[![PumaSoft][pumasoft-badge]][pumasoft-link]
 
-## Características
+[Quick Start](#quick-start) · [Features](#features) · [Data Sources](#data-sources) · [Architecture](#architecture) · [Development](#development)
 
-- **Dashboard meta**: top Pokémon, items, movimientos y Tera types del formato Regulation M-A, calculados sobre torneos reales de Limitless VGC.
-- **Pokédex** con búsqueda y filtros (nombre, tipo, porcentaje de uso).
-- **Team Builder** completo: 6 Pokémon con movimientos, item, habilidad, naturaleza, EVs y Tera type.
-- **Mis equipos**: guardado local en SQLite con editar/duplicar/eliminar.
-- **Top Teams**: equipos populares del meta como mini-grid de 6 sprites.
-- **Damage Calculator** integrado con `@smogon/calc`.
-- **Bilingüe**: toggle ES/EN en cualquier momento.
+</div>
 
-## Stack
+---
 
-- **Backend:** Rust + Tauri 2.4, reqwest, rusqlite, thiserror, ts-rs
-- **Frontend:** React 19 + TypeScript + Vite + TailwindCSS + shadcn/ui + TanStack Query + Zustand + Recharts + i18next
+## Problem
 
-## Fuentes de datos
+Pokémon Champions launched on 8-Apr-2026 and instantly became the official VGC 2026 / Worlds platform. Usage data is scattered across Pikalytics, Pokemon-Zone, Porygon Labs, Champions Lab, Smogon chaos JSON and Limitless VGC standings. None of these sites share a unified API, and there is no offline-friendly way to browse the meta **and** build a team in the same place.
 
-- [Limitless VGC API](https://play.limitlesstcg.com/api/) — torneos, standings, decklists reales
-- [Pokémon Showdown](https://play.pokemonshowdown.com/data/) — Pokédex, moves, items, abilities, sprites
-- [Smogon Usage Stats](https://www.smogon.com/stats/) — complemento ladder
-- [pkmn/smogon data](https://data.pkmn.cc/) — sets curados
-- [PokéAPI](https://pokeapi.co/) — fallback de sprites
+VGC-Reporter is the tool I wanted while team-building for Regulation M-A: one window, real tournament data, drill-down by Pokémon, and everything cached locally.
 
-## Ejecutar en desarrollo
+## Solution
+
+- **Real tournament data, not just ladder** — aggregates Limitless VGC standings into usage stats, with Smogon chaos as fallback when the format is too fresh.
+- **Format switcher, multi-region aware** — Regulation I (doubles, data-rich today), Regulation M-A (Champions doubles, ramping up), Gen 9 OU (singles from Smogon).
+- **Offline-friendly by design** — SQLite-backed HTTP cache, all network I/O on the Rust side, zero CORS pain.
+
+## Quick Start
 
 ```bash
 npm install
 npm run tauri:dev
 ```
 
-## Build de producción
+First launch downloads and caches Pokédex, moves, items, abilities and usage stats. Subsequent launches are offline-capable until caches expire.
 
-```bash
-npm run tauri:build
+## Features
+
+| Area | What it does |
+|---|---|
+| **Dashboard** | Top Pokémon hero chart + Top Items / Moves / Abilities / Tera lists, per-format, with click-through drill-down per Pokémon |
+| **Pokédex** | Searchable Pokédex with type filter + usage badges |
+| **Team Builder** | 6 slots with species / item / ability / nature / EVs / Tera / moves, validated against VGC rules |
+| **My Teams** | Local SQLite persistence with rename / duplicate / delete |
+| **Top Teams** | Tournament-winning teams from Limitless rendered as mini-grids |
+| **Damage Calc** | `@smogon/calc` integration for Gen 9 |
+| **External sources** | Quick-launch panel for Pikalytics / Pokebase / Pokemon-Zone / Champions Lab / Munchstats (no scraping — just links) |
+| **i18n** | Full ES/EN toggle, persisted locally |
+
+## Data Sources
+
+| Source | Use | Notes |
+|---|---|---|
+| [Limitless VGC API](https://play.limitlesstcg.com/api/) | Tournaments, standings, decklists | Authoritative for VGC — aggregated in-app |
+| [Pokémon Showdown](https://play.pokemonshowdown.com/data/) | Pokédex, moves, items, abilities, sprites | Fetched on first run, cached 7 days |
+| [Smogon chaos JSON](https://www.smogon.com/stats/) | Ladder usage fallback | Slug auto-discovery + rating ladder rewind |
+| [pkmn/smogon data](https://data.pkmn.cc/) | Curated sets | |
+| [PokéAPI](https://pokeapi.co/) | Sprite fallback | |
+
+**Not integrated** (no public API): Pikalytics, Pokemon-Zone, Porygon Labs, Champions Lab, Pokebase, Munchstats. Exposed as one-click external links — no scraping.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                 React 19 + TS + Vite (webview)              │
+│     pages/  components/  stores/  hooks/  i18n  shadcn      │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ Tauri invoke() (typed via ts-rs)
+┌──────────────────────────▼──────────────────────────────────┐
+│                  commands/   (thin IPC layer)               │
+├─────────────────────────────────────────────────────────────┤
+│                  services/   (use cases)                    │
+│  MetaService · PokedexService · TeamService · TopTeams…     │
+├──────────────────────┬─────────────────┬────────────────────┤
+│      adapters/       │    storage/     │      domain/       │
+│  Limitless / Smogon  │  rusqlite +     │  pure entities     │
+│  Showdown / Sprites  │  r2d2 + migs    │  (no I/O, no deps) │
+│  HttpClient + cache  │  CacheRepo etc. │                    │
+└──────────────────────┴─────────────────┴────────────────────┘
 ```
 
-El instalador MSI queda en `src-tauri/target/release/bundle/msi/`.
+Rule: dependencies always point inward. `domain/` knows nothing about I/O, Tauri or SQLite. All network calls flow through `adapters/http_client.rs` which writes to the SQLite cache so the frontend never needs to handle rate limits or CORS.
 
-## Arquitectura
+## Tech Stack
+
+| Frontend | Backend | Build |
+|---|---|---|
+| React 19 | Rust 2021 | Tauri 2.4 |
+| TypeScript | tokio | Vite |
+| TailwindCSS | reqwest + rustls | `cargo` workspace |
+| TanStack Query v5 | rusqlite + r2d2 | `npm run tauri:build` |
+| Zustand | serde / thiserror | ImageMagick (icons) |
+| React Router v7 | ts-rs | MSI installer (Windows) |
+| i18next | chrono / tracing | |
+| Recharts | | |
+| `@smogon/calc` | | |
+
+## Development
+
+```bash
+# Dev mode (Vite HMR + Tauri window)
+npm run tauri:dev
+
+# Production bundle → src-tauri/target/release/bundle/msi/
+npm run tauri:build
+
+# Rust tests + ts-rs bindings regeneration
+cd src-tauri && cargo test
+
+# Rust lint
+cd src-tauri && cargo fmt && cargo clippy -- -D warnings
+
+# Frontend type-check
+cd frontend && npx tsc --noEmit
+```
+
+## Project Structure
 
 ```
 VGC-Reporter/
-  frontend/      # React 19 + TS + Vite
-  src-tauri/     # Rust backend con clean architecture
-    src/
-      domain/    # Entidades puras
-      services/  # Casos de uso
-      adapters/  # Clientes HTTP
-      storage/   # SQLite repos
-      commands/  # Tauri IPC
+├── frontend/                 React 19 + TS + Vite
+│   ├── src/
+│   │   ├── pages/            one file per route
+│   │   ├── components/       layout, pokemon, team, charts, ui
+│   │   ├── stores/           Zustand (teamBuilder, dashboard, filters)
+│   │   ├── lib/              ipc, queryKeys, types, cn
+│   │   ├── locales/          es.json / en.json
+│   │   └── i18n.ts
+│   └── public/logo.png
+├── src-tauri/                Rust backend (clean architecture)
+│   ├── src/
+│   │   ├── domain/           pure entities
+│   │   ├── services/         use cases
+│   │   ├── adapters/         HTTP clients
+│   │   ├── storage/          SQLite pool, migrations, repos
+│   │   └── commands/         Tauri IPC handlers
+│   ├── icons/                generated by ImageMagick
+│   └── tauri.conf.json
+├── docs/logo.png
+├── CLAUDE.md                 project-wide guide
+└── README.md
 ```
 
-Ver `CLAUDE.md`, `frontend/CLAUDE.md` y `src-tauri/CLAUDE.md` para detalles.
+## Requirements
 
-## Licencia
+- Node.js 20+
+- Rust 1.80+ (stable)
+- Windows 10/11, macOS 12+, or Linux with `webkit2gtk-4.1`
+- First run needs internet access to populate the cache
 
-MIT © PumaSoft 2026
+## Author
+
+<div align="center">
+
+<img src="docs/logo.png" alt="PumaSoft" width="80" />
+
+**[PumaSoft][pumasoft-link]**
+
+</div>
+
+## License
+
+MIT © 2026 PumaSoft — see [LICENSE](LICENSE).
+
+<!-- Reference-style definitions -->
+[version-badge]: https://img.shields.io/badge/version-0.0.2.20260412-2b86ff?style=flat-square&labelColor=0a0e14
+[version-link]: #
+[tauri-badge]: https://img.shields.io/badge/Tauri-2.4-24c8db?style=flat-square&labelColor=0a0e14&logo=tauri
+[tauri-link]: https://tauri.app
+[rust-badge]: https://img.shields.io/badge/Rust-2021-dea584?style=flat-square&labelColor=0a0e14&logo=rust
+[rust-link]: https://www.rust-lang.org
+[react-badge]: https://img.shields.io/badge/React-19-61dafb?style=flat-square&labelColor=0a0e14&logo=react
+[react-link]: https://react.dev
+[license-badge]: https://img.shields.io/badge/license-MIT-a8d8a8?style=flat-square&labelColor=0a0e14
+[pumasoft-badge]: https://img.shields.io/badge/by-PumaSoft-ff9f1c?style=flat-square&labelColor=0a0e14
+[pumasoft-link]: https://github.com/felipesuarez-dev
