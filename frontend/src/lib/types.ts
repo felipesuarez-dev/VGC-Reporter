@@ -154,6 +154,24 @@ export interface MetaSnapshot {
   top_tera: UsageEntry[];
 }
 
+export interface PokemonSet {
+  name: string;
+  item: string | null;
+  ability: string | null;
+  nature: string | null;
+  tera_types: string[];
+  evs: EvSpread;
+  moves: string[];
+}
+
+export interface SetsBundle {
+  species: string;
+  doubles: PokemonSet[];
+  singles: PokemonSet[];
+  doubles_source: string | null;
+  singles_source: string | null;
+}
+
 export interface TopTeamMember {
   species: string;
   sprite_url: string;

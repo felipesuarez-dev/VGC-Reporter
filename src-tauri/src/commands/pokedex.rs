@@ -1,4 +1,5 @@
 use crate::domain::pokemon::{Pokemon, PokemonType};
+use crate::domain::sets::SetsBundle;
 use crate::error::AppError;
 use crate::state::AppState;
 use tauri::State;
@@ -40,4 +41,12 @@ pub async fn list_items(state: State<'_, AppState>) -> Result<Vec<String>, AppEr
 #[tauri::command]
 pub async fn list_moves(state: State<'_, AppState>) -> Result<Vec<String>, AppError> {
     state.pokedex.list_moves().await
+}
+
+#[tauri::command]
+pub async fn get_pokemon_sets(
+    state: State<'_, AppState>,
+    species: String,
+) -> Result<SetsBundle, AppError> {
+    state.sets.get_bundle(&species).await
 }
