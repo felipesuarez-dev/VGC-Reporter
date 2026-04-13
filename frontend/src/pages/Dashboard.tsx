@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { RefreshCw } from "lucide-react";
+import { ExternalLink, RefreshCw } from "lucide-react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
 import { ALL_FORMATS, type Format, type PokemonUsage } from "../lib/types";
@@ -10,6 +11,22 @@ import { TopList } from "../components/charts/TopList";
 import { PokemonSprite } from "../components/pokemon/PokemonSprite";
 import { PokemonMetaDrawer } from "../components/pokemon/PokemonMetaDrawer";
 import { useDashboardStore } from "../stores/dashboardStore";
+
+const EXTERNAL_SITES: { name: string; url: string }[] = [
+  { name: "Pikalytics", url: "https://www.pikalytics.com/" },
+  { name: "Pokebase", url: "https://pokebase.app/pokemon-champions" },
+  { name: "Pokemon-Zone", url: "https://pokemon-zone.com/" },
+  { name: "Champions Lab", url: "https://championslab.xyz/" },
+  { name: "Munchstats", url: "https://munchstats.com/" },
+];
+
+async function openExternal(url: string) {
+  try {
+    await openUrl(url);
+  } catch {
+    window.open(url, "_blank");
+  }
+}
 
 export function Dashboard() {
   const { t } = useTranslation();
@@ -138,6 +155,25 @@ export function Dashboard() {
           </section>
         </>
       )}
+
+      <section className="card">
+        <h2 className="mb-3 text-sm font-semibold text-slate-200">
+          {t("dashboard.external_sources")}
+        </h2>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+          {EXTERNAL_SITES.map((site) => (
+            <button
+              key={site.name}
+              type="button"
+              onClick={() => openExternal(site.url)}
+              className="btn-ghost flex items-center justify-center gap-1.5 text-xs"
+            >
+              <ExternalLink size={12} />
+              {site.name}
+            </button>
+          ))}
+        </div>
+      </section>
 
       <PokemonMetaDrawer usage={selected} onClose={() => setSelected(null)} />
     </div>

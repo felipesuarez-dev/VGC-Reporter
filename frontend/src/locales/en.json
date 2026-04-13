@@ -38,6 +38,8 @@
     "top_moves": "Top Moves",
     "top_abilities": "Top Abilities",
     "top_tera": "Top Tera Types",
+    "external_sources": "Other sources",
+    "empty_format": "Not enough data for this format yet. Try another one or check back later.",
     "format": "Format",
     "tournaments_used": "Tournaments analyzed",
     "total_entries": "Total entries",
