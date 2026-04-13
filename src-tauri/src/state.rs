@@ -26,7 +26,12 @@ impl AppState {
         let limitless = LimitlessClient::new(http.clone());
         let smogon = SmogonClient::new(http.clone());
 
-        let meta = MetaService::new(limitless.clone(), smogon.clone(), cache.clone());
+        let meta = MetaService::new(
+            limitless.clone(),
+            smogon.clone(),
+            cache.clone(),
+            settings.clone(),
+        );
         let pokedex = PokedexService::new(showdown.clone(), cache.clone());
         let teams = TeamService::new(team_repo);
         let top_teams = TopTeamsService::new(limitless.clone(), cache.clone());

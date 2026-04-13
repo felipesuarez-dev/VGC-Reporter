@@ -6,7 +6,7 @@ use crate::domain::format::Format;
 use crate::domain::usage_stats::{MetaSnapshot, PokemonUsage, UsageEntry};
 use crate::error::AppError;
 use crate::services::usage_aggregator::{self, top_n_normalized};
-use crate::storage::CacheRepo;
+use crate::storage::{CacheRepo, SettingsRepo};
 use chrono::Utc;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -18,14 +18,21 @@ pub struct MetaService {
     limitless: LimitlessClient,
     smogon: SmogonClient,
     cache: Arc<CacheRepo>,
+    settings: Arc<SettingsRepo>,
 }
 
 impl MetaService {
-    pub fn new(limitless: LimitlessClient, smogon: SmogonClient, cache: Arc<CacheRepo>) -> Self {
+    pub fn new(
+        limitless: LimitlessClient,
+        smogon: SmogonClient,
+        cache: Arc<CacheRepo>,
+        settings: Arc<SettingsRepo>,
+    ) -> Self {
         Self {
             limitless,
             smogon,
             cache,
+            settings,
         }
     }
 
@@ -57,11 +64,11 @@ impl MetaService {
 
         let sm_snap = self
             .smogon
-            .fetch_chaos(format)
+            .fetch_chaos_for_format(format, &self.settings)
             .await
             .ok()
             .flatten()
-            .map(|chaos| snapshot_from_smogon(format, chaos, format.default_smogon_slug()));
+            .map(|(slug, chaos)| snapshot_from_smogon(format, chaos, &slug));
 
         let final_snap = match (lim_snap, sm_snap) {
             (Some(lim), _) if lim.total_entries >= MIN_LIMITLESS_ENTRIES => lim,
