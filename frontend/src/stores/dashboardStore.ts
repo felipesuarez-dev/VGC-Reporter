@@ -4,15 +4,33 @@ import type { Format } from "../lib/types";
 
 interface DashboardState {
   format: Format;
+  favoriteFormat: Format;
   setFormat: (format: Format) => void;
+  setFavoriteFormat: (format: Format) => void;
 }
 
 export const useDashboardStore = create<DashboardState>()(
   persist(
     (set) => ({
-      format: "regulation-i",
+      format: "regulation-m-a",
+      favoriteFormat: "regulation-m-a",
       setFormat: (format) => set({ format }),
+      setFavoriteFormat: (favoriteFormat) => set({ favoriteFormat }),
     }),
-    { name: "vgc-dashboard" },
+    {
+      name: "vgc-dashboard",
+      version: 2,
+      migrate: (persisted: unknown, version: number) => {
+        if (version < 2) {
+          const prior = (persisted ?? {}) as { format?: Format };
+          const fallback: Format = prior.format ?? "regulation-m-a";
+          return {
+            format: fallback,
+            favoriteFormat: fallback,
+          } as DashboardState;
+        }
+        return persisted as DashboardState;
+      },
+    },
   ),
 );

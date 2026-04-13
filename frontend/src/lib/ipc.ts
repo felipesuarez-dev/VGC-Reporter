@@ -1,11 +1,14 @@
 import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 import type {
+  ChampionsReport,
   Format,
   MetaSnapshot,
   Pokemon,
   PokemonType,
+  SetsBundle,
   Team,
   TopTeam,
+  TournamentStanding,
 } from "./types";
 
 export interface AppErrorShape {
@@ -45,6 +48,14 @@ export const ipc = {
   deleteTeam: (id: number) => call<void>("delete_team", { id }),
   getTopTeams: (format: Format, limit = 20) =>
     call<TopTeam[]>("get_top_teams", { format, limit }),
+  listItems: () => call<string[]>("list_items"),
+  listMoves: () => call<string[]>("list_moves"),
+  getPokemonSets: (species: string) =>
+    call<SetsBundle>("get_pokemon_sets", { species }),
+  listChampionsTournaments: (limit?: number) =>
+    call<ChampionsReport>("list_champions_tournaments", { limit }),
+  getTournamentStandings: (id: string) =>
+    call<TournamentStanding[]>("get_tournament_standings", { id }),
   getSettings: () => call<Record<string, string>>("get_settings"),
   setSetting: (key: string, value: string) =>
     call<void>("set_setting", { key, value }),

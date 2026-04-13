@@ -12,5 +12,10 @@ export const queryKeys = {
     detail: (id: number) => ["teams", "detail", id] as const,
   },
   topTeams: (format: Format) => ["topTeams", format] as const,
+  items: { all: ["items", "all"] as const },
+  moves: { all: ["moves", "all"] as const },
+  sets: (species: string) => ["sets", species] as const,
+  championsReport: (limit: number) => ["champions-report", limit] as const,
+  tournamentStandings: (id: string) => ["tournament-standings", id] as const,
   settings: ["settings"] as const,
 };
