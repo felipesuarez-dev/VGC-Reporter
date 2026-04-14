@@ -46,6 +46,10 @@ export const ipc = {
   listTeams: () => call<Team[]>("list_teams"),
   getTeam: (id: number) => call<Team>("get_team", { id }),
   deleteTeam: (id: number) => call<void>("delete_team", { id }),
+  importShowdownText: (text: string) =>
+    call<Team>("import_showdown_text", { text }),
+  exportTeamToShowdown: (team: Team) =>
+    call<string>("export_team_to_showdown", { team }),
   getTopTeams: (format: Format, limit = 20) =>
     call<TopTeam[]>("get_top_teams", { format, limit }),
   listItems: () => call<string[]>("list_items"),

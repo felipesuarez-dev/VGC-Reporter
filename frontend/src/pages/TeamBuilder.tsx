@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Save } from "lucide-react";
+import { ClipboardCopy, ClipboardPaste, Save, X } from "lucide-react";
 import { ipc, AppError } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
 import { useTeamBuilder } from "../stores/teamBuilderStore";
@@ -16,6 +16,9 @@ export function TeamBuilder() {
   const qc = useQueryClient();
   const { team, setTeam, setName, setNotes, setMember, reset } = useTeamBuilder();
   const [status, setStatus] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importError, setImportError] = useState<string | null>(null);
 
   const { data: pokedex = [] } = useQuery({
     queryKey: queryKeys.pokedex.all,
@@ -62,14 +65,51 @@ export function TeamBuilder() {
     }
   };
 
+  const handleImport = async () => {
+    try {
+      setImportError(null);
+      const imported = await ipc.importShowdownText(importText);
+      imported.name = team.name || imported.name;
+      imported.notes = team.notes;
+      setTeam(imported);
+      setImportOpen(false);
+      setImportText("");
+      setStatus(t("team_builder.imported"));
+    } catch (e) {
+      setImportError(
+        e instanceof AppError ? e.message : t("team_builder.import_failed"),
+      );
+    }
+  };
+
+  const handleCopyShowdown = async () => {
+    try {
+      const text = await ipc.exportTeamToShowdown(team);
+      await navigator.clipboard.writeText(text);
+      setStatus(t("team_builder.copied"));
+    } catch (e) {
+      setStatus(e instanceof AppError ? e.message : String(e));
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <header className="flex items-center justify-between">
+      <header className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">{t("team_builder.title")}</h1>
-        <button className="btn-primary" onClick={save} disabled={!team.name.trim()}>
-          <Save size={14} className="mr-1" />
-          {t("common.save")}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button className="btn-ghost" onClick={() => setImportOpen(true)}>
+            <ClipboardPaste size={14} className="mr-1" />
+            {t("team_builder.import_showdown")}
+          </button>
+          <button className="btn-ghost" onClick={handleCopyShowdown}>
+            <ClipboardCopy size={14} className="mr-1" />
+            {t("team_builder.copy_showdown")}
+          </button>
+          <button className="btn-primary" onClick={save} disabled={!team.name.trim()}>
+            <Save size={14} className="mr-1" />
+            {t("common.save")}
+          </button>
+        </div>
       </header>
 
       <div className="card grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -120,6 +160,52 @@ export function TeamBuilder() {
           />
         ))}
       </div>
+
+      {importOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={() => setImportOpen(false)}
+        >
+          <div
+            className="card w-full max-w-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-100">
+                {t("team_builder.import_showdown")}
+              </h2>
+              <button
+                className="btn-ghost"
+                onClick={() => setImportOpen(false)}
+                aria-label="close"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <textarea
+              className="input h-64 w-full font-mono text-xs"
+              placeholder={t("team_builder.paste_here")}
+              value={importText}
+              onChange={(e) => setImportText(e.target.value)}
+            />
+            {importError && (
+              <p className="mt-2 text-xs text-red-400">{importError}</p>
+            )}
+            <div className="mt-3 flex justify-end gap-2">
+              <button className="btn-ghost" onClick={() => setImportOpen(false)}>
+                {t("common.cancel")}
+              </button>
+              <button
+                className="btn-primary"
+                onClick={handleImport}
+                disabled={!importText.trim()}
+              >
+                {t("team_builder.import")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
