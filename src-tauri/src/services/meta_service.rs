@@ -116,6 +116,8 @@ pub(crate) fn snapshot_from_smogon(
         }
     }
 
+    let species_count = chaos.data.len() as u32;
+
     let mut pokemon: Vec<PokemonUsage> = chaos
         .data
         .into_iter()
@@ -182,8 +184,12 @@ pub(crate) fn snapshot_from_smogon(
         format,
         generated_at: Utc::now(),
         source: format!("Smogon ladder ({})", slug_used),
+        // Smogon chaos data is a ladder snapshot rather than a tournament
+        // aggregate, so we report the number of distinct species tracked as
+        // `total_entries` and leave `tournaments_used` at 0 — the dashboard
+        // reads `source` to pick the right label.
         tournaments_used: 0,
-        total_entries: 0,
+        total_entries: species_count,
         pokemon,
         top_items: top_n_normalized(&global_items, 15),
         top_moves: top_n_normalized(&global_moves, 20),
@@ -258,6 +264,7 @@ mod tests {
         );
         assert!(!snap.top_tera.is_empty(), "top_tera should be populated");
         assert_eq!(snap.pokemon.len(), 3);
+        assert_eq!(snap.total_entries, 3, "total_entries mirrors species count");
         assert!(snap.pokemon[0].usage_percent >= snap.pokemon[1].usage_percent);
     }
 
