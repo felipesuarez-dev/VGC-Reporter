@@ -1,10 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ClipboardCopy, ClipboardPaste, Save, X } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ClipboardCopy,
+  ClipboardPaste,
+  Save,
+  X,
+} from "lucide-react";
 import { ipc, AppError } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
+import { formatViolation } from "../lib/labels";
+import type { Violation } from "../lib/types";
 import { useTeamBuilder } from "../stores/teamBuilderStore";
 import { TeamMemberForm } from "../components/team/TeamMemberForm";
 
@@ -19,6 +28,7 @@ export function TeamBuilder() {
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
+  const [violations, setViolations] = useState<Violation[] | null>(null);
 
   const { data: pokedex = [] } = useQuery({
     queryKey: queryKeys.pokedex.all,
@@ -56,6 +66,8 @@ export function TeamBuilder() {
   const save = async () => {
     try {
       setStatus(null);
+      const issues = await ipc.validateTeam(team, team.format);
+      setViolations(issues);
       const newId = await ipc.saveTeam(team);
       await qc.invalidateQueries({ queryKey: queryKeys.teams.list });
       setStatus(t("team_builder.saved"));
@@ -64,6 +76,11 @@ export function TeamBuilder() {
       setStatus(e instanceof AppError ? e.message : String(e));
     }
   };
+
+  const violationMessages = useMemo(
+    () => (violations ?? []).map((v) => formatViolation(t, v)),
+    [violations, t],
+  );
 
   const handleImport = async () => {
     try {
@@ -146,6 +163,35 @@ export function TeamBuilder() {
       </div>
 
       {status && <div className="card text-xs text-brand-300">{status}</div>}
+
+      {violations && (
+        <div
+          className={`card text-xs ${
+            violations.length === 0 ? "text-emerald-300" : "text-amber-200"
+          }`}
+        >
+          <div className="mb-1 flex items-center gap-2 font-semibold">
+            {violations.length === 0 ? (
+              <>
+                <CheckCircle2 size={14} />
+                {t("validation.ok")}
+              </>
+            ) : (
+              <>
+                <AlertTriangle size={14} />
+                {t("validation.has_violations")}
+              </>
+            )}
+          </div>
+          {violations.length > 0 && (
+            <ul className="list-disc space-y-0.5 pl-5">
+              {violationMessages.map((msg, i) => (
+                <li key={i}>{msg}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
         {team.members.map((m, i) => (

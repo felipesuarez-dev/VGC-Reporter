@@ -35,6 +35,7 @@ export type {
   TopTeamMember,
   TournamentStanding,
   UsageEntry,
+  Violation,
 } from "./types.generated";
 
 import type { Format, Nature, PokemonType, Team, TeamMember } from "./types.generated";

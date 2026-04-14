@@ -1,5 +1,6 @@
 use crate::domain::team::Team;
 use crate::error::AppError;
+use crate::services::regulations::{rules_for_code, Violation};
 use crate::services::showdown_text;
 use crate::state::AppState;
 use tauri::State;
@@ -32,4 +33,12 @@ pub fn import_showdown_text(text: String) -> Result<Team, AppError> {
 #[tauri::command]
 pub fn export_team_to_showdown(team: Team) -> Result<String, AppError> {
     Ok(showdown_text::format_team(&team))
+}
+
+#[tauri::command]
+pub fn validate_team(team: Team, regulation: String) -> Result<Vec<Violation>, AppError> {
+    let rules = rules_for_code(&regulation).ok_or_else(|| {
+        AppError::Validation(format!("Unknown regulation: {regulation}"))
+    })?;
+    Ok(rules.validate_team(&team))
 }

@@ -226,5 +226,18 @@
   },
   "tera": {
     "label": "Tera"
+  },
+  "validation": {
+    "title": "Validación del equipo",
+    "ok": "El equipo cumple con la regulación",
+    "has_violations": "El equipo tiene problemas",
+    "team_incomplete": "El equipo está incompleto ({{filled}}/6 Pokémon).",
+    "species_not_allowed": "{{species}} no está permitido en esta regulación.",
+    "item_banned": "{{species}} lleva un objeto prohibido: {{item}}.",
+    "move_banned": "{{species}} tiene un movimiento prohibido: {{mv}}.",
+    "too_many_restricted": "Demasiados Pokémon restringidos (máx {{allowed}}, encontrados {{found}}).",
+    "restricted_not_in_season": "{{species}} no es legal en la temporada {{season}}.",
+    "duplicate_species": "{{species}} aparece más de una vez (regla de especies).",
+    "duplicate_item": "El objeto {{item}} está repetido."
   }
 }

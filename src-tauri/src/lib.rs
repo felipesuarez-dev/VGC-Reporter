@@ -50,6 +50,7 @@ pub fn run() {
             commands::teams::delete_team,
             commands::teams::import_showdown_text,
             commands::teams::export_team_to_showdown,
+            commands::teams::validate_team,
             commands::top_teams::get_top_teams,
             commands::settings::get_settings,
             commands::settings::set_setting,

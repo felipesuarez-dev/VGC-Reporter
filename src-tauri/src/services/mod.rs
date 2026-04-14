@@ -1,6 +1,7 @@
 pub mod champions_report_service;
 pub mod meta_service;
 pub mod pokedex_service;
+pub mod regulations;
 pub mod sets_service;
 pub mod showdown_text;
 pub mod team_service;

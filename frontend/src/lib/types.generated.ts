@@ -98,3 +98,5 @@ export type TopTeamMember = { species: string, sprite_url: string, item: string 
 export type TournamentStanding = { placing: number | null, player_name: string | null, player_id: string | null, country: string | null, record: string | null, wins: number, losses: number, ties: number, decklist: Array<DecklistPokemon>, };
 
 export type UsageEntry = { name: string, usage_percent: number, count: number, };
+
+export type Violation = { "kind": "team_incomplete", filled: number, } | { "kind": "species_not_allowed", species: string, } | { "kind": "item_banned", species: string, item: string, } | { "kind": "move_banned", species: string, mv: string, } | { "kind": "too_many_restricted", allowed: number, found: number, } | { "kind": "restricted_not_in_season", species: string, season: string, } | { "kind": "duplicate_species", species: string, } | { "kind": "duplicate_item", item: string, };

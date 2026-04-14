@@ -10,6 +10,7 @@ import type {
   Team,
   TopTeam,
   TournamentStanding,
+  Violation,
 } from "./types";
 
 export interface AppErrorShape {
@@ -51,6 +52,8 @@ export const ipc = {
     call<Team>("import_showdown_text", { text }),
   exportTeamToShowdown: (team: Team) =>
     call<string>("export_team_to_showdown", { team }),
+  validateTeam: (team: Team, regulation: string) =>
+    call<Violation[]>("validate_team", { team, regulation }),
   getTopTeams: (format: Format, limit = 20) =>
     call<TopTeam[]>("get_top_teams", { format, limit }),
   listItems: () => call<string[]>("list_items"),
