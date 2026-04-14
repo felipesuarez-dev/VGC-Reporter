@@ -35,7 +35,13 @@ export function UsageBarChart({ data, height = 320, onBarClick }: Props) {
     if (!active || !payload || payload.length === 0) return null;
     const item = payload[0].payload;
     return (
-      <div className="rounded-lg border border-slate-700 bg-slate-900/95 p-3 shadow-xl">
+      <div
+        className="rounded-lg border p-3 shadow-xl"
+        style={{
+          backgroundColor: "var(--bg-elev)",
+          borderColor: "var(--border)",
+        }}
+      >
         <div className="flex items-center gap-2">
           {item.sprite_url && (
             <img
@@ -47,23 +53,30 @@ export function UsageBarChart({ data, height = 320, onBarClick }: Props) {
               className="shrink-0"
             />
           )}
-          <div className="text-sm font-semibold text-slate-100">{item.name}</div>
+          <div className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+            {item.name}
+          </div>
         </div>
         <div className="mt-2 space-y-0.5 text-xs">
           <div className="flex justify-between gap-4">
-            <span className="text-slate-400">
+            <span style={{ color: "var(--text-muted)" }}>
               {t("dashboard.usage_percent_label")}
             </span>
-            <span className="tabular-nums text-brand-300">
+            <span
+              className="tabular-nums"
+              style={{ color: "var(--accent)" }}
+            >
               {item.usage_percent.toFixed(1)}%
             </span>
           </div>
           {item.count != null && (
             <div className="flex justify-between gap-4">
-              <span className="text-slate-400">
+              <span style={{ color: "var(--text-muted)" }}>
                 {t("dashboard.count_label")}
               </span>
-              <span className="tabular-nums text-slate-200">{item.count}</span>
+              <span className="tabular-nums" style={{ color: "var(--text)" }}>
+                {item.count}
+              </span>
             </div>
           )}
         </div>
