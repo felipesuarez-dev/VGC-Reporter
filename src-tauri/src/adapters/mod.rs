@@ -13,4 +13,7 @@ pub use limitless_client::{
 pub use pkmn_data_client::PkmnDataClient;
 pub use showdown_client::{ShowdownClient, ShowdownPokedex};
 pub use smogon_client::SmogonClient;
-pub use sprite_resolver::{fallback_sprite_url, primary_sprite_url, sprite_url};
+pub use sprite_resolver::{
+    fallback_sprite_url, fallback_sprite_url_parts, primary_sprite_url, primary_sprite_url_parts,
+    sprite_slug_parts, sprite_url,
+};
