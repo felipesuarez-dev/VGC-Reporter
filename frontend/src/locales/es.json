@@ -140,5 +140,70 @@
     "open_porygonlabs": "Abrir Porygon Labs",
     "open_championslab": "Abrir Champions Lab",
     "open_limitless": "Abrir Limitless VGC"
+  },
+  "types": {
+    "Normal": "Normal",
+    "Fire": "Fuego",
+    "Water": "Agua",
+    "Electric": "Eléctrico",
+    "Grass": "Planta",
+    "Ice": "Hielo",
+    "Fighting": "Lucha",
+    "Poison": "Veneno",
+    "Ground": "Tierra",
+    "Flying": "Volador",
+    "Psychic": "Psíquico",
+    "Bug": "Bicho",
+    "Rock": "Roca",
+    "Ghost": "Fantasma",
+    "Dragon": "Dragón",
+    "Dark": "Siniestro",
+    "Steel": "Acero",
+    "Fairy": "Hada",
+    "Stellar": "Astral"
+  },
+  "natures": {
+    "Hardy": "Fuerte",
+    "Lonely": "Huraña",
+    "Brave": "Audaz",
+    "Adamant": "Firme",
+    "Naughty": "Pícara",
+    "Bold": "Osada",
+    "Docile": "Dócil",
+    "Relaxed": "Plácida",
+    "Impish": "Agitada",
+    "Lax": "Floja",
+    "Timid": "Miedosa",
+    "Hasty": "Activa",
+    "Serious": "Seria",
+    "Jolly": "Alegre",
+    "Naive": "Ingenua",
+    "Modest": "Modesta",
+    "Mild": "Afable",
+    "Quiet": "Mansa",
+    "Bashful": "Tímida",
+    "Rash": "Alocada",
+    "Calm": "Serena",
+    "Gentle": "Amable",
+    "Sassy": "Grosera",
+    "Careful": "Cauta",
+    "Quirky": "Rara"
+  },
+  "weather": {
+    "None": "Ninguno",
+    "Sun": "Sol",
+    "Rain": "Lluvia",
+    "Sand": "Tormenta de arena",
+    "Snow": "Nieve"
+  },
+  "terrain": {
+    "None": "Ninguno",
+    "Electric": "Eléctrico",
+    "Grassy": "Hierba",
+    "Misty": "Niebla",
+    "Psychic": "Psíquico"
+  },
+  "tera": {
+    "label": "Tera"
   }
 }

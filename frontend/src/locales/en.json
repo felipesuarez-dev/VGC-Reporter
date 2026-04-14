@@ -140,5 +140,70 @@
     "open_porygonlabs": "Open Porygon Labs",
     "open_championslab": "Open Champions Lab",
     "open_limitless": "Open Limitless VGC"
+  },
+  "types": {
+    "Normal": "Normal",
+    "Fire": "Fire",
+    "Water": "Water",
+    "Electric": "Electric",
+    "Grass": "Grass",
+    "Ice": "Ice",
+    "Fighting": "Fighting",
+    "Poison": "Poison",
+    "Ground": "Ground",
+    "Flying": "Flying",
+    "Psychic": "Psychic",
+    "Bug": "Bug",
+    "Rock": "Rock",
+    "Ghost": "Ghost",
+    "Dragon": "Dragon",
+    "Dark": "Dark",
+    "Steel": "Steel",
+    "Fairy": "Fairy",
+    "Stellar": "Stellar"
+  },
+  "natures": {
+    "Hardy": "Hardy",
+    "Lonely": "Lonely",
+    "Brave": "Brave",
+    "Adamant": "Adamant",
+    "Naughty": "Naughty",
+    "Bold": "Bold",
+    "Docile": "Docile",
+    "Relaxed": "Relaxed",
+    "Impish": "Impish",
+    "Lax": "Lax",
+    "Timid": "Timid",
+    "Hasty": "Hasty",
+    "Serious": "Serious",
+    "Jolly": "Jolly",
+    "Naive": "Naive",
+    "Modest": "Modest",
+    "Mild": "Mild",
+    "Quiet": "Quiet",
+    "Bashful": "Bashful",
+    "Rash": "Rash",
+    "Calm": "Calm",
+    "Gentle": "Gentle",
+    "Sassy": "Sassy",
+    "Careful": "Careful",
+    "Quirky": "Quirky"
+  },
+  "weather": {
+    "None": "None",
+    "Sun": "Sun",
+    "Rain": "Rain",
+    "Sand": "Sandstorm",
+    "Snow": "Snow"
+  },
+  "terrain": {
+    "None": "None",
+    "Electric": "Electric",
+    "Grassy": "Grassy",
+    "Misty": "Misty",
+    "Psychic": "Psychic"
+  },
+  "tera": {
+    "label": "Tera"
   }
 }
