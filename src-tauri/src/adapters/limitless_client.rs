@@ -65,7 +65,10 @@ impl LimitlessClient {
         limit: usize,
     ) -> Result<Vec<LimitlessTournamentSummary>, AppError> {
         let all = self.list_tournaments(format, 100).await?;
-        let filtered = filter_champions(all, limit);
+        let filtered = match format {
+            Format::RegulationMA | Format::ChampionsSingles => filter_champions(all, limit),
+            _ => all.into_iter().take(limit).collect(),
+        };
         Ok(filtered)
     }
 }

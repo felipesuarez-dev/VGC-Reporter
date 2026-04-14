@@ -52,8 +52,8 @@ export const ipc = {
   listMoves: () => call<string[]>("list_moves"),
   getPokemonSets: (species: string) =>
     call<SetsBundle>("get_pokemon_sets", { species }),
-  listChampionsTournaments: (limit?: number) =>
-    call<ChampionsReport>("list_champions_tournaments", { limit }),
+  listChampionsTournaments: (format?: Format, limit?: number) =>
+    call<ChampionsReport>("list_champions_tournaments", { format, limit }),
   getTournamentStandings: (id: string) =>
     call<TournamentStanding[]>("get_tournament_standings", { id }),
   getSettings: () => call<Record<string, string>>("get_settings"),

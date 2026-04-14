@@ -15,7 +15,8 @@ export const queryKeys = {
   items: { all: ["items", "all"] as const },
   moves: { all: ["moves", "all"] as const },
   sets: (species: string) => ["sets", species] as const,
-  championsReport: (limit: number) => ["champions-report", limit] as const,
+  championsReport: (format: Format, limit: number) =>
+    ["champions-report", format, limit] as const,
   tournamentStandings: (id: string) => ["tournament-standings", id] as const,
   settings: ["settings"] as const,
 };

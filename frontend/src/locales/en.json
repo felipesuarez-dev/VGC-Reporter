@@ -47,6 +47,8 @@
     "refresh": "Refresh",
     "format_favorite": "Mark as favorite (appears first when opening)",
     "champions_report": "Recent Champions tournaments",
+    "recent_tournaments": "Recent tournaments",
+    "tournaments_for_format": "Showing tournaments for format: {{format}}",
     "view_standings": "View standings",
     "view_more": "View more",
     "players": "players",

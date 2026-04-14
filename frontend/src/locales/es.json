@@ -47,6 +47,8 @@
     "refresh": "Actualizar",
     "format_favorite": "Marca como favorito (aparece primero al abrir)",
     "champions_report": "Torneos recientes de Champions",
+    "recent_tournaments": "Torneos recientes",
+    "tournaments_for_format": "Mostrando torneos del formato: {{format}}",
     "view_standings": "Ver standings",
     "view_more": "Ver más",
     "players": "jugadores",

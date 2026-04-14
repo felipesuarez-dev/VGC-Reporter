@@ -17,10 +17,14 @@ impl ChampionsReportService {
         Self { limitless }
     }
 
-    pub async fn list_recent(&self, limit: usize) -> Result<ChampionsReport, AppError> {
+    pub async fn list_recent(
+        &self,
+        format: Format,
+        limit: usize,
+    ) -> Result<ChampionsReport, AppError> {
         let raw = self
             .limitless
-            .list_tournaments_by_format(Format::RegulationMA, limit)
+            .list_tournaments_by_format(format, limit)
             .await?;
         Ok(ChampionsReport {
             tournaments: raw.into_iter().map(into_tournament).collect(),
