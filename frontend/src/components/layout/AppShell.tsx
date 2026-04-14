@@ -10,8 +10,8 @@ import {
   Settings as SettingsIcon,
   Moon,
   Sun,
-  PanelLeftClose,
-  PanelLeftOpen,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import { cn } from "../../lib/cn";
 import { LanguageToggle } from "./LanguageToggle";
@@ -52,7 +52,7 @@ export function AppShell() {
       >
         <div
           className={cn(
-            "flex items-center gap-3 border-b px-3 py-4",
+            "relative flex items-center gap-3 border-b px-3 py-4",
             collapsed && "justify-center px-2",
           )}
           style={{ borderColor: "var(--border)" }}
@@ -63,7 +63,7 @@ export function AppShell() {
             className="h-9 w-9 shrink-0 rounded-full"
           />
           {!collapsed && (
-            <div className="flex min-w-0 flex-col">
+            <div className="flex min-w-0 flex-col pr-6">
               <span className="truncate text-lg font-bold tracking-tight">
                 {t("app.name")}
               </span>
@@ -75,12 +75,15 @@ export function AppShell() {
               </span>
             </div>
           )}
-        </div>
-
-        <div className="px-2 py-2">
           <button
-            className="btn-ghost w-full justify-center"
+            type="button"
             onClick={toggleSidebar}
+            className={cn(
+              "absolute rounded-md p-1 transition-colors",
+              "hover:bg-[var(--bg-elev-strong)]",
+              collapsed ? "bottom-1 left-1/2 -translate-x-1/2" : "right-2 top-2",
+            )}
+            style={{ color: "var(--text-muted)" }}
             aria-label={
               collapsed ? t("ui.expand_sidebar") : t("ui.collapse_sidebar")
             }
@@ -89,9 +92,9 @@ export function AppShell() {
             }
           >
             {collapsed ? (
-              <PanelLeftOpen size={16} />
+              <ChevronsRight size={14} />
             ) : (
-              <PanelLeftClose size={16} />
+              <ChevronsLeft size={14} />
             )}
           </button>
         </div>
