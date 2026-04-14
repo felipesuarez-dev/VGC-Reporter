@@ -11,7 +11,7 @@ import { TopList } from "../components/charts/TopList";
 import { PokemonSprite } from "../components/pokemon/PokemonSprite";
 import { PokemonMetaDrawer } from "../components/pokemon/PokemonMetaDrawer";
 import { FormatSelector } from "../components/ui/FormatSelector";
-import { TwitterCard } from "../components/dashboard/TwitterCard";
+import { XCard } from "../components/dashboard/XCard";
 import { TournamentStandingsDrawer } from "../components/tournament/TournamentStandingsDrawer";
 import { useDashboardStore } from "../stores/dashboardStore";
 
@@ -224,8 +224,8 @@ export function Dashboard() {
           {t("dashboard.external_sources")}
         </h2>
         <div className="mb-3 grid grid-cols-1 gap-2 md:grid-cols-2">
-          <TwitterCard handle="VGCdata" url="https://x.com/VGCdata" />
-          <TwitterCard handle="VGChampStats" url="https://x.com/VGChampStats" />
+          <XCard handle="VGCdata" url="https://x.com/VGCdata" />
+          <XCard handle="VGChampStats" url="https://x.com/VGChampStats" />
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
           {EXTERNAL_SITES.map((site) => (
