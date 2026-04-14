@@ -17,7 +17,9 @@ impl PokedexService {
     }
 
     pub async fn all(&self) -> Result<Vec<Pokemon>, AppError> {
-        const KEY: &str = "pokedex::all";
+        // v2 bumps the cache key after the forme-aware parser landed; older
+        // caches stored entries without formes and with num=0 for cosmetics.
+        const KEY: &str = "pokedex::all::v2";
         if let Some(bytes) = self.cache.get(KEY)? {
             if let Ok(list) = serde_json::from_slice::<Vec<Pokemon>>(&bytes) {
                 return Ok(list);
@@ -60,7 +62,9 @@ impl PokedexService {
     }
 
     pub async fn list_items(&self) -> Result<Vec<String>, AppError> {
-        const KEY: &str = "showdown::items";
+        // v2 bumps the cache key after items migrated from items.json to
+        // items.js; older caches were empty lists from the failed parse.
+        const KEY: &str = "showdown::items::v2";
         if let Some(bytes) = self.cache.get(KEY)? {
             if let Ok(list) = serde_json::from_slice::<Vec<String>>(&bytes) {
                 return Ok(list);
