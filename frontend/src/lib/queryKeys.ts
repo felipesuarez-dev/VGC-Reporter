@@ -19,4 +19,5 @@ export const queryKeys = {
     ["champions-report", format, limit] as const,
   tournamentStandings: (id: string) => ["tournament-standings", id] as const,
   settings: ["settings"] as const,
+  translationTable: () => ["translation-table"] as const,
 };

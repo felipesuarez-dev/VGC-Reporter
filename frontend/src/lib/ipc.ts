@@ -10,6 +10,7 @@ import type {
   Team,
   TopTeam,
   TournamentStanding,
+  TranslationTable,
   Violation,
 } from "./types";
 
@@ -69,4 +70,5 @@ export const ipc = {
   getSettings: () => call<Record<string, string>>("get_settings"),
   setSetting: (key: string, value: string) =>
     call<void>("set_setting", { key, value }),
+  getTranslationTable: () => call<TranslationTable>("get_translation_table"),
 };

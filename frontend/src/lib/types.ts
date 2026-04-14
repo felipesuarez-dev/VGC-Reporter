@@ -14,6 +14,7 @@ export type {
   EvSpread,
   Format,
   Item,
+  LocalizedName,
   MetaSnapshot,
   Move,
   MoveCategory,
@@ -34,6 +35,7 @@ export type {
   TopTeam,
   TopTeamMember,
   TournamentStanding,
+  TranslationTable,
   UsageEntry,
   Violation,
 } from "./types.generated";
