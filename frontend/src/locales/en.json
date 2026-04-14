@@ -155,12 +155,23 @@
     "spanish": "Spanish",
     "english": "English",
     "active_format": "Active format",
+    "preferred_format": "Preferred format",
+    "preferred_format_hint": "This selection updates the favorite star on the meta dashboard.",
     "external_sources": "Other sources",
+    "disclaimer_title": "Legal notice",
+    "disclaimer": "VGC Reportes is a free, non-profit application built for informational purposes for the competitive Pokémon community. Pokémon, its characters, and all related elements are owned by Nintendo, The Pokémon Company, Creatures Inc., and Game Freak Inc. This application is not affiliated with nor endorsed by these companies. Data sources come from Limitless TCG, Pokémon Showdown, Smogon, and Pikalytics.",
     "open_pikalytics": "Open Pikalytics",
     "open_pokemonzone": "Open Pokemon Zone",
     "open_porygonlabs": "Open Porygon Labs",
     "open_championslab": "Open Champions Lab",
     "open_limitless": "Open Limitless VGC"
+  },
+  "about": {
+    "title": "About",
+    "author": "Author",
+    "year": "Year",
+    "description": "Companion tool for competitive Pokémon Champions analysis (VGC 2026). Team building, meta insights, and damage calculation in one place.",
+    "view_repo": "View repository on GitHub"
   },
   "types": {
     "Normal": "Normal",
