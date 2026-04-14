@@ -8,6 +8,8 @@ import { queryKeys } from "../lib/queryKeys";
 import { type ChampionsTournament, type PokemonUsage } from "../lib/types";
 import { UsageBarChart } from "../components/charts/UsageBarChart";
 import { TopList } from "../components/charts/TopList";
+import { typeLabel } from "../lib/labels";
+import type { PokemonType } from "../lib/types";
 import { PokemonSprite } from "../components/pokemon/PokemonSprite";
 import { PokemonMetaDrawer } from "../components/pokemon/PokemonMetaDrawer";
 import { FormatSelector } from "../components/ui/FormatSelector";
@@ -144,7 +146,11 @@ export function Dashboard() {
             <h2 className="mb-3 text-sm font-semibold text-slate-200">
               {t("dashboard.top_tera")}
             </h2>
-            <TopList data={topTera} limit={10} />
+            <TopList
+              data={topTera}
+              limit={10}
+              labelFor={(name) => typeLabel(t, name as PokemonType)}
+            />
           </section>
 
           <section>

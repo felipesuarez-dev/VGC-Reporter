@@ -7,9 +7,10 @@ interface Props {
   data: TopListItem[];
   limit?: number;
   emptyLabel?: string;
+  labelFor?: (name: string) => string;
 }
 
-export function TopList({ data, limit = 10, emptyLabel = "—" }: Props) {
+export function TopList({ data, limit = 10, emptyLabel = "—", labelFor }: Props) {
   const items = data.slice(0, limit);
   if (items.length === 0) {
     return <div className="text-xs text-slate-500">{emptyLabel}</div>;
@@ -19,10 +20,11 @@ export function TopList({ data, limit = 10, emptyLabel = "—" }: Props) {
     <ul className="space-y-1.5">
       {items.map((item) => {
         const width = Math.max((item.usage_percent / max) * 100, 2);
+        const label = labelFor ? labelFor(item.name) : item.name;
         return (
           <li key={item.name} className="text-xs">
             <div className="flex items-baseline justify-between gap-2">
-              <span className="truncate text-slate-200">{item.name}</span>
+              <span className="truncate text-slate-200">{label}</span>
               <span className="shrink-0 tabular-nums text-brand-300">
                 {item.usage_percent.toFixed(1)}%
               </span>

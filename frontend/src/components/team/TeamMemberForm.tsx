@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import type { Pokemon, PokemonType, TeamMember } from "../../lib/types";
+import type { Nature, Pokemon, PokemonType, TeamMember } from "../../lib/types";
 import { ALL_NATURES, ALL_TYPES } from "../../lib/types";
+import { natureLabel, typeLabel } from "../../lib/labels";
 import { EVSliders } from "./EVSliders";
 import { PokemonSprite } from "../pokemon/PokemonSprite";
 import { SearchSelect } from "../ui/SearchSelect";
@@ -82,12 +83,11 @@ export function TeamMemberForm({ slot, value, pokedex, items, moves, onChange }:
         </div>
         <div>
           <label className="label">{t("team_builder.nature")}</label>
-          <SearchSelect<string>
+          <SearchSelect<Nature>
             value={value.nature}
             options={[...ALL_NATURES]}
-            onChange={(n) =>
-              onChange({ ...value, nature: (n ?? null) as TeamMember["nature"] })
-            }
+            onChange={(n) => onChange({ ...value, nature: n })}
+            getOptionLabel={(n) => natureLabel(t, n)}
             placeholder={t("team_builder.nature")}
             className="mt-1"
           />
@@ -98,6 +98,7 @@ export function TeamMemberForm({ slot, value, pokedex, items, moves, onChange }:
             value={value.tera_type}
             options={[...ALL_TYPES]}
             onChange={(ty) => onChange({ ...value, tera_type: ty })}
+            getOptionLabel={(ty) => typeLabel(t, ty)}
             placeholder={t("team_builder.tera_type")}
             className="mt-1"
           />
