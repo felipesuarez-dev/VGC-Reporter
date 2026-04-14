@@ -65,18 +65,21 @@ export function SearchSelect<T>({
         onClick={() => setOpen((o) => !o)}
         className={cn(
           "input flex items-center justify-between gap-2 text-left",
-          !display && "text-slate-500",
           disabled && "cursor-not-allowed opacity-60",
         )}
+        style={!display ? { color: "var(--text-dim)" } : undefined}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
       >
         <span className="truncate">{display || resolvedPlaceholder}</span>
-        <span className="flex items-center gap-1 text-slate-400">
+        <span
+          className="flex items-center gap-1"
+          style={{ color: "var(--text-muted)" }}
+        >
           {allowClear && value !== null && !disabled && (
             <X
-              className="h-4 w-4 hover:text-slate-200"
+              className="h-4 w-4 hover:text-[var(--text)]"
               onClick={(e) => {
                 e.stopPropagation();
                 onChange(null);
@@ -90,16 +93,27 @@ export function SearchSelect<T>({
       {open && (
         <div
           id={listId}
-          className="absolute z-50 mt-1 w-full overflow-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-xl"
+          className="absolute z-50 mt-1 w-full overflow-hidden rounded-lg border shadow-xl"
+          style={{
+            backgroundColor: "var(--bg-elev)",
+            borderColor: "var(--border)",
+          }}
         >
           <Command label={resolvedPlaceholder} className="flex flex-col">
             <Command.Input
               autoFocus
               placeholder={resolvedPlaceholder}
-              className="w-full border-b border-slate-800 bg-transparent px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-500"
+              className="w-full border-b bg-transparent px-3 py-2 text-sm outline-none placeholder:text-[var(--text-dim)]"
+              style={{
+                borderColor: "var(--border)",
+                color: "var(--text)",
+              }}
             />
             <Command.List className="max-h-64 overflow-y-auto">
-              <Command.Empty className="px-3 py-4 text-center text-sm text-slate-500">
+              <Command.Empty
+                className="px-3 py-4 text-center text-sm"
+                style={{ color: "var(--text-dim)" }}
+              >
                 {resolvedEmpty}
               </Command.Empty>
               {options.map((opt) => {
@@ -115,8 +129,8 @@ export function SearchSelect<T>({
                       setOpen(false);
                     }}
                     className={cn(
-                      "flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-sm text-slate-200",
-                      "aria-selected:bg-slate-800",
+                      "flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-sm",
+                      "text-[var(--text)] aria-selected:bg-[var(--bg-elev-strong)]",
                     )}
                   >
                     {renderOption ? (
@@ -124,7 +138,12 @@ export function SearchSelect<T>({
                     ) : (
                       <span className="truncate">{label}</span>
                     )}
-                    {selected && <Check className="h-4 w-4 shrink-0 text-brand-400" />}
+                    {selected && (
+                      <Check
+                        className="h-4 w-4 shrink-0"
+                        style={{ color: "var(--accent)" }}
+                      />
+                    )}
                   </Command.Item>
                 );
               })}

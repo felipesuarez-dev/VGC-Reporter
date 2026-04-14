@@ -59,11 +59,20 @@ export function FormatSelector({
         aria-expanded={open}
       >
         <span className="truncate">{currentLabel}</span>
-        <ChevronDown className="h-4 w-4 text-slate-400" />
+        <ChevronDown
+          className="h-4 w-4"
+          style={{ color: "var(--text-muted)" }}
+        />
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-1 w-72 overflow-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-xl">
+        <div
+          className="absolute right-0 z-50 mt-1 w-72 overflow-hidden rounded-lg border shadow-xl"
+          style={{
+            backgroundColor: "var(--bg-elev)",
+            borderColor: "var(--border)",
+          }}
+        >
           <ul role="listbox" className="py-1">
             {ordered.map((opt) => {
               const selected = opt.value === value;
@@ -77,7 +86,8 @@ export function FormatSelector({
                       e.stopPropagation();
                       onFavoriteChange(opt.value);
                     }}
-                    className="flex h-9 w-9 items-center justify-center text-slate-400 hover:text-amber-300"
+                    className="flex h-9 w-9 items-center justify-center hover:text-amber-300"
+                    style={{ color: "var(--text-muted)" }}
                   >
                     <Star
                       className={cn(
@@ -95,12 +105,17 @@ export function FormatSelector({
                       setOpen(false);
                     }}
                     className={cn(
-                      "flex flex-1 items-center justify-between px-2 py-2 text-left text-sm text-slate-200 hover:bg-slate-800",
-                      selected && "bg-slate-800/60",
+                      "flex flex-1 items-center justify-between px-2 py-2 text-left text-sm text-[var(--text)] hover:bg-[var(--bg-elev-strong)]",
+                      selected && "bg-[var(--accent-soft)]",
                     )}
                   >
                     <span className="truncate">{opt.label}</span>
-                    {selected && <Check className="h-4 w-4 text-brand-400" />}
+                    {selected && (
+                      <Check
+                        className="h-4 w-4"
+                        style={{ color: "var(--accent)" }}
+                      />
+                    )}
                   </button>
                 </li>
               );

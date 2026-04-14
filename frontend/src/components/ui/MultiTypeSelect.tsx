@@ -58,7 +58,7 @@ export function MultiTypeSelect({ value, onChange, excludeStellar = false }: Pro
               "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide transition",
               COLORS[ty],
               isSelected
-                ? "ring-2 ring-offset-1 ring-offset-slate-900 ring-white"
+                ? "ring-2 ring-offset-1 ring-white ring-offset-[var(--bg-elev)]"
                 : "opacity-60 hover:opacity-100",
             )}
           >

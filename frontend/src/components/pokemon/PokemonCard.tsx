@@ -19,13 +19,18 @@ export function PokemonCard({ pokemon }: { pokemon: Pokemon }) {
         name={pokemon.name}
         size={80}
       />
-      <div className="text-sm font-semibold text-slate-100">{pokemon.name}</div>
+      <div
+        className="text-sm font-semibold"
+        style={{ color: "var(--text)" }}
+      >
+        {pokemon.name}
+      </div>
       <div className="flex flex-wrap justify-center gap-1">
         {pokemon.types.map((t) => (
           <TypeBadge key={t} type={t} />
         ))}
       </div>
-      <div className="text-[11px] text-slate-500">
+      <div className="text-[11px]" style={{ color: "var(--text-dim)" }}>
         {t("pokedex.base_stat_total")}: {Object.values(pokemon.base_stats).reduce((a, b) => a + b, 0)}
       </div>
     </button>

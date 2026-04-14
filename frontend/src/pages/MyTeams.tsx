@@ -29,9 +29,15 @@ export function MyTeams() {
         </Link>
       </header>
 
-      {isLoading && <div className="card text-slate-400">{t("common.loading")}</div>}
+      {isLoading && (
+        <div className="card" style={{ color: "var(--text-muted)" }}>
+          {t("common.loading")}
+        </div>
+      )}
       {data && data.length === 0 && (
-        <div className="card text-slate-400">{t("my_teams.empty")}</div>
+        <div className="card" style={{ color: "var(--text-muted)" }}>
+          {t("my_teams.empty")}
+        </div>
       )}
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -43,20 +49,24 @@ export function MyTeams() {
             <div key={team.id ?? team.name} className="card space-y-3">
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="text-sm font-semibold text-slate-100">{team.name}</div>
-                  <div className="text-[11px] text-slate-500">{team.format}</div>
+                  <div className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+                    {team.name}
+                  </div>
+                  <div className="text-[11px]" style={{ color: "var(--text-dim)" }}>
+                    {team.format}
+                  </div>
                 </div>
                 <div className="flex gap-1">
                   <Link
                     to={`/team-builder/${team.id}`}
-                    className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                    className="rounded p-1 text-[var(--text-muted)] hover:bg-[var(--bg-elev-strong)] hover:text-[var(--text)]"
                     title={t("common.edit")}
                   >
                     <Pencil size={14} />
                   </Link>
                   <button
                     onClick={() => team.id && remove(team.id)}
-                    className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-red-400"
+                    className="rounded p-1 text-[var(--text-muted)] hover:bg-[var(--bg-elev-strong)] hover:text-[var(--danger)]"
                     title={t("common.delete")}
                   >
                     <Trash2 size={14} />
