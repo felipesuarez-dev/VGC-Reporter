@@ -17,6 +17,8 @@ export type Format = "regulation-m-a" | "champions-singles" | "regulation-i" | "
 
 export type Item = { id: string, name: string, description: string, };
 
+export type LocalizedName = { en: string, es: string, };
+
 export type MetaSnapshot = { format: Format, generated_at: string, source: string, tournaments_used: number, total_entries: number, pokemon: Array<PokemonUsage>, top_items: Array<UsageEntry>, top_moves: Array<UsageEntry>, top_abilities: Array<UsageEntry>, top_tera: Array<UsageEntry>, };
 
 export type Move = { id: string, name: string, type_: PokemonType, category: MoveCategory, base_power: number, accuracy: number, pp: number, description: string, };
@@ -96,6 +98,8 @@ export type TopTeam = { tournament: string, placing: number | null, player: stri
 export type TopTeamMember = { species: string, sprite_url: string, item: string | null, tera_type: string | null, };
 
 export type TournamentStanding = { placing: number | null, player_name: string | null, player_id: string | null, country: string | null, record: string | null, wins: number, losses: number, ties: number, decklist: Array<DecklistPokemon>, };
+
+export type TranslationTable = { abilities: { [key in string]?: LocalizedName }, moves: { [key in string]?: LocalizedName }, items: { [key in string]?: LocalizedName }, };
 
 export type UsageEntry = { name: string, usage_percent: number, count: number, };
 

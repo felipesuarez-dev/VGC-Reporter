@@ -17,8 +17,9 @@ use tauri::Manager;
 pub fn run() {
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info,vgc_reporter_lib=debug")),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+                tracing_subscriber::EnvFilter::new("info,vgc_reporter_lib=debug")
+            }),
         )
         .init();
 
@@ -56,6 +57,7 @@ pub fn run() {
             commands::settings::set_setting,
             commands::champions::list_champions_tournaments,
             commands::champions::get_tournament_standings,
+            commands::translations::get_translation_table,
         ])
         .run(tauri::generate_context!())
         .expect("error while running VGC-Reporter");

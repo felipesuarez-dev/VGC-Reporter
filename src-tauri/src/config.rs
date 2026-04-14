@@ -15,6 +15,8 @@ pub const SHOWDOWN_SPRITES: &str = "https://play.pokemonshowdown.com/sprites/gen
 pub const SMOGON_STATS: &str = "https://www.smogon.com/stats";
 pub const PKMN_DATA: &str = "https://data.pkmn.cc";
 pub const POKEAPI: &str = "https://pokeapi.co/api/v2";
+pub const POKEAPI_CSV_BASE: &str =
+    "https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv";
 
 // Cache TTLs (seconds)
 pub const TTL_LIMITLESS_LIST: i64 = 60 * 60; // 1h
@@ -22,6 +24,7 @@ pub const TTL_LIMITLESS_DETAIL: i64 = 24 * 60 * 60; // 24h
 pub const TTL_SHOWDOWN_DATA: i64 = 7 * 24 * 60 * 60; // 7d
 pub const TTL_SMOGON_STATS: i64 = 24 * 60 * 60; // 24h
 pub const TTL_META_SNAPSHOT: i64 = 6 * 60 * 60; // 6h aggregated
+pub const TTL_POKEAPI_CSV: i64 = 30 * 24 * 60 * 60; // 30d
 
 // Dataset sizing
 pub const TOURNAMENTS_PER_SNAPSHOT: usize = 25;
