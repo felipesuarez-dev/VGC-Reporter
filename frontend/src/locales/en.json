@@ -87,6 +87,9 @@
     "filter_weak_against_help": "Shows Pokémon that take 2x or more from any of the selected types.",
     "filter_strong_against_help": "Shows Pokémon whose STAB hits any of the selected types for super-effective damage.",
     "filter_ability_placeholder": "Any ability",
+    "filter_generation": "Generation",
+    "filter_generation_placeholder": "All generations",
+    "generation_label": "Gen {{n}}",
     "sort_title": "Sort",
     "clear_filters": "Clear filters"
   },

@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import type { PokemonUsage, UsageEntry } from "../../lib/types";
 import { PokemonSprite } from "./PokemonSprite";
 import { useLocalize, type LocalizeKind } from "../../hooks/useTranslations";
+import { prettifyName } from "../../lib/labels";
 
 interface Props {
   usage: PokemonUsage | null;
@@ -105,7 +106,7 @@ function DrawerPanel({
               className="flex items-baseline justify-between gap-2 text-xs"
             >
               <span className="truncate" style={{ color: "var(--text)" }}>
-                {kind ? localize(kind, e.name) : e.name}
+                {kind ? localize(kind, e.name) : prettifyName(e.name)}
               </span>
               <span
                 className="shrink-0 tabular-nums"

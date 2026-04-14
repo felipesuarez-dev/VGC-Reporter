@@ -18,6 +18,9 @@ import { defensiveMultiplier, offensiveCoverage } from "../lib/typeChart";
 import { cn } from "../lib/cn";
 import { useDashboardStore } from "../stores/dashboardStore";
 import { usePokedexStore, type PokedexSort } from "../stores/pokedexStore";
+import { useLocalize } from "../hooks/useTranslations";
+
+const ALL_GENERATIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
 const SORTS: { value: PokedexSort; key: string }[] = [
   { value: "generation", key: "pokedex.sort_generation" },
@@ -27,9 +30,11 @@ const SORTS: { value: PokedexSort; key: string }[] = [
 
 export function Pokedex() {
   const { t } = useTranslation();
+  const localize = useLocalize();
   const [query, setQuery] = useState("");
   const [type, setType] = useState<PokemonType | "">("");
   const [ability, setAbility] = useState<string | null>(null);
+  const [generation, setGeneration] = useState<number | "">("");
   const [weakAgainst, setWeakAgainst] = useState<PokemonType[]>([]);
   const [strongAgainst, setStrongAgainst] = useState<PokemonType[]>([]);
   const sort = usePokedexStore((s) => s.sort);
@@ -84,6 +89,7 @@ export function Pokedex() {
     const list = data ?? [];
     return list.filter((p) => {
       if (ability && !p.abilities.includes(ability)) return false;
+      if (generation !== "" && generationOf(p.num) !== generation) return false;
       if (weakAgainst.length > 0) {
         const anyWeak = weakAgainst.some(
           (ty) => defensiveMultiplier(p.types, ty) > 1,
@@ -97,7 +103,7 @@ export function Pokedex() {
       }
       return true;
     });
-  }, [data, ability, weakAgainst, strongAgainst]);
+  }, [data, ability, generation, weakAgainst, strongAgainst]);
 
   const sorted = useMemo(() => {
     const list = [...filtered];
@@ -128,12 +134,18 @@ export function Pokedex() {
   }, [sorted, sort]);
 
   const hasActiveFilter =
-    query || type || ability || weakAgainst.length > 0 || strongAgainst.length > 0;
+    query ||
+    type ||
+    ability ||
+    generation !== "" ||
+    weakAgainst.length > 0 ||
+    strongAgainst.length > 0;
 
   const clearAll = () => {
     setQuery("");
     setType("");
     setAbility(null);
+    setGeneration("");
     setWeakAgainst([]);
     setStrongAgainst([]);
   };
@@ -145,7 +157,7 @@ export function Pokedex() {
       </header>
 
       <div className="card space-y-4">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
           <div>
             <label className="label">{t("pokedex.filter_name")}</label>
             <input
@@ -171,11 +183,29 @@ export function Pokedex() {
             </select>
           </div>
           <div>
+            <label className="label">{t("pokedex.filter_generation")}</label>
+            <select
+              className="input mt-1"
+              value={generation}
+              onChange={(e) =>
+                setGeneration(e.target.value === "" ? "" : Number(e.target.value))
+              }
+            >
+              <option value="">{t("pokedex.filter_generation_placeholder")}</option>
+              {ALL_GENERATIONS.map((g) => (
+                <option key={g} value={g}>
+                  {t("pokedex.generation_label", { n: g })}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
             <label className="label">{t("pokedex.filter_ability")}</label>
             <SearchSelect<string>
               value={ability}
               options={allAbilities}
               onChange={(a) => setAbility(a)}
+              getOptionLabel={(a) => localize("ability", a)}
               placeholder={t("pokedex.filter_ability_placeholder")}
               className="mt-1"
             />

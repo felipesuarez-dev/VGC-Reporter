@@ -20,6 +20,16 @@ export function terrainLabel(t: TFunction, terrain: Terrain): string {
   return t(`terrain.${terrain}`, { defaultValue: terrain });
 }
 
+export function prettifyName(s: string): string {
+  if (!s) return s;
+  return s
+    .replace(/[_-]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
 export function formatViolation(t: TFunction, v: Violation): string {
   switch (v.kind) {
     case "team_incomplete":

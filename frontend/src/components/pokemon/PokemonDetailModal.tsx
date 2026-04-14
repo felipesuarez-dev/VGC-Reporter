@@ -19,6 +19,7 @@ import { PokemonSprite } from "./PokemonSprite";
 import { TypeBadge } from "./TypeBadge";
 import { PokemonSetCard } from "./PokemonSetCard";
 import { useLocalize, type LocalizeKind } from "../../hooks/useTranslations";
+import { prettifyName } from "../../lib/labels";
 
 const STAT_LABELS: Record<string, string> = {
   hp: "HP", atk: "Atk", def: "Def", spa: "SpA", spd: "SpD", spe: "Spe",
@@ -389,7 +390,7 @@ function UsageList({
           {entries.slice(0, 5).map((e) => (
             <li key={e.name} className="flex items-baseline justify-between gap-2 text-xs">
               <span className="truncate" style={{ color: "var(--text)" }}>
-                {kind ? localize(kind, e.name) : e.name}
+                {kind ? localize(kind, e.name) : prettifyName(e.name)}
               </span>
               <span
                 className="shrink-0 tabular-nums"

@@ -87,6 +87,9 @@
     "filter_weak_against_help": "Muestra Pokémon que reciben x2 o más de alguno de los tipos seleccionados.",
     "filter_strong_against_help": "Muestra Pokémon cuyos STAB golpean fuerte a alguno de los tipos seleccionados.",
     "filter_ability_placeholder": "Cualquier habilidad",
+    "filter_generation": "Generación",
+    "filter_generation_placeholder": "Todas las generaciones",
+    "generation_label": "Gen {{n}}",
     "sort_title": "Orden",
     "clear_filters": "Limpiar filtros"
   },

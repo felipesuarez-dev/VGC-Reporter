@@ -37,7 +37,7 @@ impl MetaService {
     }
 
     pub async fn get_meta(&self, format: Format) -> Result<MetaSnapshot, AppError> {
-        let cache_key = format!("meta-snapshot::{}", format.cache_id());
+        let cache_key = format!("meta-snapshot-v2::{}", format.cache_id());
         if let Some(bytes) = self.cache.get(&cache_key)? {
             if let Ok(snap) = serde_json::from_slice::<MetaSnapshot>(&bytes) {
                 return Ok(snap);
@@ -54,7 +54,9 @@ impl MetaService {
             for t in &tournaments {
                 match self.limitless.get_standings(&t.id).await {
                     Ok(s) => all_standings.push(s),
-                    Err(e) => tracing::warn!(tournament = %t.id, error = %e, "standings fetch failed"),
+                    Err(e) => {
+                        tracing::warn!(tournament = %t.id, error = %e, "standings fetch failed")
+                    }
                 }
             }
             Some(usage_aggregator::aggregate(format, all_standings))
@@ -78,7 +80,8 @@ impl MetaService {
         };
 
         let bytes = serde_json::to_vec(&final_snap)?;
-        self.cache.put(&cache_key, &bytes, config::TTL_META_SNAPSHOT)?;
+        self.cache
+            .put(&cache_key, &bytes, config::TTL_META_SNAPSHOT)?;
         Ok(final_snap)
     }
 }
