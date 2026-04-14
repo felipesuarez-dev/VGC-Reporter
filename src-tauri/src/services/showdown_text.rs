@@ -80,7 +80,7 @@ fn parse_member(lines: Vec<String>) -> TeamMember {
         if let Some(rest) = line.strip_prefix("Ability:") {
             ability = Some(rest.trim().to_string());
         } else if let Some(rest) = line.strip_prefix("Tera Type:") {
-            tera_type = PokemonType::from_str(rest.trim());
+            tera_type = PokemonType::parse(rest.trim());
         } else if let Some(rest) = line.strip_prefix("EVs:") {
             evs = parse_evs(rest.trim());
         } else if line.ends_with(" Nature") {

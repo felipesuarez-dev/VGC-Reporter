@@ -93,7 +93,7 @@ pub(crate) fn snapshot_from_smogon(
     let mut global_abilities: HashMap<String, f64> = HashMap::new();
     let mut global_tera: HashMap<String, f64> = HashMap::new();
 
-    for (_species, entry) in &chaos.data {
+    for entry in chaos.data.values() {
         for (item, ratio) in &entry.items {
             *global_items
                 .entry(usage_aggregator::prettify_public(item))

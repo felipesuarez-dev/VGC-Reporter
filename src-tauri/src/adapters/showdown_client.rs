@@ -62,7 +62,7 @@ impl ShowdownClient {
             let types = entry
                 .types
                 .iter()
-                .filter_map(|t| PokemonType::from_str(t))
+                .filter_map(|t| PokemonType::parse(t))
                 .collect();
             let abilities = entry.abilities.values().cloned().collect::<Vec<_>>();
 

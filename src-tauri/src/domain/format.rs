@@ -2,9 +2,10 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 /// Competitive format. Multi-variant: frontend can switch freely.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize, TS)]
 #[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
 pub enum Format {
+    #[default]
     #[serde(rename = "regulation-m-a")]
     RegulationMA,
     #[serde(rename = "champions-singles")]
@@ -82,12 +83,6 @@ impl Format {
             Format::RegulationI,
             Format::Gen9Ou,
         ]
-    }
-}
-
-impl Default for Format {
-    fn default() -> Self {
-        Format::RegulationMA
     }
 }
 

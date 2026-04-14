@@ -26,7 +26,7 @@ pub enum PokemonType {
 }
 
 impl PokemonType {
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn parse(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
             "normal" => Some(Self::Normal),
             "fire" => Some(Self::Fire),

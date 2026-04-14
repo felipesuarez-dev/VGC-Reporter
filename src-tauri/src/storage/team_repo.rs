@@ -183,5 +183,5 @@ fn parse_nature(s: String) -> Option<Nature> {
 }
 
 fn parse_type(s: String) -> Option<PokemonType> {
-    PokemonType::from_str(&s)
+    PokemonType::parse(&s)
 }

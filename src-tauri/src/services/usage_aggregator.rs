@@ -28,7 +28,7 @@ pub fn aggregate(
             }
             let teammates: Vec<String> = deck
                 .iter()
-                .filter_map(|d| d.species_name().map(|s| canonical_id(s)))
+                .filter_map(|d| d.species_name().map(canonical_id))
                 .collect();
 
             for entry in &deck {
