@@ -11,6 +11,10 @@ import {
 } from "../lib/types";
 import { PokemonCard } from "../components/pokemon/PokemonCard";
 import { PokemonDetailModal } from "../components/pokemon/PokemonDetailModal";
+import { SearchSelect } from "../components/ui/SearchSelect";
+import { MultiTypeSelect } from "../components/ui/MultiTypeSelect";
+import { typeLabel } from "../lib/labels";
+import { defensiveMultiplier, offensiveCoverage } from "../lib/typeChart";
 import { cn } from "../lib/cn";
 import { useDashboardStore } from "../stores/dashboardStore";
 import { usePokedexStore, type PokedexSort } from "../stores/pokedexStore";
@@ -25,6 +29,9 @@ export function Pokedex() {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [type, setType] = useState<PokemonType | "">("");
+  const [ability, setAbility] = useState<string | null>(null);
+  const [weakAgainst, setWeakAgainst] = useState<PokemonType[]>([]);
+  const [strongAgainst, setStrongAgainst] = useState<PokemonType[]>([]);
   const sort = usePokedexStore((s) => s.sort);
   const setSort = usePokedexStore((s) => s.setSort);
   const scrollY = usePokedexStore((s) => s.scrollY);
@@ -65,8 +72,35 @@ export function Pokedex() {
     return m;
   }, [meta]);
 
+  const allAbilities = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of data ?? []) {
+      for (const a of p.abilities) set.add(a);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [data]);
+
+  const filtered = useMemo(() => {
+    const list = data ?? [];
+    return list.filter((p) => {
+      if (ability && !p.abilities.includes(ability)) return false;
+      if (weakAgainst.length > 0) {
+        const anyWeak = weakAgainst.some(
+          (ty) => defensiveMultiplier(p.types, ty) > 1,
+        );
+        if (!anyWeak) return false;
+      }
+      if (strongAgainst.length > 0) {
+        const coverage = offensiveCoverage(p.types).weakTo;
+        const anyStrong = strongAgainst.some((ty) => coverage.includes(ty));
+        if (!anyStrong) return false;
+      }
+      return true;
+    });
+  }, [data, ability, weakAgainst, strongAgainst]);
+
   const sorted = useMemo(() => {
-    const list = [...(data ?? [])];
+    const list = [...filtered];
     if (sort === "alphabetical") {
       list.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sort === "usage") {
@@ -80,7 +114,7 @@ export function Pokedex() {
       list.sort((a, b) => a.num - b.num || a.name.localeCompare(b.name));
     }
     return list;
-  }, [data, sort, usageMap]);
+  }, [filtered, sort, usageMap]);
 
   const grouped = useMemo(() => {
     if (sort !== "generation") return null;
@@ -93,59 +127,127 @@ export function Pokedex() {
     return Array.from(groups.entries()).sort((a, b) => a[0] - b[0]);
   }, [sorted, sort]);
 
+  const hasActiveFilter =
+    query || type || ability || weakAgainst.length > 0 || strongAgainst.length > 0;
+
+  const clearAll = () => {
+    setQuery("");
+    setType("");
+    setAbility(null);
+    setWeakAgainst([]);
+    setStrongAgainst([]);
+  };
+
   return (
     <div className="space-y-4">
       <header>
         <h1 className="text-2xl font-bold">{t("pokedex.title")}</h1>
       </header>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <input
-          className="input max-w-xs"
-          placeholder={t("pokedex.placeholder")}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        <select
-          className="input max-w-[10rem]"
-          value={type}
-          onChange={(e) => setType(e.target.value as PokemonType | "")}
-        >
-          <option value="">{t("common.all_types")}</option>
-          {ALL_TYPES.map((ty) => (
-            <option key={ty} value={ty}>
-              {ty}
-            </option>
-          ))}
-        </select>
-        <div
-          role="tablist"
-          aria-label={t("pokedex.sort")}
-          className="ml-auto flex overflow-hidden rounded-lg border border-slate-700"
-        >
-          {SORTS.map((s) => (
-            <button
-              key={s.value}
-              type="button"
-              role="tab"
-              aria-selected={sort === s.value}
-              onClick={() => setSort(s.value)}
-              className={cn(
-                "px-3 py-1.5 text-xs font-medium",
-                sort === s.value
-                  ? "bg-brand-500 text-white"
-                  : "bg-slate-900 text-slate-300 hover:bg-slate-800",
-              )}
+      <div className="card space-y-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div>
+            <label className="label">{t("pokedex.filter_name")}</label>
+            <input
+              className="input mt-1"
+              placeholder={t("pokedex.placeholder")}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="label">{t("pokedex.filter_type")}</label>
+            <select
+              className="input mt-1"
+              value={type}
+              onChange={(e) => setType(e.target.value as PokemonType | "")}
             >
-              {t(s.key)}
+              <option value="">{t("common.all_types")}</option>
+              {ALL_TYPES.map((ty) => (
+                <option key={ty} value={ty}>
+                  {typeLabel(t, ty)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="label">{t("pokedex.filter_ability")}</label>
+            <SearchSelect<string>
+              value={ability}
+              options={allAbilities}
+              onChange={(a) => setAbility(a)}
+              placeholder={t("pokedex.filter_ability_placeholder")}
+              className="mt-1"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="label">{t("pokedex.filter_weak_against")}</label>
+          <p className="mt-0.5 text-[10px] text-slate-500">
+            {t("pokedex.filter_weak_against_help")}
+          </p>
+          <div className="mt-2">
+            <MultiTypeSelect
+              value={weakAgainst}
+              onChange={setWeakAgainst}
+              excludeStellar
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="label">{t("pokedex.filter_strong_against")}</label>
+          <p className="mt-0.5 text-[10px] text-slate-500">
+            {t("pokedex.filter_strong_against_help")}
+          </p>
+          <div className="mt-2">
+            <MultiTypeSelect
+              value={strongAgainst}
+              onChange={setStrongAgainst}
+              excludeStellar
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <label className="label">{t("pokedex.sort_title")}</label>
+            <div
+              role="tablist"
+              aria-label={t("pokedex.sort")}
+              className="mt-1 flex overflow-hidden rounded-lg border border-slate-700"
+            >
+              {SORTS.map((s) => (
+                <button
+                  key={s.value}
+                  type="button"
+                  role="tab"
+                  aria-selected={sort === s.value}
+                  onClick={() => setSort(s.value)}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium",
+                    sort === s.value
+                      ? "bg-brand-500 text-white"
+                      : "bg-slate-900 text-slate-300 hover:bg-slate-800",
+                  )}
+                >
+                  {t(s.key)}
+                </button>
+              ))}
+            </div>
+          </div>
+          {hasActiveFilter && (
+            <button type="button" className="btn-ghost text-xs" onClick={clearAll}>
+              {t("pokedex.clear_filters")}
             </button>
-          ))}
+          )}
         </div>
       </div>
 
       {isLoading && <div className="card text-slate-400">{t("common.loading")}</div>}
       {isError && <div className="card text-red-400">{t("common.error")}</div>}
-      {data && data.length === 0 && (
+      {data && sorted.length === 0 && (
         <div className="card text-slate-400">{t("common.empty")}</div>
       )}
 

@@ -76,7 +76,17 @@
     "sort_alphabetical": "Alphabetical",
     "sort_usage": "By meta usage",
     "gen_header": "Gen {{n}}",
-    "base_stat_total": "Base Stat Total"
+    "base_stat_total": "Base Stat Total",
+    "filter_name": "Name",
+    "filter_type": "Type",
+    "filter_ability": "Ability",
+    "filter_weak_against": "Weak against",
+    "filter_strong_against": "Strong against",
+    "filter_weak_against_help": "Shows Pokémon that take 2x or more from any of the selected types.",
+    "filter_strong_against_help": "Shows Pokémon whose STAB hits any of the selected types for super-effective damage.",
+    "filter_ability_placeholder": "Any ability",
+    "sort_title": "Sort",
+    "clear_filters": "Clear filters"
   },
   "pokemon_detail": {
     "doubles": "Doubles",

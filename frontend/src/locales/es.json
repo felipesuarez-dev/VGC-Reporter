@@ -76,7 +76,17 @@
     "sort_alphabetical": "Alfabético",
     "sort_usage": "Por uso en el meta",
     "gen_header": "Gen {{n}}",
-    "base_stat_total": "Total Estadísticas"
+    "base_stat_total": "Total Estadísticas",
+    "filter_name": "Nombre",
+    "filter_type": "Tipo",
+    "filter_ability": "Habilidad",
+    "filter_weak_against": "Débil contra",
+    "filter_strong_against": "Fuerte contra",
+    "filter_weak_against_help": "Muestra Pokémon que reciben x2 o más de alguno de los tipos seleccionados.",
+    "filter_strong_against_help": "Muestra Pokémon cuyos STAB golpean fuerte a alguno de los tipos seleccionados.",
+    "filter_ability_placeholder": "Cualquier habilidad",
+    "sort_title": "Orden",
+    "clear_filters": "Limpiar filtros"
   },
   "pokemon_detail": {
     "doubles": "Doubles",
