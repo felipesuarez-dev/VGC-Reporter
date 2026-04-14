@@ -20,7 +20,11 @@ export function LanguageToggle() {
     <button
       type="button"
       onClick={toggle}
-      className="rounded border border-slate-700 px-2 py-0.5 text-xs uppercase tracking-wider text-slate-300 hover:bg-slate-800"
+      className="rounded border px-2 py-0.5 text-xs uppercase tracking-wider transition-colors hover:bg-[var(--bg-elev-strong)]"
+      style={{
+        borderColor: "var(--border)",
+        color: "var(--text-muted)",
+      }}
       aria-label="Toggle language"
     >
       {current === "es" ? "ES | en" : "EN | es"}
