@@ -30,10 +30,8 @@ impl LimitlessClient {
             code,
             limit
         );
-        let list: Vec<LimitlessTournamentSummary> = self
-            .http
-            .get_json(&url, config::TTL_LIMITLESS_LIST)
-            .await?;
+        let list: Vec<LimitlessTournamentSummary> =
+            self.http.get_json(&url, config::TTL_LIMITLESS_LIST).await?;
         Ok(list)
     }
 

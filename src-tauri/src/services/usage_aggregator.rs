@@ -7,10 +7,7 @@ use std::collections::HashMap;
 
 /// Aggregates Limitless standings into a MetaSnapshot.
 /// Entries are weighted equally (placement weighting is out of scope v1).
-pub fn aggregate(
-    format: Format,
-    standings: Vec<Vec<LimitlessStanding>>,
-) -> MetaSnapshot {
+pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> MetaSnapshot {
     let tournaments_used = standings.len() as u32;
 
     let mut pokemon_count: HashMap<String, PokemonAccumulator> = HashMap::new();
@@ -22,18 +19,22 @@ pub fn aggregate(
 
     for standings_list in standings {
         for standing in standings_list {
-            let Some(deck) = standing.decklist else { continue };
+            let Some(deck) = standing.decklist else {
+                continue;
+            };
             if deck.is_empty() {
                 continue;
             }
-            let teammates: Vec<String> = deck
+            let teammates: Vec<(String, String)> = deck
                 .iter()
-                .filter_map(|d| d.species_name().map(canonical_id))
+                .filter_map(|d| d.species_name().map(|s| (canonical_id(s), prettify(s))))
                 .collect();
 
             for entry in &deck {
                 total_entries += 1;
-                let Some(species_raw) = entry.species_name() else { continue };
+                let Some(species_raw) = entry.species_name() else {
+                    continue;
+                };
                 let key = canonical_id(species_raw);
                 let display = prettify(species_raw);
                 let acc = pokemon_count
@@ -43,9 +44,9 @@ pub fn aggregate(
 
                 accumulate(entry, acc);
 
-                for t in &teammates {
-                    if t != &key {
-                        *acc.teammates.entry(t.clone()).or_insert(0) += 1;
+                for (t_canonical, t_display) in &teammates {
+                    if t_canonical != &key {
+                        *acc.teammates.entry(t_display.clone()).or_insert(0) += 1;
                     }
                 }
 
@@ -97,10 +98,7 @@ pub fn aggregate(
     MetaSnapshot {
         format,
         generated_at: Utc::now(),
-        source: format!(
-            "Limitless VGC — {} tournaments",
-            tournaments_used
-        ),
+        source: format!("Limitless VGC — {} tournaments", tournaments_used),
         tournaments_used,
         total_entries,
         pokemon,
@@ -208,5 +206,72 @@ impl PokemonAccumulator {
             tera: HashMap::new(),
             teammates: HashMap::new(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::adapters::limitless_client::{LimitlessDecklistEntry, LimitlessStanding};
+
+    fn entry(species: &str) -> LimitlessDecklistEntry {
+        LimitlessDecklistEntry {
+            id: None,
+            name: None,
+            species: Some(species.to_string()),
+            pokemon: None,
+            item: None,
+            ability: None,
+            tera: None,
+            tera_type: None,
+            moves: None,
+            nature: None,
+        }
+    }
+
+    fn standing(deck: Vec<LimitlessDecklistEntry>) -> LimitlessStanding {
+        LimitlessStanding {
+            placing: Some(1),
+            name: None,
+            player: None,
+            country: None,
+            decklist: Some(deck),
+            record: None,
+            drop: None,
+        }
+    }
+
+    #[test]
+    fn teammates_are_prettified_not_canonical() {
+        let standings = vec![vec![standing(vec![
+            entry("fluttermane"),
+            entry("iron-hands"),
+            entry("Amoonguss"),
+        ])]];
+        let snap = aggregate(Format::RegulationMA, standings);
+
+        let flutter = snap
+            .pokemon
+            .iter()
+            .find(|p| p.species == "Fluttermane")
+            .expect("flutter mane should be present");
+
+        let teammate_names: Vec<&str> = flutter
+            .top_teammates
+            .iter()
+            .map(|e| e.name.as_str())
+            .collect();
+
+        assert!(teammate_names.contains(&"Iron Hands"));
+        assert!(teammate_names.contains(&"Amoonguss"));
+        assert!(
+            flutter.top_teammates.iter().all(|e| e
+                .name
+                .chars()
+                .next()
+                .map(|c| c.is_ascii_uppercase())
+                .unwrap_or(false)),
+            "teammate display names should start with uppercase; got {teammate_names:?}"
+        );
     }
 }
