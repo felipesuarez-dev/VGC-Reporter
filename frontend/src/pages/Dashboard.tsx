@@ -85,7 +85,7 @@ export function Dashboard() {
         <div>
           <h1 className="text-2xl font-bold">{t("dashboard.title")}</h1>
           {data && (
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
               {t("dashboard.tournaments_used")}: {data.tournaments_used} ·{" "}
               {t("dashboard.total_entries")}: {data.total_entries} ·{" "}
               {t("common.source")}: {data.source}
@@ -118,13 +118,15 @@ export function Dashboard() {
         </div>
       )}
       {data && data.pokemon.length === 0 && !isFetching && (
-        <div className="card text-slate-400">{t("dashboard.empty_format")}</div>
+        <div className="card" style={{ color: "var(--text-muted)" }}>
+          {t("dashboard.empty_format")}
+        </div>
       )}
 
       {data && data.pokemon.length > 0 && (
         <>
           <section className="card">
-            <h2 className="mb-2 text-sm font-semibold text-slate-200">
+            <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--text)" }}>
               {t("dashboard.top_pokemon")}
             </h2>
             <UsageBarChart
@@ -136,19 +138,19 @@ export function Dashboard() {
 
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div className="card">
-              <h2 className="mb-3 text-sm font-semibold text-slate-200">
+              <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
                 {t("dashboard.top_items")}
               </h2>
               <TopList data={topItems} limit={10} />
             </div>
             <div className="card">
-              <h2 className="mb-3 text-sm font-semibold text-slate-200">
+              <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
                 {t("dashboard.top_moves")}
               </h2>
               <TopList data={topMoves} limit={10} />
             </div>
             <div className="card">
-              <h2 className="mb-3 text-sm font-semibold text-slate-200">
+              <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
                 {t("dashboard.top_abilities")}
               </h2>
               <TopList data={topAbilities} limit={10} />
@@ -156,7 +158,7 @@ export function Dashboard() {
           </section>
 
           <section className="card">
-            <h2 className="mb-3 text-sm font-semibold text-slate-200">
+            <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
               {t("dashboard.top_tera")}
             </h2>
             <TopList
@@ -173,11 +175,13 @@ export function Dashboard() {
                   key={p.species}
                   type="button"
                   onClick={() => setSelected(p)}
-                  className="card flex flex-col items-center gap-1 text-center transition hover:border-brand-500 hover:bg-slate-800/50"
+                  className="card flex flex-col items-center gap-1 text-center transition hover:border-[var(--accent)] hover:bg-[var(--bg-elev-strong)]"
                 >
                   <PokemonSprite url={p.sprite_url} name={p.species} size={64} />
-                  <div className="text-xs font-semibold text-slate-100">{p.species}</div>
-                  <div className="text-[10px] text-brand-300">
+                  <div className="text-xs font-semibold" style={{ color: "var(--text)" }}>
+                    {p.species}
+                  </div>
+                  <div className="text-[10px]" style={{ color: "var(--accent)" }}>
                     {p.usage_percent.toFixed(1)}%
                   </div>
                 </button>
@@ -188,34 +192,41 @@ export function Dashboard() {
       )}
 
       <section className="card">
-        <h2 className="mb-1 text-sm font-semibold text-slate-200">
+        <h2 className="mb-1 text-sm font-semibold" style={{ color: "var(--text)" }}>
           {format === "regulation-m-a"
             ? t("dashboard.champions_report")
             : t("dashboard.recent_tournaments")}
         </h2>
-        <p className="mb-3 text-[11px] text-slate-500">
+        <p className="mb-3 text-[11px]" style={{ color: "var(--text-dim)" }}>
           {t("dashboard.tournaments_for_format", { format })}
         </p>
         {(championsFetching || !championsReport) && (
-          <p className="text-xs text-slate-500">{t("common.loading")}</p>
+          <p className="text-xs" style={{ color: "var(--text-dim)" }}>
+            {t("common.loading")}
+          </p>
         )}
         {championsReport &&
           !championsFetching &&
           championsReport.tournaments.length === 0 && (
-            <p className="text-xs text-slate-500">{t("common.empty")}</p>
+            <p className="text-xs" style={{ color: "var(--text-dim)" }}>
+              {t("common.empty")}
+            </p>
           )}
         {championsReport && championsReport.tournaments.length > 0 && (
-          <ul className="divide-y divide-slate-800">
+          <ul className="divide-y divide-[var(--border)]">
             {championsReport.tournaments.map((tour) => (
               <li
                 key={tour.id}
                 className="flex items-center justify-between gap-3 py-2"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-slate-100">
+                  <div
+                    className="truncate text-sm font-medium"
+                    style={{ color: "var(--text)" }}
+                  >
                     {tour.name}
                   </div>
-                  <div className="text-[11px] text-slate-400">
+                  <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>
                     {tour.date && <span>{tour.date}</span>}
                     {tour.players != null && (
                       <span> · {tour.players} {t("dashboard.players")}</span>
@@ -246,7 +257,7 @@ export function Dashboard() {
       </section>
 
       <section className="card">
-        <h2 className="mb-3 text-sm font-semibold text-slate-200">
+        <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
           {t("dashboard.external_sources")}
         </h2>
         <div className="mb-3 grid grid-cols-1 gap-2 md:grid-cols-2">
@@ -280,18 +291,28 @@ export function Dashboard() {
 function MetaSkeleton({ label }: { label: string }) {
   return (
     <div className="space-y-4">
-      <div className="card flex items-center gap-3 text-slate-400">
+      <div
+        className="card flex items-center gap-3"
+        style={{ color: "var(--text-muted)" }}
+      >
         <RefreshCw size={14} className="animate-spin" />
         <span className="text-sm">{label}</span>
       </div>
       <div className="card">
-        <div className="mb-3 h-4 w-32 animate-pulse rounded bg-slate-800" />
+        <div
+          className="mb-3 h-4 w-32 animate-pulse rounded"
+          style={{ backgroundColor: "var(--bg-elev-strong)" }}
+        />
         <div className="space-y-2">
           {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
-              className="h-6 animate-pulse rounded bg-slate-800/70"
-              style={{ width: `${100 - i * 8}%` }}
+              className="h-6 animate-pulse rounded"
+              style={{
+                width: `${100 - i * 8}%`,
+                backgroundColor: "var(--bg-elev-strong)",
+                opacity: 0.7,
+              }}
             />
           ))}
         </div>
@@ -299,12 +320,16 @@ function MetaSkeleton({ label }: { label: string }) {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="card">
-            <div className="mb-3 h-4 w-24 animate-pulse rounded bg-slate-800" />
+            <div
+              className="mb-3 h-4 w-24 animate-pulse rounded"
+              style={{ backgroundColor: "var(--bg-elev-strong)" }}
+            />
             <div className="space-y-2">
               {Array.from({ length: 5 }).map((_, j) => (
                 <div
                   key={j}
-                  className="h-4 w-full animate-pulse rounded bg-slate-800/70"
+                  className="h-4 w-full animate-pulse rounded"
+                  style={{ backgroundColor: "var(--bg-elev-strong)", opacity: 0.7 }}
                 />
               ))}
             </div>

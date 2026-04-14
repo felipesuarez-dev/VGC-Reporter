@@ -184,7 +184,7 @@ export function Pokedex() {
 
         <div>
           <label className="label">{t("pokedex.filter_weak_against")}</label>
-          <p className="mt-0.5 text-[10px] text-slate-500">
+          <p className="mt-0.5 text-[10px]" style={{ color: "var(--text-dim)" }}>
             {t("pokedex.filter_weak_against_help")}
           </p>
           <div className="mt-2">
@@ -198,7 +198,7 @@ export function Pokedex() {
 
         <div>
           <label className="label">{t("pokedex.filter_strong_against")}</label>
-          <p className="mt-0.5 text-[10px] text-slate-500">
+          <p className="mt-0.5 text-[10px]" style={{ color: "var(--text-dim)" }}>
             {t("pokedex.filter_strong_against_help")}
           </p>
           <div className="mt-2">
@@ -216,7 +216,7 @@ export function Pokedex() {
             <div
               role="tablist"
               aria-label={t("pokedex.sort")}
-              className="mt-1 flex overflow-hidden rounded-lg border border-slate-700"
+              className="mt-1 flex overflow-hidden rounded-lg border border-[var(--border)]"
             >
               {SORTS.map((s) => (
                 <button
@@ -226,11 +226,19 @@ export function Pokedex() {
                   aria-selected={sort === s.value}
                   onClick={() => setSort(s.value)}
                   className={cn(
-                    "px-3 py-1.5 text-xs font-medium",
+                    "px-3 py-1.5 text-xs font-medium transition",
                     sort === s.value
-                      ? "bg-brand-500 text-white"
-                      : "bg-slate-900 text-slate-300 hover:bg-slate-800",
+                      ? "text-white"
+                      : "hover:bg-[var(--bg-elev-strong)]",
                   )}
+                  style={
+                    sort === s.value
+                      ? { backgroundColor: "var(--accent)" }
+                      : {
+                          backgroundColor: "var(--bg)",
+                          color: "var(--text-muted)",
+                        }
+                  }
                 >
                   {t(s.key)}
                 </button>
@@ -245,17 +253,30 @@ export function Pokedex() {
         </div>
       </div>
 
-      {isLoading && <div className="card text-slate-400">{t("common.loading")}</div>}
-      {isError && <div className="card text-red-400">{t("common.error")}</div>}
+      {isLoading && (
+        <div className="card" style={{ color: "var(--text-muted)" }}>
+          {t("common.loading")}
+        </div>
+      )}
+      {isError && (
+        <div className="card" style={{ color: "var(--danger)" }}>
+          {t("common.error")}
+        </div>
+      )}
       {data && sorted.length === 0 && (
-        <div className="card text-slate-400">{t("common.empty")}</div>
+        <div className="card" style={{ color: "var(--text-muted)" }}>
+          {t("common.empty")}
+        </div>
       )}
 
       {grouped ? (
         <div className="space-y-6">
           {grouped.map(([gen, list]) => (
             <section key={gen}>
-              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <h2
+                className="mb-2 text-xs font-semibold uppercase tracking-wide"
+                style={{ color: "var(--text-muted)" }}
+              >
                 {t("pokedex.gen_header", { n: gen })}
               </h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
