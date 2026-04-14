@@ -6,7 +6,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
 import { type ChampionsTournament, type PokemonUsage } from "../lib/types";
-import { UsageBarChart } from "../components/charts/UsageBarChart";
+import { UsageBarChart, type UsageBarItem } from "../components/charts/UsageBarChart";
 import { TopList } from "../components/charts/TopList";
 import { typeLabel } from "../lib/labels";
 import type { PokemonType } from "../lib/types";
@@ -51,21 +51,29 @@ export function Dashboard() {
     useState<ChampionsTournament | null>(null);
   const [tournamentExpanded, setTournamentExpanded] = useState(false);
   const tournamentLimit = tournamentExpanded ? 20 : 10;
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: queryKeys.meta(format),
     queryFn: () => ipc.getMetaStats(format),
   });
-  const { data: championsReport } = useQuery({
-    queryKey: queryKeys.championsReport(tournamentLimit),
-    queryFn: () => ipc.listChampionsTournaments(tournamentLimit),
+  const { data: championsReport, isFetching: championsFetching } = useQuery({
+    queryKey: queryKeys.championsReport(format, tournamentLimit),
+    queryFn: () => ipc.listChampionsTournaments(format, tournamentLimit),
     staleTime: 30 * 60 * 1000,
   });
 
   const topPokemon = data?.pokemon.slice(0, 15) ?? [];
-  const chartPokemon = topPokemon.map((p) => ({
+  const chartPokemon: UsageBarItem[] = topPokemon.map((p) => ({
     name: p.species,
     usage_percent: p.usage_percent,
+    count: p.count,
+    sprite_url: p.sprite_url,
+    id: p.species,
   }));
+  const handleBarClick = (item: UsageBarItem) => {
+    const found = topPokemon.find((p) => p.species === item.id);
+    if (found) setSelected(found);
+  };
+  const showMetaSkeleton = isFetching && !data;
   const topItems = data?.top_items ?? [];
   const topMoves = data?.top_moves ?? [];
   const topAbilities = data?.top_abilities ?? [];
@@ -102,13 +110,14 @@ export function Dashboard() {
         </div>
       </header>
 
-      {isLoading && <div className="card text-slate-400">{t("common.loading")}</div>}
+      {isLoading && <MetaSkeleton label={t("common.loading")} />}
+      {showMetaSkeleton && !isLoading && <MetaSkeleton label={t("common.loading")} />}
       {isError && (
         <div className="card text-red-400">
           {t("common.error")}: {(error as Error)?.message ?? "unknown"}
         </div>
       )}
-      {data && data.pokemon.length === 0 && (
+      {data && data.pokemon.length === 0 && !isFetching && (
         <div className="card text-slate-400">{t("dashboard.empty_format")}</div>
       )}
 
@@ -118,7 +127,11 @@ export function Dashboard() {
             <h2 className="mb-2 text-sm font-semibold text-slate-200">
               {t("dashboard.top_pokemon")}
             </h2>
-            <UsageBarChart data={chartPokemon} height={380} />
+            <UsageBarChart
+              data={chartPokemon}
+              height={380}
+              onBarClick={handleBarClick}
+            />
           </section>
 
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -175,15 +188,22 @@ export function Dashboard() {
       )}
 
       <section className="card">
-        <h2 className="mb-3 text-sm font-semibold text-slate-200">
-          {t("dashboard.champions_report")}
+        <h2 className="mb-1 text-sm font-semibold text-slate-200">
+          {format === "regulation-m-a"
+            ? t("dashboard.champions_report")
+            : t("dashboard.recent_tournaments")}
         </h2>
-        {!championsReport && (
+        <p className="mb-3 text-[11px] text-slate-500">
+          {t("dashboard.tournaments_for_format", { format })}
+        </p>
+        {(championsFetching || !championsReport) && (
           <p className="text-xs text-slate-500">{t("common.loading")}</p>
         )}
-        {championsReport && championsReport.tournaments.length === 0 && (
-          <p className="text-xs text-slate-500">{t("common.empty")}</p>
-        )}
+        {championsReport &&
+          !championsFetching &&
+          championsReport.tournaments.length === 0 && (
+            <p className="text-xs text-slate-500">{t("common.empty")}</p>
+          )}
         {championsReport && championsReport.tournaments.length > 0 && (
           <ul className="divide-y divide-slate-800">
             {championsReport.tournaments.map((tour) => (
@@ -253,6 +273,44 @@ export function Dashboard() {
         tournament={selectedTournament}
         onClose={() => setSelectedTournament(null)}
       />
+    </div>
+  );
+}
+
+function MetaSkeleton({ label }: { label: string }) {
+  return (
+    <div className="space-y-4">
+      <div className="card flex items-center gap-3 text-slate-400">
+        <RefreshCw size={14} className="animate-spin" />
+        <span className="text-sm">{label}</span>
+      </div>
+      <div className="card">
+        <div className="mb-3 h-4 w-32 animate-pulse rounded bg-slate-800" />
+        <div className="space-y-2">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-6 animate-pulse rounded bg-slate-800/70"
+              style={{ width: `${100 - i * 8}%` }}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="card">
+            <div className="mb-3 h-4 w-24 animate-pulse rounded bg-slate-800" />
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, j) => (
+                <div
+                  key={j}
+                  className="h-4 w-full animate-pulse rounded bg-slate-800/70"
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
