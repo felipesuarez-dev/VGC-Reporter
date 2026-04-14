@@ -17,9 +17,6 @@ Cargo.lock
 src-tauri/gen/
 src-tauri/WixTools/
 
-# Generated types
-frontend/src/lib/types.generated.ts
-
 # Env / secrets
 .env
 .env.local

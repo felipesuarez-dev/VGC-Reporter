@@ -53,6 +53,7 @@ impl TeamMember {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
 pub struct Team {
+    #[ts(type = "number | null")]
     pub id: Option<i64>,
     pub name: String,
     pub format: Format,
