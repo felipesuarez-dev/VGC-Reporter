@@ -72,7 +72,7 @@ export function TeamBuilder() {
         </button>
       </header>
 
-      <div className="card grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div className="card grid grid-cols-1 gap-3 md:grid-cols-3">
         <div>
           <label className="label">{t("team_builder.team_name")}</label>
           <input
@@ -80,6 +80,20 @@ export function TeamBuilder() {
             value={team.name}
             onChange={(e) => setName(e.target.value)}
           />
+        </div>
+        <div>
+          <label className="label">{t("team_builder.regulation")}</label>
+          <select
+            className="input mt-1 cursor-not-allowed opacity-70"
+            value="regulation-m-a"
+            disabled
+            title={t("team_builder.regulation_hint")}
+          >
+            <option value="regulation-m-a">Regulation M-A</option>
+          </select>
+          <p className="mt-1 text-[10px] text-slate-500">
+            {t("team_builder.regulation_hint")}
+          </p>
         </div>
         <div>
           <label className="label">{t("team_builder.notes")}</label>

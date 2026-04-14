@@ -115,7 +115,16 @@
     "tera_type": "Tera Type",
     "moves": "Movimientos",
     "evs": "EVs",
-    "saved": "Equipo guardado"
+    "saved": "Equipo guardado",
+    "regulation": "Regulación",
+    "regulation_hint": "Las validaciones se aplican según esta regulación. Más regulaciones próximamente.",
+    "import_showdown": "Importar Showdown",
+    "copy_showdown": "Copiar Showdown",
+    "paste_here": "Pega aquí el texto en formato Showdown",
+    "import": "Importar",
+    "imported": "Equipo importado",
+    "copied": "Copiado al portapapeles",
+    "import_failed": "No se pudo importar el equipo"
   },
   "my_teams": {
     "title": "Mis equipos",

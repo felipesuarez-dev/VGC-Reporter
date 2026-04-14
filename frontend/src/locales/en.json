@@ -115,7 +115,16 @@
     "tera_type": "Tera Type",
     "moves": "Moves",
     "evs": "EVs",
-    "saved": "Team saved"
+    "saved": "Team saved",
+    "regulation": "Regulation",
+    "regulation_hint": "Validations apply based on this regulation. More regulations coming soon.",
+    "import_showdown": "Import Showdown",
+    "copy_showdown": "Copy Showdown",
+    "paste_here": "Paste your Showdown-formatted team here",
+    "import": "Import",
+    "imported": "Team imported",
+    "copied": "Copied to clipboard",
+    "import_failed": "Failed to import team"
   },
   "my_teams": {
     "title": "My Teams",
