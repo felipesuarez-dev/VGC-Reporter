@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "VGC-Reporter",
+    "name": "VGC Reportes",
     "tagline": "Estadísticas competitivas de Pokémon Champions",
     "version": "Versión",
     "by": "por"
@@ -23,6 +23,7 @@
     "delete": "Eliminar",
     "edit": "Editar",
     "search": "Buscar",
+    "search_placeholder": "Buscar...",
     "filter": "Filtrar",
     "all_types": "Todos los tipos",
     "new": "Nuevo",
@@ -49,7 +50,9 @@
     "view_standings": "Ver standings",
     "view_more": "Ver más",
     "players": "jugadores",
-    "open_on_x": "Abrir en X"
+    "open_on_x": "Abrir en X",
+    "usage_percent_label": "Porcentaje de Uso",
+    "count_label": "Conteo"
   },
   "tournament": {
     "standings": "Standings",
@@ -72,7 +75,8 @@
     "sort_generation": "Por generación",
     "sort_alphabetical": "Alfabético",
     "sort_usage": "Por uso en el meta",
-    "gen_header": "Gen {{n}}"
+    "gen_header": "Gen {{n}}",
+    "base_stat_total": "Total Estadísticas"
   },
   "pokemon_detail": {
     "doubles": "Doubles",

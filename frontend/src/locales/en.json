@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "VGC-Reporter",
+    "name": "VGC Reportes",
     "tagline": "Pokémon Champions competitive stats",
     "version": "Version",
     "by": "by"
@@ -23,6 +23,7 @@
     "delete": "Delete",
     "edit": "Edit",
     "search": "Search",
+    "search_placeholder": "Search...",
     "filter": "Filter",
     "all_types": "All types",
     "new": "New",
@@ -49,7 +50,9 @@
     "view_standings": "View standings",
     "view_more": "View more",
     "players": "players",
-    "open_on_x": "Open on X"
+    "open_on_x": "Open on X",
+    "usage_percent_label": "Usage %",
+    "count_label": "Count"
   },
   "tournament": {
     "standings": "Standings",
@@ -72,7 +75,8 @@
     "sort_generation": "By generation",
     "sort_alphabetical": "Alphabetical",
     "sort_usage": "By meta usage",
-    "gen_header": "Gen {{n}}"
+    "gen_header": "Gen {{n}}",
+    "base_stat_total": "Base Stat Total"
   },
   "pokemon_detail": {
     "doubles": "Doubles",
