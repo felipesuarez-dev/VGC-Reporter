@@ -1,9 +1,18 @@
 use crate::adapters::ShowdownClient;
 use crate::config;
+use crate::domain::move_::MoveSummary;
 use crate::domain::pokemon::{Pokemon, PokemonType};
 use crate::error::AppError;
 use crate::storage::CacheRepo;
+use std::collections::HashMap;
 use std::sync::Arc;
+
+fn canonical_species_id(s: &str) -> String {
+    s.chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .map(|c| c.to_ascii_lowercase())
+        .collect()
+}
 
 #[derive(Clone)]
 pub struct PokedexService {
@@ -87,5 +96,50 @@ impl PokedexService {
         let bytes = serde_json::to_vec(&list)?;
         self.cache.put(KEY, &bytes, config::TTL_SHOWDOWN_DATA)?;
         Ok(list)
+    }
+
+    async fn move_details(&self) -> Result<HashMap<String, MoveSummary>, AppError> {
+        const KEY: &str = "showdown::move_details";
+        if let Some(bytes) = self.cache.get(KEY)? {
+            if let Ok(map) = serde_json::from_slice::<HashMap<String, MoveSummary>>(&bytes) {
+                return Ok(map);
+            }
+        }
+        let map = self.showdown.fetch_move_details().await?;
+        let bytes = serde_json::to_vec(&map)?;
+        self.cache.put(KEY, &bytes, config::TTL_SHOWDOWN_DATA)?;
+        Ok(map)
+    }
+
+    async fn learnsets(&self) -> Result<HashMap<String, Vec<String>>, AppError> {
+        const KEY: &str = "showdown::learnsets";
+        if let Some(bytes) = self.cache.get(KEY)? {
+            if let Ok(map) = serde_json::from_slice::<HashMap<String, Vec<String>>>(&bytes) {
+                return Ok(map);
+            }
+        }
+        let map = self.showdown.fetch_learnsets().await?;
+        let bytes = serde_json::to_vec(&map)?;
+        self.cache.put(KEY, &bytes, config::TTL_SHOWDOWN_DATA)?;
+        Ok(map)
+    }
+
+    pub async fn list_moves_for_species(
+        &self,
+        species: &str,
+    ) -> Result<Vec<MoveSummary>, AppError> {
+        let details = self.move_details().await?;
+        let learnsets = self.learnsets().await?;
+        let id = canonical_species_id(species);
+        let Some(move_ids) = learnsets.get(&id) else {
+            return Ok(Vec::new());
+        };
+        let mut out: Vec<MoveSummary> = move_ids
+            .iter()
+            .filter_map(|mid| details.get(mid).cloned())
+            .collect();
+        out.sort_by(|a, b| a.name.cmp(&b.name));
+        out.dedup_by(|a, b| a.id == b.id);
+        Ok(out)
     }
 }

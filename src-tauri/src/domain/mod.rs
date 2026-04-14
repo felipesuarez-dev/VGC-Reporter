@@ -16,7 +16,7 @@ pub use champions::{ChampionsReport, ChampionsTournament, DecklistPokemon, Tourn
 pub use evs::{EvSpread, EV_MAX_PER_STAT, EV_MAX_TOTAL};
 pub use format::Format;
 pub use item::Item;
-pub use move_::Move;
+pub use move_::{Move, MoveCategory, MoveSummary};
 pub use nature::Nature;
 pub use pokemon::{Pokemon, PokemonType, Stats};
 pub use sets::{PokemonSet, SetsBundle};

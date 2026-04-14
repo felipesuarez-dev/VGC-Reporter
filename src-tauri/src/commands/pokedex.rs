@@ -1,3 +1,4 @@
+use crate::domain::move_::MoveSummary;
 use crate::domain::pokemon::{Pokemon, PokemonType};
 use crate::domain::sets::SetsBundle;
 use crate::error::AppError;
@@ -41,6 +42,14 @@ pub async fn list_items(state: State<'_, AppState>) -> Result<Vec<String>, AppEr
 #[tauri::command]
 pub async fn list_moves(state: State<'_, AppState>) -> Result<Vec<String>, AppError> {
     state.pokedex.list_moves().await
+}
+
+#[tauri::command]
+pub async fn list_moves_for_species(
+    state: State<'_, AppState>,
+    species: String,
+) -> Result<Vec<MoveSummary>, AppError> {
+    state.pokedex.list_moves_for_species(&species).await
 }
 
 #[tauri::command]

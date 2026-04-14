@@ -3,6 +3,7 @@ use crate::adapters::sprite_resolver::{
 };
 use crate::adapters::HttpClient;
 use crate::config;
+use crate::domain::move_::{MoveCategory, MoveSummary};
 use crate::domain::pokemon::{Pokemon, PokemonType, Stats};
 use crate::error::AppError;
 use regex::Regex;
@@ -120,6 +121,54 @@ impl ShowdownClient {
         names.dedup();
         Ok(names)
     }
+
+    /// Fetches every move with its type and category keyed by move id.
+    pub async fn fetch_move_details(&self) -> Result<HashMap<String, MoveSummary>, AppError> {
+        let url = format!("{}/moves.json", config::SHOWDOWN_DATA);
+        let raw: HashMap<String, RawMoveEntry> =
+            self.http.get_json(&url, config::TTL_SHOWDOWN_DATA).await?;
+        let mut out = HashMap::with_capacity(raw.len());
+        for (id, entry) in raw {
+            let Some(name) = entry.name else { continue };
+            if name.is_empty() {
+                continue;
+            }
+            let Some(ty) = entry.type_.as_deref().and_then(PokemonType::parse) else {
+                continue;
+            };
+            let category = match entry.category.as_deref() {
+                Some("Physical") => MoveCategory::Physical,
+                Some("Special") => MoveCategory::Special,
+                _ => MoveCategory::Status,
+            };
+            out.insert(
+                id.clone(),
+                MoveSummary {
+                    id,
+                    name,
+                    type_: ty,
+                    category,
+                },
+            );
+        }
+        Ok(out)
+    }
+
+    /// Fetches Showdown's learnsets.json. The raw shape is
+    /// `{ species_id: { learnset: { move_id: ["9L1", …] } } }`; we flatten
+    /// to `species_id -> Vec<move_id>` without resolving pre-evolution chains
+    /// (VGC competitive teams use fully evolved mons in practice).
+    pub async fn fetch_learnsets(&self) -> Result<HashMap<String, Vec<String>>, AppError> {
+        let url = format!("{}/learnsets.json", config::SHOWDOWN_DATA);
+        let raw: HashMap<String, RawLearnsetEntry> =
+            self.http.get_json(&url, config::TTL_SHOWDOWN_DATA).await?;
+        let mut out = HashMap::with_capacity(raw.len());
+        for (species, entry) in raw {
+            let moves: Vec<String> = entry.learnset.into_keys().collect();
+            out.insert(species, moves);
+        }
+        Ok(out)
+    }
 }
 
 /// Extracts the ordered set of `name:"…"` literals out of a Showdown data
@@ -143,6 +192,22 @@ fn extract_js_names(body: &str) -> Vec<String> {
 struct RawNamed {
     #[serde(default)]
     name: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RawMoveEntry {
+    #[serde(default)]
+    name: Option<String>,
+    #[serde(default, rename = "type")]
+    type_: Option<String>,
+    #[serde(default)]
+    category: Option<String>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct RawLearnsetEntry {
+    #[serde(default)]
+    learnset: HashMap<String, serde_json::Value>,
 }
 
 pub struct ShowdownPokedex {

@@ -22,3 +22,12 @@ pub struct Move {
     pub pp: u16,
     pub description: String,
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
+pub struct MoveSummary {
+    pub id: String,
+    pub name: String,
+    pub type_: PokemonType,
+    pub category: MoveCategory,
+}

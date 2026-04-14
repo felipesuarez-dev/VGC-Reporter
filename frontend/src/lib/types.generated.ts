@@ -23,6 +23,8 @@ export type Move = { id: string, name: string, type_: PokemonType, category: Mov
 
 export type MoveCategory = "Physical" | "Special" | "Status";
 
+export type MoveSummary = { id: string, name: string, type_: PokemonType, category: MoveCategory, };
+
 export type MoveUsage = { name: string, usage_percent: number, };
 
 export type Nature = "Hardy" | "Lonely" | "Brave" | "Adamant" | "Naughty" | "Bold" | "Docile" | "Relaxed" | "Impish" | "Lax" | "Timid" | "Hasty" | "Serious" | "Jolly" | "Naive" | "Modest" | "Mild" | "Quiet" | "Bashful" | "Rash" | "Calm" | "Gentle" | "Sassy" | "Careful" | "Quirky";
