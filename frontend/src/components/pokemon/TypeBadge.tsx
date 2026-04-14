@@ -1,4 +1,6 @@
+import { useTranslation } from "react-i18next";
 import type { PokemonType } from "../../lib/types";
+import { typeLabel } from "../../lib/labels";
 import { cn } from "../../lib/cn";
 
 const COLORS: Record<PokemonType, string> = {
@@ -24,6 +26,7 @@ const COLORS: Record<PokemonType, string> = {
 };
 
 export function TypeBadge({ type, className }: { type: PokemonType; className?: string }) {
+  const { t } = useTranslation();
   return (
     <span
       className={cn(
@@ -32,7 +35,7 @@ export function TypeBadge({ type, className }: { type: PokemonType; className?: 
         className,
       )}
     >
-      {type}
+      {typeLabel(t, type)}
     </span>
   );
 }

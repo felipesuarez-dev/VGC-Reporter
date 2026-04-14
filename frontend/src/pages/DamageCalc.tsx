@@ -20,6 +20,7 @@ import {
 } from "../lib/types";
 import { SearchSelect } from "../components/ui/SearchSelect";
 import { EVSliders } from "../components/team/EVSliders";
+import { natureLabel, terrainLabel, typeLabel, weatherLabel } from "../lib/labels";
 
 const GEN = Generations.get(9);
 
@@ -153,7 +154,7 @@ export function DamageCalc() {
           >
             {WEATHERS.map((w) => (
               <option key={w || "none"} value={w}>
-                {w || "—"}
+                {w ? weatherLabel(t, w) : "—"}
               </option>
             ))}
           </select>
@@ -167,7 +168,7 @@ export function DamageCalc() {
           >
             {TERRAINS.map((tr) => (
               <option key={tr || "none"} value={tr}>
-                {tr || "—"}
+                {tr ? terrainLabel(t, tr) : "—"}
               </option>
             ))}
           </select>
@@ -246,10 +247,11 @@ function SidePanel({ title, side, setSide, pokedex, items, moves, showMoves }: S
         </div>
         <div>
           <label className="label">{t("team_builder.nature")}</label>
-          <SearchSelect<string>
+          <SearchSelect<Nature>
             value={side.nature}
             options={[...ALL_NATURES]}
-            onChange={(n) => update({ nature: (n ?? null) as Nature | null })}
+            onChange={(n) => update({ nature: n })}
+            getOptionLabel={(n) => natureLabel(t, n)}
             className="mt-1"
           />
         </div>
@@ -259,6 +261,7 @@ function SidePanel({ title, side, setSide, pokedex, items, moves, showMoves }: S
             value={side.tera}
             options={[...ALL_TYPES]}
             onChange={(ty) => update({ tera: ty })}
+            getOptionLabel={(ty) => typeLabel(t, ty)}
             className="mt-1"
           />
         </div>
