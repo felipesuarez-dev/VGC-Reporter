@@ -14,12 +14,15 @@ import {
   ALL_NATURES,
   ALL_TYPES,
   type EvSpread,
+  type MoveSummary,
   type Nature,
   type Pokemon,
   type PokemonType,
 } from "../lib/types";
 import { SearchSelect } from "../components/ui/SearchSelect";
 import { EVSliders } from "../components/team/EVSliders";
+import { PokemonSprite } from "../components/pokemon/PokemonSprite";
+import { TypeBadge } from "../components/pokemon/TypeBadge";
 import { natureLabel, terrainLabel, typeLabel, weatherLabel } from "../lib/labels";
 
 const GEN = Generations.get(9);
@@ -209,9 +212,59 @@ interface SideProps {
 function SidePanel({ title, side, setSide, pokedex, items, moves, showMoves }: SideProps) {
   const { t } = useTranslation();
   const update = (patch: Partial<SideState>) => setSide({ ...side, ...patch });
+  const speciesKey = side.species?.name ?? "";
+  const { data: speciesMoves = [] } = useQuery({
+    queryKey: ["moves-for-species", speciesKey],
+    queryFn: () => ipc.listMovesForSpecies(speciesKey),
+    enabled: showMoves === true && speciesKey.length > 0,
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+  const moveOptions: MoveSummary[] = speciesMoves.length > 0
+    ? speciesMoves
+    : moves.map((name) => ({
+        id: name.toLowerCase().replace(/[^a-z0-9]/g, ""),
+        name,
+        type_: "Normal" as PokemonType,
+        category: "Status",
+      }));
+  const moveByName = useMemo(() => {
+    const m = new Map<string, MoveSummary>();
+    for (const mv of moveOptions) m.set(mv.name, mv);
+    return m;
+  }, [moveOptions]);
   return (
     <div className="card space-y-3">
       <h2 className="text-sm font-semibold text-slate-200">{title}</h2>
+
+      {side.species && (
+        <div className="flex items-center gap-3 rounded border border-slate-800 bg-slate-900/60 p-2">
+          <PokemonSprite
+            url={side.species.sprite_url}
+            fallbackUrl={side.species.sprite_fallback_url}
+            name={side.species.name}
+            size={56}
+          />
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="text-sm font-semibold text-slate-100">
+              {side.species.name}
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {side.species.types.map((ty) => (
+                <TypeBadge key={ty} type={ty} />
+              ))}
+              {side.tera && (
+                <span className="text-[10px] text-slate-400">
+                  · {t("tera.label")}: <TypeBadge type={side.tera} />
+                </span>
+              )}
+            </div>
+            <div className="text-[10px] text-slate-500">
+              {side.item && <span>{side.item}</span>}
+              {side.nature && <span> · {natureLabel(t, side.nature)}</span>}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div>
         <label className="label">{t("team_builder.pokemon")}</label>
@@ -289,19 +342,38 @@ function SidePanel({ title, side, setSide, pokedex, items, moves, showMoves }: S
         <div>
           <label className="label">{t("team_builder.moves")}</label>
           <div className="mt-1 grid grid-cols-2 gap-2">
-            {[0, 1, 2, 3].map((i) => (
-              <SearchSelect<string>
-                key={i}
-                value={side.moves[i]}
-                options={moves}
-                onChange={(mv) => {
-                  const next = [...side.moves];
-                  next[i] = mv;
-                  update({ moves: next });
-                }}
-                placeholder={`${t("team_builder.moves")} ${i + 1}`}
-              />
-            ))}
+            {[0, 1, 2, 3].map((i) => {
+              const raw = side.moves[i];
+              const current = raw
+                ? moveByName.get(raw) ?? {
+                    id: raw,
+                    name: raw,
+                    type_: "Normal" as PokemonType,
+                    category: "Status" as const,
+                  }
+                : null;
+              return (
+                <SearchSelect<MoveSummary>
+                  key={i}
+                  value={current}
+                  options={moveOptions}
+                  onChange={(mv) => {
+                    const next = [...side.moves];
+                    next[i] = mv?.name ?? null;
+                    update({ moves: next });
+                  }}
+                  getOptionLabel={(m) => m.name}
+                  getOptionKey={(m) => m.id}
+                  placeholder={`${t("team_builder.moves")} ${i + 1}`}
+                  renderOption={(opt) => (
+                    <span className="flex min-w-0 flex-1 items-center gap-2">
+                      <span className="truncate">{opt.name}</span>
+                      <TypeBadge type={opt.type_} />
+                    </span>
+                  )}
+                />
+              );
+            })}
           </div>
         </div>
       )}
