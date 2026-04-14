@@ -14,7 +14,7 @@ impl LimitlessClient {
         Self { http }
     }
 
-    /// List recent VGC tournaments for a given format code (e.g. "M2A").
+    /// List recent VGC tournaments for a given format code (e.g. "M-A", "SVI").
     /// Returns an empty list if the format does not live on Limitless.
     pub async fn list_tournaments(
         &self,
@@ -54,11 +54,11 @@ impl LimitlessClient {
     }
 
     /// Lists tournaments and keeps only the ones that look like Champions
-    /// Regulation M-A. Limitless's `format` field is inconsistent across
-    /// listings, so the filter accepts:
-    ///   - exact `M-A` / `M2A` / starts-with `M-A`
-    ///   - tournament name containing "champions"
-    /// Fetches a wider window than `limit` to account for filtered-out rows.
+    /// Regulation M-A. Even though the API is called with `format=M-A`, older
+    /// listings occasionally report `m-a`, `ma`, `m2a` or no format at all, so
+    /// the client-side filter normalises and also rescues anything whose name
+    /// mentions "champions". Fetches a wider window than `limit` to absorb the
+    /// drop-through.
     pub async fn list_tournaments_by_format(
         &self,
         format: Format,
@@ -76,11 +76,16 @@ fn filter_champions(
 ) -> Vec<LimitlessTournamentSummary> {
     list.into_iter()
         .filter(|t| {
-            let f = t.format.as_deref().unwrap_or("").trim();
+            let normalized = t
+                .format
+                .as_deref()
+                .unwrap_or("")
+                .to_lowercase()
+                .replace(['-', ' ', '_'], "");
             let name_lc = t.name.to_lowercase();
-            f == "M-A"
-                || f == "M2A"
-                || f.starts_with("M-A")
+            normalized == "ma"
+                || normalized == "m2a"
+                || normalized.starts_with("ma")
                 || name_lc.contains("champions")
         })
         .take(limit)
@@ -264,7 +269,7 @@ mod tests {
                 name: "Local Reg I Cup".into(),
                 date: None,
                 players: Some(50),
-                format: Some("I".into()),
+                format: Some("SVI".into()),
                 organizer_id: None,
             },
             LimitlessTournamentSummary {
@@ -283,11 +288,18 @@ mod tests {
                 format: None,
                 organizer_id: None,
             },
+            LimitlessTournamentSummary {
+                id: "4".into(),
+                name: "Legacy Mega".into(),
+                date: None,
+                players: Some(32),
+                format: Some("m-a".into()),
+                organizer_id: None,
+            },
         ];
         let kept = filter_champions(list, 10);
-        assert_eq!(kept.len(), 2);
-        assert_eq!(kept[0].id, "2");
-        assert_eq!(kept[1].id, "3");
+        let ids: Vec<&str> = kept.iter().map(|t| t.id.as_str()).collect();
+        assert_eq!(ids, vec!["2", "3", "4"]);
     }
 
     #[test]

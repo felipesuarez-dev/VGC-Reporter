@@ -28,11 +28,13 @@ impl Format {
     }
 
     /// `None` = format does not live on Limitless (e.g. singles OU).
+    /// Codes verified against the live Limitless API: VGC uses `M-A` and the
+    /// SV Reg I format reports as `SVI` — not `M2A` / `I` like older guesses.
     pub fn limitless_code(&self) -> Option<&'static str> {
         match self {
-            Format::RegulationMA => Some("M2A"),
+            Format::RegulationMA => Some("M-A"),
             Format::ChampionsSingles => None,
-            Format::RegulationI => Some("I"),
+            Format::RegulationI => Some("SVI"),
             Format::Gen9Ou => None,
         }
     }
