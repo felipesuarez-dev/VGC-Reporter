@@ -1,6 +1,7 @@
 import { Command } from "cmdk";
 import { Check, ChevronsUpDown, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "../../lib/cn";
 
 export interface SearchSelectProps<T> {
@@ -22,12 +23,15 @@ export function SearchSelect<T>({
   onChange,
   getOptionLabel = (o) => String(o),
   getOptionKey,
-  placeholder = "Search…",
-  emptyText = "No results",
+  placeholder,
+  emptyText,
   allowClear = true,
   disabled = false,
   className,
 }: SearchSelectProps<T>) {
+  const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t("common.search_placeholder");
+  const resolvedEmpty = emptyText ?? t("common.empty");
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const listId = useId();
@@ -66,7 +70,7 @@ export function SearchSelect<T>({
         aria-expanded={open}
         aria-controls={listId}
       >
-        <span className="truncate">{display || placeholder}</span>
+        <span className="truncate">{display || resolvedPlaceholder}</span>
         <span className="flex items-center gap-1 text-slate-400">
           {allowClear && value !== null && !disabled && (
             <X
@@ -86,15 +90,15 @@ export function SearchSelect<T>({
           id={listId}
           className="absolute z-50 mt-1 w-full overflow-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-xl"
         >
-          <Command label={placeholder} className="flex flex-col">
+          <Command label={resolvedPlaceholder} className="flex flex-col">
             <Command.Input
               autoFocus
-              placeholder={placeholder}
+              placeholder={resolvedPlaceholder}
               className="w-full border-b border-slate-800 bg-transparent px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-500"
             />
             <Command.List className="max-h-64 overflow-y-auto">
               <Command.Empty className="px-3 py-4 text-center text-sm text-slate-500">
-                {emptyText}
+                {resolvedEmpty}
               </Command.Empty>
               {options.map((opt) => {
                 const label = getOptionLabel(opt);

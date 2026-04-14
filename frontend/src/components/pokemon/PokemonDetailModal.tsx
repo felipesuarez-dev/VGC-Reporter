@@ -167,7 +167,7 @@ function ModalBody({
               </div>
             ))}
             <div className="col-span-3 text-right text-[11px] text-slate-500">
-              BST: {total}
+              {t("pokedex.base_stat_total")}: {total}
             </div>
           </div>
           <div className="mt-2 flex flex-wrap gap-1">
