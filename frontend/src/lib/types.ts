@@ -17,6 +17,7 @@ export type {
   MetaSnapshot,
   Move,
   MoveCategory,
+  MoveSummary,
   MoveUsage,
   Nature,
   Pokemon,

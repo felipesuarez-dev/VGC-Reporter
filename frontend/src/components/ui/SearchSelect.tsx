@@ -10,6 +10,7 @@ export interface SearchSelectProps<T> {
   onChange: (value: T | null) => void;
   getOptionLabel?: (opt: T) => string;
   getOptionKey?: (opt: T) => string;
+  renderOption?: (opt: T, selected: boolean) => React.ReactNode;
   placeholder?: string;
   emptyText?: string;
   allowClear?: boolean;
@@ -23,6 +24,7 @@ export function SearchSelect<T>({
   onChange,
   getOptionLabel = (o) => String(o),
   getOptionKey,
+  renderOption,
   placeholder,
   emptyText,
   allowClear = true,
@@ -113,12 +115,16 @@ export function SearchSelect<T>({
                       setOpen(false);
                     }}
                     className={cn(
-                      "flex cursor-pointer items-center justify-between px-3 py-2 text-sm text-slate-200",
+                      "flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-sm text-slate-200",
                       "aria-selected:bg-slate-800",
                     )}
                   >
-                    <span className="truncate">{label}</span>
-                    {selected && <Check className="h-4 w-4 text-brand-400" />}
+                    {renderOption ? (
+                      renderOption(opt, selected)
+                    ) : (
+                      <span className="truncate">{label}</span>
+                    )}
+                    {selected && <Check className="h-4 w-4 shrink-0 text-brand-400" />}
                   </Command.Item>
                 );
               })}

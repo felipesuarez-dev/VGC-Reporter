@@ -3,6 +3,7 @@ import type {
   ChampionsReport,
   Format,
   MetaSnapshot,
+  MoveSummary,
   Pokemon,
   PokemonType,
   SetsBundle,
@@ -54,6 +55,8 @@ export const ipc = {
     call<TopTeam[]>("get_top_teams", { format, limit }),
   listItems: () => call<string[]>("list_items"),
   listMoves: () => call<string[]>("list_moves"),
+  listMovesForSpecies: (species: string) =>
+    call<MoveSummary[]>("list_moves_for_species", { species }),
   getPokemonSets: (species: string) =>
     call<SetsBundle>("get_pokemon_sets", { species }),
   listChampionsTournaments: (format?: Format, limit?: number) =>
