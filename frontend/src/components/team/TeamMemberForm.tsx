@@ -73,7 +73,7 @@ export function TeamMemberForm({ slot, value, pokedex, items, moves, onChange }:
               size={64}
             />
           ) : (
-            <div className="h-16 w-16 rounded-full border-2 border-dashed border-slate-700" />
+            <div className="h-16 w-16 rounded-full border-2 border-dashed border-[var(--border)]" />
           )}
         </div>
         <div className="flex-1">

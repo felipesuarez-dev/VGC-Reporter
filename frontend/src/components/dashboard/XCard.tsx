@@ -33,13 +33,29 @@ export function XCard({ handle, url, description }: Props) {
 
   return (
     <div className="card flex items-center gap-3">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-800 text-slate-200">
+      <div
+        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full"
+        style={{
+          backgroundColor: "var(--bg-elev-strong)",
+          color: "var(--text)",
+        }}
+      >
         <XIcon className="h-5 w-5" />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-semibold text-slate-100">@{handle}</div>
+        <div
+          className="truncate text-sm font-semibold"
+          style={{ color: "var(--text)" }}
+        >
+          @{handle}
+        </div>
         {description && (
-          <div className="truncate text-xs text-slate-400">{description}</div>
+          <div
+            className="truncate text-xs"
+            style={{ color: "var(--text-muted)" }}
+          >
+            {description}
+          </div>
         )}
       </div>
       <button

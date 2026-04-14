@@ -30,10 +30,20 @@ export function TopTeams() {
         <h1 className="text-2xl font-bold">{t("top_teams.title")}</h1>
       </header>
 
-      {isLoading && <div className="card text-slate-400">{t("common.loading")}</div>}
-      {isError && <div className="card text-red-400">{t("common.error")}</div>}
+      {isLoading && (
+        <div className="card" style={{ color: "var(--text-muted)" }}>
+          {t("common.loading")}
+        </div>
+      )}
+      {isError && (
+        <div className="card" style={{ color: "var(--danger)" }}>
+          {t("common.error")}
+        </div>
+      )}
       {data && data.length === 0 && (
-        <div className="card text-slate-400">{t("common.empty")}</div>
+        <div className="card" style={{ color: "var(--text-muted)" }}>
+          {t("common.empty")}
+        </div>
       )}
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -41,12 +51,14 @@ export function TopTeams() {
           <div key={`${tt.tournament}-${idx}`} className="card space-y-3">
             <div className="flex items-start justify-between">
               <div>
-                <div className="text-sm font-semibold text-slate-100">
+                <div className="text-sm font-semibold" style={{ color: "var(--text)" }}>
                   {tt.player ?? "—"}
                 </div>
-                <div className="text-[11px] text-slate-500">{tt.tournament}</div>
+                <div className="text-[11px]" style={{ color: "var(--text-dim)" }}>
+                  {tt.tournament}
+                </div>
               </div>
-              <div className="text-right text-[11px] text-slate-400">
+              <div className="text-right text-[11px]" style={{ color: "var(--text-muted)" }}>
                 {tt.placing != null && (
                   <div>
                     {t("top_teams.placing")}: #{tt.placing}
@@ -72,32 +84,39 @@ export function TopTeams() {
       </div>
 
       <section className="card">
-        <h2 className="mb-1 text-sm font-semibold text-slate-200">
+        <h2 className="mb-1 text-sm font-semibold" style={{ color: "var(--text)" }}>
           {t("dashboard.recent_tournaments")}
         </h2>
-        <p className="mb-3 text-[11px] text-slate-500">
+        <p className="mb-3 text-[11px]" style={{ color: "var(--text-dim)" }}>
           {t("dashboard.tournaments_for_format", { format: FORMAT })}
         </p>
         {(tournamentsFetching || !championsReport) && (
-          <p className="text-xs text-slate-500">{t("common.loading")}</p>
+          <p className="text-xs" style={{ color: "var(--text-dim)" }}>
+            {t("common.loading")}
+          </p>
         )}
         {championsReport &&
           !tournamentsFetching &&
           championsReport.tournaments.length === 0 && (
-            <p className="text-xs text-slate-500">{t("common.empty")}</p>
+            <p className="text-xs" style={{ color: "var(--text-dim)" }}>
+              {t("common.empty")}
+            </p>
           )}
         {championsReport && championsReport.tournaments.length > 0 && (
-          <ul className="divide-y divide-slate-800">
+          <ul className="divide-y divide-[var(--border)]">
             {championsReport.tournaments.map((tour) => (
               <li
                 key={tour.id}
                 className="flex items-center justify-between gap-3 py-2"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-slate-100">
+                  <div
+                    className="truncate text-sm font-medium"
+                    style={{ color: "var(--text)" }}
+                  >
                     {tour.name}
                   </div>
-                  <div className="text-[11px] text-slate-400">
+                  <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>
                     {tour.date && <span>{tour.date}</span>}
                     {tour.players != null && (
                       <span> · {tour.players} {t("dashboard.players")}</span>

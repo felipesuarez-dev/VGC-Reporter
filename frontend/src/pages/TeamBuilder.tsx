@@ -148,7 +148,7 @@ export function TeamBuilder() {
           >
             <option value="regulation-m-a">Regulation M-A</option>
           </select>
-          <p className="mt-1 text-[10px] text-slate-500">
+          <p className="mt-1 text-[10px]" style={{ color: "var(--text-dim)" }}>
             {t("team_builder.regulation_hint")}
           </p>
         </div>
@@ -217,7 +217,7 @@ export function TeamBuilder() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-slate-100">
+              <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>
                 {t("team_builder.import_showdown")}
               </h2>
               <button

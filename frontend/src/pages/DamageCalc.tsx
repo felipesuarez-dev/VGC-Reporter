@@ -181,17 +181,31 @@ export function DamageCalc() {
       <div className="card space-y-3">
         <div className="label">{t("damage_calc.result")}</div>
         {results.length === 0 && (
-          <p className="text-xs text-slate-500">—</p>
+          <p className="text-xs" style={{ color: "var(--text-dim)" }}>—</p>
         )}
         {results.map((r) => (
-          <div key={r.move} className="rounded border border-slate-800 bg-slate-950/40 p-3">
+          <div
+            key={r.move}
+            className="rounded border p-3"
+            style={{
+              borderColor: "var(--border)",
+              backgroundColor: "var(--bg)",
+            }}
+          >
             <div className="flex items-baseline justify-between">
-              <span className="font-semibold text-slate-100">{r.move}</span>
-              <span className="text-sm text-brand-300">
+              <span className="font-semibold" style={{ color: "var(--text)" }}>
+                {r.move}
+              </span>
+              <span className="text-sm" style={{ color: "var(--accent)" }}>
                 {r.min}–{r.max} ({r.minPct}–{r.maxPct}%)
               </span>
             </div>
-            <pre className="mt-1 whitespace-pre-wrap text-[11px] text-slate-400">{r.desc}</pre>
+            <pre
+              className="mt-1 whitespace-pre-wrap text-[11px]"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {r.desc}
+            </pre>
           </div>
         ))}
       </div>
@@ -234,10 +248,18 @@ function SidePanel({ title, side, setSide, pokedex, items, moves, showMoves }: S
   }, [moveOptions]);
   return (
     <div className="card space-y-3">
-      <h2 className="text-sm font-semibold text-slate-200">{title}</h2>
+      <h2 className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+        {title}
+      </h2>
 
       {side.species && (
-        <div className="flex items-center gap-3 rounded border border-slate-800 bg-slate-900/60 p-2">
+        <div
+          className="flex items-center gap-3 rounded border p-2"
+          style={{
+            borderColor: "var(--border)",
+            backgroundColor: "var(--bg)",
+          }}
+        >
           <PokemonSprite
             url={side.species.sprite_url}
             fallbackUrl={side.species.sprite_fallback_url}
@@ -245,7 +267,7 @@ function SidePanel({ title, side, setSide, pokedex, items, moves, showMoves }: S
             size={56}
           />
           <div className="min-w-0 flex-1 space-y-1">
-            <div className="text-sm font-semibold text-slate-100">
+            <div className="text-sm font-semibold" style={{ color: "var(--text)" }}>
               {side.species.name}
             </div>
             <div className="flex flex-wrap gap-1">
@@ -253,12 +275,12 @@ function SidePanel({ title, side, setSide, pokedex, items, moves, showMoves }: S
                 <TypeBadge key={ty} type={ty} />
               ))}
               {side.tera && (
-                <span className="text-[10px] text-slate-400">
+                <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
                   · {t("tera.label")}: <TypeBadge type={side.tera} />
                 </span>
               )}
             </div>
-            <div className="text-[10px] text-slate-500">
+            <div className="text-[10px]" style={{ color: "var(--text-dim)" }}>
               {side.item && <span>{side.item}</span>}
               {side.nature && <span> · {natureLabel(t, side.nature)}</span>}
             </div>
