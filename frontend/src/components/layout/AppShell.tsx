@@ -8,14 +8,23 @@ import {
   Trophy,
   Calculator,
   Settings as SettingsIcon,
+  Moon,
+  Sun,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { cn } from "../../lib/cn";
 import { LanguageToggle } from "./LanguageToggle";
-
-const VERSION = "0.0.2.20260412";
+import { useUiStore } from "../../stores/uiStore";
+import { APP_VERSION } from "../../lib/version";
 
 export function AppShell() {
   const { t } = useTranslation();
+  const theme = useUiStore((s) => s.theme);
+  const toggleTheme = useUiStore((s) => s.toggleTheme);
+  const collapsed = useUiStore((s) => s.sidebarCollapsed);
+  const toggleSidebar = useUiStore((s) => s.toggleSidebar);
+
   const navItems = [
     { to: "/dashboard", icon: LayoutDashboard, label: t("nav.dashboard") },
     { to: "/pokedex", icon: BookOpen, label: t("nav.pokedex") },
@@ -27,49 +36,130 @@ export function AppShell() {
   ];
 
   return (
-    <div className="flex h-screen w-screen bg-slate-950 text-slate-100">
-      <aside className="flex w-60 shrink-0 flex-col border-r border-slate-800 bg-slate-900">
-        <div className="flex items-center gap-3 border-b border-slate-800 px-4 py-4">
+    <div
+      className="flex h-screen w-screen"
+      style={{ backgroundColor: "var(--bg)", color: "var(--text)" }}
+    >
+      <aside
+        className={cn(
+          "flex shrink-0 flex-col border-r transition-[width] duration-200",
+          collapsed ? "w-16" : "w-60",
+        )}
+        style={{
+          backgroundColor: "var(--bg-elev)",
+          borderColor: "var(--border)",
+        }}
+      >
+        <div
+          className={cn(
+            "flex items-center gap-3 border-b px-3 py-4",
+            collapsed && "justify-center px-2",
+          )}
+          style={{ borderColor: "var(--border)" }}
+        >
           <img
             src="/logo.png"
             alt="PumaSoft"
             className="h-9 w-9 shrink-0 rounded-full"
           />
-          <div className="flex flex-col">
-            <span className="text-lg font-bold tracking-tight">{t("app.name")}</span>
-            <span className="text-xs text-slate-400">{t("app.tagline")}</span>
-          </div>
+          {!collapsed && (
+            <div className="flex min-w-0 flex-col">
+              <span className="truncate text-lg font-bold tracking-tight">
+                {t("app.name")}
+              </span>
+              <span
+                className="truncate text-xs"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {t("app.tagline")}
+              </span>
+            </div>
+          )}
         </div>
-        <nav className="flex-1 overflow-y-auto px-2 py-3">
+
+        <div className="px-2 py-2">
+          <button
+            className="btn-ghost w-full justify-center"
+            onClick={toggleSidebar}
+            aria-label={
+              collapsed ? t("ui.expand_sidebar") : t("ui.collapse_sidebar")
+            }
+            title={
+              collapsed ? t("ui.expand_sidebar") : t("ui.collapse_sidebar")
+            }
+          >
+            {collapsed ? (
+              <PanelLeftOpen size={16} />
+            ) : (
+              <PanelLeftClose size={16} />
+            )}
+          </button>
+        </div>
+
+        <nav className="flex-1 overflow-y-auto px-2 py-2">
           <ul className="space-y-1">
             {navItems.map((item) => (
               <li key={item.to}>
                 <NavLink
                   to={item.to}
+                  title={collapsed ? item.label : undefined}
                   className={({ isActive }) =>
                     cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                      collapsed && "justify-center px-2",
                       isActive
-                        ? "bg-brand-600/20 text-brand-300"
-                        : "text-slate-300 hover:bg-slate-800",
+                        ? "bg-[var(--accent-soft)] text-[var(--accent)]"
+                        : "text-[var(--text)] hover:bg-[var(--bg-elev-strong)]",
                     )
                   }
                 >
                   <item.icon size={18} />
-                  <span>{item.label}</span>
+                  {!collapsed && <span>{item.label}</span>}
                 </NavLink>
               </li>
             ))}
           </ul>
         </nav>
-        <div className="border-t border-slate-800 px-4 py-3 text-xs text-slate-500">
-          <div className="flex items-center justify-between">
-            <span>
-              {t("app.version")} {VERSION}
-            </span>
-            <LanguageToggle />
+
+        <div
+          className="border-t px-3 py-3 text-xs"
+          style={{
+            borderColor: "var(--border)",
+            color: "var(--text-muted)",
+          }}
+        >
+          <div
+            className={cn(
+              "mb-2 flex items-center gap-1",
+              collapsed ? "flex-col" : "justify-between",
+            )}
+          >
+            <button
+              className="btn-ghost p-1.5"
+              onClick={toggleTheme}
+              aria-label={
+                theme === "gengar"
+                  ? t("ui.theme_clefable")
+                  : t("ui.theme_gengar")
+              }
+              title={
+                theme === "gengar"
+                  ? t("ui.theme_clefable")
+                  : t("ui.theme_gengar")
+              }
+            >
+              {theme === "gengar" ? <Sun size={14} /> : <Moon size={14} />}
+            </button>
+            {!collapsed && <LanguageToggle />}
           </div>
-          <div className="mt-1">{t("app.by")} PumaSoft</div>
+          {!collapsed && (
+            <>
+              <div>
+                {t("app.version")} {APP_VERSION}
+              </div>
+              <div className="mt-0.5">{t("app.by")} PumaSoft</div>
+            </>
+          )}
         </div>
       </aside>
       <main className="flex-1 overflow-y-auto">

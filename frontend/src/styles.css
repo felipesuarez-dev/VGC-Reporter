@@ -3,6 +3,38 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --bg: #0b0a14;
+    --bg-elev: #14132a;
+    --bg-elev-strong: #1c1a35;
+    --border: #2a2543;
+    --text: #e6e2ff;
+    --text-muted: #948dba;
+    --text-dim: #6b648b;
+    --accent: #8b5cf6;
+    --accent-soft: rgba(139, 92, 246, 0.2);
+    --accent-strong: #7c3aed;
+    --danger: #f87171;
+    --warning: #fbbf24;
+    --success: #34d399;
+  }
+
+  :root.theme-clefable {
+    --bg: #fff5f7;
+    --bg-elev: #ffe6ee;
+    --bg-elev-strong: #fdd2e0;
+    --border: #f7b8cd;
+    --text: #2b1a25;
+    --text-muted: #7a5b6a;
+    --text-dim: #a88a98;
+    --accent: #ec4899;
+    --accent-soft: rgba(236, 72, 153, 0.15);
+    --accent-strong: #db2777;
+    --danger: #dc2626;
+    --warning: #d97706;
+    --success: #059669;
+  }
+
   html,
   body,
   #root {
@@ -11,32 +43,50 @@
 
   body {
     @apply antialiased;
+    background-color: var(--bg);
+    color: var(--text);
     font-feature-settings: "cv11", "ss01";
   }
 }
 
 @layer components {
   .card {
-    @apply rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-sm;
+    @apply rounded-xl p-4 shadow-sm;
+    background-color: color-mix(in srgb, var(--bg-elev) 85%, transparent);
+    border: 1px solid var(--border);
   }
   .btn {
     @apply inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-primary {
-    @apply btn bg-brand-500 text-white hover:bg-brand-600;
+    @apply btn text-white;
+    background-color: var(--accent);
+  }
+  .btn-primary:hover {
+    background-color: var(--accent-strong);
   }
   .btn-ghost {
-    @apply btn text-slate-200 hover:bg-slate-800;
+    @apply btn;
+    color: var(--text);
+  }
+  .btn-ghost:hover {
+    background-color: var(--bg-elev-strong);
   }
   .input {
-    @apply w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-brand-500;
+    @apply w-full rounded-lg px-3 py-2 text-sm outline-none;
+    background-color: var(--bg-elev);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .input:focus {
+    border-color: var(--accent);
   }
   .label {
-    @apply text-xs uppercase tracking-wide text-slate-400;
+    @apply text-xs uppercase tracking-wide;
+    color: var(--text-muted);
   }
 }
 
-/* Sprite rendering (pixel-perfect) */
 img[data-sprite="true"] {
   image-rendering: pixelated;
   image-rendering: crisp-edges;

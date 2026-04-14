@@ -227,6 +227,12 @@
   "tera": {
     "label": "Tera"
   },
+  "ui": {
+    "collapse_sidebar": "Collapse sidebar",
+    "expand_sidebar": "Expand sidebar",
+    "theme_gengar": "Gengar theme (dark)",
+    "theme_clefable": "Clefable theme (light)"
+  },
   "validation": {
     "title": "Team validation",
     "ok": "Team passes regulation checks",
