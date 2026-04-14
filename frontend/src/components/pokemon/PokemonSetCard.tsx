@@ -1,4 +1,5 @@
 import type { PokemonSet } from "../../lib/types";
+import { useLocalize } from "../../hooks/useTranslations";
 
 const STAT_KEYS: (keyof PokemonSet["evs"])[] = ["hp", "atk", "def", "spa", "spd", "spe"];
 const STAT_LABELS: Record<keyof PokemonSet["evs"], string> = {
@@ -6,6 +7,7 @@ const STAT_LABELS: Record<keyof PokemonSet["evs"], string> = {
 };
 
 export function PokemonSetCard({ set }: { set: PokemonSet }) {
+  const localize = useLocalize();
   const evs = STAT_KEYS.filter((k) => set.evs[k] > 0);
   return (
     <article
@@ -36,13 +38,13 @@ export function PokemonSetCard({ set }: { set: PokemonSet }) {
         {set.item && (
           <>
             <dt style={{ color: "var(--text-dim)" }}>Item</dt>
-            <dd>{set.item}</dd>
+            <dd>{localize("item", set.item)}</dd>
           </>
         )}
         {set.ability && (
           <>
             <dt style={{ color: "var(--text-dim)" }}>Ability</dt>
-            <dd>{set.ability}</dd>
+            <dd>{localize("ability", set.ability)}</dd>
           </>
         )}
         {set.nature && (
@@ -72,7 +74,7 @@ export function PokemonSetCard({ set }: { set: PokemonSet }) {
               color: "var(--text)",
             }}
           >
-            {m}
+            {localize("move", m)}
           </li>
         ))}
       </ul>

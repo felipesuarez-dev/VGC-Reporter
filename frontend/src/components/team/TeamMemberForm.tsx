@@ -11,6 +11,7 @@ import type {
 import { ALL_NATURES, ALL_TYPES } from "../../lib/types";
 import { natureLabel, typeLabel } from "../../lib/labels";
 import { ipc } from "../../lib/ipc";
+import { useLocalize } from "../../hooks/useTranslations";
 import { EVSliders } from "./EVSliders";
 import { PokemonSprite } from "../pokemon/PokemonSprite";
 import { TypeBadge } from "../pokemon/TypeBadge";
@@ -27,6 +28,7 @@ interface Props {
 
 export function TeamMemberForm({ slot, value, pokedex, items, moves, onChange }: Props) {
   const { t } = useTranslation();
+  const localize = useLocalize();
 
   const speciesKey = value.species.trim();
   const { data: speciesMoves = [] } = useQuery({
@@ -97,6 +99,7 @@ export function TeamMemberForm({ slot, value, pokedex, items, moves, onChange }:
             value={value.item}
             options={items}
             onChange={(it) => onChange({ ...value, item: it })}
+            getOptionLabel={(it) => localize("item", it)}
             placeholder={t("team_builder.item")}
             className="mt-1"
           />
@@ -107,6 +110,7 @@ export function TeamMemberForm({ slot, value, pokedex, items, moves, onChange }:
             value={value.ability}
             options={selected?.abilities ?? []}
             onChange={(ab) => onChange({ ...value, ability: ab })}
+            getOptionLabel={(ab) => localize("ability", ab)}
             placeholder={t("team_builder.ability")}
             disabled={!selected}
             className="mt-1"
@@ -154,12 +158,12 @@ export function TeamMemberForm({ slot, value, pokedex, items, moves, onChange }:
                 value={current}
                 options={moveOptions}
                 onChange={(mv) => setMove(i, mv)}
-                getOptionLabel={(m) => m.name}
+                getOptionLabel={(m) => localize("move", m.name)}
                 getOptionKey={(m) => m.id}
                 placeholder={`${t("team_builder.moves")} ${i + 1}`}
                 renderOption={(opt) => (
                   <span className="flex min-w-0 flex-1 items-center gap-2">
-                    <span className="truncate">{opt.name}</span>
+                    <span className="truncate">{localize("move", opt.name)}</span>
                     <TypeBadge type={opt.type_} />
                   </span>
                 )}

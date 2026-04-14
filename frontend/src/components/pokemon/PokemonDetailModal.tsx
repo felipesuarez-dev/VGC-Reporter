@@ -18,6 +18,7 @@ import { usePokedexStore } from "../../stores/pokedexStore";
 import { PokemonSprite } from "./PokemonSprite";
 import { TypeBadge } from "./TypeBadge";
 import { PokemonSetCard } from "./PokemonSetCard";
+import { useLocalize, type LocalizeKind } from "../../hooks/useTranslations";
 
 const STAT_LABELS: Record<string, string> = {
   hp: "HP", atk: "Atk", def: "Def", spa: "SpA", spd: "SpD", spe: "Spe",
@@ -127,6 +128,7 @@ function ModalBody({
   metaUsage,
 }: BodyProps) {
   const { t } = useTranslation();
+  const localize = useLocalize();
   const total = Object.values(pokemon.base_stats).reduce((a, b) => a + b, 0);
 
   const myUsage = useMemo(
@@ -190,7 +192,7 @@ function ModalBody({
                   color: "var(--text)",
                 }}
               >
-                {a}
+                {localize("ability", a)}
               </span>
             ))}
           </div>
@@ -261,9 +263,9 @@ function ModalBody({
             {t("pokemon_detail.meta_usage")}
           </h3>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            <UsageList title={t("drawer.top_items")} entries={myUsage.top_items} />
-            <UsageList title={t("drawer.top_moves")} entries={myUsage.top_moves} />
-            <UsageList title={t("drawer.top_abilities")} entries={myUsage.top_abilities} />
+            <UsageList title={t("drawer.top_items")} entries={myUsage.top_items} kind="item" />
+            <UsageList title={t("drawer.top_moves")} entries={myUsage.top_moves} kind="move" />
+            <UsageList title={t("drawer.top_abilities")} entries={myUsage.top_abilities} kind="ability" />
             <UsageList title={t("drawer.top_tera")} entries={myUsage.top_tera} />
             <UsageList title={t("drawer.top_teammates")} entries={myUsage.top_teammates} />
           </div>
@@ -359,10 +361,13 @@ function ModalBody({
 function UsageList({
   title,
   entries,
+  kind,
 }: {
   title: string;
   entries: import("../../lib/types").UsageEntry[];
+  kind?: LocalizeKind;
 }) {
+  const localize = useLocalize();
   return (
     <section
       className="rounded-lg border p-3"
@@ -384,7 +389,7 @@ function UsageList({
           {entries.slice(0, 5).map((e) => (
             <li key={e.name} className="flex items-baseline justify-between gap-2 text-xs">
               <span className="truncate" style={{ color: "var(--text)" }}>
-                {e.name}
+                {kind ? localize(kind, e.name) : e.name}
               </span>
               <span
                 className="shrink-0 tabular-nums"

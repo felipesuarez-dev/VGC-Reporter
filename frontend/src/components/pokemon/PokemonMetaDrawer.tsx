@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import type { PokemonUsage, UsageEntry } from "../../lib/types";
 import { PokemonSprite } from "./PokemonSprite";
+import { useLocalize, type LocalizeKind } from "../../hooks/useTranslations";
 
 interface Props {
   usage: PokemonUsage | null;
@@ -58,9 +59,9 @@ export function PokemonMetaDrawer({ usage, onClose }: Props) {
         </header>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <DrawerPanel title="drawer.top_items" entries={usage.top_items} />
-          <DrawerPanel title="drawer.top_moves" entries={usage.top_moves} />
-          <DrawerPanel title="drawer.top_abilities" entries={usage.top_abilities} />
+          <DrawerPanel title="drawer.top_items" entries={usage.top_items} kind="item" />
+          <DrawerPanel title="drawer.top_moves" entries={usage.top_moves} kind="move" />
+          <DrawerPanel title="drawer.top_abilities" entries={usage.top_abilities} kind="ability" />
           <DrawerPanel title="drawer.top_tera" entries={usage.top_tera} />
           <DrawerPanel title="drawer.top_teammates" entries={usage.top_teammates} />
         </div>
@@ -69,8 +70,17 @@ export function PokemonMetaDrawer({ usage, onClose }: Props) {
   );
 }
 
-function DrawerPanel({ title, entries }: { title: string; entries: UsageEntry[] }) {
+function DrawerPanel({
+  title,
+  entries,
+  kind,
+}: {
+  title: string;
+  entries: UsageEntry[];
+  kind?: LocalizeKind;
+}) {
   const { t } = useTranslation();
+  const localize = useLocalize();
   return (
     <section
       className="rounded-lg border p-3"
@@ -95,7 +105,7 @@ function DrawerPanel({ title, entries }: { title: string; entries: UsageEntry[] 
               className="flex items-baseline justify-between gap-2 text-xs"
             >
               <span className="truncate" style={{ color: "var(--text)" }}>
-                {e.name}
+                {kind ? localize(kind, e.name) : e.name}
               </span>
               <span
                 className="shrink-0 tabular-nums"

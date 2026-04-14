@@ -16,6 +16,7 @@ import { FormatSelector } from "../components/ui/FormatSelector";
 import { XCard } from "../components/dashboard/XCard";
 import { TournamentStandingsDrawer } from "../components/tournament/TournamentStandingsDrawer";
 import { useDashboardStore } from "../stores/dashboardStore";
+import { useLocalize } from "../hooks/useTranslations";
 
 const EXTERNAL_SITES: { name: string; url: string }[] = [
   { name: "Pikalytics", url: "https://www.pikalytics.com/" },
@@ -36,6 +37,7 @@ async function openExternal(url: string) {
 export function Dashboard() {
   const { t } = useTranslation();
   const qc = useQueryClient();
+  const localize = useLocalize();
   const format = useDashboardStore((s) => s.format);
   const favoriteFormat = useDashboardStore((s) => s.favoriteFormat);
   const setFormat = useDashboardStore((s) => s.setFormat);
@@ -141,19 +143,31 @@ export function Dashboard() {
               <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
                 {t("dashboard.top_items")}
               </h2>
-              <TopList data={topItems} limit={10} />
+              <TopList
+                data={topItems}
+                limit={10}
+                labelFor={(n) => localize("item", n)}
+              />
             </div>
             <div className="card">
               <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
                 {t("dashboard.top_moves")}
               </h2>
-              <TopList data={topMoves} limit={10} />
+              <TopList
+                data={topMoves}
+                limit={10}
+                labelFor={(n) => localize("move", n)}
+              />
             </div>
             <div className="card">
               <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
                 {t("dashboard.top_abilities")}
               </h2>
-              <TopList data={topAbilities} limit={10} />
+              <TopList
+                data={topAbilities}
+                limit={10}
+                labelFor={(n) => localize("ability", n)}
+              />
             </div>
           </section>
 

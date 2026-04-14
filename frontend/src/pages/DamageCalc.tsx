@@ -24,6 +24,7 @@ import { EVSliders } from "../components/team/EVSliders";
 import { PokemonSprite } from "../components/pokemon/PokemonSprite";
 import { TypeBadge } from "../components/pokemon/TypeBadge";
 import { natureLabel, terrainLabel, typeLabel, weatherLabel } from "../lib/labels";
+import { useLocalize } from "../hooks/useTranslations";
 
 const GEN = Generations.get(9);
 
@@ -68,6 +69,7 @@ function buildCalcPokemon(side: SideState): CalcPokemon | null {
 
 export function DamageCalc() {
   const { t } = useTranslation();
+  const localize = useLocalize();
 
   const { data: pokedex = [] } = useQuery({
     queryKey: queryKeys.pokedex.all,
@@ -194,7 +196,7 @@ export function DamageCalc() {
           >
             <div className="flex items-baseline justify-between">
               <span className="font-semibold" style={{ color: "var(--text)" }}>
-                {r.move}
+                {localize("move", r.move)}
               </span>
               <span className="text-sm" style={{ color: "var(--accent)" }}>
                 {r.min}–{r.max} ({r.minPct}–{r.maxPct}%)
@@ -225,6 +227,7 @@ interface SideProps {
 
 function SidePanel({ title, side, setSide, pokedex, items, moves, showMoves }: SideProps) {
   const { t } = useTranslation();
+  const localize = useLocalize();
   const update = (patch: Partial<SideState>) => setSide({ ...side, ...patch });
   const speciesKey = side.species?.name ?? "";
   const { data: speciesMoves = [] } = useQuery({
@@ -281,7 +284,7 @@ function SidePanel({ title, side, setSide, pokedex, items, moves, showMoves }: S
               )}
             </div>
             <div className="text-[10px]" style={{ color: "var(--text-dim)" }}>
-              {side.item && <span>{side.item}</span>}
+              {side.item && <span>{localize("item", side.item)}</span>}
               {side.nature && <span> · {natureLabel(t, side.nature)}</span>}
             </div>
           </div>
@@ -307,6 +310,7 @@ function SidePanel({ title, side, setSide, pokedex, items, moves, showMoves }: S
             value={side.item}
             options={items}
             onChange={(it) => update({ item: it })}
+            getOptionLabel={(it) => localize("item", it)}
             className="mt-1"
           />
         </div>
@@ -316,6 +320,7 @@ function SidePanel({ title, side, setSide, pokedex, items, moves, showMoves }: S
             value={side.ability}
             options={side.species?.abilities ?? []}
             onChange={(ab) => update({ ability: ab })}
+            getOptionLabel={(ab) => localize("ability", ab)}
             disabled={!side.species}
             className="mt-1"
           />
@@ -384,12 +389,12 @@ function SidePanel({ title, side, setSide, pokedex, items, moves, showMoves }: S
                     next[i] = mv?.name ?? null;
                     update({ moves: next });
                   }}
-                  getOptionLabel={(m) => m.name}
+                  getOptionLabel={(m) => localize("move", m.name)}
                   getOptionKey={(m) => m.id}
                   placeholder={`${t("team_builder.moves")} ${i + 1}`}
                   renderOption={(opt) => (
                     <span className="flex min-w-0 flex-1 items-center gap-2">
-                      <span className="truncate">{opt.name}</span>
+                      <span className="truncate">{localize("move", opt.name)}</span>
                       <TypeBadge type={opt.type_} />
                     </span>
                   )}
