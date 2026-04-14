@@ -71,11 +71,15 @@ export function PokemonDetailModal() {
       onClick={close}
     >
       <div
-        className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl border border-slate-800 bg-slate-900 p-5 shadow-2xl"
+        className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl border p-5 shadow-2xl"
+        style={{
+          backgroundColor: "var(--bg-elev)",
+          borderColor: "var(--border)",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <button
-          className="absolute right-3 top-3 rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+          className="absolute right-3 top-3 rounded p-1 text-[var(--text-muted)] hover:bg-[var(--bg-elev-strong)] hover:text-[var(--text)]"
           onClick={close}
           aria-label={t("pokemon_detail.close")}
         >
@@ -83,10 +87,10 @@ export function PokemonDetailModal() {
         </button>
 
         {pokemon.isLoading && (
-          <div className="text-slate-400">{t("common.loading")}</div>
+          <div style={{ color: "var(--text-muted)" }}>{t("common.loading")}</div>
         )}
         {pokemon.isError && (
-          <div className="text-red-400">{t("common.error")}</div>
+          <div style={{ color: "var(--danger)" }}>{t("common.error")}</div>
         )}
         {pokemon.data && (
           <ModalBody
@@ -148,9 +152,12 @@ function ModalBody({
           size={120}
         />
         <div className="flex-1">
-          <h2 className="text-2xl font-bold text-slate-100">
+          <h2 className="text-2xl font-bold" style={{ color: "var(--text)" }}>
             {pokemon.name}
-            <span className="ml-2 text-sm font-normal text-slate-500">
+            <span
+              className="ml-2 text-sm font-normal"
+              style={{ color: "var(--text-dim)" }}
+            >
               #{pokemon.num.toString().padStart(4, "0")}
             </span>
           </h2>
@@ -162,17 +169,27 @@ function ModalBody({
           <div className="mt-3 grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
             {(Object.entries(pokemon.base_stats) as [string, number][]).map(([k, v]) => (
               <div key={k} className="flex justify-between">
-                <span className="text-slate-500">{STAT_LABELS[k]}</span>
-                <span className="text-slate-200">{v}</span>
+                <span style={{ color: "var(--text-dim)" }}>{STAT_LABELS[k]}</span>
+                <span style={{ color: "var(--text)" }}>{v}</span>
               </div>
             ))}
-            <div className="col-span-3 text-right text-[11px] text-slate-500">
+            <div
+              className="col-span-3 text-right text-[11px]"
+              style={{ color: "var(--text-dim)" }}
+            >
               {t("pokedex.base_stat_total")}: {total}
             </div>
           </div>
           <div className="mt-2 flex flex-wrap gap-1">
             {pokemon.abilities.map((a) => (
-              <span key={a} className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-200">
+              <span
+                key={a}
+                className="rounded px-2 py-0.5 text-xs"
+                style={{
+                  backgroundColor: "var(--bg-elev-strong)",
+                  color: "var(--text)",
+                }}
+              >
                 {a}
               </span>
             ))}
@@ -180,15 +197,23 @@ function ModalBody({
         </div>
       </header>
 
-      <div className="mb-3 flex overflow-hidden rounded-lg border border-slate-700 text-xs">
+      <div
+        className="mb-3 flex overflow-hidden rounded-lg border text-xs"
+        style={{ borderColor: "var(--border)" }}
+      >
         {(["doubles", "singles"] as Tab[]).map((tg) => (
           <button
             key={tg}
             type="button"
             onClick={() => setTab(tg)}
-            className={
-              "flex-1 px-3 py-1.5 font-medium " +
-              (tab === tg ? "bg-brand-500 text-white" : "bg-slate-900 text-slate-300 hover:bg-slate-800")
+            className="flex-1 px-3 py-1.5 font-medium"
+            style={
+              tab === tg
+                ? { backgroundColor: "var(--accent)", color: "#ffffff" }
+                : {
+                    backgroundColor: "var(--bg-elev)",
+                    color: "var(--text-muted)",
+                  }
             }
           >
             {t(`pokemon_detail.${tg}`)}
@@ -197,12 +222,21 @@ function ModalBody({
       </div>
 
       <section className="mb-4 space-y-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+        <h3
+          className="text-xs font-semibold uppercase tracking-wide"
+          style={{ color: "var(--text-muted)" }}
+        >
           {t("pokemon_detail.curated_sets")}
         </h3>
-        {setsLoading && <p className="text-xs text-slate-500">{t("common.loading")}</p>}
+        {setsLoading && (
+          <p className="text-xs" style={{ color: "var(--text-dim)" }}>
+            {t("common.loading")}
+          </p>
+        )}
         {!setsLoading && tabSets.length === 0 && (
-          <p className="text-xs text-slate-500">{t("pokemon_detail.no_sets")}</p>
+          <p className="text-xs" style={{ color: "var(--text-dim)" }}>
+            {t("pokemon_detail.no_sets")}
+          </p>
         )}
         {tabSets.length > 0 && (
           <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
@@ -212,7 +246,7 @@ function ModalBody({
           </div>
         )}
         {tabSource && (
-          <p className="text-[10px] text-slate-600">
+          <p className="text-[10px]" style={{ color: "var(--text-dim)" }}>
             {t("pokemon_detail.source")}: {tabSource}
           </p>
         )}
@@ -220,7 +254,10 @@ function ModalBody({
 
       {myUsage && (
         <section className="mb-4 space-y-2">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          <h3
+            className="text-xs font-semibold uppercase tracking-wide"
+            style={{ color: "var(--text-muted)" }}
+          >
             {t("pokemon_detail.meta_usage")}
           </h3>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -234,27 +271,39 @@ function ModalBody({
       )}
 
       <section className="space-y-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+        <h3
+          className="text-xs font-semibold uppercase tracking-wide"
+          style={{ color: "var(--text-muted)" }}
+        >
           {t("pokemon_detail.matchups")}
         </h3>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-3">
-            <h4 className="mb-2 text-xs font-semibold text-rose-300">
+          <div
+            className="rounded-lg border p-3"
+            style={{
+              borderColor: "var(--border)",
+              backgroundColor: "var(--bg-elev)",
+            }}
+          >
+            <h4 className="mb-2 text-xs font-semibold text-rose-400">
               {t("pokemon_detail.weak_against")}
             </h4>
             {weaknesses.length === 0 ? (
-              <p className="text-xs text-slate-600">—</p>
+              <p className="text-xs" style={{ color: "var(--text-dim)" }}>—</p>
             ) : (
               <ul className="flex flex-wrap gap-1">
                 {weaknesses.map((w) => (
                   <li key={w.type} className="flex items-center gap-1">
                     <TypeBadge type={w.type} />
-                    <span className="text-[10px] text-rose-300">×{w.mult}</span>
+                    <span className="text-[10px] text-rose-400">×{w.mult}</span>
                   </li>
                 ))}
               </ul>
             )}
-            <p className="mt-3 mb-1 text-[10px] uppercase tracking-wide text-slate-500">
+            <p
+              className="mt-3 mb-1 text-[10px] uppercase tracking-wide"
+              style={{ color: "var(--text-dim)" }}
+            >
               STAB resisted by
             </p>
             <ul className="flex flex-wrap gap-1">
@@ -265,23 +314,32 @@ function ModalBody({
               ))}
             </ul>
           </div>
-          <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-3">
-            <h4 className="mb-2 text-xs font-semibold text-emerald-300">
+          <div
+            className="rounded-lg border p-3"
+            style={{
+              borderColor: "var(--border)",
+              backgroundColor: "var(--bg-elev)",
+            }}
+          >
+            <h4 className="mb-2 text-xs font-semibold text-emerald-400">
               {t("pokemon_detail.strong_against")}
             </h4>
             {resistances.length === 0 ? (
-              <p className="text-xs text-slate-600">—</p>
+              <p className="text-xs" style={{ color: "var(--text-dim)" }}>—</p>
             ) : (
               <ul className="flex flex-wrap gap-1">
                 {resistances.map((r) => (
                   <li key={r.type} className="flex items-center gap-1">
                     <TypeBadge type={r.type} />
-                    <span className="text-[10px] text-emerald-300">×{r.mult}</span>
+                    <span className="text-[10px] text-emerald-400">×{r.mult}</span>
                   </li>
                 ))}
               </ul>
             )}
-            <p className="mt-3 mb-1 text-[10px] uppercase tracking-wide text-slate-500">
+            <p
+              className="mt-3 mb-1 text-[10px] uppercase tracking-wide"
+              style={{ color: "var(--text-dim)" }}
+            >
               STAB super-effective on
             </p>
             <ul className="flex flex-wrap gap-1">
@@ -306,18 +364,32 @@ function UsageList({
   entries: import("../../lib/types").UsageEntry[];
 }) {
   return (
-    <section className="rounded-lg border border-slate-800 bg-slate-950/40 p-3">
-      <h4 className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+    <section
+      className="rounded-lg border p-3"
+      style={{
+        borderColor: "var(--border)",
+        backgroundColor: "var(--bg-elev)",
+      }}
+    >
+      <h4
+        className="mb-2 text-[10px] font-semibold uppercase tracking-wide"
+        style={{ color: "var(--text-muted)" }}
+      >
         {title}
       </h4>
       {entries.length === 0 ? (
-        <p className="text-xs text-slate-600">—</p>
+        <p className="text-xs" style={{ color: "var(--text-dim)" }}>—</p>
       ) : (
         <ul className="space-y-1">
           {entries.slice(0, 5).map((e) => (
             <li key={e.name} className="flex items-baseline justify-between gap-2 text-xs">
-              <span className="truncate text-slate-200">{e.name}</span>
-              <span className="shrink-0 tabular-nums text-brand-300">
+              <span className="truncate" style={{ color: "var(--text)" }}>
+                {e.name}
+              </span>
+              <span
+                className="shrink-0 tabular-nums"
+                style={{ color: "var(--accent)" }}
+              >
                 {e.usage_percent.toFixed(1)}%
               </span>
             </li>

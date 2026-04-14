@@ -30,11 +30,15 @@ export function PokemonMetaDrawer({ usage, onClose }: Props) {
       onClick={onClose}
     >
       <div
-        className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-slate-800 bg-slate-900 p-5 shadow-2xl"
+        className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl border p-5 shadow-2xl"
+        style={{
+          backgroundColor: "var(--bg-elev)",
+          borderColor: "var(--border)",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <button
-          className="absolute right-3 top-3 rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+          className="absolute right-3 top-3 rounded p-1 text-[var(--text-muted)] hover:bg-[var(--bg-elev-strong)] hover:text-[var(--text)]"
           onClick={onClose}
           aria-label="Close"
         >
@@ -44,8 +48,10 @@ export function PokemonMetaDrawer({ usage, onClose }: Props) {
         <header className="mb-4 flex items-center gap-4">
           <PokemonSprite url={usage.sprite_url} name={usage.species} size={96} />
           <div>
-            <h2 className="text-xl font-bold text-slate-100">{usage.species}</h2>
-            <p className="text-sm text-brand-300">
+            <h2 className="text-xl font-bold" style={{ color: "var(--text)" }}>
+              {usage.species}
+            </h2>
+            <p className="text-sm" style={{ color: "var(--accent)" }}>
               {usage.usage_percent.toFixed(1)}%
             </p>
           </div>
@@ -66,12 +72,21 @@ export function PokemonMetaDrawer({ usage, onClose }: Props) {
 function DrawerPanel({ title, entries }: { title: string; entries: UsageEntry[] }) {
   const { t } = useTranslation();
   return (
-    <section className="rounded-lg border border-slate-800 bg-slate-950/40 p-3">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+    <section
+      className="rounded-lg border p-3"
+      style={{
+        borderColor: "var(--border)",
+        backgroundColor: "var(--bg)",
+      }}
+    >
+      <h3
+        className="mb-2 text-xs font-semibold uppercase tracking-wide"
+        style={{ color: "var(--text-muted)" }}
+      >
         {t(title)}
       </h3>
       {entries.length === 0 ? (
-        <p className="text-xs text-slate-600">—</p>
+        <p className="text-xs" style={{ color: "var(--text-dim)" }}>—</p>
       ) : (
         <ul className="space-y-1">
           {entries.slice(0, 6).map((e) => (
@@ -79,8 +94,13 @@ function DrawerPanel({ title, entries }: { title: string; entries: UsageEntry[] 
               key={e.name}
               className="flex items-baseline justify-between gap-2 text-xs"
             >
-              <span className="truncate text-slate-200">{e.name}</span>
-              <span className="shrink-0 tabular-nums text-brand-300">
+              <span className="truncate" style={{ color: "var(--text)" }}>
+                {e.name}
+              </span>
+              <span
+                className="shrink-0 tabular-nums"
+                style={{ color: "var(--accent)" }}
+              >
                 {e.usage_percent.toFixed(1)}%
               </span>
             </li>

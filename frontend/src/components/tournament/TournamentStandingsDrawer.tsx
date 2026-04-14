@@ -54,11 +54,15 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
       onClick={onClose}
     >
       <div
-        className="relative max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-xl border border-slate-800 bg-slate-900 p-5 shadow-2xl"
+        className="relative max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-xl border p-5 shadow-2xl"
+        style={{
+          backgroundColor: "var(--bg-elev)",
+          borderColor: "var(--border)",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <button
-          className="absolute right-3 top-3 rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+          className="absolute right-3 top-3 rounded p-1 text-[var(--text-muted)] hover:bg-[var(--bg-elev-strong)] hover:text-[var(--text)]"
           onClick={onClose}
           aria-label={t("pokemon_detail.close")}
         >
@@ -66,8 +70,13 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
         </button>
 
         <header className="mb-4 pr-8">
-          <h2 className="text-xl font-bold text-slate-100">{tournament.name}</h2>
-          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-400">
+          <h2 className="text-xl font-bold" style={{ color: "var(--text)" }}>
+            {tournament.name}
+          </h2>
+          <div
+            className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs"
+            style={{ color: "var(--text-muted)" }}
+          >
             {tournament.date && <span>{tournament.date}</span>}
             {tournament.format && <span>{tournament.format}</span>}
             {tournament.players != null && (
@@ -84,13 +93,13 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
         </header>
 
         {standings.isLoading && (
-          <div className="text-slate-400">{t("tournament.loading")}</div>
+          <div style={{ color: "var(--text-muted)" }}>{t("tournament.loading")}</div>
         )}
         {standings.isError && (
-          <div className="text-red-400">{t("common.error")}</div>
+          <div style={{ color: "var(--danger)" }}>{t("common.error")}</div>
         )}
         {standings.data && standings.data.length === 0 && (
-          <div className="text-slate-500">{t("tournament.no_standings")}</div>
+          <div style={{ color: "var(--text-dim)" }}>{t("tournament.no_standings")}</div>
         )}
 
         {winner && (
@@ -100,11 +109,13 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
             </div>
             <div className="flex items-baseline gap-2">
               <span className="text-base">{flag(winner.country)}</span>
-              <span className="text-lg font-bold text-slate-100">
+              <span className="text-lg font-bold" style={{ color: "var(--text)" }}>
                 {winner.player_name ?? winner.player_id ?? "—"}
               </span>
               {winner.record && (
-                <span className="text-sm text-slate-400">{winner.record}</span>
+                <span className="text-sm" style={{ color: "var(--text-muted)" }}>
+                  {winner.record}
+                </span>
               )}
             </div>
             <div className="mt-3">
@@ -115,7 +126,10 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
 
         {top.length > 1 && (
           <section className="space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <h3
+              className="text-xs font-semibold uppercase tracking-wide"
+              style={{ color: "var(--text-muted)" }}
+            >
               {t("tournament.standings")}
             </h3>
             {top.slice(1).map((s, i) => (
@@ -130,19 +144,30 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
 
 function StandingRow({ standing }: { standing: TournamentStanding }) {
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-3">
+    <div
+      className="rounded-lg border p-3"
+      style={{
+        borderColor: "var(--border)",
+        backgroundColor: "var(--bg)",
+      }}
+    >
       <div className="flex items-baseline justify-between gap-2">
         <div className="flex items-baseline gap-2">
-          <span className="w-6 shrink-0 text-right text-xs text-slate-500">
+          <span
+            className="w-6 shrink-0 text-right text-xs"
+            style={{ color: "var(--text-dim)" }}
+          >
             #{standing.placing ?? "—"}
           </span>
           <span className="text-base">{flag(standing.country)}</span>
-          <span className="font-semibold text-slate-100">
+          <span className="font-semibold" style={{ color: "var(--text)" }}>
             {standing.player_name ?? standing.player_id ?? "—"}
           </span>
         </div>
         {standing.record && (
-          <span className="text-xs text-slate-400">{standing.record}</span>
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+            {standing.record}
+          </span>
         )}
       </div>
       <div className="mt-2">
@@ -154,14 +179,18 @@ function StandingRow({ standing }: { standing: TournamentStanding }) {
 
 function StandingDecklist({ decklist }: { decklist: DecklistPokemon[] }) {
   if (decklist.length === 0) {
-    return <p className="text-[11px] text-slate-600">—</p>;
+    return <p className="text-[11px]" style={{ color: "var(--text-dim)" }}>—</p>;
   }
   return (
     <ul className="grid grid-cols-3 gap-2 sm:grid-cols-6">
       {decklist.map((p, i) => (
         <li
           key={`${p.id ?? p.name}-${i}`}
-          className="flex flex-col items-center rounded border border-slate-800 bg-slate-900 p-2"
+          className="flex flex-col items-center rounded border p-2"
+          style={{
+            borderColor: "var(--border)",
+            backgroundColor: "var(--bg-elev)",
+          }}
           title={[p.item, p.ability, p.tera_type ? `Tera ${p.tera_type}` : null, ...p.moves]
             .filter(Boolean)
             .join(" · ")}
@@ -172,11 +201,19 @@ function StandingDecklist({ decklist }: { decklist: DecklistPokemon[] }) {
             name={p.name}
             size={48}
           />
-          <span className="mt-1 truncate text-[10px] font-medium text-slate-200">
+          <span
+            className="mt-1 truncate text-[10px] font-medium"
+            style={{ color: "var(--text)" }}
+          >
             {p.name}
           </span>
           {p.item && (
-            <span className="truncate text-[9px] text-slate-500">{p.item}</span>
+            <span
+              className="truncate text-[9px]"
+              style={{ color: "var(--text-dim)" }}
+            >
+              {p.item}
+            </span>
           )}
         </li>
       ))}
