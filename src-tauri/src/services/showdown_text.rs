@@ -88,7 +88,13 @@ fn parse_member(lines: Vec<String>) -> TeamMember {
             nature = parse_nature(name);
         } else if let Some(rest) = line.strip_prefix("- ") {
             if moves.len() < 4 {
-                let mv = rest.trim().split('/').next().unwrap_or("").trim().to_string();
+                let mv = rest
+                    .trim()
+                    .split('/')
+                    .next()
+                    .unwrap_or("")
+                    .trim()
+                    .to_string();
                 if !mv.is_empty() {
                     moves.push(mv);
                 }
@@ -267,7 +273,10 @@ mod tests {
         assert_eq!(m.evs.hp, 244);
         assert_eq!(m.evs.spd, 180);
         assert_eq!(m.evs.spe, 76);
-        assert_eq!(m.moves, vec!["Fake Out", "Parting Shot", "Knock Off", "Will-O-Wisp"]);
+        assert_eq!(
+            m.moves,
+            vec!["Fake Out", "Parting Shot", "Knock Off", "Will-O-Wisp"]
+        );
     }
 
     #[test]

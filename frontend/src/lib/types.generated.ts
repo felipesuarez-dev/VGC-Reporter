@@ -95,7 +95,7 @@ export type TeraUsage = { tera_type: string, usage_percent: number, };
 
 export type TopTeam = { tournament: string, placing: number | null, player: string | null, record: string | null, members: Array<TopTeamMember>, };
 
-export type TopTeamMember = { species: string, sprite_url: string, item: string | null, tera_type: string | null, };
+export type TopTeamMember = { species: string, sprite_url: string, item: string | null, tera_type: string | null, ability: string | null, nature: string | null, moves: Array<string>, };
 
 export type TournamentStanding = { placing: number | null, player_name: string | null, player_id: string | null, country: string | null, record: string | null, wins: number, losses: number, ties: number, decklist: Array<DecklistPokemon>, };
 

@@ -10,6 +10,7 @@ import type {
   TournamentStanding,
 } from "../../lib/types";
 import { PokemonSprite } from "../pokemon/PokemonSprite";
+import { useLocalize } from "../../hooks/useTranslations";
 
 interface Props {
   tournament: ChampionsTournament | null;
@@ -178,22 +179,21 @@ function StandingRow({ standing }: { standing: TournamentStanding }) {
 }
 
 function StandingDecklist({ decklist }: { decklist: DecklistPokemon[] }) {
+  const { t } = useTranslation();
+  const localize = useLocalize();
   if (decklist.length === 0) {
     return <p className="text-[11px]" style={{ color: "var(--text-dim)" }}>—</p>;
   }
   return (
-    <ul className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+    <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
       {decklist.map((p, i) => (
         <li
           key={`${p.id ?? p.name}-${i}`}
-          className="flex flex-col items-center rounded border p-2"
+          className="flex gap-2 rounded border p-2"
           style={{
             borderColor: "var(--border)",
             backgroundColor: "var(--bg-elev)",
           }}
-          title={[p.item, p.ability, p.tera_type ? `Tera ${p.tera_type}` : null, ...p.moves]
-            .filter(Boolean)
-            .join(" · ")}
         >
           <PokemonSprite
             url={p.sprite_url}
@@ -201,20 +201,43 @@ function StandingDecklist({ decklist }: { decklist: DecklistPokemon[] }) {
             name={p.name}
             size={48}
           />
-          <span
-            className="mt-1 truncate text-[10px] font-medium"
-            style={{ color: "var(--text)" }}
-          >
-            {p.name}
-          </span>
-          {p.item && (
-            <span
-              className="truncate text-[9px]"
-              style={{ color: "var(--text-dim)" }}
+          <div className="min-w-0 flex-1 text-[10px]">
+            <div
+              className="truncate text-[11px] font-semibold"
+              style={{ color: "var(--text)" }}
             >
-              {p.item}
-            </span>
-          )}
+              {p.name}
+            </div>
+            {p.item && (
+              <div style={{ color: "var(--text-muted)" }}>
+                <span style={{ color: "var(--text-dim)" }}>
+                  {t("top_teams.item")}:
+                </span>{" "}
+                {localize("item", p.item)}
+              </div>
+            )}
+            {p.ability && (
+              <div style={{ color: "var(--text-muted)" }}>
+                <span style={{ color: "var(--text-dim)" }}>
+                  {t("top_teams.ability")}:
+                </span>{" "}
+                {localize("ability", p.ability)}
+              </div>
+            )}
+            {p.tera_type && (
+              <div style={{ color: "var(--text-muted)" }}>
+                <span style={{ color: "var(--text-dim)" }}>
+                  {t("top_teams.tera_type")}:
+                </span>{" "}
+                {p.tera_type}
+              </div>
+            )}
+            {p.moves.length > 0 && (
+              <div className="mt-0.5" style={{ color: "var(--text)" }}>
+                {p.moves.map((mv) => localize("move", mv)).join(" · ")}
+              </div>
+            )}
+          </div>
         </li>
       ))}
     </ul>

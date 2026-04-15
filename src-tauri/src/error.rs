@@ -51,7 +51,11 @@ impl Serialize for AppError {
             AppError::Validation(m) => ("validation", m.clone()),
             AppError::Internal(m) => ("internal", m.clone()),
         };
-        SerializableError { kind: kind.into(), message }.serialize(serializer)
+        SerializableError {
+            kind: kind.into(),
+            message,
+        }
+        .serialize(serializer)
     }
 }
 

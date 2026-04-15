@@ -6,7 +6,11 @@ use crate::config;
 /// one hyphen between the base and the id'd forme. Single-name species
 /// (Ho-Oh, Farfetch'd) collapse to `hooh`, `farfetchd`.
 pub fn primary_sprite_url(species: &str) -> String {
-    format!("{}/{}.png", config::SHOWDOWN_SPRITES, hyphened_slug(species))
+    format!(
+        "{}/{}.png",
+        config::SHOWDOWN_SPRITES,
+        hyphened_slug(species)
+    )
 }
 
 /// HD render fallback on the `sprites/dex` host, built from the concatenated

@@ -4,6 +4,16 @@ import type { Nature, PokemonType, Violation } from "./types";
 export type Weather = "None" | "Sun" | "Rain" | "Sand" | "Snow";
 export type Terrain = "None" | "Electric" | "Grassy" | "Misty" | "Psychic";
 
+export type StatKey = "hp" | "atk" | "def" | "spa" | "spd" | "spe";
+
+const STAT_FALLBACK: Record<StatKey, string> = {
+  hp: "HP", atk: "Atk", def: "Def", spa: "SpA", spd: "SpD", spe: "Spe",
+};
+
+export function statLabel(t: TFunction, key: StatKey): string {
+  return t(`stats.${key}`, { defaultValue: STAT_FALLBACK[key] });
+}
+
 export function typeLabel(t: TFunction, type: PokemonType): string {
   return t(`types.${type}`, { defaultValue: type });
 }

@@ -22,10 +22,14 @@ import { useLocalize } from "../hooks/useTranslations";
 
 const ALL_GENERATIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
+function canonicalKey(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
 const SORTS: { value: PokedexSort; key: string }[] = [
+  { value: "usage", key: "pokedex.sort_usage" },
   { value: "generation", key: "pokedex.sort_generation" },
   { value: "alphabetical", key: "pokedex.sort_alphabetical" },
-  { value: "usage", key: "pokedex.sort_usage" },
 ];
 
 export function Pokedex() {
@@ -52,7 +56,6 @@ export function Pokedex() {
   const { data: meta } = useQuery({
     queryKey: queryKeys.meta(format),
     queryFn: () => ipc.getMetaStats(format),
-    enabled: sort === "usage",
   });
 
   useEffect(() => {
@@ -71,7 +74,7 @@ export function Pokedex() {
     const m = new Map<string, number>();
     if (meta) {
       for (const p of meta.pokemon) {
-        m.set(p.species.toLowerCase(), p.usage_percent);
+        m.set(canonicalKey(p.species), p.usage_percent);
       }
     }
     return m;
@@ -111,8 +114,8 @@ export function Pokedex() {
       list.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sort === "usage") {
       list.sort((a, b) => {
-        const ua = usageMap.get(a.name.toLowerCase()) ?? -1;
-        const ub = usageMap.get(b.name.toLowerCase()) ?? -1;
+        const ua = usageMap.get(canonicalKey(a.name)) ?? -1;
+        const ub = usageMap.get(canonicalKey(b.name)) ?? -1;
         if (ub !== ua) return ub - ua;
         return a.name.localeCompare(b.name);
       });
@@ -311,7 +314,11 @@ export function Pokedex() {
               </h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
                 {list.map((p) => (
-                  <PokemonCard key={p.id} pokemon={p} />
+                  <PokemonCard
+                    key={p.id}
+                    pokemon={p}
+                    usage={usageMap.get(canonicalKey(p.name))}
+                  />
                 ))}
               </div>
             </section>
@@ -320,7 +327,7 @@ export function Pokedex() {
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
           {sorted.map((p) => (
-            <PokemonCard key={p.id} pokemon={p} />
+            <PokemonCard key={p.id} pokemon={p} usage={usageMap.get(canonicalKey(p.name))} />
           ))}
         </div>
       )}

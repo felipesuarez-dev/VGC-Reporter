@@ -12,7 +12,10 @@ impl SettingsRepo {
     }
 
     pub fn get(&self, key: &str) -> Result<Option<String>, AppError> {
-        let conn = self.pool.get().map_err(|e| AppError::Internal(e.to_string()))?;
+        let conn = self
+            .pool
+            .get()
+            .map_err(|e| AppError::Internal(e.to_string()))?;
         let mut stmt = conn.prepare("SELECT value FROM settings WHERE key=?1")?;
         let mut rows = stmt.query(params![key])?;
         if let Some(row) = rows.next()? {
@@ -23,7 +26,10 @@ impl SettingsRepo {
     }
 
     pub fn set(&self, key: &str, value: &str) -> Result<(), AppError> {
-        let conn = self.pool.get().map_err(|e| AppError::Internal(e.to_string()))?;
+        let conn = self
+            .pool
+            .get()
+            .map_err(|e| AppError::Internal(e.to_string()))?;
         conn.execute(
             "INSERT INTO settings (key, value) VALUES (?1, ?2)
              ON CONFLICT(key) DO UPDATE SET value=excluded.value",
@@ -33,7 +39,10 @@ impl SettingsRepo {
     }
 
     pub fn all(&self) -> Result<std::collections::HashMap<String, String>, AppError> {
-        let conn = self.pool.get().map_err(|e| AppError::Internal(e.to_string()))?;
+        let conn = self
+            .pool
+            .get()
+            .map_err(|e| AppError::Internal(e.to_string()))?;
         let mut stmt = conn.prepare("SELECT key, value FROM settings")?;
         let mut rows = stmt.query([])?;
         let mut out = std::collections::HashMap::new();

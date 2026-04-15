@@ -16,17 +16,11 @@ pub async fn search_pokemon(
     query: Option<String>,
     type_filter: Option<PokemonType>,
 ) -> Result<Vec<Pokemon>, AppError> {
-    state
-        .pokedex
-        .search(query.as_deref(), type_filter)
-        .await
+    state.pokedex.search(query.as_deref(), type_filter).await
 }
 
 #[tauri::command]
-pub async fn get_pokemon(
-    state: State<'_, AppState>,
-    id: String,
-) -> Result<Pokemon, AppError> {
+pub async fn get_pokemon(state: State<'_, AppState>, id: String) -> Result<Pokemon, AppError> {
     state
         .pokedex
         .get(&id)

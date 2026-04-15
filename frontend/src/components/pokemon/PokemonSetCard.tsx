@@ -1,12 +1,12 @@
+import { useTranslation } from "react-i18next";
 import type { PokemonSet } from "../../lib/types";
 import { useLocalize } from "../../hooks/useTranslations";
+import { statLabel, type StatKey } from "../../lib/labels";
 
 const STAT_KEYS: (keyof PokemonSet["evs"])[] = ["hp", "atk", "def", "spa", "spd", "spe"];
-const STAT_LABELS: Record<keyof PokemonSet["evs"], string> = {
-  hp: "HP", atk: "Atk", def: "Def", spa: "SpA", spd: "SpD", spe: "Spe",
-};
 
 export function PokemonSetCard({ set }: { set: PokemonSet }) {
+  const { t } = useTranslation();
   const localize = useLocalize();
   const evs = STAT_KEYS.filter((k) => set.evs[k] > 0);
   return (
@@ -59,7 +59,7 @@ export function PokemonSetCard({ set }: { set: PokemonSet }) {
         <div className="mb-2 text-[11px]" style={{ color: "var(--text-muted)" }}>
           EVs:{" "}
           <span style={{ color: "var(--text)" }}>
-            {evs.map((k) => `${set.evs[k]} ${STAT_LABELS[k]}`).join(" / ")}
+            {evs.map((k) => `${set.evs[k]} ${statLabel(t, k as StatKey)}`).join(" / ")}
           </span>
         </div>
       )}

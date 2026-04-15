@@ -13,7 +13,7 @@ interface PokedexState {
 }
 
 export const usePokedexStore = create<PokedexState>((set) => ({
-  sort: "generation",
+  sort: "usage",
   selectedPokemonId: null,
   scrollY: 0,
   setSort: (sort) => set({ sort }),

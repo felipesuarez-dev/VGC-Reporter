@@ -3,8 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
-import type { ChampionsTournament, Format } from "../lib/types";
+import type { ChampionsTournament, Format, TopTeam } from "../lib/types";
 import { MiniTeam } from "../components/pokemon/MiniTeam";
+import { TopTeamDetailModal } from "../components/team/TopTeamDetailModal";
 import { TournamentStandingsDrawer } from "../components/tournament/TournamentStandingsDrawer";
 
 const FORMAT: Format = "regulation-m-a";
@@ -14,6 +15,7 @@ export function TopTeams() {
   const { t } = useTranslation();
   const [selectedTournament, setSelectedTournament] =
     useState<ChampionsTournament | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<TopTeam | null>(null);
   const { data, isLoading, isError } = useQuery({
     queryKey: queryKeys.topTeams(FORMAT),
     queryFn: () => ipc.getTopTeams(FORMAT, 20),
@@ -28,6 +30,9 @@ export function TopTeams() {
     <div className="space-y-4">
       <header>
         <h1 className="text-2xl font-bold">{t("top_teams.title")}</h1>
+        <p className="text-xs" style={{ color: "var(--text-dim)" }}>
+          {t("top_teams.subtitle")}
+        </p>
       </header>
 
       {isLoading && (
@@ -48,7 +53,12 @@ export function TopTeams() {
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
         {data?.map((tt, idx) => (
-          <div key={`${tt.tournament}-${idx}`} className="card space-y-3">
+          <button
+            key={`${tt.tournament}-${idx}`}
+            type="button"
+            onClick={() => setSelectedTeam(tt)}
+            className="card space-y-3 text-left transition hover:border-[var(--accent)]"
+          >
             <div className="flex items-start justify-between">
               <div>
                 <div className="text-sm font-semibold" style={{ color: "var(--text)" }}>
@@ -75,11 +85,15 @@ export function TopTeams() {
               members={tt.members.map((m) => ({
                 species: m.species,
                 sprite_url: m.sprite_url,
+                item: m.item,
+                ability: m.ability,
+                tera_type: m.tera_type,
+                moves: m.moves,
               }))}
               cols={6}
               size={40}
             />
-          </div>
+          </button>
         ))}
       </div>
 
@@ -139,6 +153,10 @@ export function TopTeams() {
       <TournamentStandingsDrawer
         tournament={selectedTournament}
         onClose={() => setSelectedTournament(null)}
+      />
+      <TopTeamDetailModal
+        team={selectedTeam}
+        onClose={() => setSelectedTeam(null)}
       />
     </div>
   );

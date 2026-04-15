@@ -18,7 +18,10 @@ impl TeamRepo {
     }
 
     pub fn save(&self, team: &Team) -> Result<i64, AppError> {
-        let mut conn = self.pool.get().map_err(|e| AppError::Internal(e.to_string()))?;
+        let mut conn = self
+            .pool
+            .get()
+            .map_err(|e| AppError::Internal(e.to_string()))?;
         let tx = conn.transaction()?;
         let now = Utc::now().to_rfc3339();
         let format_str = serde_json::to_string(&team.format)?
@@ -62,7 +65,10 @@ impl TeamRepo {
     }
 
     pub fn list(&self) -> Result<Vec<Team>, AppError> {
-        let conn = self.pool.get().map_err(|e| AppError::Internal(e.to_string()))?;
+        let conn = self
+            .pool
+            .get()
+            .map_err(|e| AppError::Internal(e.to_string()))?;
         let mut stmt = conn.prepare(
             "SELECT id, name, format, notes, created_at, updated_at FROM teams ORDER BY updated_at DESC",
         )?;
@@ -91,7 +97,10 @@ impl TeamRepo {
     }
 
     pub fn get(&self, id: i64) -> Result<Option<Team>, AppError> {
-        let conn = self.pool.get().map_err(|e| AppError::Internal(e.to_string()))?;
+        let conn = self
+            .pool
+            .get()
+            .map_err(|e| AppError::Internal(e.to_string()))?;
         let mut stmt = conn.prepare(
             "SELECT id, name, format, notes, created_at, updated_at FROM teams WHERE id=?1",
         )?;
@@ -119,7 +128,10 @@ impl TeamRepo {
     }
 
     pub fn delete(&self, id: i64) -> Result<(), AppError> {
-        let conn = self.pool.get().map_err(|e| AppError::Internal(e.to_string()))?;
+        let conn = self
+            .pool
+            .get()
+            .map_err(|e| AppError::Internal(e.to_string()))?;
         conn.execute("DELETE FROM teams WHERE id=?1", params![id])?;
         Ok(())
     }

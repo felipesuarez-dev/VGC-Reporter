@@ -33,7 +33,7 @@
     "count": "Cantidad"
   },
   "dashboard": {
-    "title": "Panel del meta",
+    "title": "Panel",
     "top_pokemon": "Top Pokémon",
     "top_items": "Top objetos",
     "top_moves": "Top movimientos",
@@ -103,6 +103,8 @@
     "matchups": "Matchups",
     "weak_against": "Débil contra",
     "strong_against": "Fuerte contra",
+    "stab_resisted_by": "STAB resistido por",
+    "stab_super_effective_on": "STAB supereficaz contra",
     "close": "Cerrar"
   },
   "team_builder": {
@@ -127,17 +129,26 @@
     "import": "Importar",
     "imported": "Equipo importado",
     "copied": "Copiado al portapapeles",
-    "import_failed": "No se pudo importar el equipo"
+    "import_failed": "No se pudo importar el equipo",
+    "fix_violations_first": "Corrige los problemas del equipo antes de guardar"
   },
   "my_teams": {
     "title": "Mis equipos",
     "empty": "Aún no has guardado ningún equipo. Crea uno en el constructor."
   },
   "top_teams": {
-    "title": "Top equipos del meta",
+    "title": "Top Equipos",
+    "subtitle": "de los últimos torneos",
     "placing": "Posición",
     "player": "Jugador",
-    "record": "Récord"
+    "record": "Récord",
+    "tournament": "Torneo",
+    "members": "Miembros del equipo",
+    "item": "Objeto",
+    "ability": "Habilidad",
+    "tera_type": "Tera Type",
+    "moves": "Movimientos",
+    "limited_info": "La fuente solo expone el objeto y la Tera de cada miembro."
   },
   "damage_calc": {
     "title": "Calculador de daño",
@@ -175,6 +186,14 @@
     "year": "Año",
     "description": "Aplicación para análisis competitivo de Pokémon Champions (VGC 2026). Construcción de equipos, consulta del meta y calculadora de daño en una sola herramienta.",
     "view_repo": "Ver repositorio en GitHub"
+  },
+  "stats": {
+    "hp": "PS",
+    "atk": "Ata",
+    "def": "Def",
+    "spa": "AtEsp",
+    "spd": "DefEsp",
+    "spe": "Vel"
   },
   "types": {
     "Normal": "Normal",

@@ -33,7 +33,7 @@
     "count": "Count"
   },
   "dashboard": {
-    "title": "Meta Dashboard",
+    "title": "Dashboard",
     "top_pokemon": "Top Pokémon",
     "top_items": "Top Items",
     "top_moves": "Top Moves",
@@ -103,6 +103,8 @@
     "matchups": "Matchups",
     "weak_against": "Weak against",
     "strong_against": "Strong against",
+    "stab_resisted_by": "STAB resisted by",
+    "stab_super_effective_on": "STAB super-effective on",
     "close": "Close"
   },
   "team_builder": {
@@ -127,17 +129,26 @@
     "import": "Import",
     "imported": "Team imported",
     "copied": "Copied to clipboard",
-    "import_failed": "Failed to import team"
+    "import_failed": "Failed to import team",
+    "fix_violations_first": "Fix team issues before saving"
   },
   "my_teams": {
     "title": "My Teams",
     "empty": "You haven't saved any teams yet. Create one in the Team Builder."
   },
   "top_teams": {
-    "title": "Top teams in the meta",
+    "title": "Top Teams",
+    "subtitle": "from recent tournaments",
     "placing": "Placing",
     "player": "Player",
-    "record": "Record"
+    "record": "Record",
+    "tournament": "Tournament",
+    "members": "Team members",
+    "item": "Item",
+    "ability": "Ability",
+    "tera_type": "Tera Type",
+    "moves": "Moves",
+    "limited_info": "The source only exposes each member's item and Tera type."
   },
   "damage_calc": {
     "title": "Damage Calculator",
@@ -175,6 +186,14 @@
     "year": "Year",
     "description": "Companion tool for competitive Pokémon Champions analysis (VGC 2026). Team building, meta insights, and damage calculation in one place.",
     "view_repo": "View repository on GitHub"
+  },
+  "stats": {
+    "hp": "HP",
+    "atk": "Atk",
+    "def": "Def",
+    "spa": "SpA",
+    "spd": "SpD",
+    "spe": "Spe"
   },
   "types": {
     "Normal": "Normal",

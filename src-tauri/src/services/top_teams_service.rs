@@ -31,6 +31,12 @@ pub struct TopTeamMember {
     pub sprite_url: String,
     pub item: Option<String>,
     pub tera_type: Option<String>,
+    #[serde(default)]
+    pub ability: Option<String>,
+    #[serde(default)]
+    pub nature: Option<String>,
+    #[serde(default)]
+    pub moves: Vec<String>,
 }
 
 impl TopTeamsService {
@@ -38,8 +44,12 @@ impl TopTeamsService {
         Self { limitless, cache }
     }
 
-    pub async fn get_top_teams(&self, format: Format, limit: usize) -> Result<Vec<TopTeam>, AppError> {
-        let key = format!("top-teams::{}::{}", format.cache_id(), limit);
+    pub async fn get_top_teams(
+        &self,
+        format: Format,
+        limit: usize,
+    ) -> Result<Vec<TopTeam>, AppError> {
+        let key = format!("top-teams::v2::{}::{}", format.cache_id(), limit);
         if let Some(bytes) = self.cache.get(&key)? {
             if let Ok(list) = serde_json::from_slice::<Vec<TopTeam>>(&bytes) {
                 return Ok(list);
@@ -52,7 +62,11 @@ impl TopTeamsService {
             .unwrap_or_default();
         let mut out = Vec::new();
         for t in tournaments {
-            let standings = self.limitless.get_standings(&t.id).await.unwrap_or_default();
+            let standings = self
+                .limitless
+                .get_standings(&t.id)
+                .await
+                .unwrap_or_default();
             for s in standings.into_iter().take(8) {
                 let Some(deck) = s.decklist else { continue };
                 if deck.is_empty() {
@@ -67,6 +81,9 @@ impl TopTeamsService {
                             species,
                             item: e.item.clone(),
                             tera_type: e.tera_value().map(|v| v.to_string()),
+                            ability: e.ability.clone(),
+                            nature: e.nature.clone(),
+                            moves: e.moves.clone().unwrap_or_default(),
                         })
                     })
                     .collect::<Vec<_>>();

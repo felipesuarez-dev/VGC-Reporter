@@ -1,6 +1,4 @@
-use crate::adapters::sprite_resolver::{
-    fallback_sprite_url_parts, primary_sprite_url_parts,
-};
+use crate::adapters::sprite_resolver::{fallback_sprite_url_parts, primary_sprite_url_parts};
 use crate::adapters::HttpClient;
 use crate::config;
 use crate::domain::move_::{MoveCategory, MoveSummary};
@@ -95,7 +93,10 @@ impl ShowdownClient {
     /// object literal (`exports.BattleItems = {id:{name:"…"…},…};`).
     pub async fn fetch_items(&self) -> Result<Vec<String>, AppError> {
         let url = format!("{}/items.js", config::SHOWDOWN_DATA);
-        let bytes = self.http.get_cached(&url, config::TTL_SHOWDOWN_DATA).await?;
+        let bytes = self
+            .http
+            .get_cached(&url, config::TTL_SHOWDOWN_DATA)
+            .await?;
         let body = String::from_utf8_lossy(&bytes);
         let names = extract_js_names(&body);
         if names.is_empty() {

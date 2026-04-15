@@ -1,14 +1,8 @@
+import { useTranslation } from "react-i18next";
 import type { EvSpread } from "../../lib/types";
+import { statLabel, type StatKey } from "../../lib/labels";
 
 const STAT_KEYS: (keyof EvSpread)[] = ["hp", "atk", "def", "spa", "spd", "spe"];
-const STAT_LABEL: Record<keyof EvSpread, string> = {
-  hp: "HP",
-  atk: "Atk",
-  def: "Def",
-  spa: "SpA",
-  spd: "SpD",
-  spe: "Spe",
-};
 
 interface Props {
   value: EvSpread;
@@ -16,6 +10,7 @@ interface Props {
 }
 
 export function EVSliders({ value, onChange }: Props) {
+  const { t } = useTranslation();
   const total = STAT_KEYS.reduce((a, k) => a + value[k], 0);
   const over = total > 508;
 
@@ -27,7 +22,7 @@ export function EVSliders({ value, onChange }: Props) {
             className="w-10 text-[10px] font-semibold uppercase"
             style={{ color: "var(--text-muted)" }}
           >
-            {STAT_LABEL[k]}
+            {statLabel(t, k as StatKey)}
           </span>
           <input
             type="range"

@@ -37,8 +37,7 @@ pub fn export_team_to_showdown(team: Team) -> Result<String, AppError> {
 
 #[tauri::command]
 pub fn validate_team(team: Team, regulation: String) -> Result<Vec<Violation>, AppError> {
-    let rules = rules_for_code(&regulation).ok_or_else(|| {
-        AppError::Validation(format!("Unknown regulation: {regulation}"))
-    })?;
+    let rules = rules_for_code(&regulation)
+        .ok_or_else(|| AppError::Validation(format!("Unknown regulation: {regulation}")))?;
     Ok(rules.validate_team(&team))
 }

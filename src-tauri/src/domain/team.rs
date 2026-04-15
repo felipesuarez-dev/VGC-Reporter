@@ -128,7 +128,10 @@ mod tests {
     fn wrong_size_fails() {
         let mut t = make_team("X");
         t.members.pop();
-        assert!(matches!(t.validate(), Err(TeamValidationError::WrongSize(5))));
+        assert!(matches!(
+            t.validate(),
+            Err(TeamValidationError::WrongSize(5))
+        ));
     }
 
     #[test]

@@ -290,7 +290,10 @@ mod tests {
             "Ogerpon",
         ]);
         let v = rules.validate_team(&team);
-        assert!(matches!(v.first(), Some(Violation::SpeciesNotAllowed { .. })));
+        assert!(matches!(
+            v.first(),
+            Some(Violation::SpeciesNotAllowed { .. })
+        ));
     }
 
     #[test]
@@ -305,7 +308,9 @@ mod tests {
             "Ogerpon",
         ]);
         let v = rules.validate_team(&team);
-        assert!(v.iter().any(|x| matches!(x, Violation::DuplicateSpecies { .. })));
+        assert!(v
+            .iter()
+            .any(|x| matches!(x, Violation::DuplicateSpecies { .. })));
     }
 
     #[test]
@@ -320,9 +325,13 @@ mod tests {
             "Ogerpon",
         ]);
         let v = rules.validate_team(&team);
-        assert!(v
-            .iter()
-            .any(|x| matches!(x, Violation::TooManyRestricted { allowed: 1, found: 2 })));
+        assert!(v.iter().any(|x| matches!(
+            x,
+            Violation::TooManyRestricted {
+                allowed: 1,
+                found: 2
+            }
+        )));
     }
 
     #[test]
@@ -330,7 +339,9 @@ mod tests {
         let rules = RegMaRules::new(MaSeason::M1);
         let team = team_of(&["Urshifu", "Rillaboom"]);
         let v = rules.validate_team(&team);
-        assert!(v.iter().any(|x| matches!(x, Violation::TeamIncomplete { filled: 2 })));
+        assert!(v
+            .iter()
+            .any(|x| matches!(x, Violation::TeamIncomplete { filled: 2 })));
     }
 
     #[test]
@@ -345,6 +356,8 @@ mod tests {
             "Ogerpon",
         ]);
         let v = rules.validate_team(&team);
-        assert!(!v.iter().any(|x| matches!(x, Violation::TooManyRestricted { .. })));
+        assert!(!v
+            .iter()
+            .any(|x| matches!(x, Violation::TooManyRestricted { .. })));
     }
 }

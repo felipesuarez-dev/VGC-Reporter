@@ -19,11 +19,7 @@ import { PokemonSprite } from "./PokemonSprite";
 import { TypeBadge } from "./TypeBadge";
 import { PokemonSetCard } from "./PokemonSetCard";
 import { useLocalize, type LocalizeKind } from "../../hooks/useTranslations";
-import { prettifyName } from "../../lib/labels";
-
-const STAT_LABELS: Record<string, string> = {
-  hp: "HP", atk: "Atk", def: "Def", spa: "SpA", spd: "SpD", spe: "Spe",
-};
+import { prettifyName, statLabel, type StatKey } from "../../lib/labels";
 
 type Tab = "doubles" | "singles";
 
@@ -172,7 +168,7 @@ function ModalBody({
           <div className="mt-3 grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
             {(Object.entries(pokemon.base_stats) as [string, number][]).map(([k, v]) => (
               <div key={k} className="flex justify-between">
-                <span style={{ color: "var(--text-dim)" }}>{STAT_LABELS[k]}</span>
+                <span style={{ color: "var(--text-dim)" }}>{statLabel(t, k as StatKey)}</span>
                 <span style={{ color: "var(--text)" }}>{v}</span>
               </div>
             ))}
@@ -307,7 +303,7 @@ function ModalBody({
               className="mt-3 mb-1 text-[10px] uppercase tracking-wide"
               style={{ color: "var(--text-dim)" }}
             >
-              STAB resisted by
+              {t("pokemon_detail.stab_resisted_by")}
             </p>
             <ul className="flex flex-wrap gap-1">
               {coverage.resists.map((tp: PokemonType) => (
@@ -343,7 +339,7 @@ function ModalBody({
               className="mt-3 mb-1 text-[10px] uppercase tracking-wide"
               style={{ color: "var(--text-dim)" }}
             >
-              STAB super-effective on
+              {t("pokemon_detail.stab_super_effective_on")}
             </p>
             <ul className="flex flex-wrap gap-1">
               {coverage.weakTo.map((tp: PokemonType) => (

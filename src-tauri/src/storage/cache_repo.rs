@@ -13,10 +13,13 @@ impl CacheRepo {
     }
 
     pub fn get(&self, url: &str) -> Result<Option<Vec<u8>>, AppError> {
-        let conn = self.pool.get().map_err(|e| AppError::Internal(e.to_string()))?;
+        let conn = self
+            .pool
+            .get()
+            .map_err(|e| AppError::Internal(e.to_string()))?;
         let now = Utc::now().timestamp();
-        let mut stmt = conn
-            .prepare("SELECT payload FROM api_cache WHERE url=?1 AND expires_at > ?2")?;
+        let mut stmt =
+            conn.prepare("SELECT payload FROM api_cache WHERE url=?1 AND expires_at > ?2")?;
         let mut rows = stmt.query(params![url, now])?;
         if let Some(row) = rows.next()? {
             let payload: Vec<u8> = row.get(0)?;
@@ -27,7 +30,10 @@ impl CacheRepo {
     }
 
     pub fn put(&self, url: &str, payload: &[u8], ttl_seconds: i64) -> Result<(), AppError> {
-        let conn = self.pool.get().map_err(|e| AppError::Internal(e.to_string()))?;
+        let conn = self
+            .pool
+            .get()
+            .map_err(|e| AppError::Internal(e.to_string()))?;
         let expires = Utc::now().timestamp() + ttl_seconds;
         conn.execute(
             "INSERT INTO api_cache (url, payload, expires_at) VALUES (?1, ?2, ?3)
@@ -38,7 +44,10 @@ impl CacheRepo {
     }
 
     pub fn purge_expired(&self) -> Result<usize, AppError> {
-        let conn = self.pool.get().map_err(|e| AppError::Internal(e.to_string()))?;
+        let conn = self
+            .pool
+            .get()
+            .map_err(|e| AppError::Internal(e.to_string()))?;
         let now = Utc::now().timestamp();
         let n = conn.execute("DELETE FROM api_cache WHERE expires_at <= ?1", params![now])?;
         Ok(n)

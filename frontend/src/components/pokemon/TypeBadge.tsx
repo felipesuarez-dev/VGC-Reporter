@@ -30,7 +30,7 @@ export function TypeBadge({ type, className }: { type: PokemonType; className?: 
   return (
     <span
       className={cn(
-        "inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+        "inline-block rounded-full px-1.5 py-[1px] text-[9px] font-bold uppercase leading-tight",
         COLORS[type],
         className,
       )}

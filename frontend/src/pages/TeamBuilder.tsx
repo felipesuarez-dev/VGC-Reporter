@@ -68,6 +68,10 @@ export function TeamBuilder() {
       setStatus(null);
       const issues = await ipc.validateTeam(team, team.format);
       setViolations(issues);
+      if (issues.length > 0) {
+        setStatus(t("team_builder.fix_violations_first"));
+        return;
+      }
       const newId = await ipc.saveTeam(team);
       await qc.invalidateQueries({ queryKey: queryKeys.teams.list });
       setStatus(t("team_builder.saved"));

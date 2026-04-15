@@ -1,5 +1,7 @@
 use crate::adapters::sprite_resolver::{fallback_sprite_url, primary_sprite_url};
-use crate::adapters::{LimitlessClient, LimitlessDecklistEntry, LimitlessStanding, LimitlessTournamentSummary};
+use crate::adapters::{
+    LimitlessClient, LimitlessDecklistEntry, LimitlessStanding, LimitlessTournamentSummary,
+};
 use crate::domain::champions::{
     ChampionsReport, ChampionsTournament, DecklistPokemon, TournamentStanding,
 };
@@ -32,7 +34,10 @@ impl ChampionsReportService {
         })
     }
 
-    pub async fn get_standings(&self, tournament_id: &str) -> Result<Vec<TournamentStanding>, AppError> {
+    pub async fn get_standings(
+        &self,
+        tournament_id: &str,
+    ) -> Result<Vec<TournamentStanding>, AppError> {
         let raw = self.limitless.get_standings(tournament_id).await?;
         Ok(raw.into_iter().map(into_standing).collect())
     }

@@ -42,7 +42,9 @@ impl SetsService {
         };
 
         if let Ok(bytes) = serde_json::to_vec(&bundle) {
-            let _ = self.cache.put(&cache_key, &bytes, config::TTL_SHOWDOWN_DATA);
+            let _ = self
+                .cache
+                .put(&cache_key, &bytes, config::TTL_SHOWDOWN_DATA);
         }
 
         Ok(bundle)

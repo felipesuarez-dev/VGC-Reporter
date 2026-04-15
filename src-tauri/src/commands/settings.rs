@@ -9,10 +9,6 @@ pub fn get_settings(state: State<'_, AppState>) -> Result<HashMap<String, String
 }
 
 #[tauri::command]
-pub fn set_setting(
-    state: State<'_, AppState>,
-    key: String,
-    value: String,
-) -> Result<(), AppError> {
+pub fn set_setting(state: State<'_, AppState>, key: String, value: String) -> Result<(), AppError> {
     state.settings.set(&key, &value)
 }

@@ -5,18 +5,23 @@ import { ExternalLink, RefreshCw } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
-import { type ChampionsTournament, type PokemonUsage } from "../lib/types";
+import { type ChampionsTournament } from "../lib/types";
 import { UsageBarChart, type UsageBarItem } from "../components/charts/UsageBarChart";
 import { TopList } from "../components/charts/TopList";
 import { typeLabel } from "../lib/labels";
 import type { PokemonType } from "../lib/types";
 import { PokemonSprite } from "../components/pokemon/PokemonSprite";
-import { PokemonMetaDrawer } from "../components/pokemon/PokemonMetaDrawer";
+import { PokemonDetailModal } from "../components/pokemon/PokemonDetailModal";
 import { FormatSelector } from "../components/ui/FormatSelector";
 import { XCard } from "../components/dashboard/XCard";
 import { TournamentStandingsDrawer } from "../components/tournament/TournamentStandingsDrawer";
 import { useDashboardStore } from "../stores/dashboardStore";
+import { usePokedexStore } from "../stores/pokedexStore";
 import { useLocalize } from "../hooks/useTranslations";
+
+function canonicalSpeciesId(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
 
 const EXTERNAL_SITES: { name: string; url: string }[] = [
   { name: "Pikalytics", url: "https://www.pikalytics.com/" },
@@ -48,7 +53,8 @@ export function Dashboard() {
     initRef.current = true;
     if (format !== favoriteFormat) setFormat(favoriteFormat);
   }, [favoriteFormat, format, setFormat]);
-  const [selected, setSelected] = useState<PokemonUsage | null>(null);
+  const openDetail = usePokedexStore((s) => s.openDetail);
+  const openSpecies = (species: string) => openDetail(canonicalSpeciesId(species));
   const [selectedTournament, setSelectedTournament] =
     useState<ChampionsTournament | null>(null);
   const [tournamentExpanded, setTournamentExpanded] = useState(false);
@@ -72,8 +78,7 @@ export function Dashboard() {
     id: p.species,
   }));
   const handleBarClick = (item: UsageBarItem) => {
-    const found = topPokemon.find((p) => p.species === item.id);
-    if (found) setSelected(found);
+    openSpecies(String(item.id));
   };
   const showMetaSkeleton = isFetching && !data;
   const topItems = data?.top_items ?? [];
@@ -188,7 +193,7 @@ export function Dashboard() {
                 <button
                   key={p.species}
                   type="button"
-                  onClick={() => setSelected(p)}
+                  onClick={() => openSpecies(p.species)}
                   className="card flex flex-col items-center gap-1 text-center transition hover:border-[var(--accent)] hover:bg-[var(--bg-elev-strong)]"
                 >
                   <PokemonSprite url={p.sprite_url} name={p.species} size={64} />
@@ -293,7 +298,7 @@ export function Dashboard() {
         </div>
       </section>
 
-      <PokemonMetaDrawer usage={selected} onClose={() => setSelected(null)} />
+      <PokemonDetailModal />
       <TournamentStandingsDrawer
         tournament={selectedTournament}
         onClose={() => setSelectedTournament(null)}

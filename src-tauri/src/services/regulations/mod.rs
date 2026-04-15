@@ -10,34 +10,14 @@ pub use reg_ma::{current_ma_season, MaSeason, RegMaRules};
 #[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Violation {
-    TeamIncomplete {
-        filled: u8,
-    },
-    SpeciesNotAllowed {
-        species: String,
-    },
-    ItemBanned {
-        species: String,
-        item: String,
-    },
-    MoveBanned {
-        species: String,
-        mv: String,
-    },
-    TooManyRestricted {
-        allowed: u8,
-        found: u8,
-    },
-    RestrictedNotInSeason {
-        species: String,
-        season: String,
-    },
-    DuplicateSpecies {
-        species: String,
-    },
-    DuplicateItem {
-        item: String,
-    },
+    TeamIncomplete { filled: u8 },
+    SpeciesNotAllowed { species: String },
+    ItemBanned { species: String, item: String },
+    MoveBanned { species: String, mv: String },
+    TooManyRestricted { allowed: u8, found: u8 },
+    RestrictedNotInSeason { species: String, season: String },
+    DuplicateSpecies { species: String },
+    DuplicateItem { item: String },
 }
 
 pub trait RegulationRules: Send + Sync {
@@ -47,9 +27,7 @@ pub trait RegulationRules: Send + Sync {
 
 pub fn rules_for_code(code: &str) -> Option<Box<dyn RegulationRules>> {
     match code {
-        "regulation-m-a" | "reg-m-a" | "RegulationMA" => {
-            Some(Box::new(RegMaRules::current()))
-        }
+        "regulation-m-a" | "reg-m-a" | "RegulationMA" => Some(Box::new(RegMaRules::current())),
         _ => None,
     }
 }
