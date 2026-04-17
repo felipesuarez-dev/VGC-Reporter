@@ -42,7 +42,7 @@ impl MetaService {
         tournament_count: Option<usize>,
     ) -> Result<MetaSnapshot, AppError> {
         let count = tournament_count.unwrap_or(config::TOURNAMENTS_PER_SNAPSHOT);
-        let cache_key = format!("meta-snapshot-v3::{}::{}", format.cache_id(), count);
+        let cache_key = format!("meta-snapshot-v4::{}::{}", format.cache_id(), count);
         if let Some(bytes) = self.cache.get(&cache_key)? {
             if let Ok(snap) = serde_json::from_slice::<MetaSnapshot>(&bytes) {
                 return Ok(snap);

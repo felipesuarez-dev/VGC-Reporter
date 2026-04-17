@@ -1,5 +1,5 @@
 use crate::adapters::limitless_client::{LimitlessDecklistEntry, LimitlessStanding};
-use crate::adapters::sprite_resolver::{canonical_id, sprite_url};
+use crate::adapters::sprite_resolver::{canonical_display_name, canonical_id, sprite_url};
 use crate::domain::format::Format;
 use crate::domain::usage_stats::{MetaSnapshot, MovesetUsage, PokemonUsage, UsageEntry};
 use chrono::Utc;
@@ -27,7 +27,10 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
             }
             let teammates: Vec<(String, String)> = deck
                 .iter()
-                .filter_map(|d| d.species_name().map(|s| (canonical_id(s), prettify(s))))
+                .filter_map(|d| {
+                    d.species_name()
+                        .map(|s| (canonical_id(s), prettify(&canonical_display_name(s))))
+                })
                 .collect();
 
             for entry in &deck {
@@ -36,7 +39,7 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
                     continue;
                 };
                 let key = canonical_id(species_raw);
-                let display = prettify(species_raw);
+                let display = prettify(&canonical_display_name(species_raw));
                 let acc = pokemon_count
                     .entry(key.clone())
                     .or_insert_with(|| PokemonAccumulator::new(display, key.clone()));
@@ -311,6 +314,31 @@ mod tests {
                 .map(|c| c.is_ascii_uppercase())
                 .unwrap_or(false)),
             "teammate display names should start with uppercase; got {teammate_names:?}"
+        );
+    }
+
+    #[test]
+    fn inverted_rotom_forms_are_normalized_to_canonical_display() {
+        let standings = vec![vec![standing(vec![
+            entry("Wash-Rotom"),
+            entry("Heat-Rotom"),
+            entry("Amoonguss"),
+        ])]];
+        let snap = aggregate(Format::RegulationMA, standings);
+
+        let species: Vec<&str> = snap.pokemon.iter().map(|p| p.species.as_str()).collect();
+
+        assert!(
+            species.contains(&"Rotom Wash"),
+            "expected Rotom Wash display, got {species:?}"
+        );
+        assert!(
+            species.contains(&"Rotom Heat"),
+            "expected Rotom Heat display, got {species:?}"
+        );
+        assert!(
+            !species.iter().any(|s| *s == "Wash Rotom" || *s == "Heat Rotom"),
+            "inverted forms should be normalized; got {species:?}"
         );
     }
 }

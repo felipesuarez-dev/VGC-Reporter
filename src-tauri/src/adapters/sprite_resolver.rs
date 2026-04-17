@@ -33,6 +33,14 @@ pub fn canonical_id(species: &str) -> String {
     to_id(&apply_alias(species))
 }
 
+/// Display name after Showdown alias rewriting. "Wash-Rotom" → "Rotom-Wash",
+/// "Ash-Greninja" → "Greninja-Ash", "Floette-Mega" → "Floette-Eternal", etc.
+/// Used to normalize display strings coming from external APIs (Limitless)
+/// so downstream consumers see a single canonical form.
+pub fn canonical_display_name(species: &str) -> String {
+    apply_alias(species)
+}
+
 /// Backwards-compatible alias for the primary sprite URL.
 pub fn sprite_url(species: &str) -> String {
     primary_sprite_url(species)
