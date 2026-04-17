@@ -5,8 +5,10 @@ import { X } from "lucide-react";
 import { ipc } from "../../lib/ipc";
 import { queryKeys } from "../../lib/queryKeys";
 import {
+  canonicalSpeciesId,
   type Pokemon,
   type PokemonType,
+  type TopTeamsReport,
 } from "../../lib/types";
 import {
   offensiveCoverage,
@@ -60,6 +62,12 @@ export function PokemonDetailModal() {
     queryFn: () => ipc.getMetaStats(format),
   });
 
+  const topTeams = useQuery({
+    queryKey: queryKeys.topTeams(format),
+    queryFn: () => ipc.getTopTeams(format, 100),
+    staleTime: 30 * 60 * 1000,
+  });
+
   if (!id) return null;
 
   return (
@@ -100,6 +108,7 @@ export function PokemonDetailModal() {
             setsLoading={sets.isLoading}
             metaUsage={meta.data?.pokemon ?? []}
             metaPokedex={meta.data}
+            topTeams={topTeams.data ?? null}
           />
         )}
       </div>
@@ -115,6 +124,7 @@ interface BodyProps {
   setsLoading: boolean;
   metaUsage: import("../../lib/types").PokemonUsage[];
   metaPokedex: import("../../lib/types").MetaSnapshot | undefined;
+  topTeams: TopTeamsReport | null;
 }
 
 function ModalBody({
@@ -124,6 +134,7 @@ function ModalBody({
   sets,
   setsLoading,
   metaUsage,
+  topTeams,
 }: BodyProps) {
   const { t } = useTranslation();
   const localize = useLocalize();
@@ -145,11 +156,18 @@ function ModalBody({
   const naturesEntries = useMemo(() => {
     const usageNatures = myUsage?.top_natures ?? [];
     if (usageNatures.length > 0) return usageNatures;
-    const allSets = [...(sets?.doubles ?? []), ...(sets?.singles ?? [])];
     const counts = new Map<string, number>();
-    for (const s of allSets) {
-      if (!s.nature) continue;
-      counts.set(s.nature, (counts.get(s.nature) ?? 0) + 1);
+    for (const s of [...(sets?.doubles ?? []), ...(sets?.singles ?? [])]) {
+      if (s.nature) counts.set(s.nature, (counts.get(s.nature) ?? 0) + 1);
+    }
+    if (counts.size === 0 && topTeams?.teams) {
+      const target = canonicalSpeciesId(pokemon.name);
+      for (const team of topTeams.teams) {
+        for (const m of team.members) {
+          if (canonicalSpeciesId(m.species) !== target) continue;
+          if (m.nature) counts.set(m.nature, (counts.get(m.nature) ?? 0) + 1);
+        }
+      }
     }
     const total = [...counts.values()].reduce((a, b) => a + b, 0);
     if (total === 0) return [];
@@ -161,7 +179,7 @@ function ModalBody({
         count,
         usage_percent: (count / total) * 100,
       }));
-  }, [myUsage?.top_natures, sets?.doubles, sets?.singles]);
+  }, [myUsage?.top_natures, sets?.doubles, sets?.singles, topTeams?.teams, pokemon.name]);
 
   return (
     <>
