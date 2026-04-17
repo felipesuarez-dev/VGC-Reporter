@@ -3,15 +3,19 @@ import { emptyTeam, type Team, type TeamMember } from "../lib/types";
 
 interface TeamBuilderState {
   team: Team;
+  pendingImport: Team | null;
   setTeam: (team: Team) => void;
   setName: (name: string) => void;
   setNotes: (notes: string) => void;
   setMember: (slot: number, member: TeamMember) => void;
+  setPendingImport: (team: Team) => void;
+  clearPendingImport: () => void;
   reset: () => void;
 }
 
 export const useTeamBuilder = create<TeamBuilderState>((set) => ({
   team: emptyTeam(),
+  pendingImport: null,
   setTeam: (team) => set({ team }),
   setName: (name) => set((s) => ({ team: { ...s.team, name } })),
   setNotes: (notes) => set((s) => ({ team: { ...s.team, notes } })),
@@ -21,5 +25,7 @@ export const useTeamBuilder = create<TeamBuilderState>((set) => ({
       members[slot] = member;
       return { team: { ...s.team, members } };
     }),
+  setPendingImport: (team) => set({ pendingImport: team }),
+  clearPendingImport: () => set({ pendingImport: null }),
   reset: () => set({ team: emptyTeam() }),
 }));

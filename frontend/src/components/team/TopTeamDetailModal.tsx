@@ -1,18 +1,65 @@
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
-import type { TopTeam } from "../../lib/types";
+import { ClipboardCopy, X } from "lucide-react";
+import type { Nature, PokemonType, Team, TeamMember, TopTeam } from "../../lib/types";
+import { ALL_NATURES, ALL_TYPES, emptyTeamMember } from "../../lib/types";
 import { PokemonSprite } from "../pokemon/PokemonSprite";
-import { useLocalize } from "../../hooks/useTranslations";
+import { EntityChip } from "../info/EntityChip";
+import { Tooltip } from "../ui/Tooltip";
+import { useTeamBuilder } from "../../stores/teamBuilderStore";
 
 interface Props {
   team: TopTeam | null;
   onClose: () => void;
 }
 
+function asNature(value: string | null | undefined): Nature | null {
+  if (!value) return null;
+  const match = ALL_NATURES.find(
+    (n) => n.toLowerCase() === value.toLowerCase(),
+  );
+  return match ?? null;
+}
+
+function asTeraType(value: string | null | undefined): PokemonType | null {
+  if (!value) return null;
+  const match = ALL_TYPES.find((t) => t.toLowerCase() === value.toLowerCase());
+  return match ?? null;
+}
+
+function toDraftTeam(top: TopTeam): Team {
+  const members: TeamMember[] = Array.from({ length: 6 }, (_, i) => {
+    const m = top.members[i];
+    if (!m) return emptyTeamMember();
+    return {
+      species: m.species,
+      item: m.item ?? null,
+      ability: m.ability ?? null,
+      nature: asNature(m.nature),
+      tera_type: asTeraType(m.tera_type),
+      moves: m.moves ?? [],
+      evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+    };
+  });
+  const name = top.player
+    ? `${top.player} — ${top.tournament}`
+    : top.tournament;
+  return {
+    id: null,
+    name,
+    format: "regulation-m-a",
+    notes: null,
+    members,
+    created_at: null,
+    updated_at: null,
+  };
+}
+
 export function TopTeamDetailModal({ team, onClose }: Props) {
   const { t } = useTranslation();
-  const localize = useLocalize();
+  const navigate = useNavigate();
+  const setPendingImport = useTeamBuilder((s) => s.setPendingImport);
 
   useEffect(() => {
     if (!team) return;
@@ -29,6 +76,12 @@ export function TopTeamDetailModal({ team, onClose }: Props) {
     (m) => m.ability || (m.moves && m.moves.length > 0),
   );
 
+  const copyToBuilder = () => {
+    setPendingImport(toDraftTeam(team));
+    onClose();
+    navigate("/team-builder");
+  };
+
   return (
     <div
       role="dialog"
@@ -37,7 +90,7 @@ export function TopTeamDetailModal({ team, onClose }: Props) {
       onClick={onClose}
     >
       <div
-        className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl border p-5 shadow-2xl"
+        className="relative max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-xl border p-5 shadow-2xl"
         style={{
           backgroundColor: "var(--bg-elev)",
           borderColor: "var(--border)",
@@ -52,17 +105,29 @@ export function TopTeamDetailModal({ team, onClose }: Props) {
           <X size={18} />
         </button>
 
-        <header className="mb-4">
-          <h2 className="text-xl font-bold" style={{ color: "var(--text)" }}>
-            {team.player ?? "—"}
-          </h2>
-          <p className="mt-1 text-xs" style={{ color: "var(--text-dim)" }}>
-            {t("top_teams.tournament")}: {team.tournament}
-            {team.placing != null && (
-              <> · {t("top_teams.placing")}: #{team.placing}</>
-            )}
-            {team.record && <> · {t("top_teams.record")}: {team.record}</>}
-          </p>
+        <header className="mb-4 flex flex-wrap items-start justify-between gap-3 pr-8">
+          <div>
+            <h2 className="text-xl font-bold" style={{ color: "var(--text)" }}>
+              {team.player ?? "—"}
+            </h2>
+            <p className="mt-1 text-xs" style={{ color: "var(--text-dim)" }}>
+              {t("top_teams.tournament")}: {team.tournament}
+              {team.placing != null && (
+                <> · {t("top_teams.placing")}: #{team.placing}</>
+              )}
+              {team.record && <> · {t("top_teams.record")}: {team.record}</>}
+            </p>
+          </div>
+          <Tooltip content={t("top_teams.copy_to_builder")}>
+            <button
+              type="button"
+              onClick={copyToBuilder}
+              className="btn-ghost flex items-center gap-1 text-xs"
+            >
+              <ClipboardCopy size={14} />
+              {t("top_teams.copy_to_builder")}
+            </button>
+          </Tooltip>
         </header>
 
         {!hasRichInfo && (
@@ -73,7 +138,7 @@ export function TopTeamDetailModal({ team, onClose }: Props) {
 
         <section
           aria-label={t("top_teams.members")}
-          className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+          className="grid grid-cols-1 gap-3 lg:grid-cols-2"
         >
           {team.members.map((m, i) => (
             <div
@@ -85,7 +150,13 @@ export function TopTeamDetailModal({ team, onClose }: Props) {
               }}
             >
               <div className="flex items-start gap-3">
-                <PokemonSprite url={m.sprite_url} name={m.species} size={64} />
+                <div className="flex aspect-square h-24 w-24 shrink-0 items-center justify-center">
+                  <PokemonSprite
+                    url={m.sprite_url}
+                    name={m.species}
+                    size={96}
+                  />
+                </div>
                 <div className="min-w-0 flex-1">
                   <div
                     className="text-sm font-semibold"
@@ -99,7 +170,7 @@ export function TopTeamDetailModal({ team, onClose }: Props) {
                         <span style={{ color: "var(--text-dim)" }}>
                           {t("top_teams.item")}:
                         </span>{" "}
-                        {localize("item", m.item)}
+                        <EntityChip kind="item" name={m.item} />
                       </div>
                     )}
                     {m.ability && (
@@ -107,7 +178,15 @@ export function TopTeamDetailModal({ team, onClose }: Props) {
                         <span style={{ color: "var(--text-dim)" }}>
                           {t("top_teams.ability")}:
                         </span>{" "}
-                        {localize("ability", m.ability)}
+                        <EntityChip kind="ability" name={m.ability} />
+                      </div>
+                    )}
+                    {m.nature && (
+                      <div style={{ color: "var(--text-muted)" }}>
+                        <span style={{ color: "var(--text-dim)" }}>
+                          {t("team_builder.nature")}:
+                        </span>{" "}
+                        {t(`natures.${m.nature}`, { defaultValue: m.nature })}
                       </div>
                     )}
                     {m.tera_type && (
@@ -115,7 +194,9 @@ export function TopTeamDetailModal({ team, onClose }: Props) {
                         <span style={{ color: "var(--text-dim)" }}>
                           {t("top_teams.tera_type")}:
                         </span>{" "}
-                        {m.tera_type}
+                        {t(`types.${m.tera_type}`, {
+                          defaultValue: m.tera_type,
+                        })}
                       </div>
                     )}
                   </div>
@@ -129,10 +210,10 @@ export function TopTeamDetailModal({ team, onClose }: Props) {
                   >
                     {t("top_teams.moves")}
                   </div>
-                  <ul className="mt-1 grid grid-cols-2 gap-x-2 text-[11px]">
+                  <ul className="mt-1 grid grid-cols-2 gap-x-2 gap-y-1 text-[11px]">
                     {m.moves.map((mv, j) => (
                       <li key={j} style={{ color: "var(--text)" }}>
-                        • {localize("move", mv)}
+                        • <EntityChip kind="move" name={mv} />
                       </li>
                     ))}
                   </ul>

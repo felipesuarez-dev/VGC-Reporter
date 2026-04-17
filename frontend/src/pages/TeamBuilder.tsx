@@ -24,7 +24,16 @@ export function TeamBuilder() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { team, setTeam, setName, setNotes, setMember, reset } = useTeamBuilder();
+  const {
+    team,
+    setTeam,
+    setName,
+    setNotes,
+    setMember,
+    reset,
+    pendingImport,
+    clearPendingImport,
+  } = useTeamBuilder();
   const [status, setStatus] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
@@ -63,11 +72,16 @@ export function TeamBuilder() {
 
   useEffect(() => {
     if (teamId === null) {
-      reset();
+      if (pendingImport) {
+        setTeam(pendingImport);
+        clearPendingImport();
+      } else {
+        reset();
+      }
     } else if (loaded) {
       setTeam(loaded);
     }
-  }, [teamId, loaded, reset, setTeam]);
+  }, [teamId, loaded, reset, setTeam, pendingImport, clearPendingImport]);
 
   const save = async () => {
     try {
