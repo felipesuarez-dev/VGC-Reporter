@@ -8,6 +8,7 @@ export interface MiniTeamMember {
   item?: string | null;
   ability?: string | null;
   tera_type?: string | null;
+  nature?: string | null;
   moves?: string[];
 }
 
@@ -27,6 +28,10 @@ export function MiniTeam({ members, cols = 3, size = 48 }: Props) {
     if (m.ability)
       parts.push(`${t("top_teams.ability")}: ${localize("ability", m.ability)}`);
     if (m.tera_type) parts.push(`${t("top_teams.tera_type")}: ${m.tera_type}`);
+    if (m.nature)
+      parts.push(
+        `${t("team_builder.nature")}: ${t(`natures.${m.nature}`, { defaultValue: m.nature })}`,
+      );
     if (m.moves && m.moves.length > 0) {
       const mv = m.moves.map((x) => localize("move", x)).join(", ");
       parts.push(`${t("top_teams.moves")}: ${mv}`);

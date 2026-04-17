@@ -44,7 +44,15 @@ export function MyTeams() {
         {data?.map((team) => {
           const members: MiniTeamMember[] = team.members
             .filter((m) => m.species.trim() !== "")
-            .map((m) => ({ species: m.species, sprite_url: spriteFor(m.species) }));
+            .map((m) => ({
+              species: m.species,
+              sprite_url: spriteFor(m.species),
+              item: m.item,
+              ability: m.ability,
+              tera_type: m.tera_type,
+              nature: m.nature,
+              moves: m.moves,
+            }));
           return (
             <div key={team.id ?? team.name} className="card space-y-3">
               <div className="flex items-start justify-between gap-2">

@@ -168,6 +168,7 @@ export function TopTeams() {
                 item: m.item,
                 ability: m.ability,
                 tera_type: m.tera_type,
+                nature: m.nature,
                 moves: m.moves,
               }))}
               cols={6}

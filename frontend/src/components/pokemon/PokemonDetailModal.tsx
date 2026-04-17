@@ -142,6 +142,27 @@ function ModalBody({
   const tabSource =
     tab === "doubles" ? sets?.doubles_source ?? null : sets?.singles_source ?? null;
 
+  const naturesEntries = useMemo(() => {
+    const usageNatures = myUsage?.top_natures ?? [];
+    if (usageNatures.length > 0) return usageNatures;
+    const allSets = [...(sets?.doubles ?? []), ...(sets?.singles ?? [])];
+    const counts = new Map<string, number>();
+    for (const s of allSets) {
+      if (!s.nature) continue;
+      counts.set(s.nature, (counts.get(s.nature) ?? 0) + 1);
+    }
+    const total = [...counts.values()].reduce((a, b) => a + b, 0);
+    if (total === 0) return [];
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, count]) => ({
+        name,
+        count,
+        usage_percent: (count / total) * 100,
+      }));
+  }, [myUsage?.top_natures, sets?.doubles, sets?.singles]);
+
   return (
     <>
       <header className="mb-4 flex flex-col items-start gap-4 sm:flex-row">
@@ -266,7 +287,7 @@ function ModalBody({
             <UsageList title={t("drawer.top_abilities")} entries={myUsage.top_abilities} kind="ability" />
             <UsageList title={t("drawer.top_tera")} entries={myUsage.top_tera} />
             <UsageList title={t("drawer.top_teammates")} entries={myUsage.top_teammates} />
-            <NaturesList entries={myUsage.top_natures ?? []} />
+            <NaturesList entries={naturesEntries} />
           </div>
           {myUsage.common_movesets && myUsage.common_movesets.length > 0 && (
             <div className="mt-2">
