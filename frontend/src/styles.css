@@ -91,3 +91,22 @@ img[data-sprite="true"] {
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-elev);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-soft);
+}
+* {
+  scrollbar-color: var(--border) var(--bg-elev);
+  scrollbar-width: thin;
+}

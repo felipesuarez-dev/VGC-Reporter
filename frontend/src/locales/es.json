@@ -30,7 +30,8 @@
     "format": "Formato",
     "source": "Fuente",
     "usage": "Uso",
-    "count": "Cantidad"
+    "count": "Cantidad",
+    "scroll_to_top": "Volver arriba"
   },
   "dashboard": {
     "title": "Panel",

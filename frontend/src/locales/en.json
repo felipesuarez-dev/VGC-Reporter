@@ -30,7 +30,8 @@
     "format": "Format",
     "source": "Source",
     "usage": "Usage",
-    "count": "Count"
+    "count": "Count",
+    "scroll_to_top": "Back to top"
   },
   "dashboard": {
     "title": "Dashboard",

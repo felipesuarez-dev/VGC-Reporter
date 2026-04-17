@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "../../lib/cn";
 import { LanguageToggle } from "./LanguageToggle";
+import { ScrollToTop } from "../ui/ScrollToTop";
 import { useUiStore } from "../../stores/uiStore";
 import { APP_VERSION } from "../../lib/version";
 
@@ -165,11 +166,12 @@ export function AppShell() {
           )}
         </div>
       </aside>
-      <main className="flex-1 overflow-y-auto">
+      <main id="app-main" className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-7xl px-6 py-6">
           <Outlet />
         </div>
       </main>
+      <ScrollToTop />
     </div>
   );
 }
