@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "VGC Reportes",
+    "name": "VGC Reporter",
     "tagline": "Pokémon Champions competitive stats",
     "version": "Version",
     "by": "by"
@@ -20,7 +20,9 @@
     "item": "Item"
   },
   "regulations": {
-    "coming_soon": "Coming soon"
+    "coming_soon": "Coming soon",
+    "reg_ma_s1": "M-1",
+    "reg_ma_s2": "M-2"
   },
   "common": {
     "loading": "Loading...",
@@ -157,7 +159,9 @@
   },
   "my_teams": {
     "title": "My Teams",
-    "empty": "You haven't saved any teams yet. Create one in the Team Builder."
+    "empty": "You haven't saved any teams yet. Create one in the Team Builder.",
+    "notes_empty": "No notes",
+    "no_notes": "No notes"
   },
   "top_teams": {
     "title": "Top Teams",
@@ -178,6 +182,7 @@
   },
   "damage_calc": {
     "title": "Damage Calculator",
+    "subtitle": "Pokémon are treated at level 50 (VGC Doubles format). The calculator respects active Tera Types, offensive/defensive items, and nature / EVs / stat modifiers.",
     "attacker": "Attacker",
     "defender": "Defender",
     "move": "Move",

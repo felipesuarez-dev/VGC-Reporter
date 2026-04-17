@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "VGC Reportes",
+    "name": "VGC Reporter",
     "tagline": "Estadísticas competitivas de Pokémon Champions",
     "version": "Versión",
     "by": "por"
@@ -20,7 +20,9 @@
     "item": "Objeto"
   },
   "regulations": {
-    "coming_soon": "Próximamente"
+    "coming_soon": "Próximamente",
+    "reg_ma_s1": "M-1",
+    "reg_ma_s2": "M-2"
   },
   "common": {
     "loading": "Cargando...",
@@ -157,7 +159,9 @@
   },
   "my_teams": {
     "title": "Mis equipos",
-    "empty": "Aún no has guardado ningún equipo. Crea uno en el constructor."
+    "empty": "Aún no has guardado ningún equipo. Crea uno en el constructor.",
+    "notes_empty": "Sin notas",
+    "no_notes": "Sin notas"
   },
   "top_teams": {
     "title": "Top Equipos",
@@ -178,6 +182,7 @@
   },
   "damage_calc": {
     "title": "Calculador de daño",
+    "subtitle": "Los Pokémon se consideran a nivel 50 (formato VGC Doubles). La calculadora respeta Tera Types activos, ítems ofensivos/defensivos y modificadores de naturaleza / EVs / stats.",
     "attacker": "Atacante",
     "defender": "Defensor",
     "move": "Movimiento",
