@@ -65,11 +65,11 @@ export function AppShell() {
           />
           {!collapsed && (
             <div className="flex min-w-0 flex-col pr-6">
-              <span className="truncate text-lg font-bold tracking-tight">
+              <span className="text-lg font-bold leading-tight tracking-tight">
                 {t("app.name")}
               </span>
               <span
-                className="truncate text-xs"
+                className="whitespace-normal break-words text-[11px] leading-tight"
                 style={{ color: "var(--text-muted)" }}
               >
                 {t("app.tagline")}
