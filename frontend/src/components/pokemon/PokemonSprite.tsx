@@ -1,5 +1,7 @@
 import { cn } from "../../lib/cn";
 
+const PLACEHOLDER_SRC = "/sprite-placeholder.svg";
+
 interface Props {
   url: string;
   fallbackUrl?: string | null;
@@ -9,9 +11,10 @@ interface Props {
 }
 
 export function PokemonSprite({ url, fallbackUrl, name, size = 72, className }: Props) {
+  const initialSrc = url && url.length > 0 ? url : PLACEHOLDER_SRC;
   return (
     <img
-      src={url}
+      src={initialSrc}
       alt={name ?? "pokemon sprite"}
       width={size}
       height={size}
@@ -23,8 +26,9 @@ export function PokemonSprite({ url, fallbackUrl, name, size = 72, className }: 
         if (fallbackUrl && el.dataset.fallbackTried !== "1") {
           el.dataset.fallbackTried = "1";
           el.src = fallbackUrl;
-        } else {
-          el.style.visibility = "hidden";
+        } else if (el.dataset.placeholderApplied !== "1") {
+          el.dataset.placeholderApplied = "1";
+          el.src = PLACEHOLDER_SRC;
         }
       }}
     />
