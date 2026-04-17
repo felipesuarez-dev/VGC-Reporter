@@ -18,6 +18,7 @@ import { usePokedexStore } from "../../stores/pokedexStore";
 import { PokemonSprite } from "./PokemonSprite";
 import { TypeBadge } from "./TypeBadge";
 import { PokemonSetCard } from "./PokemonSetCard";
+import { EntityChip } from "../info/EntityChip";
 import { useLocalize, type LocalizeKind } from "../../hooks/useTranslations";
 import { prettifyName, statLabel, type StatKey } from "../../lib/labels";
 
@@ -265,7 +266,47 @@ function ModalBody({
             <UsageList title={t("drawer.top_abilities")} entries={myUsage.top_abilities} kind="ability" />
             <UsageList title={t("drawer.top_tera")} entries={myUsage.top_tera} />
             <UsageList title={t("drawer.top_teammates")} entries={myUsage.top_teammates} />
+            <NaturesList entries={myUsage.top_natures ?? []} />
           </div>
+          {myUsage.common_movesets && myUsage.common_movesets.length > 0 && (
+            <div className="mt-2">
+              <h4
+                className="mb-2 text-[10px] font-semibold uppercase tracking-wide"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {t("drawer.top_movesets")}
+              </h4>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {myUsage.common_movesets.slice(0, 5).map((ms, idx) => (
+                  <div
+                    key={idx}
+                    className="rounded-lg border p-2"
+                    style={{
+                      borderColor: "var(--border)",
+                      backgroundColor: "var(--bg-elev)",
+                    }}
+                  >
+                    <div className="mb-1 flex items-baseline justify-between gap-2 text-[10px]">
+                      <span style={{ color: "var(--text-dim)" }}>#{idx + 1}</span>
+                      <span
+                        className="tabular-nums"
+                        style={{ color: "var(--accent)" }}
+                      >
+                        {ms.usage_percent.toFixed(1)}%
+                      </span>
+                    </div>
+                    <ul className="flex flex-wrap gap-x-2 gap-y-1 text-xs">
+                      {ms.moves.map((mv) => (
+                        <li key={mv}>
+                          <EntityChip kind="move" name={mv} />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
       )}
 
@@ -352,6 +393,46 @@ function ModalBody({
         </div>
       </section>
     </>
+  );
+}
+
+function NaturesList({
+  entries,
+}: {
+  entries: import("../../lib/types").UsageEntry[];
+}) {
+  const { t } = useTranslation();
+  if (!entries || entries.length === 0) return null;
+  return (
+    <section
+      className="rounded-lg border p-3"
+      style={{
+        borderColor: "var(--border)",
+        backgroundColor: "var(--bg-elev)",
+      }}
+    >
+      <h4
+        className="mb-2 text-[10px] font-semibold uppercase tracking-wide"
+        style={{ color: "var(--text-muted)" }}
+      >
+        {t("drawer.top_natures")}
+      </h4>
+      <ul className="space-y-1">
+        {entries.slice(0, 5).map((e) => (
+          <li key={e.name} className="flex items-baseline justify-between gap-2 text-xs">
+            <span className="truncate" style={{ color: "var(--text)" }}>
+              {t(`natures.${e.name}`, { defaultValue: e.name })}
+            </span>
+            <span
+              className="shrink-0 tabular-nums"
+              style={{ color: "var(--accent)" }}
+            >
+              {e.usage_percent.toFixed(1)}%
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

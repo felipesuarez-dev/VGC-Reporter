@@ -77,7 +77,9 @@
     "top_moves": "Moves",
     "top_abilities": "Abilities",
     "top_tera": "Tera",
-    "top_teammates": "Common teammates"
+    "top_teammates": "Common teammates",
+    "top_natures": "Natures",
+    "top_movesets": "Common movesets"
   },
   "pokedex": {
     "title": "Pokédex",

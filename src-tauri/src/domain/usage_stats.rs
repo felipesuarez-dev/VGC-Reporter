@@ -13,6 +13,14 @@ pub struct UsageEntry {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
+pub struct MovesetUsage {
+    pub moves: Vec<String>,
+    pub count: u32,
+    pub usage_percent: f32,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
 pub struct PokemonUsage {
     pub species: String,
     pub usage_percent: f32,
@@ -22,6 +30,10 @@ pub struct PokemonUsage {
     pub top_abilities: Vec<UsageEntry>,
     pub top_tera: Vec<UsageEntry>,
     pub top_teammates: Vec<UsageEntry>,
+    #[serde(default)]
+    pub top_natures: Vec<UsageEntry>,
+    #[serde(default)]
+    pub common_movesets: Vec<MovesetUsage>,
     pub sprite_url: String,
 }
 

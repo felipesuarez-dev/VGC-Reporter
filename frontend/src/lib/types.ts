@@ -20,6 +20,7 @@ export type {
   MoveCategory,
   MoveSummary,
   MoveUsage,
+  MovesetUsage,
   Nature,
   Pokemon,
   PokemonSet,

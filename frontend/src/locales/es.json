@@ -77,7 +77,9 @@
     "top_moves": "Movimientos",
     "top_abilities": "Habilidades",
     "top_tera": "Tera",
-    "top_teammates": "Compañeros frecuentes"
+    "top_teammates": "Compañeros frecuentes",
+    "top_natures": "Naturalezas",
+    "top_movesets": "Sets de movimientos frecuentes"
   },
   "pokedex": {
     "title": "Pokédex",

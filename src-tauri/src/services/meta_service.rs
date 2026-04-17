@@ -178,6 +178,8 @@ pub(crate) fn snapshot_from_smogon(
                     count: 0,
                 })
                 .collect(),
+            top_natures: Vec::new(),
+            common_movesets: Vec::new(),
             sprite_url: sprite_url(&name),
         })
         .collect();

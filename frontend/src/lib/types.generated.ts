@@ -29,6 +29,8 @@ export type MoveSummary = { id: string, name: string, type_: PokemonType, catego
 
 export type MoveUsage = { name: string, usage_percent: number, };
 
+export type MovesetUsage = { moves: Array<string>, count: number, usage_percent: number, };
+
 export type Nature = "Hardy" | "Lonely" | "Brave" | "Adamant" | "Naughty" | "Bold" | "Docile" | "Relaxed" | "Impish" | "Lax" | "Timid" | "Hasty" | "Serious" | "Jolly" | "Naive" | "Modest" | "Mild" | "Quiet" | "Bashful" | "Rash" | "Calm" | "Gentle" | "Sassy" | "Careful" | "Quirky";
 
 export type Pokemon = { 
@@ -68,7 +70,7 @@ moves: Array<string>, };
 
 export type PokemonType = "Normal" | "Fire" | "Water" | "Electric" | "Grass" | "Ice" | "Fighting" | "Poison" | "Ground" | "Flying" | "Psychic" | "Bug" | "Rock" | "Ghost" | "Dragon" | "Dark" | "Steel" | "Fairy" | "Stellar";
 
-export type PokemonUsage = { species: string, usage_percent: number, count: number, top_items: Array<UsageEntry>, top_moves: Array<UsageEntry>, top_abilities: Array<UsageEntry>, top_tera: Array<UsageEntry>, top_teammates: Array<UsageEntry>, sprite_url: string, };
+export type PokemonUsage = { species: string, usage_percent: number, count: number, top_items: Array<UsageEntry>, top_moves: Array<UsageEntry>, top_abilities: Array<UsageEntry>, top_tera: Array<UsageEntry>, top_teammates: Array<UsageEntry>, top_natures: Array<UsageEntry>, common_movesets: Array<MovesetUsage>, sprite_url: string, };
 
 /**
  * Bundle of curated sets for a Pokémon, split by play style.

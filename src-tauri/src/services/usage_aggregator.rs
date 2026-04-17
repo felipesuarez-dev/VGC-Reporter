@@ -1,7 +1,7 @@
 use crate::adapters::limitless_client::{LimitlessDecklistEntry, LimitlessStanding};
 use crate::adapters::sprite_resolver::{canonical_id, sprite_url};
 use crate::domain::format::Format;
-use crate::domain::usage_stats::{MetaSnapshot, PokemonUsage, UsageEntry};
+use crate::domain::usage_stats::{MetaSnapshot, MovesetUsage, PokemonUsage, UsageEntry};
 use chrono::Utc;
 use std::collections::HashMap;
 
@@ -85,6 +85,8 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
             top_abilities: top_n(&acc.abilities, 3),
             top_tera: top_n(&acc.tera, 5),
             top_teammates: top_n(&acc.teammates, 5),
+            top_natures: top_n(&acc.natures, 5),
+            common_movesets: top_movesets(&acc.movesets, 5),
             sprite_url: sprite_url(&acc.id),
         })
         .collect();
@@ -119,9 +121,21 @@ fn accumulate(entry: &LimitlessDecklistEntry, acc: &mut PokemonAccumulator) {
     if let Some(tera) = entry.tera_value() {
         *acc.tera.entry(prettify(tera)).or_insert(0) += 1;
     }
+    if let Some(nature) = entry.nature.as_deref() {
+        let nature = prettify(nature);
+        if !nature.is_empty() {
+            *acc.natures.entry(nature).or_insert(0) += 1;
+        }
+    }
     if let Some(moves) = &entry.moves {
         for mv in moves {
             *acc.moves.entry(prettify(mv)).or_insert(0) += 1;
+        }
+        let mut signature: Vec<String> =
+            moves.iter().map(|m| prettify(m)).filter(|m| !m.is_empty()).collect();
+        if !signature.is_empty() {
+            signature.sort();
+            *acc.movesets.entry(signature).or_insert(0) += 1;
         }
     }
 }
@@ -192,6 +206,8 @@ struct PokemonAccumulator {
     abilities: HashMap<String, u32>,
     tera: HashMap<String, u32>,
     teammates: HashMap<String, u32>,
+    natures: HashMap<String, u32>,
+    movesets: HashMap<Vec<String>, u32>,
 }
 
 impl PokemonAccumulator {
@@ -205,8 +221,26 @@ impl PokemonAccumulator {
             abilities: HashMap::new(),
             tera: HashMap::new(),
             teammates: HashMap::new(),
+            natures: HashMap::new(),
+            movesets: HashMap::new(),
         }
     }
+}
+
+fn top_movesets(map: &HashMap<Vec<String>, u32>, n: usize) -> Vec<MovesetUsage> {
+    let total: u32 = map.values().sum();
+    let total = total.max(1) as f32;
+    let mut items: Vec<(&Vec<String>, &u32)> = map.iter().collect();
+    items.sort_by(|a, b| b.1.cmp(a.1));
+    items
+        .into_iter()
+        .take(n)
+        .map(|(moves, count)| MovesetUsage {
+            moves: moves.clone(),
+            count: *count,
+            usage_percent: (*count as f32 / total) * 100.0,
+        })
+        .collect()
 }
 
 #[cfg(test)]
