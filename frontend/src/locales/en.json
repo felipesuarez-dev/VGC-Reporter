@@ -39,7 +39,10 @@
     "source": "Source",
     "usage": "Usage",
     "count": "Count",
-    "scroll_to_top": "Back to top"
+    "scroll_to_top": "Back to top",
+    "see_more": "See more",
+    "see_less": "See less",
+    "copy": "Copy"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -159,7 +162,10 @@
     "ability": "Ability",
     "tera_type": "Tera Type",
     "moves": "Moves",
-    "limited_info": "The source only exposes each member's item and Tera type."
+    "limited_info": "The source only exposes each member's item and Tera type.",
+    "battles": "Battles analyzed",
+    "tournaments_analyzed": "Tournaments analyzed",
+    "copy_to_builder": "Copy to builder"
   },
   "damage_calc": {
     "title": "Damage Calculator",

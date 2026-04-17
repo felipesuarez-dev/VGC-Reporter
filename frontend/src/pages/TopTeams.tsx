@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { RefreshCw } from "lucide-react";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
 import type { ChampionsTournament, Format, TopTeam } from "../lib/types";
@@ -9,31 +10,99 @@ import { TopTeamDetailModal } from "../components/team/TopTeamDetailModal";
 import { TournamentStandingsDrawer } from "../components/tournament/TournamentStandingsDrawer";
 
 const FORMAT: Format = "regulation-m-a";
-const RECENT_LIMIT = 10;
+const RECENT_INITIAL = 5;
+const RECENT_EXPANDED = 20;
+const CARDS_PAGE = 20;
+
+function flagEmoji(code: string | null | undefined): string {
+  if (!code || code.length !== 2) return "";
+  const up = code.toUpperCase();
+  const a = 0x1f1e6 - "A".charCodeAt(0);
+  return String.fromCodePoint(up.charCodeAt(0) + a, up.charCodeAt(1) + a);
+}
 
 export function TopTeams() {
   const { t } = useTranslation();
+  const qc = useQueryClient();
   const [selectedTournament, setSelectedTournament] =
     useState<ChampionsTournament | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<TopTeam | null>(null);
-  const { data, isLoading, isError } = useQuery({
+  const [visibleCards, setVisibleCards] = useState(CARDS_PAGE);
+  const [recentExpanded, setRecentExpanded] = useState(false);
+
+  const { data: report, isLoading, isError, isFetching } = useQuery({
     queryKey: queryKeys.topTeams(FORMAT),
-    queryFn: () => ipc.getTopTeams(FORMAT, 20),
+    queryFn: () => ipc.getTopTeams(FORMAT, 100),
   });
   const { data: championsReport, isFetching: tournamentsFetching } = useQuery({
-    queryKey: queryKeys.championsReport(FORMAT, RECENT_LIMIT),
-    queryFn: () => ipc.listChampionsTournaments(FORMAT, RECENT_LIMIT),
+    queryKey: queryKeys.championsReport(FORMAT, RECENT_EXPANDED),
+    queryFn: () => ipc.listChampionsTournaments(FORMAT, RECENT_EXPANDED),
     staleTime: 30 * 60 * 1000,
   });
 
+  const teams = report?.teams ?? [];
+  const meta = report?.meta;
+  const visibleTeams = teams.slice(0, visibleCards);
+
+  const recentLimit = recentExpanded ? RECENT_EXPANDED : RECENT_INITIAL;
+  const recentTournaments =
+    championsReport?.tournaments.slice(0, recentLimit) ?? [];
+  const hasMoreRecent =
+    (championsReport?.tournaments.length ?? 0) > RECENT_INITIAL;
+
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: queryKeys.topTeams(FORMAT) });
+    qc.invalidateQueries({
+      queryKey: queryKeys.championsReport(FORMAT, RECENT_EXPANDED),
+    });
+  };
+
   return (
     <div className="space-y-4">
-      <header>
-        <h1 className="text-2xl font-bold">{t("top_teams.title")}</h1>
-        <p className="text-xs" style={{ color: "var(--text-dim)" }}>
-          {t("top_teams.subtitle")}
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-bold">{t("top_teams.title")}</h1>
+          <p className="text-xs" style={{ color: "var(--text-dim)" }}>
+            {t("top_teams.subtitle")}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={refresh}
+          className="btn-ghost flex items-center gap-1 text-xs"
+          disabled={isFetching}
+        >
+          <RefreshCw size={14} className={isFetching ? "animate-spin" : ""} />
+          {t("dashboard.refresh")}
+        </button>
       </header>
+
+      {meta && (
+        <div
+          className="card flex flex-wrap gap-x-4 gap-y-1 text-xs"
+          style={{ color: "var(--text-muted)" }}
+        >
+          <span>
+            {t("top_teams.tournaments_analyzed")}:{" "}
+            <span style={{ color: "var(--text)" }}>
+              {meta.tournaments_analyzed}
+            </span>
+          </span>
+          <span>
+            {t("top_teams.battles")}:{" "}
+            <span style={{ color: "var(--text)" }}>{meta.battles_analyzed}</span>
+          </span>
+          {meta.from_date && meta.to_date && (
+            <span>
+              {meta.from_date} — {meta.to_date}
+            </span>
+          )}
+          <span>
+            {t("common.source")}:{" "}
+            <span style={{ color: "var(--text)" }}>{meta.source}</span>
+          </span>
+        </div>
+      )}
 
       {isLoading && (
         <div className="card" style={{ color: "var(--text-muted)" }}>
@@ -45,40 +114,51 @@ export function TopTeams() {
           {t("common.error")}
         </div>
       )}
-      {data && data.length === 0 && (
+      {!isLoading && teams.length === 0 && (
         <div className="card" style={{ color: "var(--text-muted)" }}>
           {t("common.empty")}
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {data?.map((tt, idx) => (
+        {visibleTeams.map((tt, idx) => (
           <button
             key={`${tt.tournament}-${idx}`}
             type="button"
             onClick={() => setSelectedTeam(tt)}
             className="card space-y-3 text-left transition hover:border-[var(--accent)]"
           >
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="text-sm font-semibold" style={{ color: "var(--text)" }}>
-                  {tt.player ?? "—"}
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <div
+                  className="flex items-center gap-1 text-sm font-semibold"
+                  style={{ color: "var(--text)" }}
+                >
+                  {tt.country && (
+                    <span
+                      className="shrink-0"
+                      aria-label={tt.country ?? ""}
+                      title={tt.country ?? ""}
+                    >
+                      {flagEmoji(tt.country)}
+                    </span>
+                  )}
+                  <span className="truncate">{tt.player ?? "—"}</span>
                 </div>
-                <div className="text-[11px]" style={{ color: "var(--text-dim)" }}>
+                <div
+                  className="truncate text-[11px]"
+                  style={{ color: "var(--text-dim)" }}
+                >
                   {tt.tournament}
                 </div>
               </div>
-              <div className="text-right text-[11px]" style={{ color: "var(--text-muted)" }}>
-                {tt.placing != null && (
-                  <div>
-                    {t("top_teams.placing")}: #{tt.placing}
-                  </div>
-                )}
-                {tt.record && (
-                  <div>
-                    {t("top_teams.record")}: {tt.record}
-                  </div>
-                )}
+              <div
+                className="shrink-0 whitespace-nowrap text-right text-[11px]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {tt.placing != null && <span>#{tt.placing}</span>}
+                {tt.placing != null && tt.record && <span> · </span>}
+                {tt.record && <span>{tt.record}</span>}
               </div>
             </div>
             <MiniTeam
@@ -96,6 +176,18 @@ export function TopTeams() {
           </button>
         ))}
       </div>
+
+      {teams.length > visibleCards && (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            className="btn-ghost text-xs"
+            onClick={() => setVisibleCards((n) => n + CARDS_PAGE)}
+          >
+            {t("common.see_more")}
+          </button>
+        </div>
+      )}
 
       <section className="card">
         <h2 className="mb-1 text-sm font-semibold" style={{ color: "var(--text)" }}>
@@ -116,9 +208,9 @@ export function TopTeams() {
               {t("common.empty")}
             </p>
           )}
-        {championsReport && championsReport.tournaments.length > 0 && (
+        {recentTournaments.length > 0 && (
           <ul className="divide-y divide-[var(--border)]">
-            {championsReport.tournaments.map((tour) => (
+            {recentTournaments.map((tour) => (
               <li
                 key={tour.id}
                 className="flex items-center justify-between gap-3 py-2"
@@ -147,6 +239,17 @@ export function TopTeams() {
               </li>
             ))}
           </ul>
+        )}
+        {hasMoreRecent && (
+          <div className="mt-2 flex justify-center">
+            <button
+              type="button"
+              className="btn-ghost text-xs"
+              onClick={() => setRecentExpanded((v) => !v)}
+            >
+              {recentExpanded ? t("common.see_less") : t("common.see_more")}
+            </button>
+          </div>
         )}
       </section>
 

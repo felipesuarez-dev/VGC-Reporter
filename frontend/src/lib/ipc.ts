@@ -8,7 +8,7 @@ import type {
   PokemonType,
   SetsBundle,
   Team,
-  TopTeam,
+  TopTeamsReport,
   TournamentStanding,
   TranslationTable,
   Violation,
@@ -56,7 +56,7 @@ export const ipc = {
   validateTeam: (team: Team, regulation: string) =>
     call<Violation[]>("validate_team", { team, regulation }),
   getTopTeams: (format: Format, limit = 20) =>
-    call<TopTeam[]>("get_top_teams", { format, limit }),
+    call<TopTeamsReport>("get_top_teams", { format, limit }),
   listItems: () => call<string[]>("list_items"),
   listMoves: () => call<string[]>("list_moves"),
   listMovesForSpecies: (species: string) =>

@@ -35,6 +35,8 @@ export type {
   TeraUsage,
   TopTeam,
   TopTeamMember,
+  TopTeamsMeta,
+  TopTeamsReport,
   TournamentStanding,
   TranslationTable,
   UsageEntry,

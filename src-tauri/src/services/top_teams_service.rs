@@ -20,8 +20,29 @@ pub struct TopTeam {
     pub tournament: String,
     pub placing: Option<u32>,
     pub player: Option<String>,
+    #[serde(default)]
+    pub country: Option<String>,
     pub record: Option<String>,
     pub members: Vec<TopTeamMember>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
+pub struct TopTeamsMeta {
+    pub tournaments_analyzed: u32,
+    pub battles_analyzed: u32,
+    pub source: String,
+    #[serde(default)]
+    pub from_date: Option<String>,
+    #[serde(default)]
+    pub to_date: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
+pub struct TopTeamsReport {
+    pub teams: Vec<TopTeam>,
+    pub meta: TopTeamsMeta,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -44,15 +65,15 @@ impl TopTeamsService {
         Self { limitless, cache }
     }
 
-    pub async fn get_top_teams(
+    pub async fn get_top_teams_report(
         &self,
         format: Format,
         limit: usize,
-    ) -> Result<Vec<TopTeam>, AppError> {
-        let key = format!("top-teams::v2::{}::{}", format.cache_id(), limit);
+    ) -> Result<TopTeamsReport, AppError> {
+        let key = format!("top-teams::v3::{}::{}", format.cache_id(), limit);
         if let Some(bytes) = self.cache.get(&key)? {
-            if let Ok(list) = serde_json::from_slice::<Vec<TopTeam>>(&bytes) {
-                return Ok(list);
+            if let Ok(report) = serde_json::from_slice::<TopTeamsReport>(&bytes) {
+                return Ok(report);
             }
         }
         let tournaments = self
@@ -60,7 +81,14 @@ impl TopTeamsService {
             .list_tournaments(format, 10)
             .await
             .unwrap_or_default();
+        let tournaments_analyzed = tournaments.len() as u32;
+        let mut dates: Vec<String> = tournaments.iter().filter_map(|t| t.date.clone()).collect();
+        dates.sort();
+        let from_date = dates.first().cloned();
+        let to_date = dates.last().cloned();
+
         let mut out = Vec::new();
+        let mut battles_analyzed: u32 = 0;
         for t in tournaments {
             let standings = self
                 .limitless
@@ -68,6 +96,7 @@ impl TopTeamsService {
                 .await
                 .unwrap_or_default();
             for s in standings.into_iter().take(8) {
+                battles_analyzed += 1;
                 let Some(deck) = s.decklist else { continue };
                 if deck.is_empty() {
                     continue;
@@ -94,6 +123,7 @@ impl TopTeamsService {
                     tournament: t.name.clone(),
                     placing: s.placing,
                     player: s.name.clone(),
+                    country: s.country.clone(),
                     record: s.record.as_ref().map(|r| r.display()),
                     members,
                 });
@@ -106,8 +136,19 @@ impl TopTeamsService {
             }
         }
 
-        let bytes = serde_json::to_vec(&out)?;
+        let report = TopTeamsReport {
+            teams: out,
+            meta: TopTeamsMeta {
+                tournaments_analyzed,
+                battles_analyzed,
+                source: "Limitless VGC".into(),
+                from_date,
+                to_date,
+            },
+        };
+
+        let bytes = serde_json::to_vec(&report)?;
         self.cache.put(&key, &bytes, config::TTL_META_SNAPSHOT)?;
-        Ok(out)
+        Ok(report)
     }
 }

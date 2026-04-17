@@ -131,8 +131,11 @@ fn accumulate(entry: &LimitlessDecklistEntry, acc: &mut PokemonAccumulator) {
         for mv in moves {
             *acc.moves.entry(prettify(mv)).or_insert(0) += 1;
         }
-        let mut signature: Vec<String> =
-            moves.iter().map(|m| prettify(m)).filter(|m| !m.is_empty()).collect();
+        let mut signature: Vec<String> = moves
+            .iter()
+            .map(|m| prettify(m))
+            .filter(|m| !m.is_empty())
+            .collect();
         if !signature.is_empty() {
             signature.sort();
             *acc.movesets.entry(signature).or_insert(0) += 1;

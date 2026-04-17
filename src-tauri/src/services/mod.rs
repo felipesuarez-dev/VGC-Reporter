@@ -14,5 +14,5 @@ pub use meta_service::MetaService;
 pub use pokedex_service::PokedexService;
 pub use sets_service::SetsService;
 pub use team_service::TeamService;
-pub use top_teams_service::{TopTeam, TopTeamsService};
+pub use top_teams_service::{TopTeam, TopTeamsMeta, TopTeamsReport, TopTeamsService};
 pub use translations_service::TranslationsService;

@@ -39,7 +39,10 @@
     "source": "Fuente",
     "usage": "Uso",
     "count": "Cantidad",
-    "scroll_to_top": "Volver arriba"
+    "scroll_to_top": "Volver arriba",
+    "see_more": "Ver más",
+    "see_less": "Ver menos",
+    "copy": "Copiar"
   },
   "dashboard": {
     "title": "Panel",
@@ -159,7 +162,10 @@
     "ability": "Habilidad",
     "tera_type": "Tera Type",
     "moves": "Movimientos",
-    "limited_info": "La fuente solo expone el objeto y la Tera de cada miembro."
+    "limited_info": "La fuente solo expone el objeto y la Tera de cada miembro.",
+    "battles": "Batallas analizadas",
+    "tournaments_analyzed": "Torneos analizados",
+    "copy_to_builder": "Copiar al Constructor"
   },
   "damage_calc": {
     "title": "Calculador de daño",

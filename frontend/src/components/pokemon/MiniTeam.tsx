@@ -48,16 +48,10 @@ export function MiniTeam({ members, cols = 3, size = 48 }: Props) {
         return m ? (
           <div
             key={i}
-            className="flex flex-col items-center"
+            className="flex items-center justify-center"
             title={buildTooltip(m)}
           >
             <PokemonSprite url={m.sprite_url} name={m.species} size={size} />
-            <span
-              className="max-w-full truncate text-[10px]"
-              style={{ color: "var(--text-muted)" }}
-            >
-              {m.species}
-            </span>
           </div>
         ) : (
           <div key={i} className="h-[60px]" />
