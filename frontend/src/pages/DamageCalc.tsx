@@ -127,6 +127,9 @@ export function DamageCalc() {
     <div className="space-y-4">
       <header>
         <h1 className="text-2xl font-bold">{t("damage_calc.title")}</h1>
+        <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
+          {t("damage_calc.subtitle")}
+        </p>
       </header>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
