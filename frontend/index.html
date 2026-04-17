@@ -3,7 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>VGC Reportes</title>
+    <link rel="preload" as="image" href="/logo.png" fetchpriority="high" />
+    <title>VGC Reporter</title>
     <style>
       #splash {
         position: fixed;
@@ -56,8 +57,8 @@
   </head>
   <body class="bg-slate-950 text-slate-100">
     <div id="splash">
-      <img src="/logo.png" alt="PumaSoft" />
-      <div class="title">VGC Reportes</div>
+      <img src="/logo.png" alt="PumaSoft" decoding="sync" loading="eager" fetchpriority="high" />
+      <div class="title">VGC Reporter</div>
       <div class="tag">Pokémon Champions · VGC 2026</div>
       <div class="spinner"></div>
     </div>

@@ -29,8 +29,17 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
 
 requestAnimationFrame(() => {
   const splash = document.getElementById("splash");
-  if (splash) {
+  if (!splash) return;
+  const remove = () => {
     splash.classList.add("fade-out");
     setTimeout(() => splash.remove(), 400);
+  };
+  const img = splash.querySelector("img") as HTMLImageElement | null;
+  if (!img || img.complete) {
+    remove();
+    return;
   }
+  img.addEventListener("load", remove, { once: true });
+  img.addEventListener("error", remove, { once: true });
+  setTimeout(remove, 1500);
 });
