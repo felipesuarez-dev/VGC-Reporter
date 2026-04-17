@@ -69,6 +69,22 @@ impl LimitlessClient {
         };
         Ok(filtered)
     }
+
+    /// Fetches a broad tournament listing and leaves filtering to the caller.
+    /// Used by the upcoming-tournaments service (dates are kept as raw strings).
+    pub async fn list_all_vgc(
+        &self,
+        limit: usize,
+    ) -> Result<Vec<LimitlessTournamentSummary>, AppError> {
+        let url = format!(
+            "{}/tournaments?game=VGC&limit={}",
+            config::LIMITLESS_API,
+            limit
+        );
+        let list: Vec<LimitlessTournamentSummary> =
+            self.http.get_json(&url, config::TTL_LIMITLESS_LIST).await?;
+        Ok(list)
+    }
 }
 
 fn filter_champions(

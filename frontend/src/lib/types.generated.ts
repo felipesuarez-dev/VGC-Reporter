@@ -107,6 +107,8 @@ export type TournamentStanding = { placing: number | null, player_name: string |
 
 export type TranslationTable = { abilities: { [key in string]?: LocalizedName }, moves: { [key in string]?: LocalizedName }, items: { [key in string]?: LocalizedName }, };
 
+export type UpcomingTournament = { id: string, name: string, date: string, url: string, region: string | null, players: number | null, source: string, };
+
 export type UsageEntry = { name: string, usage_percent: number, count: number, };
 
 export type Violation = { "kind": "team_incomplete", filled: number, } | { "kind": "species_not_allowed", species: string, } | { "kind": "item_banned", species: string, item: string, } | { "kind": "move_banned", species: string, mv: string, } | { "kind": "too_many_restricted", allowed: number, found: number, } | { "kind": "restricted_not_in_season", species: string, season: string, } | { "kind": "duplicate_species", species: string, } | { "kind": "duplicate_item", item: string, };

@@ -9,6 +9,7 @@ pub mod pokemon;
 pub mod sets;
 pub mod team;
 pub mod tera_type;
+pub mod upcoming;
 pub mod usage_stats;
 
 pub use ability::Ability;
@@ -22,4 +23,5 @@ pub use pokemon::{Pokemon, PokemonType, Stats};
 pub use sets::{PokemonSet, SetsBundle};
 pub use team::{Team, TeamMember, TeamValidationError};
 pub use tera_type::TeraType;
+pub use upcoming::UpcomingTournament;
 pub use usage_stats::{MetaSnapshot, MoveUsage, PokemonUsage, TeraUsage, UsageEntry};

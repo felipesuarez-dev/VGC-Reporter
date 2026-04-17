@@ -78,6 +78,12 @@
     "loading": "Cargando standings...",
     "no_standings": "Standings no disponibles todavía"
   },
+  "upcoming": {
+    "title": "Próximos torneos",
+    "window": "Torneos anunciados para los próximos 14 días",
+    "empty": "Sin torneos próximos anunciados.",
+    "open": "Abrir"
+  },
   "drawer": {
     "top_items": "Objetos",
     "top_moves": "Movimientos",

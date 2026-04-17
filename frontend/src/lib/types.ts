@@ -39,6 +39,7 @@ export type {
   TopTeamsReport,
   TournamentStanding,
   TranslationTable,
+  UpcomingTournament,
   UsageEntry,
   Violation,
 } from "./types.generated";

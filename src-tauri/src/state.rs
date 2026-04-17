@@ -4,7 +4,7 @@ use crate::adapters::{
 use crate::error::AppError;
 use crate::services::{
     ChampionsReportService, MetaService, PokedexService, SetsService, TeamService, TopTeamsService,
-    TranslationsService,
+    TranslationsService, UpcomingTournamentsService,
 };
 use crate::storage::{init_pool, CacheRepo, DbPool, SettingsRepo, TeamRepo};
 use std::path::Path;
@@ -18,6 +18,7 @@ pub struct AppState {
     pub teams: TeamService,
     pub top_teams: TopTeamsService,
     pub champions: ChampionsReportService,
+    pub upcoming: UpcomingTournamentsService,
     pub translations: TranslationsService,
     pub settings: Arc<SettingsRepo>,
 }
@@ -47,6 +48,7 @@ impl AppState {
         let teams = TeamService::new(team_repo);
         let top_teams = TopTeamsService::new(limitless.clone(), cache.clone());
         let champions = ChampionsReportService::new(limitless.clone());
+        let upcoming = UpcomingTournamentsService::new(limitless.clone());
         let translations = TranslationsService::new(pokeapi);
 
         Ok(Self {
@@ -57,6 +59,7 @@ impl AppState {
             teams,
             top_teams,
             champions,
+            upcoming,
             translations,
             settings,
         })

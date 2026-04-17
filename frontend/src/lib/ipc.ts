@@ -11,6 +11,7 @@ import type {
   TopTeamsReport,
   TournamentStanding,
   TranslationTable,
+  UpcomingTournament,
   Violation,
 } from "./types";
 
@@ -68,6 +69,8 @@ export const ipc = {
     call<ChampionsReport>("list_champions_tournaments", { format, limit }),
   getTournamentStandings: (id: string) =>
     call<TournamentStanding[]>("get_tournament_standings", { id }),
+  listUpcomingTournaments: () =>
+    call<UpcomingTournament[]>("list_upcoming_tournaments"),
   getSettings: () => call<Record<string, string>>("get_settings"),
   setSetting: (key: string, value: string) =>
     call<void>("set_setting", { key, value }),

@@ -309,6 +309,8 @@ export function Dashboard() {
           )}
       </section>
 
+      <UpcomingTournamentsSection />
+
       <section className="card">
         <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
           {t("dashboard.external_sources")}
@@ -399,5 +401,62 @@ function MetaSkeleton({ label }: { label: string }) {
         ))}
       </div>
     </div>
+  );
+}
+
+function UpcomingTournamentsSection() {
+  const { t } = useTranslation();
+  const { data, isLoading } = useQuery({
+    queryKey: queryKeys.upcomingTournaments(),
+    queryFn: () => ipc.listUpcomingTournaments(),
+    staleTime: 30 * 60 * 1000,
+  });
+  const events = data ?? [];
+  return (
+    <section className="card">
+      <h2 className="mb-1 text-sm font-semibold" style={{ color: "var(--text)" }}>
+        {t("upcoming.title")}
+      </h2>
+      <p className="mb-3 text-[11px]" style={{ color: "var(--text-dim)" }}>
+        {t("upcoming.window")}
+      </p>
+      {isLoading && (
+        <p className="text-xs" style={{ color: "var(--text-dim)" }}>
+          {t("common.loading")}
+        </p>
+      )}
+      {!isLoading && events.length === 0 && (
+        <p className="text-xs" style={{ color: "var(--text-dim)" }}>
+          {t("upcoming.empty")}
+        </p>
+      )}
+      {events.length > 0 && (
+        <ul className="divide-y divide-[var(--border)]">
+          {events.map((ev) => (
+            <li key={ev.id} className="flex items-center justify-between gap-3 py-2">
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-medium" style={{ color: "var(--text)" }}>
+                  {ev.name}
+                </div>
+                <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                  <span>{ev.date}</span>
+                  {ev.players != null && (
+                    <span> · {ev.players} {t("dashboard.players")}</span>
+                  )}
+                  {ev.region && <span> · {ev.region}</span>}
+                </div>
+              </div>
+              <button
+                className="btn-ghost shrink-0 text-xs"
+                onClick={() => openExternal(ev.url)}
+              >
+                <ExternalLink size={12} className="mr-1 inline" />
+                {t("upcoming.open")}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
