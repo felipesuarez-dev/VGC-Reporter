@@ -47,14 +47,46 @@ export function MyTeams() {
             .map((m) => ({ species: m.species, sprite_url: spriteFor(m.species) }));
           return (
             <div key={team.id ?? team.name} className="card space-y-3">
-              <div className="flex items-start justify-between">
-                <div>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
                   <div className="text-sm font-semibold" style={{ color: "var(--text)" }}>
                     {team.name}
                   </div>
-                  <div className="text-[11px]" style={{ color: "var(--text-dim)" }}>
-                    {team.format}
+                  <div className="mt-1 flex flex-wrap items-center gap-1">
+                    <span
+                      className="rounded px-1.5 py-0.5 text-[10px] font-semibold"
+                      style={{
+                        backgroundColor: "var(--accent-soft)",
+                        color: "var(--accent)",
+                      }}
+                    >
+                      {regulationBadge(team.format, t)}
+                    </span>
+                    <span
+                      className="rounded px-1.5 py-0.5 text-[10px]"
+                      style={{
+                        backgroundColor: "var(--bg-elev-strong)",
+                        color: "var(--text-muted)",
+                      }}
+                    >
+                      2026
+                    </span>
                   </div>
+                  {team.notes && team.notes.trim() !== "" ? (
+                    <p
+                      className="mt-2 line-clamp-2 text-[11px]"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      {team.notes}
+                    </p>
+                  ) : (
+                    <p
+                      className="mt-2 text-[11px] italic"
+                      style={{ color: "var(--text-dim)" }}
+                    >
+                      {t("my_teams.no_notes")}
+                    </p>
+                  )}
                 </div>
                 <div className="flex gap-1">
                   <Link
@@ -85,4 +117,9 @@ export function MyTeams() {
 function spriteFor(species: string): string {
   const slug = species.toLowerCase().replace(/[^a-z0-9]+/g, "");
   return `https://play.pokemonshowdown.com/sprites/gen5/${slug}.png`;
+}
+
+function regulationBadge(format: string, t: (k: string) => string): string {
+  if (format === "regulation-m-a") return t("regulations.reg_ma_s1");
+  return format;
 }
