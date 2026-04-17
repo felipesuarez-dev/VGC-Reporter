@@ -14,6 +14,7 @@ import { ipc, AppError } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
 import { formatViolation } from "../lib/labels";
 import type { Violation } from "../lib/types";
+import { isBannedInFormat } from "../lib/types";
 import { useTeamBuilder } from "../stores/teamBuilderStore";
 import { TeamMemberForm } from "../components/team/TeamMemberForm";
 
@@ -30,10 +31,15 @@ export function TeamBuilder() {
   const [importError, setImportError] = useState<string | null>(null);
   const [violations, setViolations] = useState<Violation[] | null>(null);
 
-  const { data: pokedex = [] } = useQuery({
+  const { data: pokedexAll = [] } = useQuery({
     queryKey: queryKeys.pokedex.all,
     queryFn: () => ipc.listPokemon(),
   });
+
+  const pokedex = useMemo(
+    () => pokedexAll.filter((p) => !isBannedInFormat(p.name, team.format)),
+    [pokedexAll, team.format],
+  );
 
   const { data: items = [] } = useQuery({
     queryKey: queryKeys.items.all,

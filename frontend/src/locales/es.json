@@ -19,6 +19,9 @@
     "move": "Movimiento",
     "item": "Objeto"
   },
+  "regulations": {
+    "coming_soon": "Próximamente"
+  },
   "common": {
     "loading": "Cargando...",
     "error": "Error",

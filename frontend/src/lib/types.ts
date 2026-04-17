@@ -42,12 +42,68 @@ export type {
 
 import type { Format, Nature, PokemonType, Team, TeamMember } from "./types.generated";
 
-export const ALL_FORMATS: { value: Format; label: string }[] = [
-  { value: "regulation-m-a", label: "Regulation M-A (Champions doubles)" },
-  { value: "champions-singles", label: "Champions Singles" },
-  { value: "regulation-i", label: "Regulation I (doubles, active)" },
-  { value: "gen9-ou", label: "Gen 9 OU (singles)" },
+export interface FormatOption {
+  value: Format;
+  label: string;
+  /** Readonly in the UI; selection is blocked. Season hasn't started yet. */
+  disabled?: boolean;
+  /** Optional i18n key for a "coming soon" style badge shown beside the label. */
+  badgeKey?: string;
+}
+
+export const ALL_FORMATS: FormatOption[] = [
+  { value: "regulation-m-a", label: "Regulation M-A (M-1)" },
+  {
+    value: "regulation-m-a",
+    label: "Regulation M-A (M-2)",
+    disabled: true,
+    badgeKey: "regulations.coming_soon",
+  },
 ];
+
+/**
+ * Mythical species that cannot be picked in VGC Regulation M-A. This mirrors
+ * the backend list in `services/regulations/reg_ma.rs`; keep them in sync.
+ * Stored as lowercase alphanumeric ids so we can compare against canonicalised
+ * species names (handles Deoxys forms, Shaymin-Sky, etc.).
+ */
+export const BANNED_SPECIES_MA: ReadonlySet<string> = new Set([
+  "mew",
+  "celebi",
+  "jirachi",
+  "deoxys",
+  "phione",
+  "manaphy",
+  "darkrai",
+  "shaymin",
+  "arceus",
+  "victini",
+  "keldeo",
+  "meloetta",
+  "genesect",
+  "diancie",
+  "hoopa",
+  "volcanion",
+  "magearna",
+  "marshadow",
+  "zeraora",
+  "zarude",
+  "pecharunt",
+]);
+
+export function canonicalSpeciesId(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+export function isBannedInFormat(species: string, format: Format): boolean {
+  if (format !== "regulation-m-a") return false;
+  const id = canonicalSpeciesId(species);
+  if (BANNED_SPECIES_MA.has(id)) return true;
+  // Strip "-Shadow", "-Sky" style form suffixes so Shaymin-Sky also matches.
+  const base = species.split("-")[0];
+  if (base && BANNED_SPECIES_MA.has(canonicalSpeciesId(base))) return true;
+  return false;
+}
 
 export const ALL_TYPES: PokemonType[] = [
   "Normal", "Fire", "Water", "Electric", "Grass", "Ice", "Fighting",

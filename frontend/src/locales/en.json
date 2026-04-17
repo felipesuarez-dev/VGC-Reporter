@@ -19,6 +19,9 @@
     "move": "Move",
     "item": "Item"
   },
+  "regulations": {
+    "coming_soon": "Coming soon"
+  },
   "common": {
     "loading": "Loading...",
     "error": "Error",

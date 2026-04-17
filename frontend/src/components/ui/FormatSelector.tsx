@@ -2,7 +2,7 @@ import { Check, ChevronDown, Star } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../lib/cn";
-import { ALL_FORMATS, type Format } from "../../lib/types";
+import { ALL_FORMATS, type Format, type FormatOption } from "../../lib/types";
 
 interface Props {
   value: Format;
@@ -39,15 +39,16 @@ export function FormatSelector({
     };
   }, [open]);
 
-  const ordered = useMemo(() => {
+  const ordered = useMemo<FormatOption[]>(() => {
     return [...ALL_FORMATS].sort((a, b) => {
-      if (a.value === favorite) return -1;
-      if (b.value === favorite) return 1;
-      return 0;
+      const aKey = a.disabled ? 2 : a.value === favorite ? 0 : 1;
+      const bKey = b.disabled ? 2 : b.value === favorite ? 0 : 1;
+      return aKey - bKey;
     });
   }, [favorite]);
 
-  const currentLabel = ALL_FORMATS.find((f) => f.value === value)?.label ?? value;
+  const currentLabel =
+    ALL_FORMATS.find((f) => f.value === value && !f.disabled)?.label ?? value;
 
   return (
     <div ref={ref} className={cn("relative", className)}>
@@ -74,19 +75,29 @@ export function FormatSelector({
           }}
         >
           <ul role="listbox" className="py-1">
-            {ordered.map((opt) => {
-              const selected = opt.value === value;
-              const isFav = opt.value === favorite;
+            {ordered.map((opt, idx) => {
+              const selected = !opt.disabled && opt.value === value;
+              const isFav = !opt.disabled && opt.value === favorite;
               return (
-                <li key={opt.value} className="flex items-center">
+                <li
+                  key={`${opt.value}-${idx}`}
+                  className="flex items-center"
+                >
                   <button
                     type="button"
                     title={t("dashboard.format_favorite")}
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (opt.disabled) return;
                       onFavoriteChange(opt.value);
                     }}
-                    className="flex h-9 w-9 items-center justify-center hover:text-amber-300"
+                    disabled={opt.disabled}
+                    className={cn(
+                      "flex h-9 w-9 items-center justify-center",
+                      opt.disabled
+                        ? "cursor-not-allowed opacity-40"
+                        : "hover:text-amber-300",
+                    )}
                     style={{ color: "var(--text-muted)" }}
                   >
                     <Star
@@ -100,22 +111,41 @@ export function FormatSelector({
                     type="button"
                     role="option"
                     aria-selected={selected}
+                    aria-disabled={opt.disabled ? "true" : undefined}
+                    disabled={opt.disabled}
                     onClick={() => {
+                      if (opt.disabled) return;
                       onChange(opt.value);
                       setOpen(false);
                     }}
                     className={cn(
-                      "flex flex-1 items-center justify-between px-2 py-2 text-left text-sm text-[var(--text)] hover:bg-[var(--bg-elev-strong)]",
+                      "flex flex-1 items-center justify-between gap-2 px-2 py-2 text-left text-sm",
+                      opt.disabled
+                        ? "cursor-not-allowed text-[var(--text-dim)]"
+                        : "text-[var(--text)] hover:bg-[var(--bg-elev-strong)]",
                       selected && "bg-[var(--accent-soft)]",
                     )}
                   >
                     <span className="truncate">{opt.label}</span>
-                    {selected && (
-                      <Check
-                        className="h-4 w-4"
-                        style={{ color: "var(--accent)" }}
-                      />
-                    )}
+                    <span className="flex shrink-0 items-center gap-2">
+                      {opt.badgeKey && (
+                        <span
+                          className="rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide"
+                          style={{
+                            borderColor: "var(--border)",
+                            color: "var(--text-muted)",
+                          }}
+                        >
+                          {t(opt.badgeKey)}
+                        </span>
+                      )}
+                      {selected && (
+                        <Check
+                          className="h-4 w-4"
+                          style={{ color: "var(--accent)" }}
+                        />
+                      )}
+                    </span>
                   </button>
                 </li>
               );
