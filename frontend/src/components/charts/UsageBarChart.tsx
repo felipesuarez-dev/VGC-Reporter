@@ -2,6 +2,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  LabelList,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -111,7 +112,16 @@ export function UsageBarChart({ data, height = 320, onBarClick }: Props) {
           radius={[0, 4, 4, 0]}
           onClick={onBarClick ? (payload) => onBarClick(payload as UsageBarItem) : undefined}
           style={onBarClick ? { cursor: "pointer" } : undefined}
-        />
+        >
+          <LabelList
+            dataKey="usage_percent"
+            position="insideRight"
+            formatter={(value: number) => `${value.toFixed(1)}%`}
+            fill="#ffffff"
+            fontSize={11}
+            fontWeight={600}
+          />
+        </Bar>
       </BarChart>
     </ResponsiveContainer>
   );

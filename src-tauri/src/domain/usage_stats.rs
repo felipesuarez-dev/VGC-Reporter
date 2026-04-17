@@ -65,6 +65,10 @@ pub struct MetaSnapshot {
     #[serde(default)]
     pub top_abilities: Vec<UsageEntry>,
     pub top_tera: Vec<UsageEntry>,
+    #[serde(default)]
+    pub from_date: Option<String>,
+    #[serde(default)]
+    pub to_date: Option<String>,
 }
 
 impl MetaSnapshot {
@@ -80,6 +84,8 @@ impl MetaSnapshot {
             top_moves: Vec::new(),
             top_abilities: Vec::new(),
             top_tera: Vec::new(),
+            from_date: None,
+            to_date: None,
         }
     }
 }

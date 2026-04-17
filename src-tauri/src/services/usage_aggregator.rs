@@ -108,6 +108,8 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
         top_moves,
         top_abilities,
         top_tera,
+        from_date: None,
+        to_date: None,
     }
 }
 

@@ -40,7 +40,8 @@ async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> 
 }
 
 export const ipc = {
-  getMetaStats: (format: Format) => call<MetaSnapshot>("get_meta_stats", { format }),
+  getMetaStats: (format: Format, tournamentCount?: number) =>
+    call<MetaSnapshot>("get_meta_stats", { format, tournamentCount }),
   listPokemon: () => call<Pokemon[]>("list_pokemon"),
   searchPokemon: (query?: string, typeFilter?: PokemonType) =>
     call<Pokemon[]>("search_pokemon", { query, typeFilter }),

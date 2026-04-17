@@ -36,8 +36,13 @@ impl MetaService {
         }
     }
 
-    pub async fn get_meta(&self, format: Format) -> Result<MetaSnapshot, AppError> {
-        let cache_key = format!("meta-snapshot-v2::{}", format.cache_id());
+    pub async fn get_meta(
+        &self,
+        format: Format,
+        tournament_count: Option<usize>,
+    ) -> Result<MetaSnapshot, AppError> {
+        let count = tournament_count.unwrap_or(config::TOURNAMENTS_PER_SNAPSHOT);
+        let cache_key = format!("meta-snapshot-v3::{}::{}", format.cache_id(), count);
         if let Some(bytes) = self.cache.get(&cache_key)? {
             if let Ok(snap) = serde_json::from_slice::<MetaSnapshot>(&bytes) {
                 return Ok(snap);
@@ -47,7 +52,7 @@ impl MetaService {
         let lim_snap = if format.limitless_code().is_some() {
             let tournaments = self
                 .limitless
-                .list_tournaments(format, config::TOURNAMENTS_PER_SNAPSHOT)
+                .list_tournaments(format, count)
                 .await
                 .unwrap_or_default();
             let mut all_standings = Vec::new();
@@ -59,7 +64,15 @@ impl MetaService {
                     }
                 }
             }
-            Some(usage_aggregator::aggregate(format, all_standings))
+            let mut dates: Vec<String> =
+                tournaments.iter().filter_map(|t| t.date.clone()).collect();
+            dates.sort();
+            let from_date = dates.first().cloned();
+            let to_date = dates.last().cloned();
+            let mut snap = usage_aggregator::aggregate(format, all_standings);
+            snap.from_date = from_date;
+            snap.to_date = to_date;
+            Some(snap)
         } else {
             None
         };
@@ -200,6 +213,8 @@ pub(crate) fn snapshot_from_smogon(
         top_moves: top_n_normalized(&global_moves, 20),
         top_abilities: top_n_normalized(&global_abilities, 10),
         top_tera: top_n_normalized(&global_tera, 10),
+        from_date: None,
+        to_date: None,
     }
 }
 

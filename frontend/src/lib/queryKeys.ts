@@ -1,7 +1,8 @@
 import type { Format, PokemonType } from "./types";
 
 export const queryKeys = {
-  meta: (format: Format) => ["meta", format] as const,
+  meta: (format: Format, tournamentCount?: number) =>
+    ["meta", format, tournamentCount ?? 0] as const,
   pokedex: {
     all: ["pokedex", "all"] as const,
     search: (q?: string, t?: PokemonType) => ["pokedex", "search", q ?? "", t ?? ""] as const,

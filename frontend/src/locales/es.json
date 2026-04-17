@@ -66,7 +66,10 @@
     "players": "jugadores",
     "open_on_x": "Abrir en X",
     "usage_percent_label": "Porcentaje de Uso",
-    "count_label": "Conteo"
+    "count_label": "Conteo",
+    "tournaments_range": "{{count}} torneos · {{from}} — {{to}} · {{source}}",
+    "loading_patience": "Obteniendo torneos y agregando estadísticas. Esto puede tardar un momento.",
+    "tournament_count": "Torneos"
   },
   "tournament": {
     "standings": "Standings",

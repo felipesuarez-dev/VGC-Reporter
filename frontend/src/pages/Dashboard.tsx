@@ -15,7 +15,7 @@ import { PokemonDetailModal } from "../components/pokemon/PokemonDetailModal";
 import { FormatSelector } from "../components/ui/FormatSelector";
 import { XCard } from "../components/dashboard/XCard";
 import { TournamentStandingsDrawer } from "../components/tournament/TournamentStandingsDrawer";
-import { useDashboardStore } from "../stores/dashboardStore";
+import { useDashboardStore, type TournamentCount } from "../stores/dashboardStore";
 import { usePokedexStore } from "../stores/pokedexStore";
 import { useLocalize } from "../hooks/useTranslations";
 
@@ -45,8 +45,10 @@ export function Dashboard() {
   const localize = useLocalize();
   const format = useDashboardStore((s) => s.format);
   const favoriteFormat = useDashboardStore((s) => s.favoriteFormat);
+  const tournamentCount = useDashboardStore((s) => s.tournamentCount);
   const setFormat = useDashboardStore((s) => s.setFormat);
   const setFavoriteFormat = useDashboardStore((s) => s.setFavoriteFormat);
+  const setTournamentCount = useDashboardStore((s) => s.setTournamentCount);
   const initRef = useRef(false);
   useEffect(() => {
     if (initRef.current) return;
@@ -60,8 +62,8 @@ export function Dashboard() {
   const [tournamentExpanded, setTournamentExpanded] = useState(false);
   const tournamentLimit = tournamentExpanded ? 20 : 10;
   const { data, isLoading, isFetching, isError, error } = useQuery({
-    queryKey: queryKeys.meta(format),
-    queryFn: () => ipc.getMetaStats(format),
+    queryKey: queryKeys.meta(format, tournamentCount),
+    queryFn: () => ipc.getMetaStats(format, tournamentCount),
   });
   const { data: championsReport, isFetching: championsFetching } = useQuery({
     queryKey: queryKeys.championsReport(format, tournamentLimit),
@@ -93,9 +95,22 @@ export function Dashboard() {
           <h1 className="text-2xl font-bold">{t("dashboard.title")}</h1>
           {data && (
             <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
-              {t("dashboard.tournaments_used")}: {data.tournaments_used} ·{" "}
-              {t("dashboard.total_entries")}: {data.total_entries} ·{" "}
-              {t("common.source")}: {data.source}
+              {data.from_date && data.to_date ? (
+                <>
+                  {t("dashboard.tournaments_range", {
+                    count: data.tournaments_used,
+                    from: data.from_date,
+                    to: data.to_date,
+                    source: data.source,
+                  })}
+                </>
+              ) : (
+                <>
+                  {t("dashboard.tournaments_used")}: {data.tournaments_used} ·{" "}
+                  {t("dashboard.total_entries")}: {data.total_entries} ·{" "}
+                  {t("common.source")}: {data.source}
+                </>
+              )}
             </p>
           )}
         </div>
@@ -107,9 +122,26 @@ export function Dashboard() {
             onFavoriteChange={setFavoriteFormat}
             className="w-72"
           />
+          <select
+            className="input w-20 cursor-pointer"
+            value={tournamentCount}
+            onChange={(e) =>
+              setTournamentCount(Number(e.target.value) as TournamentCount)
+            }
+            title={t("dashboard.tournament_count")}
+            aria-label={t("dashboard.tournament_count")}
+          >
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
           <button
             className="btn-ghost"
-            onClick={() => qc.invalidateQueries({ queryKey: queryKeys.meta(format) })}
+            onClick={() =>
+              qc.invalidateQueries({
+                queryKey: queryKeys.meta(format, tournamentCount),
+              })
+            }
           >
             <RefreshCw size={14} className="mr-1" />
             {t("dashboard.refresh")}
@@ -176,16 +208,18 @@ export function Dashboard() {
             </div>
           </section>
 
-          <section className="card">
-            <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
-              {t("dashboard.top_tera")}
-            </h2>
-            <TopList
-              data={topTera}
-              limit={10}
-              labelFor={(name) => typeLabel(t, name as PokemonType)}
-            />
-          </section>
+          {format !== "regulation-m-a" && (
+            <section className="card">
+              <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
+                {t("dashboard.top_tera")}
+              </h2>
+              <TopList
+                data={topTera}
+                limit={10}
+                labelFor={(name) => typeLabel(t, name as PokemonType)}
+              />
+            </section>
+          )}
 
           <section>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
@@ -308,14 +342,23 @@ export function Dashboard() {
 }
 
 function MetaSkeleton({ label }: { label: string }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4">
       <div
-        className="card flex items-center gap-3"
+        className="card flex items-start gap-3"
         style={{ color: "var(--text-muted)" }}
       >
-        <RefreshCw size={14} className="animate-spin" />
-        <span className="text-sm">{label}</span>
+        <RefreshCw size={14} className="mt-0.5 animate-spin" />
+        <div>
+          <div className="text-sm">{label}</div>
+          <div
+            className="mt-0.5 text-[11px]"
+            style={{ color: "var(--text-dim)" }}
+          >
+            {t("dashboard.loading_patience")}
+          </div>
+        </div>
       </div>
       <div className="card">
         <div

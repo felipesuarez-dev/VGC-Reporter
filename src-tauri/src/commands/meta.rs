@@ -8,6 +8,8 @@ use tauri::State;
 pub async fn get_meta_stats(
     state: State<'_, AppState>,
     format: Format,
+    tournament_count: Option<u32>,
 ) -> Result<MetaSnapshot, AppError> {
-    state.meta.get_meta(format).await
+    let count = tournament_count.map(|n| n as usize);
+    state.meta.get_meta(format, count).await
 }
