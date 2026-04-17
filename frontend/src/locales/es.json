@@ -14,6 +14,11 @@
     "damage_calc": "Calculador de daño",
     "settings": "Ajustes"
   },
+  "entity": {
+    "ability": "Habilidad",
+    "move": "Movimiento",
+    "item": "Objeto"
+  },
   "common": {
     "loading": "Cargando...",
     "error": "Error",
