@@ -1,6 +1,7 @@
 import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 import type {
   ChampionsReport,
+  EntityDescriptions,
   Format,
   MetaSnapshot,
   MoveSummary,
@@ -65,6 +66,8 @@ export const ipc = {
     call<MoveSummary[]>("list_moves_for_species", { species }),
   getPokemonSets: (species: string) =>
     call<SetsBundle>("get_pokemon_sets", { species }),
+  getEntityDescriptions: () =>
+    call<EntityDescriptions>("get_entity_descriptions"),
   listChampionsTournaments: (format?: Format, limit?: number) =>
     call<ChampionsReport>("list_champions_tournaments", { format, limit }),
   getTournamentStandings: (id: string) =>

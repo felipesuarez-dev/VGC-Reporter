@@ -22,4 +22,5 @@ export const queryKeys = {
   upcomingTournaments: () => ["upcoming-tournaments"] as const,
   settings: ["settings"] as const,
   translationTable: () => ["translation-table"] as const,
+  entityDescriptions: () => ["entity-descriptions"] as const,
 };

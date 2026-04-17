@@ -273,7 +273,7 @@ function ModalBody({
         )}
       </section>
 
-      {myUsage && (
+      {(myUsage || naturesEntries.length > 0) && (
         <section className="mb-4 space-y-2">
           <h3
             className="text-xs font-semibold uppercase tracking-wide"
@@ -282,14 +282,18 @@ function ModalBody({
             {t("pokemon_detail.meta_usage")}
           </h3>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            <UsageList title={t("drawer.top_items")} entries={myUsage.top_items} kind="item" />
-            <UsageList title={t("drawer.top_moves")} entries={myUsage.top_moves} kind="move" />
-            <UsageList title={t("drawer.top_abilities")} entries={myUsage.top_abilities} kind="ability" />
-            <UsageList title={t("drawer.top_tera")} entries={myUsage.top_tera} />
-            <UsageList title={t("drawer.top_teammates")} entries={myUsage.top_teammates} />
+            {myUsage && (
+              <>
+                <UsageList title={t("drawer.top_items")} entries={myUsage.top_items} kind="item" />
+                <UsageList title={t("drawer.top_moves")} entries={myUsage.top_moves} kind="move" />
+                <UsageList title={t("drawer.top_abilities")} entries={myUsage.top_abilities} kind="ability" />
+                <UsageList title={t("drawer.top_tera")} entries={myUsage.top_tera} />
+                <UsageList title={t("drawer.top_teammates")} entries={myUsage.top_teammates} />
+              </>
+            )}
             <NaturesList entries={naturesEntries} />
           </div>
-          {myUsage.common_movesets && myUsage.common_movesets.length > 0 && (
+          {myUsage && myUsage.common_movesets && myUsage.common_movesets.length > 0 && (
             <div className="mt-2">
               <h4
                 className="mb-2 text-[10px] font-semibold uppercase tracking-wide"

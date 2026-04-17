@@ -11,6 +11,7 @@ export type {
   ChampionsReport,
   ChampionsTournament,
   DecklistPokemon,
+  EntityDescriptions,
   EvSpread,
   Format,
   Item,

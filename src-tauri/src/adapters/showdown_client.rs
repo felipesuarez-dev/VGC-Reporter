@@ -1,3 +1,4 @@
+use crate::adapters::pokeapi_client::normalize_key;
 use crate::adapters::sprite_resolver::{fallback_sprite_url_parts, primary_sprite_url_parts};
 use crate::adapters::HttpClient;
 use crate::config;
@@ -5,8 +6,17 @@ use crate::domain::move_::{MoveCategory, MoveSummary};
 use crate::domain::pokemon::{Pokemon, PokemonType, Stats};
 use crate::error::AppError;
 use regex::Regex;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use ts_rs::TS;
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
+pub struct EntityDescriptions {
+    pub items: HashMap<String, String>,
+    pub moves: HashMap<String, String>,
+    pub abilities: HashMap<String, String>,
+}
 
 #[derive(Clone)]
 pub struct ShowdownClient {
@@ -155,6 +165,49 @@ impl ShowdownClient {
         Ok(out)
     }
 
+    /// Fetches short descriptions for items, moves and abilities from
+    /// Showdown's data dumps. Keys are normalized display names (lowercase,
+    /// alphanumeric only) to match the frontend's `useLocalize` lookup.
+    pub async fn fetch_entity_descriptions(&self) -> Result<EntityDescriptions, AppError> {
+        let items_url = format!("{}/items.js", config::SHOWDOWN_DATA);
+        let abilities_url = format!("{}/abilities.js", config::SHOWDOWN_DATA);
+        let moves_url = format!("{}/moves.json", config::SHOWDOWN_DATA);
+
+        let (items_bytes, abilities_bytes, moves_json) = tokio::try_join!(
+            self.http.get_cached(&items_url, config::TTL_SHOWDOWN_DATA),
+            self.http
+                .get_cached(&abilities_url, config::TTL_SHOWDOWN_DATA),
+            self.http
+                .get_json::<HashMap<String, RawDescribed>>(&moves_url, config::TTL_SHOWDOWN_DATA),
+        )?;
+
+        let items_body = String::from_utf8_lossy(&items_bytes);
+        let abilities_body = String::from_utf8_lossy(&abilities_bytes);
+
+        let items = extract_js_descriptions(&items_body);
+        let abilities = extract_js_descriptions(&abilities_body);
+        let mut moves: HashMap<String, String> = HashMap::with_capacity(moves_json.len());
+        for (_id, entry) in moves_json {
+            let Some(name) = entry.name.as_ref().filter(|n| !n.is_empty()) else {
+                continue;
+            };
+            let desc = entry
+                .short_desc
+                .or(entry.desc)
+                .unwrap_or_default();
+            if desc.is_empty() {
+                continue;
+            }
+            moves.insert(normalize_key(name), desc);
+        }
+
+        Ok(EntityDescriptions {
+            items,
+            moves,
+            abilities,
+        })
+    }
+
     /// Fetches Showdown's learnsets.json. The raw shape is
     /// `{ species_id: { learnset: { move_id: ["9L1", …] } } }`; we flatten
     /// to `species_id -> Vec<move_id>` without resolving pre-evolution chains
@@ -189,10 +242,67 @@ fn extract_js_names(body: &str) -> Vec<String> {
     names
 }
 
+/// Pairs each `name:"..."` in a Showdown JS data file with the `shortDesc` (or
+/// falls back to `desc`) that appears before the next `name:"..."`. Keys are
+/// normalized display names (lowercase alphanumeric) so they align with the
+/// frontend localization lookup. Regex-based (not a real JS parser) because
+/// the data dumps are regular enough and pulling in a full parser would be
+/// excessive.
+fn extract_js_descriptions(body: &str) -> HashMap<String, String> {
+    static NAME_RE: once_cell::sync::Lazy<Regex> =
+        once_cell::sync::Lazy::new(|| Regex::new(r#"name\s*:\s*"((?:[^"\\]|\\.)*)""#).unwrap());
+    static SHORT_RE: once_cell::sync::Lazy<Regex> = once_cell::sync::Lazy::new(|| {
+        Regex::new(r#"shortDesc\s*:\s*"((?:[^"\\]|\\.)*)""#).unwrap()
+    });
+    // `\bdesc\b` avoids matching the `desc` suffix inside `shortDesc`, since
+    // the capital `D` means `\b` doesn't apply there anyway, but kept explicit
+    // for clarity.
+    static DESC_RE: once_cell::sync::Lazy<Regex> =
+        once_cell::sync::Lazy::new(|| Regex::new(r#"\bdesc\s*:\s*"((?:[^"\\]|\\.)*)""#).unwrap());
+
+    let name_matches: Vec<_> = NAME_RE.captures_iter(body).collect();
+    let mut out: HashMap<String, String> = HashMap::with_capacity(name_matches.len());
+    for (i, caps) in name_matches.iter().enumerate() {
+        let Some(full) = caps.get(0) else { continue };
+        let Some(name_cap) = caps.get(1) else { continue };
+        let name = name_cap.as_str().replace("\\\"", "\"");
+        if name.is_empty() {
+            continue;
+        }
+        let region_end = name_matches
+            .get(i + 1)
+            .and_then(|c| c.get(0))
+            .map(|m| m.start())
+            .unwrap_or(body.len());
+        let region = &body[full.end()..region_end];
+        let desc = SHORT_RE
+            .captures(region)
+            .or_else(|| DESC_RE.captures(region))
+            .and_then(|c| c.get(1))
+            .map(|m| m.as_str().replace("\\\"", "\""))
+            .unwrap_or_default();
+        if desc.is_empty() {
+            continue;
+        }
+        out.insert(normalize_key(&name), desc);
+    }
+    out
+}
+
 #[derive(Debug, Deserialize)]
 struct RawNamed {
     #[serde(default)]
     name: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RawDescribed {
+    #[serde(default)]
+    name: Option<String>,
+    #[serde(default, rename = "shortDesc")]
+    short_desc: Option<String>,
+    #[serde(default)]
+    desc: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -276,5 +386,30 @@ mod tests {
     fn extract_js_names_returns_empty_on_404_html() {
         let html = "<!DOCTYPE html><title>Not Found</title>";
         assert!(extract_js_names(html).is_empty());
+    }
+
+    #[test]
+    fn extract_js_descriptions_uses_short_desc_then_desc() {
+        let body = r#"exports.BattleItems = {
+            choicescarf:{name:"Choice Scarf",spritenum:75,fling:{basePower:10},desc:"Long description goes here.",shortDesc:"Holder's Speed is 1.5x; can't switch moves.",num:287},
+            abilityshield:{name:"Ability Shield",spritenum:746,desc:"Prevents the holder's Ability from being changed.",num:1881}
+        };"#;
+        let out = extract_js_descriptions(body);
+        assert_eq!(
+            out.get("choicescarf").map(|s| s.as_str()),
+            Some("Holder's Speed is 1.5x; can't switch moves.")
+        );
+        assert_eq!(
+            out.get("abilityshield").map(|s| s.as_str()),
+            Some("Prevents the holder's Ability from being changed.")
+        );
+    }
+
+    #[test]
+    fn extract_js_descriptions_skips_entries_without_desc() {
+        let body = r#"{ foo:{name:"Foo Item",spritenum:1}, bar:{name:"Bar Item",shortDesc:"Bar effect."} }"#;
+        let out = extract_js_descriptions(body);
+        assert!(out.get("fooitem").is_none());
+        assert_eq!(out.get("baritem").map(|s| s.as_str()), Some("Bar effect."));
     }
 }

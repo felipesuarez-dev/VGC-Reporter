@@ -45,6 +45,7 @@ pub fn run() {
             commands::pokedex::list_moves,
             commands::pokedex::list_moves_for_species,
             commands::pokedex::get_pokemon_sets,
+            commands::pokedex::get_entity_descriptions,
             commands::teams::save_team,
             commands::teams::list_teams,
             commands::teams::get_team,

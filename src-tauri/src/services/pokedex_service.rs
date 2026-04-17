@@ -1,3 +1,4 @@
+use crate::adapters::showdown_client::EntityDescriptions;
 use crate::adapters::ShowdownClient;
 use crate::config;
 use crate::domain::move_::MoveSummary;
@@ -122,6 +123,19 @@ impl PokedexService {
         let bytes = serde_json::to_vec(&map)?;
         self.cache.put(KEY, &bytes, config::TTL_SHOWDOWN_DATA)?;
         Ok(map)
+    }
+
+    pub async fn get_entity_descriptions(&self) -> Result<EntityDescriptions, AppError> {
+        const KEY: &str = "showdown::entity_descriptions::v1";
+        if let Some(bytes) = self.cache.get(KEY)? {
+            if let Ok(data) = serde_json::from_slice::<EntityDescriptions>(&bytes) {
+                return Ok(data);
+            }
+        }
+        let data = self.showdown.fetch_entity_descriptions().await?;
+        let bytes = serde_json::to_vec(&data)?;
+        self.cache.put(KEY, &bytes, config::TTL_SHOWDOWN_DATA)?;
+        Ok(data)
     }
 
     pub async fn list_moves_for_species(

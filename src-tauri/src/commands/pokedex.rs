@@ -1,3 +1,4 @@
+use crate::adapters::showdown_client::EntityDescriptions;
 use crate::domain::move_::MoveSummary;
 use crate::domain::pokemon::{Pokemon, PokemonType};
 use crate::domain::sets::SetsBundle;
@@ -52,4 +53,11 @@ pub async fn get_pokemon_sets(
     species: String,
 ) -> Result<SetsBundle, AppError> {
     state.sets.get_bundle(&species).await
+}
+
+#[tauri::command]
+pub async fn get_entity_descriptions(
+    state: State<'_, AppState>,
+) -> Result<EntityDescriptions, AppError> {
+    state.pokedex.get_entity_descriptions().await
 }
