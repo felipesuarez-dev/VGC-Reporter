@@ -18,6 +18,10 @@ pub const POKEAPI: &str = "https://pokeapi.co/api/v2";
 pub const POKEAPI_CSV_BASE: &str =
     "https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv";
 
+pub const POKEAPI_ABILITY_FLAVOR_CSV: &str = "ability_flavor_text.csv";
+pub const POKEAPI_MOVE_FLAVOR_CSV: &str = "move_flavor_text.csv";
+pub const POKEAPI_ITEM_FLAVOR_CSV: &str = "item_flavor_text.csv";
+
 // Cache TTLs (seconds)
 pub const TTL_LIMITLESS_LIST: i64 = 60 * 60; // 1h
 pub const TTL_LIMITLESS_DETAIL: i64 = 24 * 60 * 60; // 24h

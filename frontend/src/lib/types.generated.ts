@@ -8,7 +8,7 @@ export type ChampionsTournament = { id: string, name: string, date: string | nul
 
 export type DecklistPokemon = { id: string | null, name: string, item: string | null, ability: string | null, tera_type: string | null, moves: Array<string>, sprite_url: string, sprite_fallback_url: string | null, };
 
-export type EntityDescriptions = { items: { [key in string]?: string }, moves: { [key in string]?: string }, abilities: { [key in string]?: string }, };
+export type EntityDescriptions = { items: { [key in string]?: LocalizedDescription }, moves: { [key in string]?: LocalizedDescription }, abilities: { [key in string]?: LocalizedDescription }, };
 
 export type EvSpread = { hp: number, atk: number, def: number, spa: number, spd: number, spe: number, };
 
@@ -18,6 +18,8 @@ export type EvSpread = { hp: number, atk: number, def: number, spa: number, spd:
 export type Format = "regulation-m-a" | "champions-singles" | "regulation-i" | "gen9-ou";
 
 export type Item = { id: string, name: string, description: string, };
+
+export type LocalizedDescription = { en: string, es: string, };
 
 export type LocalizedName = { en: string, es: string, };
 

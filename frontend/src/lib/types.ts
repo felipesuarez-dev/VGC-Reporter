@@ -15,6 +15,7 @@ export type {
   EvSpread,
   Format,
   Item,
+  LocalizedDescription,
   LocalizedName,
   MetaSnapshot,
   Move,

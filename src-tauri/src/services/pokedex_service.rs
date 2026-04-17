@@ -1,5 +1,5 @@
 use crate::adapters::showdown_client::EntityDescriptions;
-use crate::adapters::ShowdownClient;
+use crate::adapters::{LocalizedDescription, PokeApiClient, ShowdownClient};
 use crate::config;
 use crate::domain::move_::MoveSummary;
 use crate::domain::pokemon::{Pokemon, PokemonType};
@@ -15,15 +15,40 @@ fn canonical_species_id(s: &str) -> String {
         .collect()
 }
 
+/// Joins Showdown English descriptions (authoritative for competitive text)
+/// with PokéAPI Spanish flavor. Keys come from the English map since that is
+/// what the frontend already asks for (normalized Showdown names).
+fn merge_lang(
+    en: HashMap<String, String>,
+    es_map: &HashMap<String, LocalizedDescription>,
+) -> HashMap<String, LocalizedDescription> {
+    let mut out: HashMap<String, LocalizedDescription> = HashMap::with_capacity(en.len());
+    for (key, en_text) in en {
+        let es_text = es_map
+            .get(&key)
+            .map(|d| d.es.as_str())
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| en_text.clone());
+        out.insert(key, LocalizedDescription { en: en_text, es: es_text });
+    }
+    out
+}
+
 #[derive(Clone)]
 pub struct PokedexService {
     showdown: ShowdownClient,
+    pokeapi: PokeApiClient,
     cache: Arc<CacheRepo>,
 }
 
 impl PokedexService {
-    pub fn new(showdown: ShowdownClient, cache: Arc<CacheRepo>) -> Self {
-        Self { showdown, cache }
+    pub fn new(showdown: ShowdownClient, pokeapi: PokeApiClient, cache: Arc<CacheRepo>) -> Self {
+        Self {
+            showdown,
+            pokeapi,
+            cache,
+        }
     }
 
     pub async fn all(&self) -> Result<Vec<Pokemon>, AppError> {
@@ -126,13 +151,37 @@ impl PokedexService {
     }
 
     pub async fn get_entity_descriptions(&self) -> Result<EntityDescriptions, AppError> {
-        const KEY: &str = "showdown::entity_descriptions::v1";
+        // v2 bumps the cache key now that descriptions are bilingual
+        // (LocalizedDescription instead of plain String).
+        const KEY: &str = "showdown::entity_descriptions::v2";
         if let Some(bytes) = self.cache.get(KEY)? {
             if let Ok(data) = serde_json::from_slice::<EntityDescriptions>(&bytes) {
                 return Ok(data);
             }
         }
-        let data = self.showdown.fetch_entity_descriptions().await?;
+
+        // Fetch English descriptions from Showdown and Spanish flavor text from
+        // PokéAPI in parallel. The PokéAPI side may fail (network/format
+        // drift); we degrade gracefully to English-only if it does.
+        let showdown_fut = self.showdown.fetch_entity_descriptions_en();
+        let abilities_fut = self.pokeapi.fetch_ability_descriptions();
+        let moves_fut = self.pokeapi.fetch_move_descriptions();
+        let items_fut = self.pokeapi.fetch_item_descriptions();
+
+        let (en_maps, es_abilities, es_moves, es_items) =
+            tokio::join!(showdown_fut, abilities_fut, moves_fut, items_fut);
+
+        let en_maps = en_maps?;
+        let es_abilities = es_abilities.unwrap_or_default();
+        let es_moves = es_moves.unwrap_or_default();
+        let es_items = es_items.unwrap_or_default();
+
+        let data = EntityDescriptions {
+            items: merge_lang(en_maps.items, &es_items),
+            moves: merge_lang(en_maps.moves, &es_moves),
+            abilities: merge_lang(en_maps.abilities, &es_abilities),
+        };
+
         let bytes = serde_json::to_vec(&data)?;
         self.cache.put(KEY, &bytes, config::TTL_SHOWDOWN_DATA)?;
         Ok(data)

@@ -43,7 +43,7 @@ impl AppState {
             cache.clone(),
             settings.clone(),
         );
-        let pokedex = PokedexService::new(showdown.clone(), cache.clone());
+        let pokedex = PokedexService::new(showdown.clone(), pokeapi.clone(), cache.clone());
         let sets = SetsService::new(pkmn.clone(), cache.clone());
         let teams = TeamService::new(team_repo);
         let top_teams = TopTeamsService::new(limitless.clone(), cache.clone());

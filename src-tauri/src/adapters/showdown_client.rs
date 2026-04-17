@@ -1,4 +1,4 @@
-use crate::adapters::pokeapi_client::normalize_key;
+use crate::adapters::pokeapi_client::{normalize_key, LocalizedDescription};
 use crate::adapters::sprite_resolver::{fallback_sprite_url_parts, primary_sprite_url_parts};
 use crate::adapters::HttpClient;
 use crate::config;
@@ -13,9 +13,9 @@ use ts_rs::TS;
 #[derive(Debug, Clone, Default, Serialize, Deserialize, TS)]
 #[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
 pub struct EntityDescriptions {
-    pub items: HashMap<String, String>,
-    pub moves: HashMap<String, String>,
-    pub abilities: HashMap<String, String>,
+    pub items: HashMap<String, LocalizedDescription>,
+    pub moves: HashMap<String, LocalizedDescription>,
+    pub abilities: HashMap<String, LocalizedDescription>,
 }
 
 #[derive(Clone)]
@@ -165,10 +165,13 @@ impl ShowdownClient {
         Ok(out)
     }
 
-    /// Fetches short descriptions for items, moves and abilities from
-    /// Showdown's data dumps. Keys are normalized display names (lowercase,
-    /// alphanumeric only) to match the frontend's `useLocalize` lookup.
-    pub async fn fetch_entity_descriptions(&self) -> Result<EntityDescriptions, AppError> {
+    /// Fetches English-only short descriptions for items, moves and abilities
+    /// from Showdown's data dumps. Keys are normalized display names
+    /// (lowercase, alphanumeric only). The caller is expected to join this
+    /// with PokéAPI flavor text for Spanish.
+    pub async fn fetch_entity_descriptions_en(
+        &self,
+    ) -> Result<ShowdownDescriptionMaps, AppError> {
         let items_url = format!("{}/items.js", config::SHOWDOWN_DATA);
         let abilities_url = format!("{}/abilities.js", config::SHOWDOWN_DATA);
         let moves_url = format!("{}/moves.json", config::SHOWDOWN_DATA);
@@ -201,7 +204,7 @@ impl ShowdownClient {
             moves.insert(normalize_key(name), desc);
         }
 
-        Ok(EntityDescriptions {
+        Ok(ShowdownDescriptionMaps {
             items,
             moves,
             abilities,
@@ -323,6 +326,14 @@ struct RawLearnsetEntry {
 
 pub struct ShowdownPokedex {
     pub pokemon: Vec<Pokemon>,
+}
+
+/// Raw English-only description tables from Showdown, keyed by normalized
+/// display name. Used as the English half of `EntityDescriptions`.
+pub struct ShowdownDescriptionMaps {
+    pub items: HashMap<String, String>,
+    pub moves: HashMap<String, String>,
+    pub abilities: HashMap<String, String>,
 }
 
 #[derive(Debug, Deserialize)]
