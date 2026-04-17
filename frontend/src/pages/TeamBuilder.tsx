@@ -24,16 +24,8 @@ export function TeamBuilder() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const {
-    team,
-    setTeam,
-    setName,
-    setNotes,
-    setMember,
-    reset,
-    pendingImport,
-    clearPendingImport,
-  } = useTeamBuilder();
+  const { team, setTeam, setName, setNotes, setMember, reset } =
+    useTeamBuilder();
   const [status, setStatus] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
@@ -71,17 +63,19 @@ export function TeamBuilder() {
   });
 
   useEffect(() => {
-    if (teamId === null) {
-      if (pendingImport) {
-        setTeam(pendingImport);
-        clearPendingImport();
-      } else {
-        reset();
-      }
-    } else if (loaded) {
-      setTeam(loaded);
+    if (teamId !== null && loaded) setTeam(loaded);
+  }, [teamId, loaded, setTeam]);
+
+  useEffect(() => {
+    if (teamId !== null) return;
+    const { pendingImport, clearPendingImport } = useTeamBuilder.getState();
+    if (pendingImport) {
+      setTeam(pendingImport);
+      clearPendingImport();
+    } else {
+      reset();
     }
-  }, [teamId, loaded, reset, setTeam, pendingImport, clearPendingImport]);
+  }, [teamId, setTeam, reset]);
 
   const save = async () => {
     try {
