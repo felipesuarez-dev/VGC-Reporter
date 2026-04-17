@@ -51,6 +51,7 @@ First launch downloads and caches Pokédex, moves, items, abilities and usage st
 | **Top Teams** | Tournament-winning teams from Limitless rendered as mini-grids |
 | **Damage Calc** | `@smogon/calc` Gen 9 with searchable inputs for every field, real items & moves loaded from Showdown |
 | **External sources** | Quick-launch panel for Pikalytics / Pokebase / Pokemon-Zone / Champions Lab / Munchstats (no scraping — just links) |
+| **Localized tooltips** | Item / move / ability descriptions served in ES (PokéAPI flavor text) with automatic EN fallback when Spanish is missing |
 | **UX polish** | Window opens maximized, splash screen visible from the first frame, full ES/EN toggle persisted locally |
 
 ## Data Sources
@@ -61,6 +62,7 @@ First launch downloads and caches Pokédex, moves, items, abilities and usage st
 | [Pokémon Showdown](https://play.pokemonshowdown.com/data/) | Pokédex, moves, items, abilities, sprites | Fetched on first run, cached 7 days |
 | [Smogon chaos JSON](https://www.smogon.com/stats/) | Ladder usage fallback | Slug auto-discovery + rating ladder rewind |
 | [pkmn/smogon data](https://data.pkmn.cc/) | Curated competitive sets | Doubles + Singles slugs per format |
+| [PokéAPI CSV](https://github.com/PokeAPI/pokeapi/tree/master/data/v2/csv) | Localized names & flavor text | Bilingual (EN/ES) for abilities, moves, items — joined with Showdown data |
 | [Showdown dex sprites](https://play.pokemonshowdown.com/sprites/dex/) | Sprite fallback | Variant-aware HD render for Mega/Regional forms |
 
 **Not integrated** (no public API): Pikalytics, Pokemon-Zone, Porygon Labs, Champions Lab, Pokebase, Munchstats. Exposed as one-click external links — no scraping.
@@ -170,7 +172,7 @@ VGC-Reporter/
 MIT © 2026 PumaSoft — see [LICENSE](LICENSE).
 
 <!-- Reference-style definitions -->
-[version-badge]: https://img.shields.io/badge/version-0.0.4.5.20260414-2b86ff?style=flat-square&labelColor=0a0e14
+[version-badge]: https://img.shields.io/badge/version-0.0.6.20260417-2b86ff?style=flat-square&labelColor=0a0e14
 [version-link]: #
 [tauri-badge]: https://img.shields.io/badge/Tauri-2.4-24c8db?style=flat-square&labelColor=0a0e14&logo=tauri
 [tauri-link]: https://tauri.app
