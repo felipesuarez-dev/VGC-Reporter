@@ -1,5 +1,7 @@
 use crate::adapters::limitless_client::{LimitlessDecklistEntry, LimitlessStanding};
-use crate::adapters::sprite_resolver::{canonical_display_name, canonical_id, sprite_url};
+use crate::adapters::sprite_resolver::{
+    canonical_display_name, canonical_id, fallback_sprite_url, primary_sprite_url,
+};
 use crate::domain::format::Format;
 use crate::domain::usage_stats::{MetaSnapshot, MovesetUsage, PokemonUsage, UsageEntry};
 use chrono::Utc;
@@ -14,7 +16,6 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
     let mut items_count: HashMap<String, u32> = HashMap::new();
     let mut moves_count: HashMap<String, u32> = HashMap::new();
     let mut abilities_count: HashMap<String, u32> = HashMap::new();
-    let mut tera_count: HashMap<String, u32> = HashMap::new();
     let mut total_entries: u32 = 0;
 
     for standings_list in standings {
@@ -42,7 +43,7 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
                 let display = prettify(&canonical_display_name(species_raw));
                 let acc = pokemon_count
                     .entry(key.clone())
-                    .or_insert_with(|| PokemonAccumulator::new(display, key.clone()));
+                    .or_insert_with(|| PokemonAccumulator::new(display));
                 acc.count += 1;
 
                 accumulate(entry, acc);
@@ -67,10 +68,6 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
                     let ability = prettify(ability);
                     *abilities_count.entry(ability).or_insert(0) += 1;
                 }
-                if let Some(tera) = entry.tera_value() {
-                    let tera = prettify(tera);
-                    *tera_count.entry(tera).or_insert(0) += 1;
-                }
             }
         }
     }
@@ -86,11 +83,12 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
             top_items: top_n(&acc.items, 5),
             top_moves: top_n(&acc.moves, 6),
             top_abilities: top_n(&acc.abilities, 3),
-            top_tera: top_n(&acc.tera, 5),
+            top_tera: Vec::new(),
             top_teammates: top_n(&acc.teammates, 5),
             top_natures: top_n(&acc.natures, 5),
             common_movesets: top_movesets(&acc.movesets, 5),
-            sprite_url: sprite_url(&acc.id),
+            sprite_url: primary_sprite_url(&acc.display),
+            sprite_fallback_url: fallback_sprite_url(&acc.display),
         })
         .collect();
     pokemon.sort_by(|a, b| b.usage_percent.partial_cmp(&a.usage_percent).unwrap());
@@ -98,7 +96,6 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
     let top_items = top_n(&items_count, 15);
     let top_moves = top_n(&moves_count, 20);
     let top_abilities = top_n(&abilities_count, 10);
-    let top_tera = top_n(&tera_count, 10);
 
     MetaSnapshot {
         format,
@@ -110,7 +107,7 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
         top_items,
         top_moves,
         top_abilities,
-        top_tera,
+        top_tera: Vec::new(),
         from_date: None,
         to_date: None,
     }
@@ -122,9 +119,6 @@ fn accumulate(entry: &LimitlessDecklistEntry, acc: &mut PokemonAccumulator) {
     }
     if let Some(ability) = entry.ability.as_deref() {
         *acc.abilities.entry(prettify(ability)).or_insert(0) += 1;
-    }
-    if let Some(tera) = entry.tera_value() {
-        *acc.tera.entry(prettify(tera)).or_insert(0) += 1;
     }
     if let Some(nature) = entry.nature.as_deref() {
         let nature = prettify(nature);
@@ -207,27 +201,23 @@ fn prettify(s: &str) -> String {
 
 struct PokemonAccumulator {
     display: String,
-    id: String,
     count: u32,
     items: HashMap<String, u32>,
     moves: HashMap<String, u32>,
     abilities: HashMap<String, u32>,
-    tera: HashMap<String, u32>,
     teammates: HashMap<String, u32>,
     natures: HashMap<String, u32>,
     movesets: HashMap<Vec<String>, u32>,
 }
 
 impl PokemonAccumulator {
-    fn new(display: String, id: String) -> Self {
+    fn new(display: String) -> Self {
         Self {
             display,
-            id,
             count: 0,
             items: HashMap::new(),
             moves: HashMap::new(),
             abilities: HashMap::new(),
-            tera: HashMap::new(),
             teammates: HashMap::new(),
             natures: HashMap::new(),
             movesets: HashMap::new(),
@@ -337,7 +327,9 @@ mod tests {
             "expected Rotom Heat display, got {species:?}"
         );
         assert!(
-            !species.iter().any(|s| *s == "Wash Rotom" || *s == "Heat Rotom"),
+            !species
+                .iter()
+                .any(|s| *s == "Wash Rotom" || *s == "Heat Rotom"),
             "inverted forms should be normalized; got {species:?}"
         );
     }

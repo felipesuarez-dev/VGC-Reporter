@@ -20,7 +20,8 @@ import { usePokedexStore } from "../../stores/pokedexStore";
 import { PokemonSprite } from "./PokemonSprite";
 import { TypeBadge } from "./TypeBadge";
 import { PokemonSetCard } from "./PokemonSetCard";
-import { EntityChip } from "../info/EntityChip";
+import { MovesetTierCard } from "./MovesetTierCard";
+import { PikalyticsSection } from "./PikalyticsSection";
 import { useLocalize, type LocalizeKind } from "../../hooks/useTranslations";
 import { prettifyName, statLabel, type StatKey } from "../../lib/labels";
 
@@ -97,7 +98,23 @@ export function PokemonDetailModal() {
           <div style={{ color: "var(--text-muted)" }}>{t("common.loading")}</div>
         )}
         {pokemon.isError && (
-          <div style={{ color: "var(--danger)" }}>{t("common.error")}</div>
+          <div
+            className="flex flex-col items-start gap-2 text-xs"
+            style={{ color: "var(--danger)" }}
+          >
+            <span>
+              {t("common.error_with_detail", {
+                detail: (pokemon.error as { message?: string })?.message ?? "",
+              })}
+            </span>
+            <button
+              type="button"
+              className="btn-ghost text-xs"
+              onClick={() => pokemon.refetch()}
+            >
+              {t("common.retry")}
+            </button>
+          </div>
         )}
         {pokemon.data && (
           <ModalBody
@@ -187,6 +204,8 @@ function ModalBody({
         <PokemonSprite
           url={pokemon.sprite_url}
           fallbackUrl={pokemon.sprite_fallback_url}
+          homeUrl={pokemon.home_sprite_url}
+          variant="hd"
           name={pokemon.name}
           size={120}
         />
@@ -305,7 +324,6 @@ function ModalBody({
                 <UsageList title={t("drawer.top_items")} entries={myUsage.top_items} kind="item" />
                 <UsageList title={t("drawer.top_moves")} entries={myUsage.top_moves} kind="move" />
                 <UsageList title={t("drawer.top_abilities")} entries={myUsage.top_abilities} kind="ability" />
-                <UsageList title={t("drawer.top_tera")} entries={myUsage.top_tera} />
                 <UsageList title={t("drawer.top_teammates")} entries={myUsage.top_teammates} />
               </>
             )}
@@ -319,39 +337,17 @@ function ModalBody({
               >
                 {t("drawer.top_movesets")}
               </h4>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                 {myUsage.common_movesets.slice(0, 5).map((ms, idx) => (
-                  <div
-                    key={idx}
-                    className="rounded-lg border p-2"
-                    style={{
-                      borderColor: "var(--border)",
-                      backgroundColor: "var(--bg-elev)",
-                    }}
-                  >
-                    <div className="mb-1 flex items-baseline justify-between gap-2 text-[10px]">
-                      <span style={{ color: "var(--text-dim)" }}>#{idx + 1}</span>
-                      <span
-                        className="tabular-nums"
-                        style={{ color: "var(--accent)" }}
-                      >
-                        {ms.usage_percent.toFixed(1)}%
-                      </span>
-                    </div>
-                    <ul className="flex flex-wrap gap-x-2 gap-y-1 text-xs">
-                      {ms.moves.map((mv) => (
-                        <li key={mv}>
-                          <EntityChip kind="move" name={mv} />
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  <MovesetTierCard key={idx} moveset={ms} rank={idx} />
                 ))}
               </div>
             </div>
           )}
         </section>
       )}
+
+      <PikalyticsSection species={pokemon.name} />
 
       <section className="space-y-2">
         <h3

@@ -1,5 +1,7 @@
 use crate::adapters::pokeapi_client::{normalize_key, LocalizedDescription};
-use crate::adapters::sprite_resolver::{fallback_sprite_url_parts, primary_sprite_url_parts};
+use crate::adapters::sprite_resolver::{
+    fallback_sprite_url_parts, home_sprite_url, primary_sprite_url_parts,
+};
 use crate::adapters::HttpClient;
 use crate::config;
 use crate::domain::move_::{MoveCategory, MoveSummary};
@@ -67,6 +69,7 @@ impl ShowdownClient {
             let forme = entry.forme.as_deref();
             let sprite_url = primary_sprite_url_parts(base, forme);
             let sprite_fallback_url = fallback_sprite_url_parts(base, forme);
+            let home_sprite_url = home_sprite_url(resolved_num.max(0) as u32);
 
             let types = entry
                 .types
@@ -91,6 +94,7 @@ impl ShowdownClient {
                 abilities,
                 sprite_url,
                 sprite_fallback_url,
+                home_sprite_url,
             });
         }
         pokemon.sort_by(|a, b| a.name.cmp(&b.name));
@@ -169,9 +173,7 @@ impl ShowdownClient {
     /// from Showdown's data dumps. Keys are normalized display names
     /// (lowercase, alphanumeric only). The caller is expected to join this
     /// with PokéAPI flavor text for Spanish.
-    pub async fn fetch_entity_descriptions_en(
-        &self,
-    ) -> Result<ShowdownDescriptionMaps, AppError> {
+    pub async fn fetch_entity_descriptions_en(&self) -> Result<ShowdownDescriptionMaps, AppError> {
         let items_url = format!("{}/items.js", config::SHOWDOWN_DATA);
         let abilities_url = format!("{}/abilities.js", config::SHOWDOWN_DATA);
         let moves_url = format!("{}/moves.json", config::SHOWDOWN_DATA);
@@ -194,10 +196,7 @@ impl ShowdownClient {
             let Some(name) = entry.name.as_ref().filter(|n| !n.is_empty()) else {
                 continue;
             };
-            let desc = entry
-                .short_desc
-                .or(entry.desc)
-                .unwrap_or_default();
+            let desc = entry.short_desc.or(entry.desc).unwrap_or_default();
             if desc.is_empty() {
                 continue;
             }
@@ -267,7 +266,9 @@ fn extract_js_descriptions(body: &str) -> HashMap<String, String> {
     let mut out: HashMap<String, String> = HashMap::with_capacity(name_matches.len());
     for (i, caps) in name_matches.iter().enumerate() {
         let Some(full) = caps.get(0) else { continue };
-        let Some(name_cap) = caps.get(1) else { continue };
+        let Some(name_cap) = caps.get(1) else {
+            continue;
+        };
         let name = name_cap.as_str().replace("\\\"", "\"");
         if name.is_empty() {
             continue;

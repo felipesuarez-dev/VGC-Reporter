@@ -109,7 +109,8 @@ impl PokeApiClient {
         let flavor_by_id = parse_flavor_csv(&flavor_bytes, id_col)?;
         let names_by_id = parse_names_by_id(&names_bytes);
 
-        let mut out: HashMap<String, LocalizedDescription> = HashMap::with_capacity(names_by_id.len());
+        let mut out: HashMap<String, LocalizedDescription> =
+            HashMap::with_capacity(names_by_id.len());
         for (id, en_name) in names_by_id {
             let key = normalize_key(&en_name);
             if key.is_empty() {
@@ -219,7 +220,9 @@ fn parse_flavor_csv(
     bytes: &[u8],
     id_col: &str,
 ) -> Result<HashMap<u32, LocalizedDescription>, AppError> {
-    let mut rdr = csv::ReaderBuilder::new().has_headers(true).from_reader(bytes);
+    let mut rdr = csv::ReaderBuilder::new()
+        .has_headers(true)
+        .from_reader(bytes);
 
     let headers = rdr
         .headers()
@@ -232,9 +235,7 @@ fn parse_flavor_csv(
     let vg_idx = headers
         .iter()
         .position(|h| h == "version_group_id")
-        .ok_or_else(|| {
-            AppError::Internal("flavor csv missing column 'version_group_id'".into())
-        })?;
+        .ok_or_else(|| AppError::Internal("flavor csv missing column 'version_group_id'".into()))?;
     let lang_idx = headers
         .iter()
         .position(|h| h == "language_id")

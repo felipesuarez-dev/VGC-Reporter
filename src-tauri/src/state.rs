@@ -1,10 +1,11 @@
 use crate::adapters::{
-    HttpClient, LimitlessClient, PkmnDataClient, PokeApiClient, ShowdownClient, SmogonClient,
+    HttpClient, LimitlessClient, PikalyticsClient, PkmnDataClient, PokeApiClient, ShowdownClient,
+    SmogonClient,
 };
 use crate::error::AppError;
 use crate::services::{
-    ChampionsReportService, MetaService, PokedexService, SetsService, TeamService, TopTeamsService,
-    TranslationsService, UpcomingTournamentsService,
+    ChampionsReportService, MetaService, PikalyticsService, PokedexService, SetsService,
+    TeamService, TopTeamsService, TranslationsService, UpcomingTournamentsService,
 };
 use crate::storage::{init_pool, CacheRepo, DbPool, SettingsRepo, TeamRepo};
 use std::path::Path;
@@ -20,6 +21,7 @@ pub struct AppState {
     pub champions: ChampionsReportService,
     pub upcoming: UpcomingTournamentsService,
     pub translations: TranslationsService,
+    pub pikalytics: PikalyticsService,
     pub settings: Arc<SettingsRepo>,
 }
 
@@ -36,6 +38,7 @@ impl AppState {
         let smogon = SmogonClient::new(http.clone());
         let pkmn = PkmnDataClient::new(http.clone());
         let pokeapi = PokeApiClient::new(http.clone());
+        let pikalytics_client = PikalyticsClient::new(http.clone());
 
         let meta = MetaService::new(
             limitless.clone(),
@@ -50,6 +53,7 @@ impl AppState {
         let champions = ChampionsReportService::new(limitless.clone());
         let upcoming = UpcomingTournamentsService::new(limitless.clone());
         let translations = TranslationsService::new(pokeapi);
+        let pikalytics = PikalyticsService::new(pikalytics_client, cache.clone());
 
         Ok(Self {
             db: pool,
@@ -61,6 +65,7 @@ impl AppState {
             champions,
             upcoming,
             translations,
+            pikalytics,
             settings,
         })
     }

@@ -4,6 +4,7 @@ use crate::domain::pokemon::{Pokemon, PokemonType};
 use crate::domain::sets::SetsBundle;
 use crate::error::AppError;
 use crate::state::AppState;
+use std::collections::HashMap;
 use tauri::State;
 
 #[tauri::command]
@@ -60,4 +61,18 @@ pub async fn get_entity_descriptions(
     state: State<'_, AppState>,
 ) -> Result<EntityDescriptions, AppError> {
     state.pokedex.get_entity_descriptions().await
+}
+
+#[tauri::command]
+pub async fn get_learnsets_index(
+    state: State<'_, AppState>,
+) -> Result<HashMap<String, Vec<String>>, AppError> {
+    state.pokedex.learnsets_index().await
+}
+
+#[tauri::command]
+pub async fn get_move_catalog(
+    state: State<'_, AppState>,
+) -> Result<HashMap<String, MoveSummary>, AppError> {
+    state.pokedex.move_catalog().await
 }

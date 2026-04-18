@@ -17,6 +17,7 @@ import type { Violation } from "../lib/types";
 import { isBannedInFormat } from "../lib/types";
 import { useTeamBuilder } from "../stores/teamBuilderStore";
 import { TeamMemberForm } from "../components/team/TeamMemberForm";
+import { ImportCompletionModal } from "../components/team/ImportCompletionModal";
 
 export function TeamBuilder() {
   const { id } = useParams();
@@ -31,6 +32,7 @@ export function TeamBuilder() {
   const [importText, setImportText] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
   const [violations, setViolations] = useState<Violation[] | null>(null);
+  const [importMissing, setImportMissing] = useState<string[] | null>(null);
 
   const { data: pokedexAll = [] } = useQuery({
     queryKey: queryKeys.pokedex.all,
@@ -68,10 +70,16 @@ export function TeamBuilder() {
 
   useEffect(() => {
     if (teamId !== null) return;
-    const { pendingImport, clearPendingImport } = useTeamBuilder.getState();
+    const {
+      pendingImport,
+      clearPendingImport,
+      consumePendingImportMissing,
+    } = useTeamBuilder.getState();
     if (pendingImport) {
       setTeam(pendingImport);
       clearPendingImport();
+      const missing = consumePendingImportMissing();
+      if (missing.length > 0) setImportMissing(missing);
     } else {
       reset();
     }
@@ -164,7 +172,7 @@ export function TeamBuilder() {
             disabled
             title={t("team_builder.regulation_hint")}
           >
-            <option value="regulation-m-a">Regulation M-A</option>
+            <option value="regulation-m-a">Regulation M-A (M-1)</option>
           </select>
           <p className="mt-1 text-[10px]" style={{ color: "var(--text-dim)" }}>
             {t("team_builder.regulation_hint")}
@@ -224,6 +232,12 @@ export function TeamBuilder() {
           />
         ))}
       </div>
+
+      <ImportCompletionModal
+        open={importMissing !== null}
+        missing={importMissing ?? []}
+        onClose={() => setImportMissing(null)}
+      />
 
       {importOpen && (
         <div

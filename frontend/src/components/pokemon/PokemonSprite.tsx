@@ -1,49 +1,83 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "../../lib/cn";
+
+export type SpriteVariant = "pixel" | "hd" | "home";
 
 interface Props {
   url: string;
   fallbackUrl?: string | null;
+  homeUrl?: string | null;
   name?: string;
   size?: number;
+  variant?: SpriteVariant;
   className?: string;
 }
 
-export function PokemonSprite({ url, fallbackUrl, name, size = 72, className }: Props) {
-  const hasUrl = Boolean(url && url.length > 0);
-  const [currentUrl, setCurrentUrl] = useState<string>(hasUrl ? url : "");
-  const [fallbackTried, setFallbackTried] = useState(false);
-  const [failed, setFailed] = useState(!hasUrl);
+export function PokemonSprite({
+  url,
+  fallbackUrl,
+  homeUrl,
+  name,
+  size = 72,
+  variant = "pixel",
+  className,
+}: Props) {
+  const chain = buildChain(url, fallbackUrl, homeUrl, variant);
+  const [idx, setIdx] = useState(0);
+  const [failed, setFailed] = useState(chain.length === 0);
+
+  useEffect(() => {
+    setIdx(0);
+    setFailed(chain.length === 0);
+  }, [chain[0], chain[1], chain[2]]);
 
   if (failed) {
-    return (
-      <PlaceholderSprite
-        size={size}
-        name={name}
-        className={className}
-      />
-    );
+    return <PlaceholderSprite size={size} name={name} className={className} />;
   }
 
+  const currentUrl = chain[idx];
+
   return (
-    <img
-      src={currentUrl}
-      alt={name ?? "pokemon sprite"}
-      width={size}
-      height={size}
-      data-sprite="true"
-      loading="lazy"
-      className={cn("select-none", className)}
-      onError={() => {
-        if (fallbackUrl && !fallbackTried) {
-          setFallbackTried(true);
-          setCurrentUrl(fallbackUrl);
-        } else {
-          setFailed(true);
-        }
-      }}
-    />
+    <span
+      className={cn("sprite-frame", className)}
+      style={{ width: size, height: size }}
+    >
+      <img
+        src={currentUrl}
+        alt={name ?? "pokemon sprite"}
+        data-sprite="true"
+        loading="lazy"
+        className="select-none"
+        onError={() => {
+          if (idx + 1 < chain.length) {
+            setIdx(idx + 1);
+          } else {
+            setFailed(true);
+          }
+        }}
+      />
+    </span>
   );
+}
+
+function buildChain(
+  url: string,
+  fallbackUrl: string | null | undefined,
+  homeUrl: string | null | undefined,
+  variant: SpriteVariant,
+): string[] {
+  const primary = url && url.length > 0 ? url : null;
+  const hd = fallbackUrl && fallbackUrl.length > 0 ? fallbackUrl : null;
+  const home = homeUrl && homeUrl.length > 0 ? homeUrl : null;
+
+  const order =
+    variant === "home"
+      ? [home, hd, primary]
+      : variant === "hd"
+        ? [hd, primary, home]
+        : [primary, hd, home];
+
+  return order.filter((u): u is string => Boolean(u));
 }
 
 function PlaceholderSprite({

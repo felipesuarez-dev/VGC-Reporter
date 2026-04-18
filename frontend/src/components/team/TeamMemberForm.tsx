@@ -8,8 +8,8 @@ import type {
   PokemonType,
   TeamMember,
 } from "../../lib/types";
-import { ALL_NATURES, ALL_TYPES } from "../../lib/types";
-import { natureLabel, typeLabel } from "../../lib/labels";
+import { ALL_NATURES } from "../../lib/types";
+import { natureLabel } from "../../lib/labels";
 import { ipc } from "../../lib/ipc";
 import { useLocalize } from "../../hooks/useTranslations";
 import { EVSliders } from "./EVSliders";
@@ -71,6 +71,7 @@ export function TeamMemberForm({ slot, value, pokedex, items, moves, onChange }:
             <PokemonSprite
               url={selected.sprite_url}
               fallbackUrl={selected.sprite_fallback_url}
+              homeUrl={selected.home_sprite_url}
               name={selected.name}
               size={64}
             />
@@ -124,17 +125,6 @@ export function TeamMemberForm({ slot, value, pokedex, items, moves, onChange }:
             onChange={(n) => onChange({ ...value, nature: n })}
             getOptionLabel={(n) => natureLabel(t, n)}
             placeholder={t("team_builder.nature")}
-            className="mt-1"
-          />
-        </div>
-        <div>
-          <label className="label">{t("team_builder.tera_type")}</label>
-          <SearchSelect<PokemonType>
-            value={value.tera_type}
-            options={[...ALL_TYPES]}
-            onChange={(ty) => onChange({ ...value, tera_type: ty })}
-            getOptionLabel={(ty) => typeLabel(t, ty)}
-            placeholder={t("team_builder.tera_type")}
             className="mt-1"
           />
         </div>

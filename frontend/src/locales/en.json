@@ -19,6 +19,18 @@
     "move": "Move",
     "item": "Item"
   },
+  "tooltip": {
+    "move_category": {
+      "physical": "Physical",
+      "special": "Special",
+      "status": "Status"
+    }
+  },
+  "detail": {
+    "movesets": {
+      "rank": "Top #{{n}}"
+    }
+  },
   "regulations": {
     "coming_soon": "Coming soon",
     "reg_ma_s1": "M-1",
@@ -27,6 +39,8 @@
   "common": {
     "loading": "Loading...",
     "error": "Error",
+    "error_with_detail": "Error: {{detail}}",
+    "retry": "Retry",
     "empty": "No data yet",
     "save": "Save",
     "cancel": "Cancel",
@@ -52,7 +66,6 @@
     "top_items": "Top Items",
     "top_moves": "Top Moves",
     "top_abilities": "Top Abilities",
-    "top_tera": "Top Tera Types",
     "external_sources": "Other sources",
     "empty_format": "Not enough data for this format yet. Try another one or check back later.",
     "format": "Format",
@@ -107,6 +120,8 @@
     "filter_name": "Name",
     "filter_type": "Type",
     "filter_ability": "Ability",
+    "filter_move": "Move",
+    "filter_move_placeholder": "Any move",
     "filter_weak_against": "Weak against",
     "filter_strong_against": "Strong against",
     "filter_weak_against_help": "Shows Pokémon that take 2x or more from any of the selected types.",
@@ -130,7 +145,17 @@
     "strong_against": "Strong against",
     "stab_resisted_by": "STAB resisted by",
     "stab_super_effective_on": "STAB super-effective on",
-    "close": "Close"
+    "close": "Close",
+    "pikalytics_unavailable": "Pikalytics has no data for this Pokémon in the current format.",
+    "pikalytics": {
+      "title": "Pikalytics (doubles)",
+      "items": "Items",
+      "abilities": "Abilities",
+      "moves": "Moves",
+      "tera": "Tera",
+      "teammates": "Teammates",
+      "spreads": "EV spreads"
+    }
   },
   "team_builder": {
     "title": "Team Builder",
@@ -142,7 +167,6 @@
     "item": "Item",
     "ability": "Ability",
     "nature": "Nature",
-    "tera_type": "Tera Type",
     "moves": "Moves",
     "evs": "EVs",
     "saved": "Team saved",
@@ -155,7 +179,17 @@
     "imported": "Team imported",
     "copied": "Copied to clipboard",
     "import_failed": "Failed to import team",
-    "fix_violations_first": "Fix team issues before saving"
+    "fix_violations_first": "Fix team issues before saving",
+    "import_incomplete": {
+      "title": "Complete the imported team",
+      "body": "The tournament source does not expose every field. Review the flagged entries and fill them in before saving.",
+      "dismiss": "Got it",
+      "missing_nature": "{{slot}}: nature missing",
+      "missing_evs": "{{slot}}: EVs at zero",
+      "missing_ability": "{{slot}}: ability missing",
+      "missing_item": "{{slot}}: item missing",
+      "missing_moves": "{{slot}}: moves missing"
+    }
   },
   "my_teams": {
     "title": "My Teams",
@@ -173,12 +207,13 @@
     "members": "Team members",
     "item": "Item",
     "ability": "Ability",
-    "tera_type": "Tera Type",
     "moves": "Moves",
-    "limited_info": "The source only exposes each member's item and Tera type.",
+    "limited_info": "The source only exposes each member's item.",
     "battles": "Battles analyzed",
     "tournaments_analyzed": "Tournaments analyzed",
-    "copy_to_builder": "Copy to builder"
+    "copy_to_builder": "Copy to builder",
+    "filter_by_pokemon": "Filter by Pokémon (up to 6)",
+    "filter_no_matches": "No team contains every selected Pokémon."
   },
   "damage_calc": {
     "title": "Damage Calculator",

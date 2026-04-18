@@ -1,4 +1,5 @@
 use crate::adapters::showdown_client::EntityDescriptions;
+use crate::adapters::sprite_resolver::canonical_id;
 use crate::adapters::{LocalizedDescription, PokeApiClient, ShowdownClient};
 use crate::config;
 use crate::domain::move_::MoveSummary;
@@ -30,7 +31,13 @@ fn merge_lang(
             .filter(|s| !s.is_empty())
             .map(|s| s.to_string())
             .unwrap_or_else(|| en_text.clone());
-        out.insert(key, LocalizedDescription { en: en_text, es: es_text });
+        out.insert(
+            key,
+            LocalizedDescription {
+                en: en_text,
+                es: es_text,
+            },
+        );
     }
     out
 }
@@ -52,9 +59,8 @@ impl PokedexService {
     }
 
     pub async fn all(&self) -> Result<Vec<Pokemon>, AppError> {
-        // v2 bumps the cache key after the forme-aware parser landed; older
-        // caches stored entries without formes and with num=0 for cosmetics.
-        const KEY: &str = "pokedex::all::v2";
+        // v3 bumps the cache key to include home_sprite_url on each entry.
+        const KEY: &str = "pokedex::all::v3";
         if let Some(bytes) = self.cache.get(KEY)? {
             if let Ok(list) = serde_json::from_slice::<Vec<Pokemon>>(&bytes) {
                 return Ok(list);
@@ -93,7 +99,8 @@ impl PokedexService {
 
     pub async fn get(&self, id: &str) -> Result<Option<Pokemon>, AppError> {
         let all = self.all().await?;
-        Ok(all.into_iter().find(|p| p.id == id))
+        let needle = canonical_id(id);
+        Ok(all.into_iter().find(|p| canonical_id(&p.id) == needle))
     }
 
     pub async fn list_items(&self) -> Result<Vec<String>, AppError> {
@@ -122,6 +129,10 @@ impl PokedexService {
         let bytes = serde_json::to_vec(&list)?;
         self.cache.put(KEY, &bytes, config::TTL_SHOWDOWN_DATA)?;
         Ok(list)
+    }
+
+    pub async fn move_catalog(&self) -> Result<HashMap<String, MoveSummary>, AppError> {
+        self.move_details().await
     }
 
     async fn move_details(&self) -> Result<HashMap<String, MoveSummary>, AppError> {
@@ -204,5 +215,25 @@ impl PokedexService {
         out.sort_by(|a, b| a.name.cmp(&b.name));
         out.dedup_by(|a, b| a.id == b.id);
         Ok(out)
+    }
+
+    /// Inverted learnsets: `move_id -> [species_id, ...]`.
+    /// Powers the Pokédex move filter in the frontend.
+    pub async fn learnsets_index(&self) -> Result<HashMap<String, Vec<String>>, AppError> {
+        let learnsets = self.learnsets().await?;
+        let mut inverted: HashMap<String, Vec<String>> = HashMap::new();
+        for (species_id, moves) in learnsets {
+            for move_id in moves {
+                inverted
+                    .entry(move_id)
+                    .or_default()
+                    .push(species_id.clone());
+            }
+        }
+        for species_list in inverted.values_mut() {
+            species_list.sort();
+            species_list.dedup();
+        }
+        Ok(inverted)
     }
 }

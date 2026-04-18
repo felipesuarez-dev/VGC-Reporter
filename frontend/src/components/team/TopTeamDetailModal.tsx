@@ -1,9 +1,10 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { ClipboardCopy, X } from "lucide-react";
-import type { Nature, PokemonType, Team, TeamMember, TopTeam } from "../../lib/types";
-import { ALL_NATURES, ALL_TYPES, emptyTeamMember } from "../../lib/types";
+import type { Nature, Team, TeamMember, TopTeam } from "../../lib/types";
+import { ALL_NATURES, emptyTeamMember } from "../../lib/types";
 import { PokemonSprite } from "../pokemon/PokemonSprite";
 import { EntityChip } from "../info/EntityChip";
 import { Tooltip } from "../ui/Tooltip";
@@ -22,23 +23,42 @@ function asNature(value: string | null | undefined): Nature | null {
   return match ?? null;
 }
 
-function asTeraType(value: string | null | undefined): PokemonType | null {
-  if (!value) return null;
-  const match = ALL_TYPES.find((t) => t.toLowerCase() === value.toLowerCase());
-  return match ?? null;
+export function computeMissingFields(team: Team, t: TFunction): string[] {
+  const missing: string[] = [];
+  team.members.forEach((m, i) => {
+    if (!m.species) return;
+    const slot = `${i + 1}. ${m.species}`;
+    if (!m.nature)
+      missing.push(t("team_builder.import_incomplete.missing_nature", { slot }));
+    const evSum =
+      m.evs.hp + m.evs.atk + m.evs.def + m.evs.spa + m.evs.spd + m.evs.spe;
+    if (evSum === 0)
+      missing.push(t("team_builder.import_incomplete.missing_evs", { slot }));
+    if (!m.ability)
+      missing.push(t("team_builder.import_incomplete.missing_ability", { slot }));
+    if (!m.item)
+      missing.push(t("team_builder.import_incomplete.missing_item", { slot }));
+    if (m.moves.filter((mv) => mv && mv.length > 0).length < 4) {
+      missing.push(t("team_builder.import_incomplete.missing_moves", { slot }));
+    }
+  });
+  return missing;
 }
 
 function toDraftTeam(top: TopTeam): Team {
+  const validMembers = top.members.filter(
+    (m) => m && m.species && m.species.length > 0,
+  );
   const members: TeamMember[] = Array.from({ length: 6 }, (_, i) => {
-    const m = top.members[i];
+    const m = validMembers[i];
     if (!m) return emptyTeamMember();
     return {
       species: m.species,
       item: m.item ?? null,
       ability: m.ability ?? null,
       nature: asNature(m.nature),
-      tera_type: asTeraType(m.tera_type),
-      moves: m.moves ?? [],
+      tera_type: null,
+      moves: (m.moves ?? []).filter((mv) => mv && mv.length > 0),
       evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
     };
   });
@@ -60,6 +80,9 @@ export function TopTeamDetailModal({ team, onClose }: Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const setPendingImport = useTeamBuilder((s) => s.setPendingImport);
+  const setPendingImportMissing = useTeamBuilder(
+    (s) => s.setPendingImportMissing,
+  );
 
   useEffect(() => {
     if (!team) return;
@@ -77,7 +100,9 @@ export function TopTeamDetailModal({ team, onClose }: Props) {
   );
 
   const copyToBuilder = () => {
-    setPendingImport(toDraftTeam(team));
+    const draft = toDraftTeam(team);
+    setPendingImport(draft);
+    setPendingImportMissing(computeMissingFields(draft, t));
     onClose();
     navigate("/team-builder");
   };
@@ -90,7 +115,7 @@ export function TopTeamDetailModal({ team, onClose }: Props) {
       onClick={onClose}
     >
       <div
-        className="relative max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-xl border p-5 shadow-2xl"
+        className="relative max-h-[90vh] w-full max-w-7xl overflow-y-auto rounded-xl border p-5 shadow-2xl"
         style={{
           backgroundColor: "var(--bg-elev)",
           borderColor: "var(--border)",
@@ -153,6 +178,7 @@ export function TopTeamDetailModal({ team, onClose }: Props) {
                 <div className="flex aspect-square h-24 w-24 shrink-0 items-center justify-center">
                   <PokemonSprite
                     url={m.sprite_url}
+                    fallbackUrl={m.sprite_fallback_url}
                     name={m.species}
                     size={96}
                   />
@@ -187,16 +213,6 @@ export function TopTeamDetailModal({ team, onClose }: Props) {
                           {t("team_builder.nature")}:
                         </span>{" "}
                         {t(`natures.${m.nature}`, { defaultValue: m.nature })}
-                      </div>
-                    )}
-                    {m.tera_type && (
-                      <div style={{ color: "var(--text-muted)" }}>
-                        <span style={{ color: "var(--text-dim)" }}>
-                          {t("top_teams.tera_type")}:
-                        </span>{" "}
-                        {t(`types.${m.tera_type}`, {
-                          defaultValue: m.tera_type,
-                        })}
                       </div>
                     )}
                   </div>

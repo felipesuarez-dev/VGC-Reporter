@@ -5,6 +5,7 @@ import type {
   Format,
   MetaSnapshot,
   MoveSummary,
+  PikalyticsEntry,
   Pokemon,
   PokemonType,
   SetsBundle,
@@ -68,6 +69,12 @@ export const ipc = {
     call<SetsBundle>("get_pokemon_sets", { species }),
   getEntityDescriptions: () =>
     call<EntityDescriptions>("get_entity_descriptions"),
+  getLearnsetsIndex: () =>
+    call<Record<string, string[]>>("get_learnsets_index"),
+  getMoveCatalog: () =>
+    call<Record<string, MoveSummary>>("get_move_catalog"),
+  getPikalyticsEntry: (species: string, lang: string) =>
+    call<PikalyticsEntry>("get_pikalytics_entry", { species, lang }),
   listChampionsTournaments: (format?: Format, limit?: number) =>
     call<ChampionsReport>("list_champions_tournaments", { format, limit }),
   getTournamentStandings: (id: string) =>

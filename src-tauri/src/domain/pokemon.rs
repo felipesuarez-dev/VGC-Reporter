@@ -92,6 +92,10 @@ pub struct Pokemon {
     /// Variant-aware: indexed by slug, not dex number.
     #[serde(default)]
     pub sprite_fallback_url: Option<String>,
+    /// High-resolution PokéAPI Home render, keyed by national dex number.
+    /// `None` for cosmetic forms that share a dex number with their base.
+    #[serde(default)]
+    pub home_sprite_url: Option<String>,
 }
 
 /// Returns the Pokémon generation that the given national dex number belongs to.

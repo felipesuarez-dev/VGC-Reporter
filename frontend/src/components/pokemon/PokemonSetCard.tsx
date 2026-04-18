@@ -17,18 +17,10 @@ export function PokemonSetCard({ set }: { set: PokemonSet }) {
         backgroundColor: "var(--bg-elev)",
       }}
     >
-      <header className="mb-2 flex items-center justify-between gap-2">
+      <header className="mb-2">
         <h4 className="text-sm font-semibold" style={{ color: "var(--text)" }}>
           {set.name}
         </h4>
-        {set.tera_types.length > 0 && (
-          <span
-            className="text-[10px] uppercase tracking-wide"
-            style={{ color: "var(--accent)" }}
-          >
-            Tera: {set.tera_types.join(" / ")}
-          </span>
-        )}
       </header>
 
       <dl

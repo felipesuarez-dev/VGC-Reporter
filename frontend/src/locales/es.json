@@ -19,6 +19,18 @@
     "move": "Movimiento",
     "item": "Objeto"
   },
+  "tooltip": {
+    "move_category": {
+      "physical": "Físico",
+      "special": "Especial",
+      "status": "Estado"
+    }
+  },
+  "detail": {
+    "movesets": {
+      "rank": "Top #{{n}}"
+    }
+  },
   "regulations": {
     "coming_soon": "Próximamente",
     "reg_ma_s1": "M-1",
@@ -27,6 +39,8 @@
   "common": {
     "loading": "Cargando...",
     "error": "Error",
+    "error_with_detail": "Error: {{detail}}",
+    "retry": "Reintentar",
     "empty": "No hay datos todavía",
     "save": "Guardar",
     "cancel": "Cancelar",
@@ -52,7 +66,6 @@
     "top_items": "Top objetos",
     "top_moves": "Top movimientos",
     "top_abilities": "Top habilidades",
-    "top_tera": "Top Tera Types",
     "external_sources": "Otras fuentes",
     "empty_format": "No hay datos suficientes para este formato. Prueba con otro o vuelve más tarde.",
     "format": "Formato",
@@ -63,7 +76,7 @@
     "champions_report": "Torneos recientes de Champions",
     "recent_tournaments": "Torneos recientes",
     "tournaments_for_format": "Mostrando torneos del formato: {{format}}",
-    "view_standings": "Ver standings",
+    "view_standings": "Ver clasificación",
     "view_more": "Ver más",
     "players": "jugadores",
     "open_on_x": "Abrir en X",
@@ -107,6 +120,8 @@
     "filter_name": "Nombre",
     "filter_type": "Tipo",
     "filter_ability": "Habilidad",
+    "filter_move": "Movimiento",
+    "filter_move_placeholder": "Cualquier movimiento",
     "filter_weak_against": "Débil contra",
     "filter_strong_against": "Fuerte contra",
     "filter_weak_against_help": "Muestra Pokémon que reciben x2 o más de alguno de los tipos seleccionados.",
@@ -125,12 +140,22 @@
     "meta_usage": "Uso en el meta actual",
     "source": "Fuente",
     "no_sets": "Sin sets para este formato todavía",
-    "matchups": "Matchups",
+    "matchups": "Enfrentamientos",
     "weak_against": "Débil contra",
     "strong_against": "Fuerte contra",
     "stab_resisted_by": "STAB resistido por",
     "stab_super_effective_on": "STAB supereficaz contra",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "pikalytics_unavailable": "Pikalytics no tiene datos para este Pokémon en el formato actual.",
+    "pikalytics": {
+      "title": "Pikalytics (dobles)",
+      "items": "Objetos",
+      "abilities": "Habilidades",
+      "moves": "Movimientos",
+      "tera": "Tera",
+      "teammates": "Compañeros",
+      "spreads": "Spreads de EVs"
+    }
   },
   "team_builder": {
     "title": "Constructor de equipos",
@@ -142,7 +167,6 @@
     "item": "Objeto",
     "ability": "Habilidad",
     "nature": "Naturaleza",
-    "tera_type": "Tera Type",
     "moves": "Movimientos",
     "evs": "EVs",
     "saved": "Equipo guardado",
@@ -155,7 +179,17 @@
     "imported": "Equipo importado",
     "copied": "Copiado al portapapeles",
     "import_failed": "No se pudo importar el equipo",
-    "fix_violations_first": "Corrige los problemas del equipo antes de guardar"
+    "fix_violations_first": "Corrige los problemas del equipo antes de guardar",
+    "import_incomplete": {
+      "title": "Completa el equipo importado",
+      "body": "La fuente del torneo no expone todos los datos. Revisa los campos marcados y complétalos antes de guardar.",
+      "dismiss": "Entendido",
+      "missing_nature": "{{slot}}: falta naturaleza",
+      "missing_evs": "{{slot}}: EVs en cero",
+      "missing_ability": "{{slot}}: falta habilidad",
+      "missing_item": "{{slot}}: falta objeto",
+      "missing_moves": "{{slot}}: faltan movimientos"
+    }
   },
   "my_teams": {
     "title": "Mis equipos",
@@ -173,12 +207,13 @@
     "members": "Miembros del equipo",
     "item": "Objeto",
     "ability": "Habilidad",
-    "tera_type": "Tera Type",
     "moves": "Movimientos",
-    "limited_info": "La fuente solo expone el objeto y la Tera de cada miembro.",
+    "limited_info": "La fuente solo expone el objeto de cada miembro.",
     "battles": "Batallas analizadas",
     "tournaments_analyzed": "Torneos analizados",
-    "copy_to_builder": "Copiar al Constructor"
+    "copy_to_builder": "Copiar al Constructor",
+    "filter_by_pokemon": "Filtrar por Pokémon (hasta 6)",
+    "filter_no_matches": "Ningún equipo contiene todos los Pokémon seleccionados."
   },
   "damage_calc": {
     "title": "Calculador de daño",

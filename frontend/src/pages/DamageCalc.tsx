@@ -269,6 +269,7 @@ function SidePanel({ title, side, setSide, pokedex, items, moves, showMoves }: S
           <PokemonSprite
             url={side.species.sprite_url}
             fallbackUrl={side.species.sprite_fallback_url}
+            homeUrl={side.species.home_sprite_url}
             name={side.species.name}
             size={56}
           />

@@ -37,6 +37,19 @@ export type MovesetUsage = { moves: Array<string>, count: number, usage_percent:
 
 export type Nature = "Hardy" | "Lonely" | "Brave" | "Adamant" | "Naughty" | "Bold" | "Docile" | "Relaxed" | "Impish" | "Lax" | "Timid" | "Hasty" | "Serious" | "Jolly" | "Naive" | "Modest" | "Mild" | "Quiet" | "Bashful" | "Rash" | "Calm" | "Gentle" | "Sassy" | "Careful" | "Quirky";
 
+export type PikalyticsEntry = { species_id: string, species_display: string, sprite_url: string | null, usage_percent: number | null, common_items: Array<PikalyticsItem>, common_abilities: Array<PikalyticsItem>, common_moves: Array<PikalyticsItem>, common_teammates: Array<PikalyticsTeammate>, common_tera: Array<PikalyticsItem>, ev_spreads: Array<PikalyticsEvSpread>, source_url: string, };
+
+export type PikalyticsEvSpread = { 
+/**
+ * Free-form label (e.g. "252 HP / 4 Def / 252 SpA"). Pikalytics renders
+ * spreads as plain text and we keep that representation verbatim.
+ */
+label: string, usage_percent: number | null, nature: string | null, };
+
+export type PikalyticsItem = { name: string, usage_percent: number | null, };
+
+export type PikalyticsTeammate = { species: string, usage_percent: number | null, sprite_url: string | null, };
+
 export type Pokemon = { 
 /**
  * Showdown canonical id (e.g. "incineroar").
@@ -54,7 +67,12 @@ num: number, types: Array<PokemonType>, base_stats: Stats, abilities: Array<stri
  * Secondary sprite URL tried by the frontend when `sprite_url` 404s.
  * Variant-aware: indexed by slug, not dex number.
  */
-sprite_fallback_url: string | null, };
+sprite_fallback_url: string | null, 
+/**
+ * High-resolution PokéAPI Home render, keyed by national dex number.
+ * `None` for cosmetic forms that share a dex number with their base.
+ */
+home_sprite_url: string | null, };
 
 /**
  * A single competitive set (item, ability, nature, EVs, moves).
@@ -74,7 +92,7 @@ moves: Array<string>, };
 
 export type PokemonType = "Normal" | "Fire" | "Water" | "Electric" | "Grass" | "Ice" | "Fighting" | "Poison" | "Ground" | "Flying" | "Psychic" | "Bug" | "Rock" | "Ghost" | "Dragon" | "Dark" | "Steel" | "Fairy" | "Stellar";
 
-export type PokemonUsage = { species: string, usage_percent: number, count: number, top_items: Array<UsageEntry>, top_moves: Array<UsageEntry>, top_abilities: Array<UsageEntry>, top_tera: Array<UsageEntry>, top_teammates: Array<UsageEntry>, top_natures: Array<UsageEntry>, common_movesets: Array<MovesetUsage>, sprite_url: string, };
+export type PokemonUsage = { species: string, usage_percent: number, count: number, top_items: Array<UsageEntry>, top_moves: Array<UsageEntry>, top_abilities: Array<UsageEntry>, top_tera: Array<UsageEntry>, top_teammates: Array<UsageEntry>, top_natures: Array<UsageEntry>, common_movesets: Array<MovesetUsage>, sprite_url: string, sprite_fallback_url: string | null, };
 
 /**
  * Bundle of curated sets for a Pokémon, split by play style.
@@ -101,7 +119,7 @@ export type TeraUsage = { tera_type: string, usage_percent: number, };
 
 export type TopTeam = { tournament: string, placing: number | null, player: string | null, country: string | null, record: string | null, members: Array<TopTeamMember>, };
 
-export type TopTeamMember = { species: string, sprite_url: string, item: string | null, tera_type: string | null, ability: string | null, nature: string | null, moves: Array<string>, };
+export type TopTeamMember = { species: string, sprite_url: string, sprite_fallback_url: string | null, item: string | null, tera_type: string | null, ability: string | null, nature: string | null, moves: Array<string>, };
 
 export type TopTeamsMeta = { tournaments_analyzed: number, battles_analyzed: number, source: string, from_date: string | null, to_date: string | null, };
 

@@ -5,11 +5,10 @@ import { ExternalLink, RefreshCw } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
+import { formatDate } from "../lib/formatDate";
 import { type ChampionsTournament } from "../lib/types";
 import { UsageBarChart, type UsageBarItem } from "../components/charts/UsageBarChart";
 import { TopList } from "../components/charts/TopList";
-import { typeLabel } from "../lib/labels";
-import type { PokemonType } from "../lib/types";
 import { PokemonSprite } from "../components/pokemon/PokemonSprite";
 import { PokemonDetailModal } from "../components/pokemon/PokemonDetailModal";
 import { FormatSelector } from "../components/ui/FormatSelector";
@@ -40,7 +39,7 @@ async function openExternal(url: string) {
 }
 
 export function Dashboard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const qc = useQueryClient();
   const localize = useLocalize();
   const format = useDashboardStore((s) => s.format);
@@ -65,11 +64,21 @@ export function Dashboard() {
     queryKey: queryKeys.meta(format, tournamentCount),
     queryFn: () => ipc.getMetaStats(format, tournamentCount),
   });
-  const { data: championsReport, isFetching: championsFetching } = useQuery({
+  const { data: championsReportRaw, isFetching: championsFetching } = useQuery({
     queryKey: queryKeys.championsReport(format, tournamentLimit),
     queryFn: () => ipc.listChampionsTournaments(format, tournamentLimit),
     staleTime: 30 * 60 * 1000,
   });
+  const championsReport = championsReportRaw
+    ? {
+        ...championsReportRaw,
+        tournaments: championsReportRaw.tournaments.filter(
+          (t) =>
+            !(t.name ?? "").toUpperCase().includes("TCG") &&
+            !(t.format ?? "").toUpperCase().includes("TCG"),
+        ),
+      }
+    : championsReportRaw;
 
   const topPokemon = data?.pokemon.slice(0, 15) ?? [];
   const chartPokemon: UsageBarItem[] = topPokemon.map((p) => ({
@@ -86,7 +95,6 @@ export function Dashboard() {
   const topItems = data?.top_items ?? [];
   const topMoves = data?.top_moves ?? [];
   const topAbilities = data?.top_abilities ?? [];
-  const topTera = data?.top_tera ?? [];
 
   return (
     <div className="space-y-6">
@@ -99,8 +107,8 @@ export function Dashboard() {
                 <>
                   {t("dashboard.tournaments_range", {
                     count: data.tournaments_used,
-                    from: data.from_date,
-                    to: data.to_date,
+                    from: formatDate(data.from_date, i18n.language),
+                    to: formatDate(data.to_date, i18n.language),
                     source: data.source,
                   })}
                 </>
@@ -208,19 +216,6 @@ export function Dashboard() {
             </div>
           </section>
 
-          {format !== "regulation-m-a" && (
-            <section className="card">
-              <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
-                {t("dashboard.top_tera")}
-              </h2>
-              <TopList
-                data={topTera}
-                limit={10}
-                labelFor={(name) => typeLabel(t, name as PokemonType)}
-              />
-            </section>
-          )}
-
           <section>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
               {topPokemon.map((p) => (
@@ -280,7 +275,7 @@ export function Dashboard() {
                     {tour.name}
                   </div>
                   <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                    {tour.date && <span>{tour.date}</span>}
+                    {tour.date && <span>{formatDate(tour.date, i18n.language)}</span>}
                     {tour.players != null && (
                       <span> · {tour.players} {t("dashboard.players")}</span>
                     )}
@@ -405,7 +400,7 @@ function MetaSkeleton({ label }: { label: string }) {
 }
 
 function UpcomingTournamentsSection() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.upcomingTournaments(),
     queryFn: () => ipc.listUpcomingTournaments(),
@@ -439,7 +434,7 @@ function UpcomingTournamentsSection() {
                   {ev.name}
                 </div>
                 <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                  <span>{ev.date}</span>
+                  <span>{formatDate(ev.date, i18n.language)}</span>
                   {ev.players != null && (
                     <span> · {ev.players} {t("dashboard.players")}</span>
                   )}

@@ -46,6 +46,19 @@ pub fn sprite_url(species: &str) -> String {
     primary_sprite_url(species)
 }
 
+/// PokéAPI Home render (512×512) for a national dex number. This is the most
+/// reliable fallback for species whose Showdown slug has drifted or who lack a
+/// sprite in the community CDN.
+pub fn home_sprite_url(num: u32) -> Option<String> {
+    if num == 0 {
+        return None;
+    }
+    Some(format!(
+        "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/{}.png",
+        num
+    ))
+}
+
 /// Build the Showdown sprite slug from a pre-split base + forme pair. Prefer
 /// this when the caller already has the split (e.g. parsed from
 /// `pokedex.json`), because display-name heuristics can't tell "Ho-Oh" (the

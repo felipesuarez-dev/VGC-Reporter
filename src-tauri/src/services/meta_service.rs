@@ -1,5 +1,5 @@
 use crate::adapters::smogon_client::{ChaosStats, SmogonClient};
-use crate::adapters::sprite_resolver::sprite_url;
+use crate::adapters::sprite_resolver::{fallback_sprite_url, primary_sprite_url};
 use crate::adapters::LimitlessClient;
 use crate::config;
 use crate::domain::format::Format;
@@ -42,7 +42,7 @@ impl MetaService {
         tournament_count: Option<usize>,
     ) -> Result<MetaSnapshot, AppError> {
         let count = tournament_count.unwrap_or(config::TOURNAMENTS_PER_SNAPSHOT);
-        let cache_key = format!("meta-snapshot-v4::{}::{}", format.cache_id(), count);
+        let cache_key = format!("meta-snapshot-v6::{}::{}", format.cache_id(), count);
         if let Some(bytes) = self.cache.get(&cache_key)? {
             if let Ok(snap) = serde_json::from_slice::<MetaSnapshot>(&bytes) {
                 return Ok(snap);
@@ -107,7 +107,6 @@ pub(crate) fn snapshot_from_smogon(
     let mut global_items: HashMap<String, f64> = HashMap::new();
     let mut global_moves: HashMap<String, f64> = HashMap::new();
     let mut global_abilities: HashMap<String, f64> = HashMap::new();
-    let mut global_tera: HashMap<String, f64> = HashMap::new();
 
     for entry in chaos.data.values() {
         for (item, ratio) in &entry.items {
@@ -123,11 +122,6 @@ pub(crate) fn snapshot_from_smogon(
         for (ab, ratio) in &entry.abilities {
             *global_abilities
                 .entry(usage_aggregator::prettify_public(ab))
-                .or_insert(0.0) += entry.usage * ratio;
-        }
-        for (tera, ratio) in &entry.tera_types {
-            *global_tera
-                .entry(usage_aggregator::prettify_public(tera))
                 .or_insert(0.0) += entry.usage * ratio;
         }
     }
@@ -171,16 +165,7 @@ pub(crate) fn snapshot_from_smogon(
                     count: 0,
                 })
                 .collect(),
-            top_tera: entry
-                .tera_types
-                .into_iter()
-                .take(5)
-                .map(|(k, v)| UsageEntry {
-                    name: usage_aggregator::prettify_public(&k),
-                    usage_percent: (v * 100.0) as f32,
-                    count: 0,
-                })
-                .collect(),
+            top_tera: Vec::new(),
             top_teammates: entry
                 .teammates
                 .into_iter()
@@ -193,7 +178,8 @@ pub(crate) fn snapshot_from_smogon(
                 .collect(),
             top_natures: Vec::new(),
             common_movesets: Vec::new(),
-            sprite_url: sprite_url(&name),
+            sprite_url: primary_sprite_url(&name),
+            sprite_fallback_url: fallback_sprite_url(&name),
         })
         .collect();
     pokemon.sort_by(|a, b| b.usage_percent.partial_cmp(&a.usage_percent).unwrap());
@@ -212,7 +198,7 @@ pub(crate) fn snapshot_from_smogon(
         top_items: top_n_normalized(&global_items, 15),
         top_moves: top_n_normalized(&global_moves, 20),
         top_abilities: top_n_normalized(&global_abilities, 10),
-        top_tera: top_n_normalized(&global_tera, 10),
+        top_tera: Vec::new(),
         from_date: None,
         to_date: None,
     }
@@ -282,7 +268,10 @@ mod tests {
             !snap.top_abilities.is_empty(),
             "top_abilities should be populated"
         );
-        assert!(!snap.top_tera.is_empty(), "top_tera should be populated");
+        assert!(
+            snap.top_tera.is_empty(),
+            "top_tera is disabled while Regulation M-A is Tera-less"
+        );
         assert_eq!(snap.pokemon.len(), 3);
         assert_eq!(snap.total_entries, 3, "total_entries mirrors species count");
         assert!(snap.pokemon[0].usage_percent >= snap.pokemon[1].usage_percent);

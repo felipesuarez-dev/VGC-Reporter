@@ -8,6 +8,8 @@ import type { ChampionsTournament, Format, TopTeam } from "../lib/types";
 import { MiniTeam } from "../components/pokemon/MiniTeam";
 import { TopTeamDetailModal } from "../components/team/TopTeamDetailModal";
 import { TournamentStandingsDrawer } from "../components/tournament/TournamentStandingsDrawer";
+import { PokemonMultiSelect } from "../components/filters/PokemonMultiSelect";
+import { formatDate } from "../lib/formatDate";
 
 const FORMAT: Format = "regulation-m-a";
 const RECENT_INITIAL = 5;
@@ -21,18 +23,28 @@ function flagEmoji(code: string | null | undefined): string {
   return String.fromCodePoint(up.charCodeAt(0) + a, up.charCodeAt(1) + a);
 }
 
+function canonical(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
 export function TopTeams() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const qc = useQueryClient();
   const [selectedTournament, setSelectedTournament] =
     useState<ChampionsTournament | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<TopTeam | null>(null);
   const [visibleCards, setVisibleCards] = useState(CARDS_PAGE);
   const [recentExpanded, setRecentExpanded] = useState(false);
+  const [speciesFilter, setSpeciesFilter] = useState<string[]>([]);
 
   const { data: report, isLoading, isError, isFetching } = useQuery({
     queryKey: queryKeys.topTeams(FORMAT),
     queryFn: () => ipc.getTopTeams(FORMAT, 100),
+  });
+  const { data: pokedex = [] } = useQuery({
+    queryKey: queryKeys.pokedex.all,
+    queryFn: () => ipc.listPokemon(),
+    staleTime: 24 * 60 * 60 * 1000,
   });
   const { data: championsReport, isFetching: tournamentsFetching } = useQuery({
     queryKey: queryKeys.championsReport(FORMAT, RECENT_EXPANDED),
@@ -42,7 +54,13 @@ export function TopTeams() {
 
   const teams = report?.teams ?? [];
   const meta = report?.meta;
-  const visibleTeams = teams.slice(0, visibleCards);
+  const filteredTeams = speciesFilter.length === 0
+    ? teams
+    : teams.filter((tt) => {
+        const memberIds = new Set(tt.members.map((m) => canonical(m.species)));
+        return speciesFilter.every((id) => memberIds.has(id));
+      });
+  const visibleTeams = filteredTeams.slice(0, visibleCards);
 
   const recentLimit = recentExpanded ? RECENT_EXPANDED : RECENT_INITIAL;
   const recentTournaments =
@@ -94,7 +112,8 @@ export function TopTeams() {
           </span>
           {meta.from_date && meta.to_date && (
             <span>
-              {meta.from_date} — {meta.to_date}
+              {formatDate(meta.from_date, i18n.language)} —{" "}
+              {formatDate(meta.to_date, i18n.language)}
             </span>
           )}
           <span>
@@ -117,6 +136,23 @@ export function TopTeams() {
       {!isLoading && teams.length === 0 && (
         <div className="card" style={{ color: "var(--text-muted)" }}>
           {t("common.empty")}
+        </div>
+      )}
+
+      {teams.length > 0 && (
+        <div className="card space-y-1">
+          <label className="label">{t("top_teams.filter_by_pokemon")}</label>
+          <PokemonMultiSelect
+            pokedex={pokedex}
+            selected={speciesFilter}
+            onChange={setSpeciesFilter}
+          />
+        </div>
+      )}
+
+      {speciesFilter.length > 0 && filteredTeams.length === 0 && (
+        <div className="card" style={{ color: "var(--text-muted)" }}>
+          {t("top_teams.filter_no_matches")}
         </div>
       )}
 
@@ -178,7 +214,7 @@ export function TopTeams() {
         ))}
       </div>
 
-      {teams.length > visibleCards && (
+      {filteredTeams.length > visibleCards && (
         <div className="flex justify-center">
           <button
             type="button"
@@ -224,7 +260,7 @@ export function TopTeams() {
                     {tour.name}
                   </div>
                   <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                    {tour.date && <span>{tour.date}</span>}
+                    {tour.date && <span>{formatDate(tour.date, i18n.language)}</span>}
                     {tour.players != null && (
                       <span> · {tour.players} {t("dashboard.players")}</span>
                     )}

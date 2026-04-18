@@ -95,6 +95,7 @@ mod tests {
             players: Some(80),
             format: Some("M-A".into()),
             organizer_id: None,
+            game: None,
         };
         assert!(to_upcoming(mk("past", Some("2026-04-10")), today, window).is_none());
         assert!(to_upcoming(mk("far", Some("2026-06-01")), today, window).is_none());

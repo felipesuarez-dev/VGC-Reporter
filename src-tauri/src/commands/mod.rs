@@ -1,5 +1,6 @@
 pub mod champions;
 pub mod meta;
+pub mod pikalytics;
 pub mod pokedex;
 pub mod settings;
 pub mod teams;

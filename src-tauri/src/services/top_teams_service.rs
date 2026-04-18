@@ -1,4 +1,6 @@
-use crate::adapters::sprite_resolver::{canonical_id, sprite_url};
+use crate::adapters::sprite_resolver::{
+    canonical_display_name, fallback_sprite_url, primary_sprite_url,
+};
 use crate::adapters::LimitlessClient;
 use crate::config;
 use crate::domain::format::Format;
@@ -50,6 +52,8 @@ pub struct TopTeamsReport {
 pub struct TopTeamMember {
     pub species: String,
     pub sprite_url: String,
+    #[serde(default)]
+    pub sprite_fallback_url: Option<String>,
     pub item: Option<String>,
     pub tera_type: Option<String>,
     #[serde(default)]
@@ -70,7 +74,7 @@ impl TopTeamsService {
         format: Format,
         limit: usize,
     ) -> Result<TopTeamsReport, AppError> {
-        let key = format!("top-teams::v3::{}::{}", format.cache_id(), limit);
+        let key = format!("top-teams::v5::{}::{}", format.cache_id(), limit);
         if let Some(bytes) = self.cache.get(&key)? {
             if let Ok(report) = serde_json::from_slice::<TopTeamsReport>(&bytes) {
                 return Ok(report);
@@ -104,12 +108,17 @@ impl TopTeamsService {
                 let members = deck
                     .into_iter()
                     .filter_map(|e| {
-                        let species = e.species_name()?.to_string();
+                        let raw = e.species_name()?.to_string();
+                        let species = canonical_display_name(&raw);
+                        if species.is_empty() {
+                            return None;
+                        }
                         Some(TopTeamMember {
-                            sprite_url: sprite_url(&canonical_id(&species)),
+                            sprite_url: primary_sprite_url(&species),
+                            sprite_fallback_url: fallback_sprite_url(&species),
                             species,
                             item: e.item.clone(),
-                            tera_type: e.tera_value().map(|v| v.to_string()),
+                            tera_type: None,
                             ability: e.ability.clone(),
                             nature: e.nature.clone(),
                             moves: e.moves.clone().unwrap_or_default(),
@@ -117,6 +126,11 @@ impl TopTeamsService {
                     })
                     .collect::<Vec<_>>();
                 if members.len() < 3 {
+                    tracing::warn!(
+                        tournament = %t.id,
+                        members = members.len(),
+                        "skipping team: fewer than 3 valid members after normalization",
+                    );
                     continue;
                 }
                 out.push(TopTeam {

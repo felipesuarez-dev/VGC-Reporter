@@ -31,6 +31,7 @@ export function PokemonCard({ pokemon, usage }: Props) {
       <PokemonSprite
         url={pokemon.sprite_url}
         fallbackUrl={pokemon.sprite_fallback_url}
+        homeUrl={pokemon.home_sprite_url}
         name={pokemon.name}
         size={80}
       />

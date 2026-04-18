@@ -19,6 +19,7 @@ import { cn } from "../lib/cn";
 import { useDashboardStore } from "../stores/dashboardStore";
 import { usePokedexStore, type PokedexSort } from "../stores/pokedexStore";
 import { useLocalize } from "../hooks/useTranslations";
+import { useLearnsetsIndex } from "../hooks/useLearnsetsIndex";
 
 const ALL_GENERATIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
@@ -38,6 +39,7 @@ export function Pokedex() {
   const [query, setQuery] = useState("");
   const [type, setType] = useState<PokemonType | "">("");
   const [ability, setAbility] = useState<string | null>(null);
+  const [move, setMove] = useState<string | null>(null);
   const [generation, setGeneration] = useState<number | "">("");
   const [weakAgainst, setWeakAgainst] = useState<PokemonType[]>([]);
   const [strongAgainst, setStrongAgainst] = useState<PokemonType[]>([]);
@@ -57,6 +59,14 @@ export function Pokedex() {
     queryKey: queryKeys.meta(format),
     queryFn: () => ipc.getMetaStats(format),
   });
+
+  const { data: allMoves = [] } = useQuery({
+    queryKey: queryKeys.moves.all,
+    queryFn: () => ipc.listMoves(),
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+
+  const { data: learnsetsIndex } = useLearnsetsIndex();
 
   useEffect(() => {
     if (scrollY > 0) {
@@ -88,10 +98,19 @@ export function Pokedex() {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [data]);
 
+  const speciesLearningMove = useMemo(() => {
+    if (!move || !learnsetsIndex) return null;
+    const moveId = canonicalKey(move);
+    const list = learnsetsIndex[moveId];
+    if (!list) return new Set<string>();
+    return new Set(list);
+  }, [move, learnsetsIndex]);
+
   const filtered = useMemo(() => {
     const list = data ?? [];
     return list.filter((p) => {
       if (ability && !p.abilities.includes(ability)) return false;
+      if (speciesLearningMove && !speciesLearningMove.has(p.id)) return false;
       if (generation !== "" && generationOf(p.num) !== generation) return false;
       if (weakAgainst.length > 0) {
         const anyWeak = weakAgainst.some(
@@ -106,7 +125,7 @@ export function Pokedex() {
       }
       return true;
     });
-  }, [data, ability, generation, weakAgainst, strongAgainst]);
+  }, [data, ability, speciesLearningMove, generation, weakAgainst, strongAgainst]);
 
   const sorted = useMemo(() => {
     const list = [...filtered];
@@ -140,6 +159,7 @@ export function Pokedex() {
     query ||
     type ||
     ability ||
+    move ||
     generation !== "" ||
     weakAgainst.length > 0 ||
     strongAgainst.length > 0;
@@ -148,6 +168,7 @@ export function Pokedex() {
     setQuery("");
     setType("");
     setAbility(null);
+    setMove(null);
     setGeneration("");
     setWeakAgainst([]);
     setStrongAgainst([]);
@@ -210,6 +231,17 @@ export function Pokedex() {
               onChange={(a) => setAbility(a)}
               getOptionLabel={(a) => localize("ability", a)}
               placeholder={t("pokedex.filter_ability_placeholder")}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <label className="label">{t("pokedex.filter_move")}</label>
+            <SearchSelect<string>
+              value={move}
+              options={allMoves}
+              onChange={(m) => setMove(m)}
+              getOptionLabel={(m) => localize("move", m)}
+              placeholder={t("pokedex.filter_move_placeholder")}
               className="mt-1"
             />
           </div>

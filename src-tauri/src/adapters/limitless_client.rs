@@ -63,6 +63,7 @@ impl LimitlessClient {
         limit: usize,
     ) -> Result<Vec<LimitlessTournamentSummary>, AppError> {
         let all = self.list_tournaments(format, 100).await?;
+        let all = exclude_non_vgc(all);
         let filtered = match format {
             Format::RegulationMA | Format::ChampionsSingles => filter_champions(all, limit),
             _ => all.into_iter().take(limit).collect(),
@@ -83,8 +84,24 @@ impl LimitlessClient {
         );
         let list: Vec<LimitlessTournamentSummary> =
             self.http.get_json(&url, config::TTL_LIMITLESS_LIST).await?;
-        Ok(list)
+        Ok(exclude_non_vgc(list))
     }
+}
+
+/// Defensive filter: even though the query is `game=VGC`, some older entries
+/// slip through with `game="TCG"` or a TCG-looking `format`. Remove them so
+/// they never reach the dashboard.
+fn exclude_non_vgc(list: Vec<LimitlessTournamentSummary>) -> Vec<LimitlessTournamentSummary> {
+    list.into_iter()
+        .filter(|t| {
+            let game = t.game.as_deref().unwrap_or("").to_uppercase();
+            if game.contains("TCG") {
+                return false;
+            }
+            let fmt = t.format.as_deref().unwrap_or("");
+            !fmt.to_uppercase().contains("TCG")
+        })
+        .collect()
 }
 
 fn filter_champions(
@@ -120,6 +137,8 @@ pub struct LimitlessTournamentSummary {
     pub players: Option<u32>,
     #[serde(default)]
     pub format: Option<String>,
+    #[serde(default)]
+    pub game: Option<String>,
     #[serde(default, alias = "organizer")]
     pub organizer_id: Option<String>,
 }
@@ -288,6 +307,7 @@ mod tests {
                 players: Some(50),
                 format: Some("SVI".into()),
                 organizer_id: None,
+                game: None,
             },
             LimitlessTournamentSummary {
                 id: "2".into(),
@@ -296,6 +316,7 @@ mod tests {
                 players: Some(120),
                 format: Some("M-A".into()),
                 organizer_id: None,
+                game: None,
             },
             LimitlessTournamentSummary {
                 id: "3".into(),
@@ -304,6 +325,7 @@ mod tests {
                 players: Some(80),
                 format: None,
                 organizer_id: None,
+                game: None,
             },
             LimitlessTournamentSummary {
                 id: "4".into(),
@@ -312,6 +334,7 @@ mod tests {
                 players: Some(32),
                 format: Some("m-a".into()),
                 organizer_id: None,
+                game: None,
             },
         ];
         let kept = filter_champions(list, 10);
@@ -329,6 +352,7 @@ mod tests {
                 players: None,
                 format: None,
                 organizer_id: None,
+                game: None,
             })
             .collect();
         let kept = filter_champions(list, 10);

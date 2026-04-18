@@ -46,6 +46,8 @@ pub fn run() {
             commands::pokedex::list_moves_for_species,
             commands::pokedex::get_pokemon_sets,
             commands::pokedex::get_entity_descriptions,
+            commands::pokedex::get_learnsets_index,
+            commands::pokedex::get_move_catalog,
             commands::teams::save_team,
             commands::teams::list_teams,
             commands::teams::get_team,
@@ -60,6 +62,7 @@ pub fn run() {
             commands::champions::get_tournament_standings,
             commands::translations::get_translation_table,
             commands::upcoming::list_upcoming_tournaments,
+            commands::pikalytics::get_pikalytics_entry,
         ])
         .run(tauri::generate_context!())
         .expect("error while running VGC-Reporter");

@@ -15,6 +15,10 @@ export const queryKeys = {
   topTeams: (format: Format) => ["topTeams", format] as const,
   items: { all: ["items", "all"] as const },
   moves: { all: ["moves", "all"] as const },
+  learnsetsIndex: () => ["learnsets-index"] as const,
+  moveCatalog: () => ["move-catalog"] as const,
+  pikalyticsEntry: (species: string, lang: string) =>
+    ["pikalytics", species, lang] as const,
   sets: (species: string) => ["sets", species] as const,
   championsReport: (format: Format, limit: number) =>
     ["champions-report", format, limit] as const,
