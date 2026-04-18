@@ -323,14 +323,6 @@ function StandingDecklist({ decklist }: { decklist: DecklistPokemon[] }) {
                 {localize("ability", p.ability)}
               </div>
             )}
-            {p.tera_type && (
-              <div style={{ color: "var(--text-muted)" }}>
-                <span style={{ color: "var(--text-dim)" }}>
-                  {t("top_teams.tera_type")}:
-                </span>{" "}
-                {p.tera_type}
-              </div>
-            )}
             {p.moves.length > 0 && (
               <div className="mt-0.5" style={{ color: "var(--text)" }}>
                 {p.moves.map((mv) => localize("move", mv)).join(" · ")}

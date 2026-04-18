@@ -10,6 +10,7 @@ use crate::services::usage_aggregator::prettify_public;
 use crate::storage::CacheRepo;
 use futures::stream::{self, StreamExt};
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::sync::Arc;
 use ts_rs::TS;
 
@@ -192,10 +193,16 @@ impl TopTeamsService {
             }
         }
 
+        let tournaments_analyzed = out
+            .iter()
+            .map(|t| t.tournament.as_str())
+            .collect::<HashSet<_>>()
+            .len() as u32;
+
         Ok(TopTeamsReport {
             teams: out,
             meta: TopTeamsMeta {
-                tournaments_analyzed: 0,
+                tournaments_analyzed,
                 battles_analyzed: total,
                 source: "labmaus.net + pokepast.es".into(),
                 from_date: Some(from),

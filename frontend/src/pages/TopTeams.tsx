@@ -10,6 +10,7 @@ import { TopTeamDetailModal } from "../components/team/TopTeamDetailModal";
 import { TournamentStandingsDrawer } from "../components/tournament/TournamentStandingsDrawer";
 import { PokemonMultiSelect } from "../components/filters/PokemonMultiSelect";
 import { formatDate } from "../lib/formatDate";
+import { formatLabel } from "../lib/labels";
 
 const FORMAT: Format = "regulation-m-a";
 const RECENT_INITIAL = 5;
@@ -100,6 +101,9 @@ export function TopTeams() {
           className="card flex flex-wrap gap-x-4 gap-y-1 text-xs"
           style={{ color: "var(--text-muted)" }}
         >
+          <span style={{ color: "var(--text)" }}>
+            {formatLabel(t, FORMAT)}
+          </span>
           <span>
             {t("top_teams.tournaments_analyzed")}:{" "}
             <span style={{ color: "var(--text)" }}>
@@ -233,7 +237,9 @@ export function TopTeams() {
           {t("dashboard.recent_tournaments")}
         </h2>
         <p className="mb-3 text-[11px]" style={{ color: "var(--text-dim)" }}>
-          {t("dashboard.tournaments_for_format", { format: FORMAT })}
+          {t("dashboard.tournaments_for_format", {
+            format: formatLabel(t, FORMAT),
+          })}
         </p>
         {(tournamentsFetching || !championsReport) && (
           <p className="text-xs" style={{ color: "var(--text-dim)" }}>

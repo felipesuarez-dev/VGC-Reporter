@@ -237,16 +237,6 @@ export function TopTeamDetailModal({ team, onClose }: Props) {
                         {t(`natures.${m.nature}`, { defaultValue: m.nature })}
                       </div>
                     )}
-                    {m.tera_type && (
-                      <div style={{ color: "var(--text-muted)" }}>
-                        <span style={{ color: "var(--text-dim)" }}>
-                          {t("top_teams.tera_type")}:
-                        </span>{" "}
-                        <span style={{ color: "var(--text)" }}>
-                          {t(`types.${m.tera_type}`, { defaultValue: m.tera_type })}
-                        </span>
-                      </div>
-                    )}
                     {m.evs && (
                       <div style={{ color: "var(--text-muted)" }}>
                         <span style={{ color: "var(--text-dim)" }}>EVs:</span>{" "}

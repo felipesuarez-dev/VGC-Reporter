@@ -6,6 +6,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
 import { formatDate } from "../lib/formatDate";
+import { formatLabel } from "../lib/labels";
 import { type ChampionsTournament } from "../lib/types";
 import { UsageBarChart, type UsageBarItem } from "../components/charts/UsageBarChart";
 import { TopList } from "../components/charts/TopList";
@@ -241,7 +242,9 @@ export function Dashboard() {
             : t("dashboard.recent_tournaments")}
         </h2>
         <p className="mb-3 text-[11px]" style={{ color: "var(--text-dim)" }}>
-          {t("dashboard.tournaments_for_format", { format })}
+          {t("dashboard.tournaments_for_format", {
+            format: formatLabel(t, format),
+          })}
         </p>
         {(championsFetching || !championsReport) && (
           <p className="text-xs" style={{ color: "var(--text-dim)" }}>

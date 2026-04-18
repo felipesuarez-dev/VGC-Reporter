@@ -1,5 +1,5 @@
 import type { TFunction } from "i18next";
-import type { Nature, PokemonType, Violation } from "./types";
+import type { Format, Nature, PokemonType, Violation } from "./types";
 
 export type Weather = "None" | "Sun" | "Rain" | "Sand" | "Snow";
 export type Terrain = "None" | "Electric" | "Grassy" | "Misty" | "Psychic";
@@ -28,6 +28,23 @@ export function weatherLabel(t: TFunction, weather: Weather): string {
 
 export function terrainLabel(t: TFunction, terrain: Terrain): string {
   return t(`terrain.${terrain}`, { defaultValue: terrain });
+}
+
+const FORMAT_NAME: Record<Format, string> = {
+  "regulation-m-a": "Regulation M-A",
+  "regulation-i": "Regulation I",
+};
+
+const FORMAT_SEASON_KEY: Partial<Record<Format, string>> = {
+  "regulation-m-a": "regulations.reg_ma_s1",
+};
+
+export function formatLabel(t: TFunction, format: Format): string {
+  const name = FORMAT_NAME[format] ?? format;
+  const seasonKey = FORMAT_SEASON_KEY[format];
+  if (!seasonKey) return name;
+  const season = t(seasonKey, { defaultValue: "" });
+  return season ? `${name} (${season})` : name;
 }
 
 export function prettifyName(s: string): string {

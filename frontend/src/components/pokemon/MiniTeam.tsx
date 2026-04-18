@@ -65,12 +65,6 @@ function SpriteCell({ member, size }: { member: MiniTeamMember; size: number }) 
       value: t(`natures.${member.nature}`, { defaultValue: member.nature }),
     });
   }
-  if (member.tera_type) {
-    lines.push({
-      label: t("top_teams.tera_type"),
-      value: t(`types.${member.tera_type}`, { defaultValue: member.tera_type }),
-    });
-  }
   const moves = (member.moves ?? []).filter(Boolean);
 
   return (
