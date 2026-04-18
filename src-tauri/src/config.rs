@@ -49,3 +49,8 @@ pub const TTL_POKEPASTE: i64 = 30 * 24 * 60 * 60; // 30d (pastes are immutable)
 // Dataset sizing
 pub const TOURNAMENTS_PER_SNAPSHOT: usize = 25;
 pub const LABMAUS_WINDOW_DAYS: i64 = 14;
+/// Half-window length for trending deltas (current 7d vs previous 7d).
+pub const LABMAUS_TRENDING_WINDOW_DAYS: i64 = 7;
+/// Minimum sample size (per window) to include a Pokemon in the trending list.
+/// Filters out noise from mons that only appeared once or twice.
+pub const TRENDING_MIN_SAMPLE: u32 = 5;
