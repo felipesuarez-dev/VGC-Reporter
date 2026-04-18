@@ -64,7 +64,18 @@ VGC-Reporter/
 
 ## Fuentes de datos externas
 
-Ver sección 4 del plan en `C:\Users\felip\.claude\plans\adaptive-humming-snowflake.md` o la tabla del `README.md`. En resumen: Limitless VGC API (torneos reales), Pokémon Showdown (data), Smogon (usage ladder), PokéAPI (fallback sprites).
+Tabla completa en `README.md`. Resumen:
+
+- **Labmaus** — primario para top teams, meta snapshot, trending y próximos torneos (Regulation M-A). Exige `Origin`/`Referer` en cada request; el `HttpClient` los inyecta para que no se filtren a otros hosts.
+- **Limitless VGC API** — torneos Champions + standings + decklists inline.
+- **Pokémon Showdown** — Pokédex, moves, items, abilities, sprites base.
+- **Smogon chaos JSON** — fallback de usage ladder cuando el formato es muy nuevo.
+- **pkmn/smogon data** — sets competitivos curados (Doubles + Singles).
+- **Pikalytics** — breakdown por especie (items, abilities, moves, Tera, compañeros, EV spreads) dentro del detalle de Pokémon.
+- **Pokepaste** — importación de equipos pegados; cache de 30 días (pastes inmutables).
+- **PokéAPI CSV** — nombres y flavor text bilingüe (EN/ES).
+
+Todo el fetching pasa por `HttpClient::get_cached` (SQLite TTL). No añadir `reqwest::Client::new()` directo en un service.
 
 ## Convenciones
 

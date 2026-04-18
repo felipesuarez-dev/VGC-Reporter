@@ -58,14 +58,17 @@ First launch downloads and caches Pokédex, moves, items, abilities and usage st
 
 | Source | Use | Notes |
 |---|---|---|
-| [Limitless VGC API](https://play.limitlesstcg.com/api/) | Tournaments, standings, decklists | Authoritative for VGC — aggregated in-app, decklists rendered inline |
+| [Labmaus](https://labmaus.net) | Top teams, meta snapshot, trending, upcoming tournaments | **Primary** for Regulation M-A — requires Origin/Referer pinning, injected server-side so no CORS leaks |
+| [Limitless VGC API](https://play.limitlesstcg.com/api/) | Tournaments, standings, decklists | Authoritative for Champions standings — decklists rendered inline |
 | [Pokémon Showdown](https://play.pokemonshowdown.com/data/) | Pokédex, moves, items, abilities, sprites | Fetched on first run, cached 7 days |
 | [Smogon chaos JSON](https://www.smogon.com/stats/) | Ladder usage fallback | Slug auto-discovery + rating ladder rewind |
 | [pkmn/smogon data](https://data.pkmn.cc/) | Curated competitive sets | Doubles + Singles slugs per format |
+| [Pikalytics](https://www.pikalytics.com/) | Per-species doubles breakdown (items, abilities, moves, Tera, teammates, EV spreads) | Surfaced inside the Pokémon detail modal |
+| [Pokepaste](https://pokepast.es) | Importable team pastes | Pastes are immutable — cached 30 days |
 | [PokéAPI CSV](https://github.com/PokeAPI/pokeapi/tree/master/data/v2/csv) | Localized names & flavor text | Bilingual (EN/ES) for abilities, moves, items — joined with Showdown data |
 | [Showdown dex sprites](https://play.pokemonshowdown.com/sprites/dex/) | Sprite fallback | Variant-aware HD render for Mega/Regional forms |
 
-**Not integrated** (no public API): Pikalytics, Pokemon-Zone, Porygon Labs, Champions Lab, Pokebase, Munchstats. Exposed as one-click external links — no scraping.
+**Not integrated** (no public API): Pokemon-Zone, Porygon Labs, Champions Lab, Pokebase, Munchstats. Exposed as one-click external links — no scraping.
 
 ## Architecture
 
@@ -130,9 +133,10 @@ VGC-Reporter/
 ├── frontend/                 React 19 + TS + Vite
 │   ├── src/
 │   │   ├── pages/            one file per route
-│   │   ├── components/       layout, pokemon, team, charts, ui
-│   │   ├── stores/           Zustand (teamBuilder, dashboard, filters)
-│   │   ├── lib/              ipc, queryKeys, types, cn
+│   │   ├── components/       layout, pokemon, team, charts, tournament, dashboard, filters, info, ui
+│   │   ├── stores/           Zustand (teamBuilder, dashboard, pokedex, filters, ui)
+│   │   ├── lib/              ipc, queryKeys, types (ts-rs generated), formatDate, labels, typeChart
+│   │   ├── hooks/            query + localization helpers
 │   │   ├── locales/          es.json / en.json
 │   │   └── i18n.ts
 │   └── public/logo.png
