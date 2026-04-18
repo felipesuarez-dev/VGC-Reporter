@@ -6,7 +6,7 @@ export type ChampionsReport = { tournaments: Array<ChampionsTournament>, fetched
 
 export type ChampionsTournament = { id: string, name: string, date: string | null, players: number | null, format: string | null, organizer_id: string | null, };
 
-export type DecklistPokemon = { id: string | null, name: string, item: string | null, ability: string | null, tera_type: string | null, moves: Array<string>, sprite_url: string, sprite_fallback_url: string | null, };
+export type DecklistPokemon = { id: string | null, name: string, item: string | null, ability: string | null, tera_type: string | null, moves: Array<string>, sprite_url: string, sprite_fallback_url: string | null, home_sprite_url: string | null, };
 
 export type EntityDescriptions = { items: { [key in string]?: LocalizedDescription }, moves: { [key in string]?: LocalizedDescription }, abilities: { [key in string]?: LocalizedDescription }, };
 

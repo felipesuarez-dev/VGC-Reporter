@@ -1,16 +1,24 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
+import type { TFunction } from "i18next";
+import { useNavigate } from "react-router-dom";
+import { ClipboardCopy, X } from "lucide-react";
 import { ipc } from "../../lib/ipc";
 import { queryKeys } from "../../lib/queryKeys";
 import type {
   ChampionsTournament,
   DecklistPokemon,
+  Team,
+  TeamMember,
   TournamentStanding,
 } from "../../lib/types";
+import { emptyTeamMember } from "../../lib/types";
 import { PokemonSprite } from "../pokemon/PokemonSprite";
+import { Tooltip } from "../ui/Tooltip";
 import { useLocalize } from "../../hooks/useTranslations";
+import { useTeamBuilder } from "../../stores/teamBuilderStore";
+import { computeMissingFields } from "../team/TopTeamDetailModal";
 
 interface Props {
   tournament: ChampionsTournament | null;
@@ -24,8 +32,45 @@ const flag = (code: string | null | undefined): string => {
   );
 };
 
+function standingToDraftTeam(
+  standing: TournamentStanding,
+  tournamentName: string,
+): Team {
+  const validMembers = standing.decklist.filter(
+    (p) => p && p.name && p.name.length > 0,
+  );
+  const members: TeamMember[] = Array.from({ length: 6 }, (_, i) => {
+    const p = validMembers[i];
+    if (!p) return emptyTeamMember();
+    return {
+      species: p.name,
+      item: p.item ?? null,
+      ability: p.ability ?? null,
+      nature: null,
+      tera_type: null,
+      moves: (p.moves ?? []).filter((mv) => mv && mv.length > 0),
+      evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+    };
+  });
+  const player = standing.player_name ?? standing.player_id ?? "?";
+  return {
+    id: null,
+    name: `${player} — ${tournamentName}`,
+    format: "regulation-m-a",
+    notes: null,
+    members,
+    created_at: null,
+    updated_at: null,
+  };
+}
+
 export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const setPendingImport = useTeamBuilder((s) => s.setPendingImport);
+  const setPendingImportMissing = useTeamBuilder(
+    (s) => s.setPendingImportMissing,
+  );
 
   useEffect(() => {
     if (!tournament) return;
@@ -43,6 +88,14 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
   });
 
   if (!tournament) return null;
+
+  const copyStandingToBuilder = (standing: TournamentStanding) => {
+    const draft = standingToDraftTeam(standing, tournament.name);
+    setPendingImport(draft);
+    setPendingImportMissing(computeMissingFields(draft, t));
+    onClose();
+    navigate("/team-builder");
+  };
 
   const winner = standings.data?.[0];
   const top = standings.data?.slice(0, 8) ?? [];
@@ -105,8 +158,14 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
 
         {winner && (
           <section className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
-            <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-amber-300">
-              {t("tournament.winner")}
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-amber-300">
+                {t("tournament.winner")}
+              </div>
+              <CopyStandingButton
+                t={t}
+                onClick={() => copyStandingToBuilder(winner)}
+              />
             </div>
             <div className="flex items-baseline gap-2">
               <span className="text-base">{flag(winner.country)}</span>
@@ -134,7 +193,11 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
               {t("tournament.standings")}
             </h3>
             {top.slice(1).map((s, i) => (
-              <StandingRow key={`${s.player_id ?? s.player_name ?? i}-${i}`} standing={s} />
+              <StandingRow
+                key={`${s.player_id ?? s.player_name ?? i}-${i}`}
+                standing={s}
+                onCopy={() => copyStandingToBuilder(s)}
+              />
             ))}
           </section>
         )}
@@ -143,7 +206,39 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
   );
 }
 
-function StandingRow({ standing }: { standing: TournamentStanding }) {
+function CopyStandingButton({
+  t,
+  onClick,
+}: {
+  t: TFunction;
+  onClick: () => void;
+}) {
+  const label = t("top_teams.copy_to_builder");
+  return (
+    <Tooltip content={label}>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
+        className="btn-ghost flex items-center gap-1 text-xs"
+        aria-label={label}
+      >
+        <ClipboardCopy size={14} />
+      </button>
+    </Tooltip>
+  );
+}
+
+function StandingRow({
+  standing,
+  onCopy,
+}: {
+  standing: TournamentStanding;
+  onCopy: () => void;
+}) {
+  const { t } = useTranslation();
   return (
     <div
       className="rounded-lg border p-3"
@@ -165,11 +260,14 @@ function StandingRow({ standing }: { standing: TournamentStanding }) {
             {standing.player_name ?? standing.player_id ?? "—"}
           </span>
         </div>
-        {standing.record && (
-          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-            {standing.record}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {standing.record && (
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+              {standing.record}
+            </span>
+          )}
+          <CopyStandingButton t={t} onClick={onCopy} />
+        </div>
       </div>
       <div className="mt-2">
         <StandingDecklist decklist={standing.decklist} />
@@ -197,7 +295,8 @@ function StandingDecklist({ decklist }: { decklist: DecklistPokemon[] }) {
         >
           <PokemonSprite
             url={p.sprite_url}
-            fallbackUrl={p.sprite_fallback_url}
+            fallbackUrl={p.sprite_fallback_url ?? undefined}
+            homeUrl={p.home_sprite_url ?? undefined}
             name={p.name}
             size={48}
           />

@@ -65,7 +65,7 @@ impl AppState {
             pokedex.clone(),
             cache.clone(),
         );
-        let champions = ChampionsReportService::new(limitless.clone());
+        let champions = ChampionsReportService::new(limitless.clone(), pokedex.clone());
         let upcoming = UpcomingTournamentsService::new(limitless.clone());
         let translations = TranslationsService::new(pokeapi);
         let pikalytics = PikalyticsService::new(pikalytics_client, cache.clone());

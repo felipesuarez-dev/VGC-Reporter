@@ -45,4 +45,6 @@ pub struct DecklistPokemon {
     pub moves: Vec<String>,
     pub sprite_url: String,
     pub sprite_fallback_url: Option<String>,
+    #[serde(default)]
+    pub home_sprite_url: Option<String>,
 }

@@ -1,5 +1,7 @@
 use crate::adapters::showdown_client::EntityDescriptions;
-use crate::adapters::sprite_resolver::canonical_id;
+use crate::adapters::sprite_resolver::{
+    canonical_display_name, canonical_id, fallback_sprite_url, primary_sprite_url,
+};
 use crate::adapters::{LocalizedDescription, PokeApiClient, ShowdownClient};
 use crate::config;
 use crate::domain::move_::MoveSummary;
@@ -101,6 +103,30 @@ impl PokedexService {
         let all = self.all().await?;
         let needle = canonical_id(id);
         Ok(all.into_iter().find(|p| canonical_id(&p.id) == needle))
+    }
+
+    /// Resolve the three sprite URLs (primary, fallback, HOME) for a raw
+    /// display-name string. Looks the canonical species up in the Pokédex so
+    /// callers inherit the exact same URLs that already render correctly in
+    /// the Pokédex UI — that's the load-bearing difference for multi-hyphen
+    /// formes (Calyrex-Ice-Rider, Urshifu-Rapid-Strike, ...) where the flat
+    /// `primary_sprite_url` heuristic would produce a CDN 404.
+    ///
+    /// Falls back to the heuristic URLs + no HOME when the species isn't
+    /// indexed (unknown names or transient dex fetch errors).
+    pub async fn sprite_urls_for(&self, raw: &str) -> (String, Option<String>, Option<String>) {
+        let canonical = canonical_display_name(raw);
+        let id = canonical_id(&canonical);
+        if !id.is_empty() {
+            if let Ok(Some(p)) = self.get(&id).await {
+                return (p.sprite_url, p.sprite_fallback_url, p.home_sprite_url);
+            }
+        }
+        (
+            primary_sprite_url(&canonical),
+            fallback_sprite_url(&canonical),
+            None,
+        )
     }
 
     pub async fn list_items(&self) -> Result<Vec<String>, AppError> {

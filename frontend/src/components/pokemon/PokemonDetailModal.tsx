@@ -148,10 +148,10 @@ function ModalBody({
   const localize = useLocalize();
   const total = Object.values(pokemon.base_stats).reduce((a, b) => a + b, 0);
 
-  const myUsage = useMemo(
-    () => metaUsage.find((u) => u.species.toLowerCase() === pokemon.name.toLowerCase()),
-    [metaUsage, pokemon.name],
-  );
+  const myUsage = useMemo(() => {
+    const target = canonicalSpeciesId(pokemon.name);
+    return metaUsage.find((u) => canonicalSpeciesId(u.species) === target);
+  }, [metaUsage, pokemon.name]);
 
   const weaknesses = useMemo(() => weaknessesOf(pokemon.types), [pokemon.types]);
   const resistances = useMemo(() => resistancesOf(pokemon.types), [pokemon.types]);

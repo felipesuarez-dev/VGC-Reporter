@@ -1,7 +1,5 @@
 use crate::adapters::labmaus_client::LabmausDiscoverTeam;
-use crate::adapters::sprite_resolver::{
-    canonical_display_name, canonical_id, fallback_sprite_url, primary_sprite_url,
-};
+use crate::adapters::sprite_resolver::canonical_display_name;
 use crate::adapters::{LabmausClient, LimitlessClient, PokepasteClient, ShowdownEntry, StatSpread};
 use crate::config;
 use crate::domain::format::Format;
@@ -128,7 +126,7 @@ impl TopTeamsService {
         format: Format,
         limit: usize,
     ) -> Result<TopTeamsReport, AppError> {
-        let key = format!("top-teams::v6::{}::{}", format.cache_id(), limit);
+        let key = format!("top-teams::v7::{}::{}", format.cache_id(), limit);
         if let Some(bytes) = self.cache.get(&key)? {
             if let Ok(report) = serde_json::from_slice::<TopTeamsReport>(&bytes) {
                 return Ok(report);
@@ -252,12 +250,13 @@ impl TopTeamsService {
             return None;
         }
         let canonical = canonical_display_name(&entry.species);
-        let home = self.resolve_home_sprite(&canonical).await;
+        let (sprite_url, sprite_fallback_url, home_sprite_url) =
+            self.pokedex.sprite_urls_for(&canonical).await;
         Some(TopTeamMember {
-            species: canonical.clone(),
-            sprite_url: primary_sprite_url(&canonical),
-            sprite_fallback_url: fallback_sprite_url(&canonical),
-            home_sprite_url: home,
+            species: canonical,
+            sprite_url,
+            sprite_fallback_url,
+            home_sprite_url,
             item: entry.item.clone(),
             tera_type: entry.tera_type.clone(),
             ability: entry.ability.clone(),
@@ -274,12 +273,13 @@ impl TopTeamsService {
         if canonical.is_empty() {
             return None;
         }
-        let home = self.resolve_home_sprite(&canonical).await;
+        let (sprite_url, sprite_fallback_url, home_sprite_url) =
+            self.pokedex.sprite_urls_for(&canonical).await;
         Some(TopTeamMember {
-            species: canonical.clone(),
-            sprite_url: primary_sprite_url(&canonical),
-            sprite_fallback_url: fallback_sprite_url(&canonical),
-            home_sprite_url: home,
+            species: canonical,
+            sprite_url,
+            sprite_fallback_url,
+            home_sprite_url,
             item: None,
             tera_type: None,
             ability: None,
@@ -289,16 +289,6 @@ impl TopTeamsService {
             evs: None,
             ivs: None,
         })
-    }
-
-    async fn resolve_home_sprite(&self, canonical: &str) -> Option<String> {
-        let id = canonical_id(canonical);
-        self.pokedex
-            .get(&id)
-            .await
-            .ok()
-            .flatten()
-            .and_then(|p| p.home_sprite_url)
     }
 
     async fn build_from_limitless(
@@ -340,11 +330,12 @@ impl TopTeamsService {
                     if species.is_empty() {
                         continue;
                     }
-                    let home = self.resolve_home_sprite(&species).await;
+                    let (sprite_url, sprite_fallback_url, home_sprite_url) =
+                        self.pokedex.sprite_urls_for(&species).await;
                     members.push(TopTeamMember {
-                        sprite_url: primary_sprite_url(&species),
-                        sprite_fallback_url: fallback_sprite_url(&species),
-                        home_sprite_url: home,
+                        sprite_url,
+                        sprite_fallback_url,
+                        home_sprite_url,
                         species,
                         item: e.item.clone(),
                         tera_type: e.tera_value().map(prettify_public),
