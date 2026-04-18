@@ -30,7 +30,7 @@ impl TrendingService {
     /// regulation the site tracks and has no regulation filter, so the
     /// results are polluted by S/V Reg I / G / F data.
     pub async fn get_trending(&self) -> Result<TrendingReport, AppError> {
-        let key = "trending::v2::regulation-m-a";
+        let key = "trending::v3::regulation-m-a";
         if let Some(bytes) = self.cache.get(key)? {
             if let Ok(report) = serde_json::from_slice::<TrendingReport>(&bytes) {
                 return Ok(report);
@@ -51,7 +51,16 @@ impl TrendingService {
             .await
             .unwrap_or_default();
 
-        let report = build_trending_report(&prev, &curr, &curr_from, &curr_to);
+        // `discover_teams` sometimes returns an empty `pokemon_names` array,
+        // so we pre-fetch labmaus's id→name catalog as a deterministic
+        // fallback. Unwrap-or-default because trending must never hard-fail.
+        let catalog = self
+            .labmaus
+            .get_all_vgc_pokemon("en")
+            .await
+            .unwrap_or_default();
+
+        let report = build_trending_report(&prev, &curr, &curr_from, &curr_to, &catalog);
 
         let bytes = serde_json::to_vec(&report)?;
         self.cache.put(key, &bytes, config::TTL_LABMAUS_TRENDING)?;
@@ -64,9 +73,10 @@ fn build_trending_report(
     curr: &[LabmausDiscoverTeam],
     curr_from: &str,
     curr_to: &str,
+    catalog: &HashMap<String, String>,
 ) -> TrendingReport {
-    let prev_stats = aggregate(prev);
-    let curr_stats = aggregate(curr);
+    let prev_stats = aggregate(prev, catalog);
+    let curr_stats = aggregate(curr, catalog);
 
     // Union of every Pokemon id seen in either window.
     let mut ids: HashSet<&str> = HashSet::new();
@@ -98,7 +108,6 @@ fn build_trending_report(
             let prev_pct = pct(p_count, prev_stats.total);
             let curr_pct = pct(c_count, curr_stats.total);
             TrendingEntry {
-                id: id.to_string(),
                 display: display.to_string(),
                 prev_pct,
                 curr_pct,
@@ -119,8 +128,8 @@ fn build_trending_report(
     let rising: Vec<TrendingPokemon> = rising
         .into_iter()
         .filter(|e| e.change > 0.0)
+        .filter_map(to_domain)
         .take(TRENDING_LIMIT)
-        .map(to_domain)
         .collect();
 
     deltas.sort_by(|a, b| {
@@ -131,8 +140,8 @@ fn build_trending_report(
     let falling: Vec<TrendingPokemon> = deltas
         .into_iter()
         .filter(|e| e.change < 0.0)
+        .filter_map(to_domain)
         .take(TRENDING_LIMIT)
-        .map(to_domain)
         .collect();
 
     TrendingReport {
@@ -145,7 +154,6 @@ fn build_trending_report(
 
 #[derive(Clone)]
 struct TrendingEntry {
-    id: String,
     display: String,
     prev_pct: f32,
     curr_pct: f32,
@@ -160,7 +168,7 @@ struct WindowStats {
     total: u32,
 }
 
-fn aggregate(teams: &[LabmausDiscoverTeam]) -> WindowStats {
+fn aggregate(teams: &[LabmausDiscoverTeam], catalog: &HashMap<String, String>) -> WindowStats {
     let mut counts: HashMap<String, (u32, String)> = HashMap::new();
     for team in teams {
         let mut seen: HashSet<&str> = HashSet::new();
@@ -169,12 +177,12 @@ fn aggregate(teams: &[LabmausDiscoverTeam]) -> WindowStats {
             if id.is_empty() || !seen.insert(id) {
                 continue;
             }
-            let display = team
-                .pokemon_names
-                .get(i)
-                .map(String::as_str)
-                .unwrap_or("")
-                .trim();
+            let inline = team.pokemon_names.get(i).map(|s| s.trim()).unwrap_or("");
+            let display = if inline.is_empty() {
+                catalog.get(id).map(String::as_str).unwrap_or("")
+            } else {
+                inline
+            };
             let entry = counts
                 .entry(id.to_string())
                 .or_insert_with(|| (0, display.to_string()));
@@ -198,23 +206,24 @@ fn pct(count: u32, total: u32) -> f32 {
     }
 }
 
-fn to_domain(e: TrendingEntry) -> TrendingPokemon {
-    // Prefer the display name labmaus sent us; fall back to the raw id when
-    // discover_teams didn't include a name for that slot.
-    let source = if e.display.is_empty() {
-        e.id.as_str()
-    } else {
-        e.display.as_str()
-    };
-    let canonical = canonical_display_name(source);
-    TrendingPokemon {
+fn to_domain(e: TrendingEntry) -> Option<TrendingPokemon> {
+    // Require a resolved display name; without one we'd emit numeric
+    // dex ids as species and broken sprite URLs.
+    if e.display.is_empty() {
+        return None;
+    }
+    let canonical = canonical_display_name(&e.display);
+    if canonical.is_empty() {
+        return None;
+    }
+    Some(TrendingPokemon {
         species: prettify_public(&canonical),
         sprite_url: primary_sprite_url(&canonical),
         sprite_fallback_url: fallback_sprite_url(&canonical),
         change_percentage: e.change,
         day1_percentage: e.prev_pct,
         day2_percentage: e.curr_pct,
-    }
+    })
 }
 
 #[cfg(test)]
@@ -257,7 +266,8 @@ mod tests {
         for _ in 0..2 {
             curr.push(team(&["727"], &["Incineroar"]));
         }
-        let report = build_trending_report(&prev, &curr, "2026-04-10", "2026-04-17");
+        let empty = HashMap::new();
+        let report = build_trending_report(&prev, &curr, "2026-04-10", "2026-04-17", &empty);
         assert_eq!(report.rising[0].species, "Zamazenta");
         assert!(report.rising[0].change_percentage > 0.0);
         assert_eq!(report.falling[0].species, "Incineroar");
@@ -270,7 +280,8 @@ mod tests {
             (0..1).map(|_| team(&["001"], &["Bulbasaur"])).collect();
         let curr: Vec<LabmausDiscoverTeam> =
             (0..1).map(|_| team(&["001"], &["Bulbasaur"])).collect();
-        let report = build_trending_report(&prev, &curr, "a", "b");
+        let empty = HashMap::new();
+        let report = build_trending_report(&prev, &curr, "a", "b", &empty);
         assert!(report.rising.is_empty());
         assert!(report.falling.is_empty());
     }
@@ -279,7 +290,8 @@ mod tests {
     fn duplicate_member_in_same_team_counts_once() {
         // Hypothetical — defensive against noisy input.
         let prev = vec![team(&["889", "889"], &["Zamazenta", "Zamazenta"])];
-        let stats = aggregate(&prev);
+        let empty = HashMap::new();
+        let stats = aggregate(&prev, &empty);
         assert_eq!(stats.counts.get("889").map(|(c, _)| *c), Some(1));
     }
 
@@ -297,12 +309,52 @@ mod tests {
         for _ in 0..5 {
             curr.push(team(&["727"], &["Incineroar"]));
         }
-        let report = build_trending_report(&prev, &curr, "a", "b");
+        let empty = HashMap::new();
+        let report = build_trending_report(&prev, &curr, "a", "b", &empty);
         let calyrex = report
             .falling
             .iter()
             .find(|t| t.species.contains("Calyrex"))
             .expect("calyrex should be in falling");
         assert!(calyrex.sprite_url.ends_with("/calyrex-shadow.png"));
+    }
+
+    #[test]
+    fn catalog_resolves_missing_pokemon_names() {
+        // Live discover_teams often omits pokemon_names. Catalog fallback
+        // must recover the display name so we can render real sprites.
+        let mut prev = vec![];
+        for _ in 0..10 {
+            prev.push(team(&["727"], &[]));
+        }
+        let mut curr = vec![];
+        for _ in 0..2 {
+            curr.push(team(&["727"], &[]));
+        }
+        for _ in 0..8 {
+            curr.push(team(&["889"], &[]));
+        }
+        let mut catalog = HashMap::new();
+        catalog.insert("727".to_string(), "Incineroar".to_string());
+        catalog.insert("889".to_string(), "Zamazenta".to_string());
+        let report = build_trending_report(&prev, &curr, "a", "b", &catalog);
+        let incineroar = report
+            .falling
+            .iter()
+            .find(|t| t.species == "Incineroar")
+            .expect("incineroar should be in falling");
+        assert!(incineroar.sprite_url.ends_with("/incineroar.png"));
+    }
+
+    #[test]
+    fn catalog_miss_drops_entry() {
+        // id with no pokemon_names and not in catalog → silently dropped,
+        // never leaks a numeric species into the report.
+        let prev: Vec<LabmausDiscoverTeam> = (0..10).map(|_| team(&["9999"], &[])).collect();
+        let curr: Vec<LabmausDiscoverTeam> = (0..20).map(|_| team(&["9999"], &[])).collect();
+        let empty = HashMap::new();
+        let report = build_trending_report(&prev, &curr, "a", "b", &empty);
+        assert!(report.rising.is_empty());
+        assert!(report.falling.is_empty());
     }
 }

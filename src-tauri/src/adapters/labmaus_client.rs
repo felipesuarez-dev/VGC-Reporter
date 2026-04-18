@@ -2,6 +2,7 @@ use crate::adapters::HttpClient;
 use crate::config;
 use crate::error::AppError;
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 /// Client for labmaus.net's public JSON API. Every endpoint is gated on
@@ -62,6 +63,27 @@ impl LabmausClient {
             .get_cached_with_headers(&url, &Self::headers(), config::TTL_LABMAUS_TOP_TEAMS)
             .await?;
         Ok(serde_json::from_slice(&bytes)?)
+    }
+
+    /// Catalog of `id → localised display name` for every VGC Pokémon that
+    /// labmaus knows about. Used to recover display names when individual
+    /// endpoints ship `pokemon_names` empty (which `/api/discover_teams`
+    /// sometimes does for specific date ranges). Response is an object map.
+    pub async fn get_all_vgc_pokemon(
+        &self,
+        language: &str,
+    ) -> Result<HashMap<String, String>, AppError> {
+        let url = format!(
+            "{}/api/all_vgc_pokemon?language={}&names=true",
+            config::LABMAUS_BASE,
+            language
+        );
+        let bytes = self
+            .http
+            .get_cached_with_headers(&url, &Self::headers(), config::TTL_LABMAUS_CATALOG)
+            .await?;
+        let parsed: LabmausPokemonCatalog = serde_json::from_slice(&bytes)?;
+        Ok(parsed.into_map())
     }
 
     pub async fn get_trending_pokemon(
@@ -134,6 +156,44 @@ pub struct LabmausDiscoverTeam {
     pub tournament_name: Option<String>,
 }
 
+/// Accept either an object map `{"727": "Incineroar", ...}` or an array of
+/// `{id, name}` / `{id, names:{en:"..."}}` — labmaus's shape varies per
+/// language flag. Both coalesce into a flat id → name map.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(untagged)]
+enum LabmausPokemonCatalog {
+    Map(HashMap<String, String>),
+    List(Vec<LabmausCatalogEntry>),
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct LabmausCatalogEntry {
+    id: String,
+    #[serde(default)]
+    name: Option<String>,
+    #[serde(default)]
+    names: Option<HashMap<String, String>>,
+}
+
+impl LabmausPokemonCatalog {
+    fn into_map(self) -> HashMap<String, String> {
+        match self {
+            LabmausPokemonCatalog::Map(m) => m,
+            LabmausPokemonCatalog::List(entries) => entries
+                .into_iter()
+                .filter_map(|e| {
+                    let name = e.name.or_else(|| {
+                        e.names.and_then(|m| {
+                            m.get("en").cloned().or_else(|| m.values().next().cloned())
+                        })
+                    })?;
+                    Some((e.id, name))
+                })
+                .collect(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct LabmausTrend {
     pub id: String,
@@ -164,6 +224,31 @@ mod tests {
         assert!(!parsed.is_empty());
         assert!(parsed[0].team_url.starts_with("https://pokepast.es/"));
         assert!(!parsed[0].player.is_empty());
+    }
+
+    #[test]
+    fn parses_catalog_as_object_map() {
+        let raw = r#"{"727":"Incineroar","898-s":"Calyrex-Shadow"}"#;
+        let parsed: LabmausPokemonCatalog = serde_json::from_str(raw).unwrap();
+        let map = parsed.into_map();
+        assert_eq!(map.get("727").map(String::as_str), Some("Incineroar"));
+        assert_eq!(map.get("898-s").map(String::as_str), Some("Calyrex-Shadow"));
+    }
+
+    #[test]
+    fn parses_catalog_as_array_with_name() {
+        let raw = r#"[{"id":"727","name":"Incineroar"},{"id":"898-s","name":"Calyrex-Shadow"}]"#;
+        let parsed: LabmausPokemonCatalog = serde_json::from_str(raw).unwrap();
+        let map = parsed.into_map();
+        assert_eq!(map.get("727").map(String::as_str), Some("Incineroar"));
+    }
+
+    #[test]
+    fn parses_catalog_as_array_with_localised_names() {
+        let raw = r#"[{"id":"727","names":{"en":"Incineroar","es":"Incineroar"}}]"#;
+        let parsed: LabmausPokemonCatalog = serde_json::from_str(raw).unwrap();
+        let map = parsed.into_map();
+        assert_eq!(map.get("727").map(String::as_str), Some("Incineroar"));
     }
 
     #[test]

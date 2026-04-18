@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -68,17 +68,20 @@ export function TeamBuilder() {
     if (teamId !== null && loaded) setTeam(loaded);
   }, [teamId, loaded, setTeam]);
 
+  // StrictMode dev-mode runs mount effects as setup → cleanup → setup. Without
+  // this latch the second setup saw pendingImport already cleared and called
+  // reset(), wiping the just-applied draft. The ref persists across the double
+  // setup within the same instance, so the import runs exactly once per mount.
+  const importConsumedRef = useRef(false);
   useEffect(() => {
     if (teamId !== null) return;
-    const {
-      pendingImport,
-      clearPendingImport,
-      consumePendingImportMissing,
-    } = useTeamBuilder.getState();
-    if (pendingImport) {
-      setTeam(pendingImport);
-      clearPendingImport();
-      const missing = consumePendingImportMissing();
+    if (importConsumedRef.current) return;
+    importConsumedRef.current = true;
+    const state = useTeamBuilder.getState();
+    if (state.pendingImport) {
+      setTeam(state.pendingImport);
+      state.clearPendingImport();
+      const missing = state.consumePendingImportMissing();
       if (missing.length > 0) setImportMissing(missing);
     } else {
       reset();

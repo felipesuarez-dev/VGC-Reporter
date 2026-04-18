@@ -44,6 +44,7 @@ pub const TTL_PIKALYTICS: i64 = 24 * 60 * 60; // 24h
 pub const TTL_LABMAUS_TOURNAMENTS: i64 = 24 * 60 * 60; // 24h
 pub const TTL_LABMAUS_TOP_TEAMS: i64 = 2 * 60 * 60; // 2h
 pub const TTL_LABMAUS_TRENDING: i64 = 4 * 60 * 60; // 4h
+pub const TTL_LABMAUS_CATALOG: i64 = 24 * 60 * 60; // 24h (id→name map, rarely changes)
 pub const TTL_POKEPASTE: i64 = 30 * 24 * 60 * 60; // 30d (pastes are immutable)
 
 // Dataset sizing
