@@ -70,7 +70,7 @@ impl AppState {
         let upcoming = UpcomingTournamentsService::new(limitless.clone());
         let translations = TranslationsService::new(pokeapi);
         let pikalytics = PikalyticsService::new(pikalytics_client, cache.clone());
-        let trending = TrendingService::new(labmaus.clone(), cache.clone());
+        let trending = TrendingService::new(labmaus.clone(), cache.clone(), settings.clone());
 
         Ok(Self {
             db: pool,

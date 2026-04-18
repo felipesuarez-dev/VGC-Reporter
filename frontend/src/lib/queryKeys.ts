@@ -27,5 +27,5 @@ export const queryKeys = {
   settings: ["settings"] as const,
   translationTable: () => ["translation-table"] as const,
   entityDescriptions: () => ["entity-descriptions"] as const,
-  trending: () => ["trending"] as const,
+  trending: (format: Format) => ["trending", format] as const,
 };

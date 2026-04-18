@@ -86,5 +86,6 @@ export const ipc = {
   setSetting: (key: string, value: string) =>
     call<void>("set_setting", { key, value }),
   getTranslationTable: () => call<TranslationTable>("get_translation_table"),
-  getTrending: () => call<TrendingReport>("get_trending"),
+  getTrending: (format: Format) =>
+    call<TrendingReport>("get_trending", { format }),
 };

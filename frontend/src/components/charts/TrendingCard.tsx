@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { ipc } from "../../lib/ipc";
 import { queryKeys } from "../../lib/queryKeys";
-import { type TrendingPokemon } from "../../lib/types";
+import { type Format, type TrendingPokemon } from "../../lib/types";
 import { PokemonSprite } from "../pokemon/PokemonSprite";
 import { usePokedexStore } from "../../stores/pokedexStore";
 
@@ -11,11 +11,11 @@ function canonicalSpeciesId(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-export function TrendingCard() {
+export function TrendingCard({ format }: { format: Format }) {
   const { t } = useTranslation();
   const { data, isLoading } = useQuery({
-    queryKey: queryKeys.trending(),
-    queryFn: () => ipc.getTrending(),
+    queryKey: queryKeys.trending(format),
+    queryFn: () => ipc.getTrending(format),
     staleTime: 30 * 60 * 1000,
   });
 

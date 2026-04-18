@@ -183,7 +183,7 @@ export function Dashboard() {
             />
           </section>
 
-          {format === "regulation-m-a" && <TrendingCard />}
+          <TrendingCard format={format} />
 
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div className="card">

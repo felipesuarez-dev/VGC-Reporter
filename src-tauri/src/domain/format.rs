@@ -41,6 +41,18 @@ impl Format {
         }
     }
 
+    /// Labmaus regulation string used in the `?regulation=` query param of
+    /// `/api/discover_teams`. Runtime override lives at
+    /// `labmaus_name::<cache_id>` in SettingsRepo (same pattern as
+    /// `smogon_slug`), so a new regulation can be onboarded by seeding one
+    /// settings row before its static default is known.
+    pub fn default_labmaus_name(&self) -> Option<&'static str> {
+        match self {
+            Format::RegulationMA => Some("Regulation Set M-A"),
+            _ => None,
+        }
+    }
+
     /// Rating cutoffs to probe in order (high → low). VGC doubles ladder tiers.
     pub fn rating_ladder(&self) -> &'static [u32] {
         &[1760, 1630, 1500, 0]
