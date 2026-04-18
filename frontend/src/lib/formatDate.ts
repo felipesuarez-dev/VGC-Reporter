@@ -4,6 +4,16 @@ const DATE_OPTIONS: Intl.DateTimeFormatOptions = {
   day: "numeric",
 };
 
+const DATETIME_OPTIONS: Intl.DateTimeFormatOptions = {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+};
+
+const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 function parseDate(value: string | null | undefined): Date | null {
   if (!value) return null;
   const d = new Date(value);
@@ -21,6 +31,14 @@ export function formatDate(value: string | null | undefined, locale?: string): s
   const d = parseDate(value);
   if (!d) return value ?? "";
   return new Intl.DateTimeFormat(normalizeLocale(locale), DATE_OPTIONS).format(d);
+}
+
+export function formatDateTime(value: string | null | undefined, locale?: string): string {
+  if (!value) return "";
+  if (DATE_ONLY_RE.test(value.trim())) return formatDate(value, locale);
+  const d = parseDate(value);
+  if (!d) return value;
+  return new Intl.DateTimeFormat(normalizeLocale(locale), DATETIME_OPTIONS).format(d);
 }
 
 export function formatDateRange(

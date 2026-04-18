@@ -78,7 +78,7 @@ pub const TRENDING_MIN_WINDOW_TEAMS: f32 = 20.0;
 /// larger window total (weighted) before a species is eligible for ranking.
 pub const TRENDING_SAMPLE_FRACTION: f32 = 0.01;
 /// Absolute floor for the adaptive minimum sample size.
-pub const TRENDING_MIN_SAMPLE_FLOOR: u32 = 3;
+pub const TRENDING_MIN_SAMPLE_FLOOR: u32 = 2;
 /// Placement ≤ this → top-cut weight tier.
 pub const TRENDING_PLACEMENT_TOPCUT: u32 = 8;
 /// Placement ≤ this (and > topcut) → day-2 weight tier.

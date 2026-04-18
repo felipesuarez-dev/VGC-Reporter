@@ -29,11 +29,19 @@ impl UpcomingTournamentsService {
             }
         };
 
+        let fetched = raw.len();
         let mut upcoming: Vec<UpcomingTournament> = raw
             .into_iter()
             .filter_map(|t| to_upcoming(t, today, window_end))
             .collect();
         upcoming.sort_by(|a, b| a.date.cmp(&b.date));
+        tracing::debug!(
+            fetched,
+            kept = upcoming.len(),
+            today = %today,
+            window_end = %window_end,
+            "upcoming tournaments filtered"
+        );
         Ok(upcoming)
     }
 }
@@ -45,7 +53,7 @@ fn to_upcoming(
 ) -> Option<UpcomingTournament> {
     let raw_date = t.date.as_deref()?;
     let parsed = parse_date(raw_date)?;
-    if parsed < today || parsed > window_end {
+    if parsed <= today || parsed > window_end {
         return None;
     }
     Some(UpcomingTournament {
@@ -101,6 +109,9 @@ mod tests {
         assert!(to_upcoming(mk("far", Some("2026-06-01")), today, window).is_none());
         assert!(to_upcoming(mk("none", None), today, window).is_none());
         assert!(to_upcoming(mk("next", Some("2026-04-25")), today, window).is_some());
-        assert!(to_upcoming(mk("today", Some("2026-04-17")), today, window).is_some());
+        // A tournament dated today has either already finished or is in
+        // progress — it is no longer "upcoming".
+        assert!(to_upcoming(mk("today", Some("2026-04-17")), today, window).is_none());
+        assert!(to_upcoming(mk("tomorrow", Some("2026-04-18")), today, window).is_some());
     }
 }

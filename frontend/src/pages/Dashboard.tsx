@@ -5,7 +5,7 @@ import { ExternalLink, RefreshCw } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
-import { formatDate } from "../lib/formatDate";
+import { formatDate, formatDateTime } from "../lib/formatDate";
 import { formatLabel } from "../lib/labels";
 import { type ChampionsTournament } from "../lib/types";
 import { UsageBarChart, type UsageBarItem } from "../components/charts/UsageBarChart";
@@ -16,6 +16,7 @@ import { PokemonDetailModal } from "../components/pokemon/PokemonDetailModal";
 import { FormatSelector } from "../components/ui/FormatSelector";
 import { XCard } from "../components/dashboard/XCard";
 import { TournamentStandingsDrawer } from "../components/tournament/TournamentStandingsDrawer";
+import { Tooltip } from "../components/ui/Tooltip";
 import { useDashboardStore, type TournamentCount } from "../stores/dashboardStore";
 import { usePokedexStore } from "../stores/pokedexStore";
 
@@ -102,24 +103,49 @@ export function Dashboard() {
         <div>
           <h1 className="text-2xl font-bold">{t("dashboard.title")}</h1>
           {data && (
-            <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
-              {data.from_date && data.to_date ? (
-                <>
-                  {t("dashboard.tournaments_range", {
-                    count: data.tournaments_used,
-                    from: formatDate(data.from_date, i18n.language),
-                    to: formatDate(data.to_date, i18n.language),
-                    source: data.source,
-                  })}
-                </>
-              ) : (
-                <>
-                  {t("dashboard.tournaments_used")}: {data.tournaments_used} ·{" "}
-                  {t("dashboard.total_entries")}: {data.total_entries} ·{" "}
-                  {t("common.source")}: {data.source}
-                </>
-              )}
-            </p>
+            <div className="mt-1 flex items-center gap-2">
+              <Tooltip
+                content={
+                  data.from_date && data.to_date ? (
+                    <div className="flex flex-col gap-0.5">
+                      <span>
+                        {t("dashboard.meta_tooltip_count", {
+                          count: data.tournaments_used,
+                        })}
+                      </span>
+                      <span>
+                        {t("dashboard.meta_tooltip_range", {
+                          from: formatDate(data.from_date, i18n.language),
+                          to: formatDate(data.to_date, i18n.language),
+                        })}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-0.5">
+                      <span>
+                        {t("dashboard.meta_tooltip_count", {
+                          count: data.tournaments_used,
+                        })}
+                      </span>
+                      <span>
+                        {t("dashboard.total_entries")}: {data.total_entries}
+                      </span>
+                    </div>
+                  )
+                }
+              >
+                <span
+                  className="inline-block rounded-full border px-2 py-0.5 text-[11px]"
+                  style={{
+                    borderColor: "var(--border)",
+                    backgroundColor: "var(--bg-elev)",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  {data.source}
+                </span>
+              </Tooltip>
+            </div>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -273,7 +299,7 @@ export function Dashboard() {
                     {tour.name}
                   </div>
                   <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                    {tour.date && <span>{formatDate(tour.date, i18n.language)}</span>}
+                    {tour.date && <span>{formatDateTime(tour.date, i18n.language)}</span>}
                     {tour.players != null && (
                       <span> · {tour.players} {t("dashboard.players")}</span>
                     )}

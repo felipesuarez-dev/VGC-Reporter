@@ -82,7 +82,8 @@
     "open_on_x": "Abrir en X",
     "usage_percent_label": "Porcentaje de Uso",
     "count_label": "Conteo",
-    "tournaments_range": "{{count}} torneos · {{from}} — {{to}} · {{source}}",
+    "meta_tooltip_count": "{{count}} torneos",
+    "meta_tooltip_range": "{{from}} — {{to}}",
     "loading_patience": "Obteniendo torneos y agregando estadísticas. Esto puede tardar un momento.",
     "tournament_count": "Torneos",
     "trending_title": "Tendencias del meta (últimos 14 días)",
@@ -91,11 +92,11 @@
     "trending_empty": "No hay datos de tendencias disponibles."
   },
   "tournament": {
-    "standings": "Standings",
+    "standings": "Clasificaciones",
     "winner": "Campeón",
     "organizer": "Organizador",
-    "loading": "Cargando standings...",
-    "no_standings": "Standings no disponibles todavía"
+    "loading": "Cargando clasificaciones...",
+    "no_standings": "Clasificaciones no disponibles todavía"
   },
   "upcoming": {
     "title": "Próximos torneos",

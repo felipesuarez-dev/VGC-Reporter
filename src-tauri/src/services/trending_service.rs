@@ -11,6 +11,7 @@ use crate::services::usage_aggregator::prettify_public;
 use crate::storage::{CacheRepo, SettingsRepo};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
+use tracing::{debug, warn};
 
 const TRENDING_LIMIT: usize = 15;
 
@@ -58,13 +59,18 @@ impl TrendingService {
             return Ok(empty);
         };
 
-        let catalog = self
-            .labmaus
-            .get_all_vgc_pokemon("en")
-            .await
-            .unwrap_or_default();
+        let catalog = match self.labmaus.get_all_vgc_pokemon("en").await {
+            Ok(c) => {
+                debug!(catalog_size = c.len(), "trending: labmaus catalog fetched");
+                c
+            }
+            Err(e) => {
+                warn!(error = %e, "trending: labmaus catalog fetch failed");
+                HashMap::new()
+            }
+        };
 
-        let report = self
+        let (report, weighted_total) = self
             .build_report_for(
                 &regulation_name,
                 &catalog,
@@ -72,15 +78,23 @@ impl TrendingService {
             )
             .await;
 
-        // Fallback: if the weighted current-window total is sparse, widen to
-        // 2× the half-window days (so 7+7 becomes 14+14) once before giving up.
-        let report = if weighted_total_is_sparse(&report) {
-            self.build_report_for(
-                &regulation_name,
-                &catalog,
-                2 * config::LABMAUS_TRENDING_WINDOW_DAYS,
-            )
-            .await
+        // Fallback: when the combined weighted window total is thin enough
+        // that the adaptive floor starves the ranking, widen to 2× the
+        // half-window days (so 7+7 becomes 14+14) once before giving up.
+        let report = if weighted_total < config::TRENDING_MIN_WINDOW_TEAMS {
+            debug!(
+                weighted_total,
+                threshold = config::TRENDING_MIN_WINDOW_TEAMS,
+                "trending: sparse window, retrying at 2× half-window"
+            );
+            let (wide, _) = self
+                .build_report_for(
+                    &regulation_name,
+                    &catalog,
+                    2 * config::LABMAUS_TRENDING_WINDOW_DAYS,
+                )
+                .await;
+            wide
         } else {
             report
         };
@@ -105,27 +119,65 @@ impl TrendingService {
         regulation: &str,
         catalog: &HashMap<String, String>,
         half_window_days: i64,
-    ) -> TrendingReport {
+    ) -> (TrendingReport, f32) {
         let ((prev_from, prev_to), (curr_from, curr_to)) =
             prev_and_current_windows(half_window_days);
-        let prev = self
+        let prev = match self
             .labmaus
             .get_discover_teams(&prev_from, &prev_to, regulation)
             .await
-            .unwrap_or_default();
-        let curr = self
+        {
+            Ok(v) => {
+                debug!(
+                    window = "prev",
+                    regulation,
+                    from = %prev_from,
+                    to = %prev_to,
+                    len = v.len(),
+                    "trending: discover_teams fetched"
+                );
+                v
+            }
+            Err(e) => {
+                warn!(error = %e, window = "prev", regulation, "trending: discover_teams failed");
+                Vec::new()
+            }
+        };
+        let curr = match self
             .labmaus
             .get_discover_teams(&curr_from, &curr_to, regulation)
             .await
-            .unwrap_or_default();
-        build_trending_report(&prev, &curr, &curr_from, &curr_to, catalog)
+        {
+            Ok(v) => {
+                debug!(
+                    window = "curr",
+                    regulation,
+                    from = %curr_from,
+                    to = %curr_to,
+                    len = v.len(),
+                    "trending: discover_teams fetched"
+                );
+                v
+            }
+            Err(e) => {
+                warn!(error = %e, window = "curr", regulation, "trending: discover_teams failed");
+                Vec::new()
+            }
+        };
+        let prev_total: f32 = prev.iter().map(team_weight).sum();
+        let curr_total: f32 = curr.iter().map(team_weight).sum();
+        let report = build_trending_report(&prev, &curr, &curr_from, &curr_to, catalog);
+        debug!(
+            regulation,
+            half_window_days,
+            prev_total,
+            curr_total,
+            rising_len = report.rising.len(),
+            falling_len = report.falling.len(),
+            "trending: report built"
+        );
+        (report, prev_total + curr_total)
     }
-}
-
-fn weighted_total_is_sparse(report: &TrendingReport) -> bool {
-    // The report itself doesn't carry the total, so we proxy sparsity via
-    // emptiness: no trending at all after filtering = sparse, retry wider.
-    report.rising.is_empty() && report.falling.is_empty()
 }
 
 fn build_trending_report(
@@ -447,12 +499,12 @@ mod tests {
 
     #[test]
     fn adaptive_min_sample_scales_with_window() {
-        // 200-team window: floor = max(3, 0.01 * 200) = max(3, 2) = 3.
-        assert_eq!(adaptive_min_sample(200.0), 3.0);
-        // 10000-team window: floor = max(3, 0.01 * 10000) = 100.
+        // 200-team window: floor = max(2, 0.01 * 200) = max(2, 2) = 2.
+        assert_eq!(adaptive_min_sample(200.0), 2.0);
+        // 10000-team window: floor = max(2, 0.01 * 10000) = 100.
         assert_eq!(adaptive_min_sample(10_000.0), 100.0);
-        // Tiny window: floor bottoms at 3.
-        assert_eq!(adaptive_min_sample(50.0), 3.0);
+        // Tiny window: floor bottoms at 2.
+        assert_eq!(adaptive_min_sample(50.0), 2.0);
     }
 
     #[test]

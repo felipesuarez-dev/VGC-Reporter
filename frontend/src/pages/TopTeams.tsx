@@ -9,7 +9,7 @@ import { MiniTeam } from "../components/pokemon/MiniTeam";
 import { TopTeamDetailModal } from "../components/team/TopTeamDetailModal";
 import { TournamentStandingsDrawer } from "../components/tournament/TournamentStandingsDrawer";
 import { PokemonMultiSelect } from "../components/filters/PokemonMultiSelect";
-import { formatDate } from "../lib/formatDate";
+import { formatDate, formatDateTime } from "../lib/formatDate";
 import { formatLabel } from "../lib/labels";
 
 const FORMAT: Format = "regulation-m-a";
@@ -268,7 +268,7 @@ export function TopTeams() {
                     {tour.name}
                   </div>
                   <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                    {tour.date && <span>{formatDate(tour.date, i18n.language)}</span>}
+                    {tour.date && <span>{formatDateTime(tour.date, i18n.language)}</span>}
                     {tour.players != null && (
                       <span> · {tour.players} {t("dashboard.players")}</span>
                     )}

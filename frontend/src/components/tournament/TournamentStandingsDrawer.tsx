@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { ClipboardCopy, X } from "lucide-react";
 import { ipc } from "../../lib/ipc";
 import { queryKeys } from "../../lib/queryKeys";
+import { formatDateTime } from "../../lib/formatDate";
 import type {
   ChampionsTournament,
   DecklistPokemon,
@@ -65,7 +66,7 @@ function standingToDraftTeam(
 }
 
 export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const setPendingImport = useTeamBuilder((s) => s.setPendingImport);
   const setPendingImportMissing = useTeamBuilder(
@@ -131,7 +132,9 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
             className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs"
             style={{ color: "var(--text-muted)" }}
           >
-            {tournament.date && <span>{tournament.date}</span>}
+            {tournament.date && (
+              <span>{formatDateTime(tournament.date, i18n.language)}</span>
+            )}
             {tournament.format && <span>{tournament.format}</span>}
             {tournament.players != null && (
               <span>
