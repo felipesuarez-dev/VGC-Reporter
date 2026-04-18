@@ -38,11 +38,14 @@ export function PikalyticsSection({ species }: Props) {
 
   if (isLoading || !data) {
     return (
-      <section className="mb-4 space-y-2">
+      <section className="mb-4 space-y-3" aria-busy="true">
         <SectionHeader source={null} />
-        <p className="text-xs" style={{ color: "var(--text-dim)" }}>
-          {t("common.loading")}
-        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
       </section>
     );
   }
@@ -218,6 +221,34 @@ function TeammateList({
         </li>
       ))}
     </Card>
+  );
+}
+
+function SkeletonCard() {
+  return (
+    <section
+      className="rounded-lg border p-3"
+      style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-elev)" }}
+    >
+      <div
+        className="mb-2 h-2 w-16 animate-pulse rounded"
+        style={{ backgroundColor: "var(--bg-elev-strong)" }}
+      />
+      <ul className="space-y-2">
+        {[0, 1, 2, 3].map((i) => (
+          <li key={i} className="flex items-center justify-between gap-2">
+            <span
+              className="h-2 flex-1 animate-pulse rounded"
+              style={{ backgroundColor: "var(--bg-elev-strong)" }}
+            />
+            <span
+              className="h-2 w-8 animate-pulse rounded"
+              style={{ backgroundColor: "var(--bg-elev-strong)" }}
+            />
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

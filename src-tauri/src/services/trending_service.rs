@@ -168,22 +168,29 @@ impl TrendingService {
             }
         };
 
-        let date_by_tid: HashMap<String, chrono::NaiveDate> = tournaments
+        // Match by tournament name instead of id: labmaus serialises ids
+        // inconsistently across endpoints (Number in discover_teams vs
+        // String/other in completed_tournaments), but the human name is
+        // stable — same pattern that TopTeamsService uses to count
+        // distinct tournaments.
+        let date_by_name: HashMap<String, chrono::NaiveDate> = tournaments
             .iter()
             .filter_map(|t| {
-                let id = normalize_id(&t.id)?;
                 let date = chrono::NaiveDate::parse_from_str(&t.date, "%Y-%m-%d").ok()?;
-                Some((id, date))
+                Some((t.name.clone(), date))
             })
             .collect();
 
         let mut prev: Vec<LabmausDiscoverTeam> = Vec::new();
         let mut curr: Vec<LabmausDiscoverTeam> = Vec::new();
+        let mut dropped = 0usize;
         for team in teams {
-            let Some(tid) = team.tournament_id.as_ref().and_then(normalize_id) else {
-                continue;
-            };
-            let Some(&date) = date_by_tid.get(&tid) else {
+            let date_opt = team
+                .tournament_name
+                .as_deref()
+                .and_then(|n| date_by_name.get(n));
+            let Some(&date) = date_opt else {
+                dropped += 1;
                 continue;
             };
             if date >= midpoint {
@@ -199,8 +206,10 @@ impl TrendingService {
         debug!(
             regulation,
             half_window_days,
+            tournaments_len = tournaments.len(),
             prev_len = prev.len(),
             curr_len = curr.len(),
+            dropped,
             prev_total,
             curr_total,
             rising_len = report.rising.len(),
@@ -208,14 +217,6 @@ impl TrendingService {
             "trending: report built"
         );
         (report, prev_total + curr_total)
-    }
-}
-
-fn normalize_id(value: &serde_json::Value) -> Option<String> {
-    match value {
-        serde_json::Value::String(s) if !s.is_empty() => Some(s.clone()),
-        serde_json::Value::Number(n) => Some(n.to_string()),
-        _ => None,
     }
 }
 

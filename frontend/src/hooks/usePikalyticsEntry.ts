@@ -11,6 +11,7 @@ export function usePikalyticsEntry(species: string | null | undefined) {
     queryFn: () => ipc.getPikalyticsEntry(species!, lang),
     enabled: Boolean(species),
     staleTime: 24 * 60 * 60 * 1000,
-    retry: false,
+    gcTime: 10 * 60 * 1000,
+    retry: 1,
   });
 }
