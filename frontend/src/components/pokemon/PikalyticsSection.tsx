@@ -2,6 +2,10 @@ import { useTranslation } from "react-i18next";
 import { ExternalLink } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { usePikalyticsEntry } from "../../hooks/usePikalyticsEntry";
+import { usePokedexStore } from "../../stores/pokedexStore";
+import { canonicalSpeciesId } from "../../lib/types";
+import { EntityChip } from "../info/EntityChip";
+import { PokemonSprite } from "./PokemonSprite";
 import type {
   PikalyticsEvSpread,
   PikalyticsItem,
@@ -10,6 +14,11 @@ import type {
 
 interface Props {
   species: string;
+}
+
+function spriteFor(species: string): string {
+  const slug = species.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return `https://play.pokemonshowdown.com/sprites/gen5/${slug}.png`;
 }
 
 export function PikalyticsSection({ species }: Props) {
@@ -55,13 +64,22 @@ export function PikalyticsSection({ species }: Props) {
       )}
       {!nothing && (
         <>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <ItemList title={t("pokemon_detail.pikalytics.items")} entries={data.common_items} />
-            <ItemList
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <EntityCard
+              title={t("pokemon_detail.pikalytics.items")}
+              entries={data.common_items}
+              kind="item"
+            />
+            <EntityCard
+              title={t("pokemon_detail.pikalytics.moves")}
+              entries={data.common_moves}
+              kind="move"
+            />
+            <EntityCard
               title={t("pokemon_detail.pikalytics.abilities")}
               entries={data.common_abilities}
+              kind="ability"
             />
-            <ItemList title={t("pokemon_detail.pikalytics.moves")} entries={data.common_moves} />
             <TeammateList
               title={t("pokemon_detail.pikalytics.teammates")}
               entries={data.common_teammates}
@@ -141,18 +159,24 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
-function ItemList({ title, entries }: { title: string; entries: PikalyticsItem[] }) {
+function EntityCard({
+  title,
+  entries,
+  kind,
+}: {
+  title: string;
+  entries: PikalyticsItem[];
+  kind: "item" | "move" | "ability";
+}) {
   return (
     <Card title={title}>
       {entries.length === 0 && <EmptyRow />}
-      {entries.slice(0, 6).map((e) => (
+      {entries.slice(0, 6).map((e, i) => (
         <li
-          key={e.name}
-          className="flex items-baseline justify-between gap-2 text-xs"
+          key={`${e.name}-${i}`}
+          className="flex items-center justify-between gap-2 text-xs"
         >
-          <span className="truncate" style={{ color: "var(--text)" }}>
-            {e.name}
-          </span>
+          <EntityChip kind={kind} name={e.name} />
           <Percent value={e.usage_percent} />
         </li>
       ))}
@@ -167,18 +191,30 @@ function TeammateList({
   title: string;
   entries: PikalyticsTeammate[];
 }) {
+  const openDetail = usePokedexStore((s) => s.openDetail);
   return (
     <Card title={title}>
       {entries.length === 0 && <EmptyRow />}
-      {entries.slice(0, 6).map((e) => (
-        <li
-          key={e.species}
-          className="flex items-baseline justify-between gap-2 text-xs"
-        >
-          <span className="truncate" style={{ color: "var(--text)" }}>
-            {e.species}
-          </span>
-          <Percent value={e.usage_percent} />
+      {entries.slice(0, 6).map((e, i) => (
+        <li key={`${e.species}-${i}`}>
+          <button
+            type="button"
+            onClick={() => openDetail(canonicalSpeciesId(e.species))}
+            className="flex w-full items-center justify-between gap-2 rounded px-1 py-0.5 text-xs hover:bg-[var(--bg-elev-strong)]"
+          >
+            <span className="flex min-w-0 items-center gap-2">
+              <PokemonSprite
+                url={e.sprite_url ?? spriteFor(e.species)}
+                name={e.species}
+                variant="pixel"
+                size={24}
+              />
+              <span className="truncate" style={{ color: "var(--text)" }}>
+                {e.species}
+              </span>
+            </span>
+            <Percent value={e.usage_percent} />
+          </button>
         </li>
       ))}
     </Card>

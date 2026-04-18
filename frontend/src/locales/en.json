@@ -134,8 +134,6 @@
     "clear_filters": "Clear filters"
   },
   "pokemon_detail": {
-    "doubles": "Doubles",
-    "singles": "Singles",
     "curated_sets": "Competitive sets",
     "meta_usage": "Current meta usage",
     "source": "Source",

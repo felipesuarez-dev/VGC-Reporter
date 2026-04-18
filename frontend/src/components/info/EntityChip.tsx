@@ -1,9 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { Swords, Sparkles, Wrench } from "lucide-react";
 import { useLocalize, type LocalizeKind } from "../../hooks/useTranslations";
 import { useDescribe } from "../../hooks/useEntityDescriptions";
 import { useMoveSummary } from "../../hooks/useMoveCatalog";
-import type { MoveCategory } from "../../lib/types";
+import { MoveCategoryIcon } from "../pokemon/MoveCategoryIcon";
 import { TypeBadge } from "../pokemon/TypeBadge";
 import { Tooltip } from "../ui/Tooltip";
 import { cn } from "../../lib/cn";
@@ -12,18 +11,6 @@ interface Props {
   kind: LocalizeKind;
   name: string | null | undefined;
   className?: string;
-}
-
-function CategoryIcon({ category }: { category: MoveCategory }) {
-  const cls = "h-3 w-3";
-  switch (category) {
-    case "Physical":
-      return <Swords className={cls} aria-hidden />;
-    case "Special":
-      return <Sparkles className={cls} aria-hidden />;
-    case "Status":
-      return <Wrench className={cls} aria-hidden />;
-  }
 }
 
 export function EntityChip({ kind, name, className }: Props) {
@@ -54,7 +41,7 @@ export function EntityChip({ kind, name, className }: Props) {
             }}
             title={t(`tooltip.move_category.${summary.category.toLowerCase()}`)}
           >
-            <CategoryIcon category={summary.category} />
+            <MoveCategoryIcon category={summary.category} />
             {t(`tooltip.move_category.${summary.category.toLowerCase()}`)}
           </span>
         )}

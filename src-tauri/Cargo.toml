@@ -1,6 +1,6 @@
 [package]
 name = "vgc-reporter"
-version = "0.0.7"
+version = "0.0.8"
 description = "VGC-Reporter - Pokemon Champions stats & team builder"
 authors = ["PumaSoft"]
 edition = "2021"

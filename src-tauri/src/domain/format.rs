@@ -8,12 +8,8 @@ pub enum Format {
     #[default]
     #[serde(rename = "regulation-m-a")]
     RegulationMA,
-    #[serde(rename = "champions-singles")]
-    ChampionsSingles,
     #[serde(rename = "regulation-i")]
     RegulationI,
-    #[serde(rename = "gen9-ou")]
-    Gen9Ou,
 }
 
 impl Format {
@@ -22,21 +18,16 @@ impl Format {
     pub fn cache_id(&self) -> &'static str {
         match self {
             Format::RegulationMA => "reg-m-a",
-            Format::ChampionsSingles => "champ-singles",
             Format::RegulationI => "reg-i",
-            Format::Gen9Ou => "gen9-ou",
         }
     }
 
-    /// `None` = format does not live on Limitless (e.g. singles OU).
     /// Codes verified against the live Limitless API: VGC uses `M-A` and the
     /// SV Reg I format reports as `SVI` — not `M2A` / `I` like older guesses.
     pub fn limitless_code(&self) -> Option<&'static str> {
         match self {
             Format::RegulationMA => Some("M-A"),
-            Format::ChampionsSingles => None,
             Format::RegulationI => Some("SVI"),
-            Format::Gen9Ou => None,
         }
     }
 
@@ -46,19 +37,13 @@ impl Format {
     pub fn default_smogon_slug(&self) -> &'static str {
         match self {
             Format::RegulationMA => "gen9vgc2026regma",
-            Format::ChampionsSingles => "gen9vgc2026regmasingles",
             Format::RegulationI => "gen9vgc2026regi",
-            Format::Gen9Ou => "gen9ou",
         }
     }
 
-    /// Rating cutoffs to probe in order (high → low). VGC and singles use
-    /// different ladder tiers.
+    /// Rating cutoffs to probe in order (high → low). VGC doubles ladder tiers.
     pub fn rating_ladder(&self) -> &'static [u32] {
-        match self {
-            Format::Gen9Ou | Format::ChampionsSingles => &[1825, 1695, 1500, 0],
-            _ => &[1760, 1630, 1500, 0],
-        }
+        &[1760, 1630, 1500, 0]
     }
 
     /// Closed formats pin a specific month; active formats return `None` and
@@ -70,19 +55,12 @@ impl Format {
     pub fn label(&self) -> &'static str {
         match self {
             Format::RegulationMA => "Regulation M-A (M-1)",
-            Format::ChampionsSingles => "Champions Singles",
             Format::RegulationI => "Regulation I",
-            Format::Gen9Ou => "Gen 9 OU",
         }
     }
 
     pub fn all_active() -> Vec<Format> {
-        vec![
-            Format::RegulationMA,
-            Format::ChampionsSingles,
-            Format::RegulationI,
-            Format::Gen9Ou,
-        ]
+        vec![Format::RegulationMA, Format::RegulationI]
     }
 }
 
@@ -104,24 +82,12 @@ mod tests {
     }
 
     #[test]
-    fn gen9_ou_is_singles_only() {
-        assert!(Format::Gen9Ou.limitless_code().is_none());
-        assert!(Format::RegulationMA.limitless_code().is_some());
-        assert!(Format::RegulationI.limitless_code().is_some());
-    }
-
-    #[test]
-    fn all_active_includes_champions_singles_first_after_doubles() {
+    fn all_active_is_doubles_only() {
         let active = Format::all_active();
-        assert_eq!(active.len(), 4);
-        assert_eq!(active[0], Format::RegulationMA);
-        assert_eq!(active[1], Format::ChampionsSingles);
-    }
-
-    #[test]
-    fn champions_singles_is_offline() {
-        assert!(Format::ChampionsSingles.limitless_code().is_none());
-        assert_eq!(Format::ChampionsSingles.cache_id(), "champ-singles");
+        assert_eq!(active, vec![Format::RegulationMA, Format::RegulationI]);
+        for f in &active {
+            assert!(f.limitless_code().is_some());
+        }
     }
 
     #[test]

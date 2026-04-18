@@ -20,15 +20,13 @@ pub struct PokemonSet {
     pub moves: Vec<String>,
 }
 
-/// Bundle of curated sets for a Pokémon, split by play style.
-/// `*_source` carries the slug actually used after the fallback chain (so the
-/// UI can disclose where the data came from).
+/// Bundle of curated doubles sets for a Pokémon.
+/// `doubles_source` carries the slug actually used after the fallback chain
+/// (so the UI can disclose where the data came from).
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
 pub struct SetsBundle {
     pub species: String,
     pub doubles: Vec<PokemonSet>,
-    pub singles: Vec<PokemonSet>,
     pub doubles_source: Option<String>,
-    pub singles_source: Option<String>,
 }

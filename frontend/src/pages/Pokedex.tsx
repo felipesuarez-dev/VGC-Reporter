@@ -20,6 +20,9 @@ import { useDashboardStore } from "../stores/dashboardStore";
 import { usePokedexStore, type PokedexSort } from "../stores/pokedexStore";
 import { useLocalize } from "../hooks/useTranslations";
 import { useLearnsetsIndex } from "../hooks/useLearnsetsIndex";
+import { useMoveSummary } from "../hooks/useMoveCatalog";
+import { MoveCategoryIcon } from "../components/pokemon/MoveCategoryIcon";
+import { TypeBadge } from "../components/pokemon/TypeBadge";
 
 const ALL_GENERATIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
@@ -43,6 +46,7 @@ export function Pokedex() {
   const [generation, setGeneration] = useState<number | "">("");
   const [weakAgainst, setWeakAgainst] = useState<PokemonType[]>([]);
   const [strongAgainst, setStrongAgainst] = useState<PokemonType[]>([]);
+  const moveSummary = useMoveSummary();
   const sort = usePokedexStore((s) => s.sort);
   const setSort = usePokedexStore((s) => s.setSort);
   const scrollY = usePokedexStore((s) => s.scrollY);
@@ -242,6 +246,20 @@ export function Pokedex() {
               onChange={(m) => setMove(m)}
               getOptionLabel={(m) => localize("move", m)}
               placeholder={t("pokedex.filter_move_placeholder")}
+              renderOption={(m) => {
+                const s = moveSummary(m);
+                return (
+                  <span className="flex min-w-0 flex-1 items-center gap-2">
+                    <span className="truncate">{localize("move", m)}</span>
+                    {s && (
+                      <>
+                        <TypeBadge type={s.type_} />
+                        <MoveCategoryIcon category={s.category} />
+                      </>
+                    )}
+                  </span>
+                );
+              }}
               className="mt-1"
             />
           </div>

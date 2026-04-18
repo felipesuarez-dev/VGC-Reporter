@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import { ipc } from "../../lib/ipc";
@@ -25,16 +25,11 @@ import { PikalyticsSection } from "./PikalyticsSection";
 import { useLocalize, type LocalizeKind } from "../../hooks/useTranslations";
 import { prettifyName, statLabel, type StatKey } from "../../lib/labels";
 
-type Tab = "doubles" | "singles";
-
 export function PokemonDetailModal() {
   const { t } = useTranslation();
   const id = usePokedexStore((s) => s.selectedPokemonId);
   const close = usePokedexStore((s) => s.closeDetail);
   const format = useDashboardStore((s) => s.format);
-  const [tab, setTab] = useState<Tab>(() =>
-    format === "champions-singles" || format === "gen9-ou" ? "singles" : "doubles",
-  );
 
   useEffect(() => {
     if (!id) return;
@@ -119,8 +114,6 @@ export function PokemonDetailModal() {
         {pokemon.data && (
           <ModalBody
             pokemon={pokemon.data}
-            tab={tab}
-            setTab={setTab}
             sets={sets.data ?? null}
             setsLoading={sets.isLoading}
             metaUsage={meta.data?.pokemon ?? []}
@@ -135,8 +128,6 @@ export function PokemonDetailModal() {
 
 interface BodyProps {
   pokemon: Pokemon;
-  tab: Tab;
-  setTab: (t: Tab) => void;
   sets: import("../../lib/types").SetsBundle | null;
   setsLoading: boolean;
   metaUsage: import("../../lib/types").PokemonUsage[];
@@ -146,8 +137,6 @@ interface BodyProps {
 
 function ModalBody({
   pokemon,
-  tab,
-  setTab,
   sets,
   setsLoading,
   metaUsage,
@@ -166,15 +155,14 @@ function ModalBody({
   const resistances = useMemo(() => resistancesOf(pokemon.types), [pokemon.types]);
   const coverage = useMemo(() => offensiveCoverage(pokemon.types), [pokemon.types]);
 
-  const tabSets = tab === "doubles" ? sets?.doubles ?? [] : sets?.singles ?? [];
-  const tabSource =
-    tab === "doubles" ? sets?.doubles_source ?? null : sets?.singles_source ?? null;
+  const tabSets = sets?.doubles ?? [];
+  const tabSource = sets?.doubles_source ?? null;
 
   const naturesEntries = useMemo(() => {
     const usageNatures = myUsage?.top_natures ?? [];
     if (usageNatures.length > 0) return usageNatures;
     const counts = new Map<string, number>();
-    for (const s of [...(sets?.doubles ?? []), ...(sets?.singles ?? [])]) {
+    for (const s of sets?.doubles ?? []) {
       if (s.nature) counts.set(s.nature, (counts.get(s.nature) ?? 0) + 1);
     }
     if (counts.size === 0 && topTeams?.teams) {
@@ -196,7 +184,7 @@ function ModalBody({
         count,
         usage_percent: (count / total) * 100,
       }));
-  }, [myUsage?.top_natures, sets?.doubles, sets?.singles, topTeams?.teams, pokemon.name]);
+  }, [myUsage?.top_natures, sets?.doubles, topTeams?.teams, pokemon.name]);
 
   return (
     <>
@@ -254,30 +242,6 @@ function ModalBody({
           </div>
         </div>
       </header>
-
-      <div
-        className="mb-3 flex overflow-hidden rounded-lg border text-xs"
-        style={{ borderColor: "var(--border)" }}
-      >
-        {(["doubles", "singles"] as Tab[]).map((tg) => (
-          <button
-            key={tg}
-            type="button"
-            onClick={() => setTab(tg)}
-            className="flex-1 px-3 py-1.5 font-medium"
-            style={
-              tab === tg
-                ? { backgroundColor: "var(--accent)", color: "#ffffff" }
-                : {
-                    backgroundColor: "var(--bg-elev)",
-                    color: "var(--text-muted)",
-                  }
-            }
-          >
-            {t(`pokemon_detail.${tg}`)}
-          </button>
-        ))}
-      </div>
 
       <section className="mb-4 space-y-2">
         <h3

@@ -5,10 +5,14 @@ use crate::adapters::sprite_resolver::{
 use crate::domain::format::Format;
 use crate::domain::usage_stats::{MetaSnapshot, MovesetUsage, PokemonUsage, UsageEntry};
 use chrono::Utc;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// Aggregates Limitless standings into a MetaSnapshot.
-/// Entries are weighted equally (placement weighting is out of scope v1).
+///
+/// Species usage is reported as **team-fraction** (teams using the species /
+/// total teams), matching Pikalytics' own semantics. Items / moves / abilities
+/// stay on pick-fraction because a single team can use the same item on
+/// multiple members and the "top in meta" card is really asking about picks.
 pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> MetaSnapshot {
     let tournaments_used = standings.len() as u32;
 
@@ -16,6 +20,7 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
     let mut items_count: HashMap<String, u32> = HashMap::new();
     let mut moves_count: HashMap<String, u32> = HashMap::new();
     let mut abilities_count: HashMap<String, u32> = HashMap::new();
+    let mut total_teams: u32 = 0;
     let mut total_entries: u32 = 0;
 
     for standings_list in standings {
@@ -26,6 +31,12 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
             if deck.is_empty() {
                 continue;
             }
+            total_teams += 1;
+
+            // De-duplicate by canonical species id so a team that somehow
+            // repeats a form still counts once toward the team-fraction.
+            let mut seen_on_team: HashSet<String> = HashSet::new();
+
             let teammates: Vec<(String, String)> = deck
                 .iter()
                 .filter_map(|d| {
@@ -44,7 +55,10 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
                 let acc = pokemon_count
                     .entry(key.clone())
                     .or_insert_with(|| PokemonAccumulator::new(display));
-                acc.count += 1;
+
+                if seen_on_team.insert(key.clone()) {
+                    acc.count += 1;
+                }
 
                 accumulate(entry, acc);
 
@@ -72,13 +86,13 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
         }
     }
 
-    let total = total_entries.max(1) as f32;
+    let teams_div = total_teams.max(1) as f32;
 
     let mut pokemon: Vec<PokemonUsage> = pokemon_count
         .into_values()
         .map(|acc| PokemonUsage {
             species: acc.display.clone(),
-            usage_percent: (acc.count as f32 / total) * 100.0,
+            usage_percent: (acc.count as f32 / teams_div) * 100.0,
             count: acc.count,
             top_items: top_n(&acc.items, 5),
             top_moves: top_n(&acc.moves, 6),
@@ -331,6 +345,31 @@ mod tests {
                 .iter()
                 .any(|s| *s == "Wash Rotom" || *s == "Heat Rotom"),
             "inverted forms should be normalized; got {species:?}"
+        );
+    }
+
+    #[test]
+    fn usage_percent_is_team_fraction_not_pick_fraction() {
+        // Team-fraction: 1 team uses Incineroar, 1 team total → 100%.
+        // Under the old pick-fraction divisor this would be 1/6 ≈ 16.7%.
+        let deck = vec![
+            entry("Incineroar"),
+            entry("Amoonguss"),
+            entry("Iron Hands"),
+            entry("Rillaboom"),
+            entry("Dondozo"),
+            entry("Tatsugiri"),
+        ];
+        let snap = aggregate(Format::RegulationMA, vec![vec![standing(deck)]]);
+        let inc = snap
+            .pokemon
+            .iter()
+            .find(|p| p.species == "Incineroar")
+            .expect("incineroar");
+        assert!(
+            (inc.usage_percent - 100.0).abs() < 0.01,
+            "got {}",
+            inc.usage_percent
         );
     }
 }

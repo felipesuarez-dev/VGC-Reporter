@@ -7,7 +7,6 @@ use crate::storage::CacheRepo;
 use std::sync::Arc;
 
 const DOUBLES_SLUGS: &[&str] = &["gen9vgc2025", "gen9vgc2024regg", "gen9vgc2024"];
-const SINGLES_SLUGS: &[&str] = &["gen9ou"];
 
 #[derive(Clone)]
 pub struct SetsService {
@@ -20,8 +19,8 @@ impl SetsService {
         Self { pkmn, cache }
     }
 
-    /// Fetches curated sets for a species across doubles and singles slugs,
-    /// walking each fallback chain until something hits.
+    /// Fetches curated doubles sets for a species, walking the fallback chain
+    /// until something hits.
     pub async fn get_bundle(&self, species: &str) -> Result<SetsBundle, AppError> {
         let cache_key = format!("sets-bundle::{}", species.to_lowercase());
         if let Some(bytes) = self.cache.get(&cache_key)? {
@@ -31,14 +30,11 @@ impl SetsService {
         }
 
         let (doubles, doubles_source) = self.collect_for(species, DOUBLES_SLUGS).await?;
-        let (singles, singles_source) = self.collect_for(species, SINGLES_SLUGS).await?;
 
         let bundle = SetsBundle {
             species: species.to_string(),
             doubles,
-            singles,
             doubles_source,
-            singles_source,
         };
 
         if let Ok(bytes) = serde_json::to_vec(&bundle) {

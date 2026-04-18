@@ -6,11 +6,12 @@ use crate::domain::pikalytics::{
 };
 use crate::error::AppError;
 use scraper::{ElementRef, Html, Selector};
+use std::sync::OnceLock;
 
-/// Pikalytics does not publish an API. We scrape the Regulation H doubles
-/// page, which is the closest public equivalent to Reg M for doubles usage
-/// data. The parser degrades gracefully: any missing section returns empty,
-/// it never panics on selector misses.
+/// Pikalytics does not publish an API. We scrape the official Champions
+/// Tournaments page (VGC 2026), which is the authoritative source for the
+/// current format's aggregated data. The parser degrades gracefully: any
+/// missing section returns empty, it never panics on selector misses.
 #[derive(Clone)]
 pub struct PikalyticsClient {
     http: HttpClient,
@@ -39,16 +40,51 @@ impl PikalyticsClient {
 }
 
 fn build_url(species_id: &str, lang: &str) -> String {
+    // Pikalytics expects ISO 639-3 (`spa`) on the query string, not `es`.
     let lang_suffix = match lang {
-        "es" => "?l=es",
+        "es" => "?l=spa",
         _ => "",
     };
     format!(
-        "{}/pokedex/gen9vgc2024regh/{}{}",
+        "{}/pokedex/championstournaments/{}{}",
         config::PIKALYTICS_BASE,
         species_id,
         lang_suffix
     )
+}
+
+// ---------- cached selectors (never-failing literals) ----------
+
+macro_rules! cached_selector {
+    ($name:ident, $query:expr) => {
+        fn $name() -> &'static Selector {
+            static S: OnceLock<Selector> = OnceLock::new();
+            S.get_or_init(|| Selector::parse($query).expect("valid selector literal"))
+        }
+    };
+}
+
+cached_selector!(sel_row, ".pokedex-move-entry-new");
+cached_selector!(sel_usage, ".pokedex-inline-right");
+cached_selector!(sel_inline_text, ".pokedex-inline-text");
+cached_selector!(sel_inline_text_offset, ".pokedex-inline-text-offset");
+cached_selector!(sel_teammate_entry, "a.teammate_entry");
+cached_selector!(sel_items_container, "#items_wrapper");
+cached_selector!(sel_moves_container, "#moves_wrapper");
+cached_selector!(sel_abilities_container, "#abilities_wrapper");
+cached_selector!(sel_teammates_container, "#dex_team_wrapper");
+cached_selector!(sel_spreads_container, "#dex_spreads_wrapper");
+cached_selector!(
+    sel_header_usage,
+    ".usage-container .usage, .pokemon-usage, .stat-value"
+);
+
+enum RowKind {
+    /// Row where the visible name sits in `.pokedex-inline-text` (items).
+    Item,
+    /// Row where the name sits in `.pokedex-inline-text-offset` (moves,
+    /// abilities).
+    Name,
 }
 
 fn parse_entry(html: &str, species_id: &str, species_display: &str, url: &str) -> PikalyticsEntry {
@@ -59,180 +95,119 @@ fn parse_entry(html: &str, species_id: &str, species_display: &str, url: &str) -
         species_display: species_display.to_string(),
         sprite_url: Some(primary_sprite_url(species_display)),
         usage_percent: parse_header_usage(&doc),
-        common_items: parse_named_section(&doc, "items"),
-        common_abilities: parse_named_section(&doc, "abilities"),
-        common_moves: parse_named_section(&doc, "moves"),
+        common_items: parse_rows(&doc, sel_items_container(), RowKind::Item),
+        common_moves: parse_rows(&doc, sel_moves_container(), RowKind::Name),
+        common_abilities: parse_rows(&doc, sel_abilities_container(), RowKind::Name),
         common_teammates: parse_teammates(&doc),
-        common_tera: parse_named_section(&doc, "tera"),
+        common_tera: Vec::new(),
         ev_spreads: parse_spreads(&doc),
         source_url: url.to_string(),
     }
 }
 
 fn parse_header_usage(doc: &Html) -> Option<f32> {
-    let sel = Selector::parse(".usage-container .usage, .pokemon-usage, .stat-value").ok()?;
-    doc.select(&sel)
+    doc.select(sel_header_usage())
         .filter_map(|el| parse_percent(&el.text().collect::<String>()))
         .next()
 }
 
-/// Pikalytics organises its detail pages as titled blocks. We look for a block
-/// whose heading contains the expected keyword (items, abilities, moves,
-/// tera) and then harvest the `<li>` / `.entry` children as name + usage.
-fn parse_named_section(doc: &Html, kind: &str) -> Vec<PikalyticsItem> {
-    let section_sel = match Selector::parse(".pokemon-section, .block, section") {
-        Ok(s) => s,
-        Err(_) => return Vec::new(),
+fn parse_rows(doc: &Html, container_sel: &Selector, kind: RowKind) -> Vec<PikalyticsItem> {
+    let Some(container) = doc.select(container_sel).next() else {
+        return Vec::new();
     };
-    let needle = kind.to_lowercase();
+    let name_sel = match kind {
+        RowKind::Item => sel_inline_text(),
+        RowKind::Name => sel_inline_text_offset(),
+    };
 
-    for section in doc.select(&section_sel) {
-        let heading = section_heading(section);
-        if !heading.to_lowercase().contains(&needle) {
-            continue;
-        }
-        let items = harvest_items(section);
-        if !items.is_empty() {
-            return items;
-        }
-    }
-    Vec::new()
+    container
+        .select(sel_row())
+        .filter_map(|row| {
+            let name = row
+                .select(name_sel)
+                .next()
+                .map(|el| el.text().collect::<String>().trim().to_string())?;
+            if name.is_empty() || name.eq_ignore_ascii_case("Other") {
+                return None;
+            }
+            let usage = row
+                .select(sel_usage())
+                .next()
+                .and_then(|el| parse_percent(&el.text().collect::<String>()));
+            Some(PikalyticsItem {
+                name,
+                usage_percent: usage,
+            })
+        })
+        .take(10)
+        .collect()
 }
 
 fn parse_teammates(doc: &Html) -> Vec<PikalyticsTeammate> {
-    let section_sel = match Selector::parse(".pokemon-section, .block, section") {
-        Ok(s) => s,
-        Err(_) => return Vec::new(),
+    let Some(container) = doc.select(sel_teammates_container()).next() else {
+        return Vec::new();
     };
-    for section in doc.select(&section_sel) {
-        let heading = section_heading(section).to_lowercase();
-        if !heading.contains("teammate") && !heading.contains("compañero") {
-            continue;
-        }
-        return harvest_teammates(section);
-    }
-    Vec::new()
+    container
+        .select(sel_teammate_entry())
+        .filter_map(|row| {
+            let species = row
+                .value()
+                .attr("data-name")
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())?;
+            let usage = row
+                .select(sel_usage())
+                .next()
+                .and_then(|el| parse_percent(&el.text().collect::<String>()));
+            Some(PikalyticsTeammate {
+                species,
+                usage_percent: usage,
+                sprite_url: None,
+            })
+        })
+        .take(10)
+        .collect()
 }
 
 fn parse_spreads(doc: &Html) -> Vec<PikalyticsEvSpread> {
-    let section_sel = match Selector::parse(".pokemon-section, .block, section") {
-        Ok(s) => s,
-        Err(_) => return Vec::new(),
+    let Some(container) = doc.select(sel_spreads_container()).next() else {
+        return Vec::new();
     };
-    for section in doc.select(&section_sel) {
-        let heading = section_heading(section).to_lowercase();
-        if !heading.contains("spread") && !heading.contains("reparto") && !heading.contains("ev") {
-            continue;
-        }
-        let row_sel = match Selector::parse("li, .entry, .row") {
-            Ok(s) => s,
-            Err(_) => continue,
-        };
-        let mut out = Vec::new();
-        for row in section.select(&row_sel) {
-            let text = row.text().collect::<String>();
-            let trimmed = text.trim();
-            if trimmed.is_empty() {
-                continue;
+    container
+        .select(sel_row())
+        .filter_map(|row| {
+            let nature = row
+                .select(sel_inline_text_offset())
+                .next()
+                .map(|el| el.text().collect::<String>().trim().to_string())
+                .filter(|s| !s.is_empty());
+            let evs: Vec<String> = row
+                .select(sel_inline_text())
+                .map(|el| {
+                    el.text()
+                        .collect::<String>()
+                        .trim()
+                        .trim_end_matches('/')
+                        .trim()
+                        .to_string()
+                })
+                .filter(|s| !s.is_empty())
+                .collect();
+            if evs.is_empty() {
+                return None;
             }
-            let usage = parse_percent(trimmed);
-            let (label, nature) = split_label_nature(trimmed);
-            if label.is_empty() {
-                continue;
-            }
-            out.push(PikalyticsEvSpread {
-                label,
+            let usage = row
+                .select(sel_usage())
+                .next()
+                .and_then(|el| parse_percent(&el.text().collect::<String>()));
+            Some(PikalyticsEvSpread {
+                label: evs.join(" / "),
                 usage_percent: usage,
                 nature,
-            });
-            if out.len() >= 10 {
-                break;
-            }
-        }
-        if !out.is_empty() {
-            return out;
-        }
-    }
-    Vec::new()
-}
-
-fn section_heading(section: ElementRef<'_>) -> String {
-    let sel = match Selector::parse("h1, h2, h3, h4, .title, .heading") {
-        Ok(s) => s,
-        Err(_) => return String::new(),
-    };
-    section
-        .select(&sel)
-        .map(|el| el.text().collect::<String>())
-        .next()
-        .unwrap_or_default()
-        .trim()
-        .to_string()
-}
-
-fn harvest_items(section: ElementRef<'_>) -> Vec<PikalyticsItem> {
-    let row_sel = match Selector::parse("li, .entry, .row") {
-        Ok(s) => s,
-        Err(_) => return Vec::new(),
-    };
-    let mut out = Vec::new();
-    for row in section.select(&row_sel) {
-        let text = row.text().collect::<String>();
-        let trimmed = text.trim();
-        if trimmed.is_empty() {
-            continue;
-        }
-        let usage = parse_percent(trimmed);
-        let name = strip_percent(trimmed);
-        if name.is_empty() {
-            continue;
-        }
-        out.push(PikalyticsItem {
-            name,
-            usage_percent: usage,
-        });
-        if out.len() >= 10 {
-            break;
-        }
-    }
-    out
-}
-
-fn harvest_teammates(section: ElementRef<'_>) -> Vec<PikalyticsTeammate> {
-    let row_sel = match Selector::parse("li, .entry, .row") {
-        Ok(s) => s,
-        Err(_) => return Vec::new(),
-    };
-    let img_sel = match Selector::parse("img") {
-        Ok(s) => s,
-        Err(_) => return Vec::new(),
-    };
-    let mut out = Vec::new();
-    for row in section.select(&row_sel) {
-        let text = row.text().collect::<String>();
-        let trimmed = text.trim();
-        if trimmed.is_empty() {
-            continue;
-        }
-        let usage = parse_percent(trimmed);
-        let name = strip_percent(trimmed);
-        if name.is_empty() {
-            continue;
-        }
-        let sprite = row
-            .select(&img_sel)
-            .filter_map(|el| el.value().attr("src").map(|s| s.to_string()))
-            .next();
-        out.push(PikalyticsTeammate {
-            species: name,
-            usage_percent: usage,
-            sprite_url: sprite,
-        });
-        if out.len() >= 10 {
-            break;
-        }
-    }
-    out
+            })
+        })
+        .take(10)
+        .collect()
 }
 
 fn parse_percent(text: &str) -> Option<f32> {
@@ -247,35 +222,10 @@ fn parse_percent(text: &str) -> Option<f32> {
     clean.parse::<f32>().ok()
 }
 
-fn strip_percent(text: &str) -> String {
-    let mut cleaned = text.replace('\n', " ");
-    if let Some(idx) = cleaned.find('%') {
-        let before = &cleaned[..idx];
-        if let Some(num_start) =
-            before.rfind(|c: char| !(c.is_ascii_digit() || c == '.' || c == ','))
-        {
-            cleaned = format!("{}{}", &cleaned[..=num_start], &cleaned[idx + 1..]);
-        } else {
-            cleaned = cleaned[idx + 1..].to_string();
-        }
-    }
-    cleaned.split_whitespace().collect::<Vec<_>>().join(" ")
-}
-
-fn split_label_nature(text: &str) -> (String, Option<String>) {
-    let label = strip_percent(text);
-    let natures = [
-        "Hardy", "Lonely", "Brave", "Adamant", "Naughty", "Bold", "Docile", "Relaxed", "Impish",
-        "Lax", "Timid", "Hasty", "Serious", "Jolly", "Naive", "Modest", "Mild", "Quiet", "Bashful",
-        "Rash", "Calm", "Gentle", "Sassy", "Careful", "Quirky",
-    ];
-    for n in natures {
-        if label.contains(n) {
-            let cleaned = label.replace(n, "").trim().to_string();
-            return (cleaned, Some(n.to_string()));
-        }
-    }
-    (label, None)
+// Keeps the warn-unused-on-future-expansion contract explicit.
+#[allow(dead_code)]
+fn element_text(el: ElementRef<'_>) -> String {
+    el.text().collect::<String>().trim().to_string()
 }
 
 #[cfg(test)]
@@ -288,20 +238,67 @@ mod tests {
     }
 
     #[test]
-    fn strip_percent_removes_inline_usage() {
-        assert_eq!(strip_percent("Protect 61.3%"), "Protect");
+    fn build_url_uses_champions_tournaments_and_spa_lang() {
+        assert!(build_url("incineroar", "en").ends_with("/championstournaments/incineroar"));
+        assert!(build_url("incineroar", "es").ends_with("/championstournaments/incineroar?l=spa"));
     }
 
     #[test]
-    fn split_label_extracts_nature() {
-        let (label, nature) = split_label_nature("252 HP / 4 Atk Adamant 28.4%");
-        assert_eq!(nature.as_deref(), Some("Adamant"));
-        assert!(label.contains("252 HP"));
+    fn parses_items_moves_abilities_teammates_spreads_from_real_html() {
+        const SAMPLE: &str = include_str!("pikalytics_sample.html");
+        let entry = parse_entry(
+            SAMPLE,
+            "incineroar",
+            "Incineroar",
+            "https://www.pikalytics.com/pokedex/championstournaments/incineroar",
+        );
+
+        assert!(!entry.common_items.is_empty(), "items should parse");
+        assert!(
+            entry.common_items.iter().any(|i| i.usage_percent.is_some()),
+            "at least one item should have a usage %"
+        );
+        assert!(
+            entry
+                .common_moves
+                .iter()
+                .any(|m| m.name.eq_ignore_ascii_case("Fake Out")),
+            "Fake Out should be among top moves"
+        );
+        assert!(!entry.common_abilities.is_empty(), "abilities should parse");
+        assert!(
+            entry.common_teammates.iter().any(|t| !t.species.is_empty()),
+            "at least one teammate with data-name"
+        );
+        assert!(
+            entry
+                .ev_spreads
+                .iter()
+                .any(|s| s.nature.is_some() && !s.label.is_empty()),
+            "spread with nature and evs"
+        );
     }
 
     #[test]
-    fn build_url_adds_lang_suffix() {
-        assert!(build_url("incineroar", "en").ends_with("/incineroar"));
-        assert!(build_url("incineroar", "es").ends_with("?l=es"));
+    fn other_row_is_skipped() {
+        // Defensive: Pikalytics occasionally renders an "Other" bucket that
+        // aggregates the long tail. We don't want to surface it as a concrete
+        // pick.
+        const SAMPLE: &str = r#"
+            <div id="items_wrapper">
+              <div class="pokedex-move-entry-new">
+                <span class="pokedex-inline-text">Safety Goggles</span>
+                <span class="pokedex-inline-right">53.2%</span>
+              </div>
+              <div class="pokedex-move-entry-new">
+                <span class="pokedex-inline-text">Other</span>
+                <span class="pokedex-inline-right">12.1%</span>
+              </div>
+            </div>
+        "#;
+        let doc = Html::parse_document(SAMPLE);
+        let rows = parse_rows(&doc, sel_items_container(), RowKind::Item);
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].name, "Safety Goggles");
     }
 }

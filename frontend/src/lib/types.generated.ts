@@ -15,7 +15,7 @@ export type EvSpread = { hp: number, atk: number, def: number, spa: number, spd:
 /**
  * Competitive format. Multi-variant: frontend can switch freely.
  */
-export type Format = "regulation-m-a" | "champions-singles" | "regulation-i" | "gen9-ou";
+export type Format = "regulation-m-a" | "regulation-i";
 
 export type Item = { id: string, name: string, description: string, };
 
@@ -95,11 +95,11 @@ export type PokemonType = "Normal" | "Fire" | "Water" | "Electric" | "Grass" | "
 export type PokemonUsage = { species: string, usage_percent: number, count: number, top_items: Array<UsageEntry>, top_moves: Array<UsageEntry>, top_abilities: Array<UsageEntry>, top_tera: Array<UsageEntry>, top_teammates: Array<UsageEntry>, top_natures: Array<UsageEntry>, common_movesets: Array<MovesetUsage>, sprite_url: string, sprite_fallback_url: string | null, };
 
 /**
- * Bundle of curated sets for a Pokémon, split by play style.
- * `*_source` carries the slug actually used after the fallback chain (so the
- * UI can disclose where the data came from).
+ * Bundle of curated doubles sets for a Pokémon.
+ * `doubles_source` carries the slug actually used after the fallback chain
+ * (so the UI can disclose where the data came from).
  */
-export type SetsBundle = { species: string, doubles: Array<PokemonSet>, singles: Array<PokemonSet>, doubles_source: string | null, singles_source: string | null, };
+export type SetsBundle = { species: string, doubles: Array<PokemonSet>, doubles_source: string | null, };
 
 export type Stats = { hp: number, atk: number, def: number, spa: number, spd: number, spe: number, };
 

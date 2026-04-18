@@ -65,7 +65,7 @@ impl LimitlessClient {
         let all = self.list_tournaments(format, 100).await?;
         let all = exclude_non_vgc(all);
         let filtered = match format {
-            Format::RegulationMA | Format::ChampionsSingles => filter_champions(all, limit),
+            Format::RegulationMA => filter_champions(all, limit),
             _ => all.into_iter().take(limit).collect(),
         };
         Ok(filtered)

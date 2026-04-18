@@ -125,12 +125,18 @@ fn apply_alias(species: &str) -> String {
     }
     let lower = trimmed.to_ascii_lowercase();
 
-    // Inverted Rotom forms: "Wash-Rotom" → "Rotom-Wash".
-    for form in ["wash", "heat", "frost", "fan", "mow"] {
-        if lower == format!("{}-rotom", form) {
-            let mut chars = form.chars();
-            let first = chars.next().unwrap().to_ascii_uppercase();
-            return format!("Rotom-{}{}", first, chars.as_str());
+    // Inverted Rotom forms: hyphenated ("Wash-Rotom") and concatenated
+    // ("washrotom"). Both normalize to Showdown's "Rotom-Wash" order.
+    const ROTOM_ALIASES: &[(&str, &str, &str)] = &[
+        ("wash-rotom", "washrotom", "Wash"),
+        ("heat-rotom", "heatrotom", "Heat"),
+        ("frost-rotom", "frostrotom", "Frost"),
+        ("fan-rotom", "fanrotom", "Fan"),
+        ("mow-rotom", "mowrotom", "Mow"),
+    ];
+    for (hyph, concat, canonical) in ROTOM_ALIASES {
+        if lower == *hyph || lower == *concat {
+            return format!("Rotom-{canonical}");
         }
     }
 
@@ -261,6 +267,18 @@ mod tests {
         );
 
         assert_eq!(canonical_id("Wash-Rotom"), "rotomwash");
+    }
+
+    #[test]
+    fn rotom_concatenated_forms_flip_to_canonical() {
+        // Limitless/Smogon sometimes emit the concatenated slug ("washrotom")
+        // without a hyphen; we still need canonical_id to land on "rotomwash".
+        assert_eq!(canonical_id("washrotom"), "rotomwash");
+        assert_eq!(canonical_id("heatrotom"), "rotomheat");
+        assert_eq!(canonical_id("frostrotom"), "rotomfrost");
+        assert_eq!(canonical_id("fanrotom"), "rotomfan");
+        assert_eq!(canonical_id("mowrotom"), "rotommow");
+        assert_eq!(canonical_id("Washrotom"), "rotomwash");
     }
 
     #[test]

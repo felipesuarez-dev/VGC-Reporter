@@ -1,3 +1,5 @@
+import { EntityChip } from "../info/EntityChip";
+
 interface TopListItem {
   name: string;
   usage_percent: number;
@@ -8,9 +10,21 @@ interface Props {
   limit?: number;
   emptyLabel?: string;
   labelFor?: (name: string) => string;
+  /**
+   * When set, rows are rendered via `EntityChip` so hovering shows the rich
+   * localized tooltip (name + TypeBadge + category icon + description). Takes
+   * precedence over `labelFor`.
+   */
+  entityKind?: "item" | "move" | "ability";
 }
 
-export function TopList({ data, limit = 10, emptyLabel = "—", labelFor }: Props) {
+export function TopList({
+  data,
+  limit = 10,
+  emptyLabel = "—",
+  labelFor,
+  entityKind,
+}: Props) {
   const items = data.slice(0, limit);
   if (items.length === 0) {
     return (
@@ -24,13 +38,16 @@ export function TopList({ data, limit = 10, emptyLabel = "—", labelFor }: Prop
     <ul className="space-y-1.5">
       {items.map((item) => {
         const width = Math.max((item.usage_percent / max) * 100, 2);
-        const label = labelFor ? labelFor(item.name) : item.name;
         return (
           <li key={item.name} className="text-xs">
             <div className="flex items-baseline justify-between gap-2">
-              <span className="truncate" style={{ color: "var(--text)" }}>
-                {label}
-              </span>
+              {entityKind ? (
+                <EntityChip kind={entityKind} name={item.name} className="truncate" />
+              ) : (
+                <span className="truncate" style={{ color: "var(--text)" }}>
+                  {labelFor ? labelFor(item.name) : item.name}
+                </span>
+              )}
               <span
                 className="shrink-0 tabular-nums"
                 style={{ color: "var(--accent)" }}

@@ -16,7 +16,6 @@ import { XCard } from "../components/dashboard/XCard";
 import { TournamentStandingsDrawer } from "../components/tournament/TournamentStandingsDrawer";
 import { useDashboardStore, type TournamentCount } from "../stores/dashboardStore";
 import { usePokedexStore } from "../stores/pokedexStore";
-import { useLocalize } from "../hooks/useTranslations";
 
 function canonicalSpeciesId(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -41,7 +40,6 @@ async function openExternal(url: string) {
 export function Dashboard() {
   const { t, i18n } = useTranslation();
   const qc = useQueryClient();
-  const localize = useLocalize();
   const format = useDashboardStore((s) => s.format);
   const favoriteFormat = useDashboardStore((s) => s.favoriteFormat);
   const tournamentCount = useDashboardStore((s) => s.tournamentCount);
@@ -188,31 +186,19 @@ export function Dashboard() {
               <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
                 {t("dashboard.top_items")}
               </h2>
-              <TopList
-                data={topItems}
-                limit={10}
-                labelFor={(n) => localize("item", n)}
-              />
+              <TopList data={topItems} limit={10} entityKind="item" />
             </div>
             <div className="card">
               <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
                 {t("dashboard.top_moves")}
               </h2>
-              <TopList
-                data={topMoves}
-                limit={10}
-                labelFor={(n) => localize("move", n)}
-              />
+              <TopList data={topMoves} limit={10} entityKind="move" />
             </div>
             <div className="card">
               <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
                 {t("dashboard.top_abilities")}
               </h2>
-              <TopList
-                data={topAbilities}
-                limit={10}
-                labelFor={(n) => localize("ability", n)}
-              />
+              <TopList data={topAbilities} limit={10} entityKind="ability" />
             </div>
           </section>
 
