@@ -74,7 +74,8 @@ export function PokemonMultiSelect({
               {p ? (
                 <PokemonSprite
                   url={p.sprite_url}
-                  fallbackUrl={p.sprite_fallback_url}
+                  fallbackUrl={p.sprite_fallback_url ?? undefined}
+                  homeUrl={p.home_sprite_url ?? undefined}
                   name={p.name}
                   size={16}
                 />
@@ -125,7 +126,8 @@ export function PokemonMultiSelect({
                 >
                   <PokemonSprite
                     url={p.sprite_url}
-                    fallbackUrl={p.sprite_fallback_url}
+                    fallbackUrl={p.sprite_fallback_url ?? undefined}
+                    homeUrl={p.home_sprite_url ?? undefined}
                     name={p.name}
                     size={24}
                   />

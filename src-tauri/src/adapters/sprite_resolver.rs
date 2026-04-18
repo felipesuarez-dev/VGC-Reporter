@@ -125,6 +125,14 @@ fn apply_alias(species: &str) -> String {
     }
     let lower = trimmed.to_ascii_lowercase();
 
+    // Modifier-first legacy formats: Labmaus/Pokepaste sometimes emit
+    // "Mega Scizor", "Gigantamax Charizard", "Primal Groudon" (keyword
+    // first). Showdown keys them base-first hyphenated, so rewrite here
+    // before any id/slug normalization runs.
+    if let Some(rewritten) = rewrite_modifier_first(trimmed) {
+        return rewritten;
+    }
+
     // Inverted Rotom forms: hyphenated ("Wash-Rotom") and concatenated
     // ("washrotom"). Both normalize to Showdown's "Rotom-Wash" order.
     const ROTOM_ALIASES: &[(&str, &str, &str)] = &[
@@ -144,6 +152,58 @@ fn apply_alias(species: &str) -> String {
         "greninja-bond" | "ash-greninja" => "Greninja-Ash".to_string(),
         "floette-mega" => "Floette-Eternal".to_string(),
         _ => trimmed.to_string(),
+    }
+}
+
+/// Detect the "{Modifier} {Base...}" pattern Labmaus (and sometimes
+/// Pokepaste) emits for legacy formes and rewrite it to Showdown's
+/// base-first hyphenated order. Returns `None` when the input doesn't
+/// start with a known keyword or the base would be empty.
+fn rewrite_modifier_first(raw: &str) -> Option<String> {
+    let tokens: Vec<&str> = raw
+        .split(|c: char| c.is_whitespace() || c == '-')
+        .filter(|t| !t.is_empty())
+        .collect();
+    if tokens.len() < 2 {
+        return None;
+    }
+    let head = tokens[0].to_ascii_lowercase();
+    let join_base = |base: &[&str]| {
+        base.iter()
+            .map(|t| titlecase(t))
+            .collect::<Vec<_>>()
+            .join("-")
+    };
+    match head.as_str() {
+        "mega" => {
+            let last = tokens[tokens.len() - 1].to_ascii_lowercase();
+            if (last == "x" || last == "y") && tokens.len() >= 3 {
+                let base = join_base(&tokens[1..tokens.len() - 1]);
+                Some(format!("{}-Mega-{}", base, last.to_ascii_uppercase()))
+            } else {
+                Some(format!("{}-Mega", join_base(&tokens[1..])))
+            }
+        }
+        "gmax" | "gigantamax" => Some(format!("{}-Gmax", join_base(&tokens[1..]))),
+        "primal" => Some(format!("{}-Primal", join_base(&tokens[1..]))),
+        _ => None,
+    }
+}
+
+/// Uppercase the first character, lowercase the rest. Good enough for
+/// normalizing incoming tokens like "SCIZOR"/"scizor" → "Scizor".
+fn titlecase(s: &str) -> String {
+    let mut chars = s.chars();
+    match chars.next() {
+        None => String::new(),
+        Some(first) => {
+            let mut out = String::with_capacity(s.len());
+            out.extend(first.to_uppercase());
+            for c in chars {
+                out.extend(c.to_lowercase());
+            }
+            out
+        }
     }
 }
 
@@ -320,5 +380,46 @@ mod tests {
         assert!(primary_sprite_url("Tatsugiri-Droopy").ends_with("/tatsugiridroopy.png"));
         assert!(primary_sprite_url("Tatsugiri-Curly").ends_with("/tatsugiricurly.png"));
         assert!(primary_sprite_url("Tatsugiri-Stretchy").ends_with("/tatsugiristretchy.png"));
+    }
+
+    #[test]
+    fn modifier_first_megas_rewritten_to_canonical() {
+        assert_eq!(canonical_id("Mega Scizor"), "scizormega");
+        assert_eq!(canonical_id("Mega Charizard X"), "charizardmegax");
+        assert_eq!(canonical_id("Mega Charizard Y"), "charizardmegay");
+        assert_eq!(canonical_id("Mega Mewtwo X"), "mewtwomegax");
+        assert_eq!(canonical_id("Mega Mewtwo Y"), "mewtwomegay");
+        assert!(primary_sprite_url("Mega Scizor").ends_with("/scizor-mega.png"));
+        assert!(primary_sprite_url("Mega Charizard X").ends_with("/charizard-megax.png"));
+
+        assert_eq!(canonical_id("Mega-Scizor"), "scizormega");
+        assert_eq!(canonical_id("Mega-Charizard-X"), "charizardmegax");
+
+        // Base-first inputs are a no-op for the rewriter but still resolve.
+        assert_eq!(canonical_id("Scizor-Mega"), "scizormega");
+        assert_eq!(canonical_id("Charizard-Mega-X"), "charizardmegax");
+        assert!(primary_sprite_url("Scizor-Mega").ends_with("/scizor-mega.png"));
+    }
+
+    #[test]
+    fn gigantamax_rewritten_to_gmax_suffix() {
+        assert_eq!(canonical_id("Gigantamax Charizard"), "charizardgmax");
+        assert_eq!(canonical_id("Gmax Charizard"), "charizardgmax");
+        assert_eq!(canonical_id("Gmax-Snorlax"), "snorlaxgmax");
+        assert!(primary_sprite_url("Gigantamax Charizard").ends_with("/charizard-gmax.png"));
+    }
+
+    #[test]
+    fn primal_rewritten_to_primal_suffix() {
+        assert_eq!(canonical_id("Primal Groudon"), "groudonprimal");
+        assert_eq!(canonical_id("Primal Kyogre"), "kyogreprimal");
+        assert!(primary_sprite_url("Primal Groudon").ends_with("/groudon-primal.png"));
+    }
+
+    #[test]
+    fn modifier_first_case_insensitive() {
+        assert_eq!(canonical_id("mega scizor"), "scizormega");
+        assert_eq!(canonical_id("MEGA SCIZOR"), "scizormega");
+        assert_eq!(canonical_id("GiGaNtAmAx Charizard"), "charizardgmax");
     }
 }

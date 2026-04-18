@@ -111,7 +111,7 @@ export type TeamMember = { species: string, item: string | null, ability: string
 
 export type TeamValidationError = { "WrongSize": number } | { "InvalidEvs": number } | { "InvalidMoves": number } | { "EmptySpecies": number } | "EmptyName";
 
-export type TeammateUsage = { name: string, usage_percent: number, count: number, sprite_url: string, sprite_fallback_url: string | null, };
+export type TeammateUsage = { name: string, usage_percent: number, count: number, sprite_url: string, sprite_fallback_url: string | null, home_sprite_url: string | null, };
 
 /**
  * Tera Type uses the same type list as Pokémon (including Stellar).
@@ -133,7 +133,7 @@ export type TournamentStanding = { placing: number | null, player_name: string |
 
 export type TranslationTable = { abilities: { [key in string]?: LocalizedName }, moves: { [key in string]?: LocalizedName }, items: { [key in string]?: LocalizedName }, };
 
-export type TrendingPokemon = { species: string, sprite_url: string, sprite_fallback_url: string | null, change_percentage: number, day1_percentage: number, day2_percentage: number, };
+export type TrendingPokemon = { species: string, sprite_url: string, sprite_fallback_url: string | null, home_sprite_url: string | null, change_percentage: number, day1_percentage: number, day2_percentage: number, };
 
 export type TrendingReport = { rising: Array<TrendingPokemon>, falling: Array<TrendingPokemon>, from_date: string | null, to_date: string | null, };
 

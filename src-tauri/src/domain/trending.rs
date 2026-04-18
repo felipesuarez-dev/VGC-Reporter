@@ -8,6 +8,8 @@ pub struct TrendingPokemon {
     pub sprite_url: String,
     #[serde(default)]
     pub sprite_fallback_url: Option<String>,
+    #[serde(default)]
+    pub home_sprite_url: Option<String>,
     pub change_percentage: f32,
     pub day1_percentage: f32,
     pub day2_percentage: f32,

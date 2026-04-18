@@ -214,7 +214,13 @@ export function Dashboard() {
                   onClick={() => openSpecies(p.species)}
                   className="card flex flex-col items-center gap-1 text-center transition hover:border-[var(--accent)] hover:bg-[var(--bg-elev-strong)]"
                 >
-                  <PokemonSprite url={p.sprite_url} name={p.species} size={64} />
+                  <PokemonSprite
+                    url={p.sprite_url}
+                    fallbackUrl={p.sprite_fallback_url ?? undefined}
+                    homeUrl={p.home_sprite_url ?? undefined}
+                    name={p.species}
+                    size={64}
+                  />
                   <div className="text-xs font-semibold" style={{ color: "var(--text)" }}>
                     {p.species}
                   </div>

@@ -114,6 +114,7 @@ function TrendingColumn({
               <PokemonSprite
                 url={e.sprite_url}
                 fallbackUrl={e.sprite_fallback_url ?? undefined}
+                homeUrl={e.home_sprite_url ?? undefined}
                 name={e.species}
                 size={28}
                 variant="pixel"

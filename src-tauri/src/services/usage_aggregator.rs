@@ -281,6 +281,7 @@ fn top_teammates(map: &HashMap<String, TeammateAcc>, n: usize) -> Vec<TeammateUs
             count: t.count,
             sprite_url: primary_sprite_url(&t.canonical),
             sprite_fallback_url: fallback_sprite_url(&t.canonical),
+            home_sprite_url: None,
         })
         .collect()
 }

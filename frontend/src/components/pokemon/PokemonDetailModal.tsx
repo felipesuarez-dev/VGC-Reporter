@@ -19,7 +19,6 @@ import { useDashboardStore } from "../../stores/dashboardStore";
 import { usePokedexStore } from "../../stores/pokedexStore";
 import { PokemonSprite } from "./PokemonSprite";
 import { TypeBadge } from "./TypeBadge";
-import { PokemonSetCard } from "./PokemonSetCard";
 import { MovesetTierCard } from "./MovesetTierCard";
 import { PikalyticsSection } from "./PikalyticsSection";
 import { useLocalize, type LocalizeKind } from "../../hooks/useTranslations";
@@ -46,13 +45,6 @@ export function PokemonDetailModal() {
     queryKey: queryKeys.pokedex.detail(id ?? ""),
     queryFn: () => ipc.getPokemon(id!),
     enabled: Boolean(id),
-  });
-
-  const sets = useQuery({
-    queryKey: queryKeys.sets(pokemon.data?.name ?? ""),
-    queryFn: () => ipc.getPokemonSets(pokemon.data!.name),
-    enabled: Boolean(pokemon.data),
-    staleTime: 60 * 60 * 1000,
   });
 
   const meta = useQuery({
@@ -116,8 +108,6 @@ export function PokemonDetailModal() {
         {pokemon.data && (
           <ModalBody
             pokemon={pokemon.data}
-            sets={sets.data ?? null}
-            setsLoading={sets.isLoading}
             metaUsage={meta.data?.pokemon ?? []}
             metaPokedex={meta.data}
             topTeams={topTeams.data ?? null}
@@ -130,8 +120,6 @@ export function PokemonDetailModal() {
 
 interface BodyProps {
   pokemon: Pokemon;
-  sets: import("../../lib/types").SetsBundle | null;
-  setsLoading: boolean;
   metaUsage: import("../../lib/types").PokemonUsage[];
   metaPokedex: import("../../lib/types").MetaSnapshot | undefined;
   topTeams: TopTeamsReport | null;
@@ -139,8 +127,6 @@ interface BodyProps {
 
 function ModalBody({
   pokemon,
-  sets,
-  setsLoading,
   metaUsage,
   topTeams,
 }: BodyProps) {
@@ -157,17 +143,11 @@ function ModalBody({
   const resistances = useMemo(() => resistancesOf(pokemon.types), [pokemon.types]);
   const coverage = useMemo(() => offensiveCoverage(pokemon.types), [pokemon.types]);
 
-  const tabSets = sets?.doubles ?? [];
-  const tabSource = sets?.doubles_source ?? null;
-
   const naturesEntries = useMemo(() => {
     const usageNatures = myUsage?.top_natures ?? [];
     if (usageNatures.length > 0) return usageNatures;
     const counts = new Map<string, number>();
-    for (const s of sets?.doubles ?? []) {
-      if (s.nature) counts.set(s.nature, (counts.get(s.nature) ?? 0) + 1);
-    }
-    if (counts.size === 0 && topTeams?.teams) {
+    if (topTeams?.teams) {
       const target = canonicalSpeciesId(pokemon.name);
       for (const team of topTeams.teams) {
         for (const m of team.members) {
@@ -186,7 +166,7 @@ function ModalBody({
         count,
         usage_percent: (count / total) * 100,
       }));
-  }, [myUsage?.top_natures, sets?.doubles, topTeams?.teams, pokemon.name]);
+  }, [myUsage?.top_natures, topTeams?.teams, pokemon.name]);
 
   return (
     <>
@@ -244,37 +224,6 @@ function ModalBody({
           </div>
         </div>
       </header>
-
-      <section className="mb-4 space-y-2">
-        <h3
-          className="text-xs font-semibold uppercase tracking-wide"
-          style={{ color: "var(--text-muted)" }}
-        >
-          {t("pokemon_detail.curated_sets")}
-        </h3>
-        {setsLoading && (
-          <p className="text-xs" style={{ color: "var(--text-dim)" }}>
-            {t("common.loading")}
-          </p>
-        )}
-        {!setsLoading && tabSets.length === 0 && (
-          <p className="text-xs" style={{ color: "var(--text-dim)" }}>
-            {t("pokemon_detail.no_sets")}
-          </p>
-        )}
-        {tabSets.length > 0 && (
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-            {tabSets.map((s, i) => (
-              <PokemonSetCard key={`${s.name}-${i}`} set={s} />
-            ))}
-          </div>
-        )}
-        {tabSource && (
-          <p className="text-[10px]" style={{ color: "var(--text-dim)" }}>
-            {t("pokemon_detail.source")}: {tabSource}
-          </p>
-        )}
-      </section>
 
       {(myUsage || naturesEntries.length > 0) && (
         <section className="mb-4 space-y-2">
@@ -527,6 +476,7 @@ function TeammatesList({
                 <PokemonSprite
                   url={e.sprite_url}
                   fallbackUrl={e.sprite_fallback_url ?? undefined}
+                  homeUrl={e.home_sprite_url ?? undefined}
                   name={e.name}
                   size={22}
                   variant="pixel"

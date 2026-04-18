@@ -220,6 +220,7 @@ fn to_domain(e: TrendingEntry) -> Option<TrendingPokemon> {
         species: prettify_public(&canonical),
         sprite_url: primary_sprite_url(&canonical),
         sprite_fallback_url: fallback_sprite_url(&canonical),
+        home_sprite_url: None,
         change_percentage: e.change,
         day1_percentage: e.prev_pct,
         day2_percentage: e.curr_pct,

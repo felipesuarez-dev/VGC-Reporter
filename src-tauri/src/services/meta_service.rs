@@ -2,7 +2,7 @@ use crate::adapters::labmaus_client::LabmausDiscoverTeam;
 use crate::adapters::limitless_client::{LimitlessDecklistEntry, LimitlessStanding};
 use crate::adapters::smogon_client::{ChaosStats, SmogonClient};
 use crate::adapters::sprite_resolver::{
-    canonical_display_name, fallback_sprite_url, primary_sprite_url,
+    canonical_display_name, canonical_id, fallback_sprite_url, primary_sprite_url,
 };
 use crate::adapters::{LabmausClient, LimitlessClient, PokepasteClient, ShowdownEntry};
 use crate::config;
@@ -10,6 +10,7 @@ use crate::domain::format::Format;
 use crate::domain::usage_stats::{MetaSnapshot, PokemonUsage, TeammateUsage, UsageEntry};
 use crate::error::AppError;
 use crate::services::date_window::default_window;
+use crate::services::pokedex_service::PokedexService;
 use crate::services::usage_aggregator::{self, top_n_normalized};
 use crate::storage::{CacheRepo, SettingsRepo};
 use chrono::Utc;
@@ -20,12 +21,18 @@ use std::sync::Arc;
 const MIN_LIMITLESS_ENTRIES: u32 = 50;
 const LABMAUS_POKEPASTE_CONCURRENCY: usize = 16;
 
+/// Map from `canonical_id` → `(primary, fallback, home)` sprite URLs, used
+/// to inject pokedex-backed HOME fallbacks into otherwise-sync snapshot
+/// builders. Missing entries trigger the heuristic sprite_resolver path.
+pub(crate) type SpriteMap = HashMap<String, (String, Option<String>, Option<String>)>;
+
 #[derive(Clone)]
 pub struct MetaService {
     labmaus: LabmausClient,
     pokepaste: PokepasteClient,
     limitless: LimitlessClient,
     smogon: SmogonClient,
+    pokedex: Arc<PokedexService>,
     cache: Arc<CacheRepo>,
     settings: Arc<SettingsRepo>,
 }
@@ -36,6 +43,7 @@ impl MetaService {
         pokepaste: PokepasteClient,
         limitless: LimitlessClient,
         smogon: SmogonClient,
+        pokedex: Arc<PokedexService>,
         cache: Arc<CacheRepo>,
         settings: Arc<SettingsRepo>,
     ) -> Self {
@@ -44,9 +52,35 @@ impl MetaService {
             pokepaste,
             limitless,
             smogon,
+            pokedex,
             cache,
             settings,
         }
+    }
+
+    /// Batch-resolve sprites for every unique species (and teammate)
+    /// referenced in a Smogon chaos blob. Keys by `canonical_id` so the
+    /// downstream sync builder can look them up cheaply.
+    async fn resolve_smogon_sprites(&self, chaos: &ChaosStats) -> SpriteMap {
+        let mut names: Vec<String> = Vec::new();
+        for (species, entry) in chaos.data.iter() {
+            names.push(species.clone());
+            for teammate in entry.teammates.keys() {
+                names.push(teammate.clone());
+            }
+        }
+        names.sort();
+        names.dedup();
+        let mut out: SpriteMap = HashMap::with_capacity(names.len());
+        for raw in names {
+            let key = canonical_id(&raw);
+            if key.is_empty() || out.contains_key(&key) {
+                continue;
+            }
+            let urls = self.pokedex.sprite_urls_for(&raw).await;
+            out.insert(key, urls);
+        }
+        out
     }
 
     pub async fn get_meta(
@@ -55,7 +89,7 @@ impl MetaService {
         tournament_count: Option<usize>,
     ) -> Result<MetaSnapshot, AppError> {
         let count = tournament_count.unwrap_or(config::TOURNAMENTS_PER_SNAPSHOT);
-        let cache_key = format!("meta-snapshot-v7::{}::{}", format.cache_id(), count);
+        let cache_key = format!("meta-snapshot-v8::{}::{}", format.cache_id(), count);
         if let Some(bytes) = self.cache.get(&cache_key)? {
             if let Ok(snap) = serde_json::from_slice::<MetaSnapshot>(&bytes) {
                 return Ok(snap);
@@ -114,13 +148,19 @@ impl MetaService {
             None
         };
 
-        let sm_snap = self
+        let sm_snap = match self
             .smogon
             .fetch_chaos_for_format(format, &self.settings)
             .await
             .ok()
             .flatten()
-            .map(|(slug, chaos)| snapshot_from_smogon(format, chaos, &slug));
+        {
+            Some((slug, chaos)) => {
+                let sprites = self.resolve_smogon_sprites(&chaos).await;
+                Some(snapshot_from_smogon(format, chaos, &slug, &sprites))
+            }
+            None => None,
+        };
 
         let final_snap = match (lim_snap, sm_snap) {
             (Some(lim), _) if lim.total_entries >= MIN_LIMITLESS_ENTRIES => lim,
@@ -243,6 +283,7 @@ pub(crate) fn snapshot_from_smogon(
     format: Format,
     chaos: ChaosStats,
     slug_used: &str,
+    sprites: &SpriteMap,
 ) -> MetaSnapshot {
     let mut global_items: HashMap<String, f64> = HashMap::new();
     let mut global_moves: HashMap<String, f64> = HashMap::new();
@@ -271,61 +312,68 @@ pub(crate) fn snapshot_from_smogon(
     let mut pokemon: Vec<PokemonUsage> = chaos
         .data
         .into_iter()
-        .map(|(name, entry)| PokemonUsage {
-            species: usage_aggregator::prettify_public(&name),
-            usage_percent: (entry.usage * 100.0) as f32,
-            count: 0,
-            top_items: entry
-                .items
-                .into_iter()
-                .take(5)
-                .map(|(k, v)| UsageEntry {
-                    name: usage_aggregator::prettify_public(&k),
-                    usage_percent: (v * 100.0) as f32,
-                    count: 0,
-                })
-                .collect(),
-            top_moves: entry
-                .moves
-                .into_iter()
-                .take(6)
-                .map(|(k, v)| UsageEntry {
-                    name: usage_aggregator::prettify_public(&k),
-                    usage_percent: (v * 100.0) as f32,
-                    count: 0,
-                })
-                .collect(),
-            top_abilities: entry
-                .abilities
-                .into_iter()
-                .take(3)
-                .map(|(k, v)| UsageEntry {
-                    name: usage_aggregator::prettify_public(&k),
-                    usage_percent: (v * 100.0) as f32,
-                    count: 0,
-                })
-                .collect(),
-            top_tera: Vec::new(),
-            top_teammates: entry
-                .teammates
-                .into_iter()
-                .take(5)
-                .map(|(k, v)| {
-                    let canonical = canonical_display_name(&k);
-                    TeammateUsage {
-                        name: usage_aggregator::prettify_public(&canonical),
+        .map(|(name, entry)| {
+            let canonical = canonical_display_name(&name);
+            let (primary, fallback, home) = lookup_sprite(sprites, &canonical);
+            PokemonUsage {
+                species: usage_aggregator::prettify_public(&name),
+                usage_percent: (entry.usage * 100.0) as f32,
+                count: 0,
+                top_items: entry
+                    .items
+                    .into_iter()
+                    .take(5)
+                    .map(|(k, v)| UsageEntry {
+                        name: usage_aggregator::prettify_public(&k),
                         usage_percent: (v * 100.0) as f32,
                         count: 0,
-                        sprite_url: primary_sprite_url(&canonical),
-                        sprite_fallback_url: fallback_sprite_url(&canonical),
-                    }
-                })
-                .collect(),
-            top_natures: Vec::new(),
-            common_movesets: Vec::new(),
-            sprite_url: primary_sprite_url(&canonical_display_name(&name)),
-            sprite_fallback_url: fallback_sprite_url(&canonical_display_name(&name)),
-            home_sprite_url: None,
+                    })
+                    .collect(),
+                top_moves: entry
+                    .moves
+                    .into_iter()
+                    .take(6)
+                    .map(|(k, v)| UsageEntry {
+                        name: usage_aggregator::prettify_public(&k),
+                        usage_percent: (v * 100.0) as f32,
+                        count: 0,
+                    })
+                    .collect(),
+                top_abilities: entry
+                    .abilities
+                    .into_iter()
+                    .take(3)
+                    .map(|(k, v)| UsageEntry {
+                        name: usage_aggregator::prettify_public(&k),
+                        usage_percent: (v * 100.0) as f32,
+                        count: 0,
+                    })
+                    .collect(),
+                top_tera: Vec::new(),
+                top_teammates: entry
+                    .teammates
+                    .into_iter()
+                    .take(5)
+                    .map(|(k, v)| {
+                        let canonical_mate = canonical_display_name(&k);
+                        let (m_primary, m_fallback, m_home) =
+                            lookup_sprite(sprites, &canonical_mate);
+                        TeammateUsage {
+                            name: usage_aggregator::prettify_public(&canonical_mate),
+                            usage_percent: (v * 100.0) as f32,
+                            count: 0,
+                            sprite_url: m_primary,
+                            sprite_fallback_url: m_fallback,
+                            home_sprite_url: m_home,
+                        }
+                    })
+                    .collect(),
+                top_natures: Vec::new(),
+                common_movesets: Vec::new(),
+                sprite_url: primary,
+                sprite_fallback_url: fallback,
+                home_sprite_url: home,
+            }
         })
         .collect();
     pokemon.sort_by(|a, b| b.usage_percent.partial_cmp(&a.usage_percent).unwrap());
@@ -348,6 +396,18 @@ pub(crate) fn snapshot_from_smogon(
         from_date: None,
         to_date: None,
     }
+}
+
+fn lookup_sprite(sprites: &SpriteMap, canonical: &str) -> (String, Option<String>, Option<String>) {
+    let key = canonical_id(canonical);
+    if let Some(urls) = sprites.get(&key) {
+        return urls.clone();
+    }
+    (
+        primary_sprite_url(canonical),
+        fallback_sprite_url(canonical),
+        None,
+    )
 }
 
 #[cfg(test)]
@@ -407,7 +467,8 @@ mod tests {
             ),
         );
         let chaos = ChaosStats { data };
-        let snap = snapshot_from_smogon(Format::RegulationI, chaos, "gen9vgc2026regi");
+        let sprites = SpriteMap::new();
+        let snap = snapshot_from_smogon(Format::RegulationI, chaos, "gen9vgc2026regi", &sprites);
         assert!(!snap.top_items.is_empty(), "top_items should be populated");
         assert!(!snap.top_moves.is_empty(), "top_moves should be populated");
         assert!(

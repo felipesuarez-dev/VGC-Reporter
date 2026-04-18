@@ -126,7 +126,7 @@ impl TopTeamsService {
         format: Format,
         limit: usize,
     ) -> Result<TopTeamsReport, AppError> {
-        let key = format!("top-teams::v7::{}::{}", format.cache_id(), limit);
+        let key = format!("top-teams::v8::{}::{}", format.cache_id(), limit);
         if let Some(bytes) = self.cache.get(&key)? {
             if let Ok(report) = serde_json::from_slice::<TopTeamsReport>(&bytes) {
                 return Ok(report);

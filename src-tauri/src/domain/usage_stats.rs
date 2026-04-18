@@ -20,6 +20,8 @@ pub struct TeammateUsage {
     pub sprite_url: String,
     #[serde(default)]
     pub sprite_fallback_url: Option<String>,
+    #[serde(default)]
+    pub home_sprite_url: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]

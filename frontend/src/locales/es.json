@@ -138,10 +138,7 @@
     "clear_filters": "Limpiar filtros"
   },
   "pokemon_detail": {
-    "curated_sets": "Sets competitivos",
     "meta_usage": "Uso en el meta actual",
-    "source": "Fuente",
-    "no_sets": "Sin sets para este formato todavía",
     "matchups": "Enfrentamientos",
     "weak_against": "Débil contra",
     "strong_against": "Fuerte contra",

@@ -43,19 +43,20 @@ impl AppState {
         let labmaus = LabmausClient::new(http.clone());
         let pokepaste = PokepasteClient::new(http.clone());
 
-        let meta = MetaService::new(
-            labmaus.clone(),
-            pokepaste.clone(),
-            limitless.clone(),
-            smogon.clone(),
-            cache.clone(),
-            settings.clone(),
-        );
         let pokedex = Arc::new(PokedexService::new(
             showdown.clone(),
             pokeapi.clone(),
             cache.clone(),
         ));
+        let meta = MetaService::new(
+            labmaus.clone(),
+            pokepaste.clone(),
+            limitless.clone(),
+            smogon.clone(),
+            pokedex.clone(),
+            cache.clone(),
+            settings.clone(),
+        );
         let sets = SetsService::new(pkmn.clone(), cache.clone());
         let teams = TeamService::new(team_repo);
         let top_teams = TopTeamsService::new(
