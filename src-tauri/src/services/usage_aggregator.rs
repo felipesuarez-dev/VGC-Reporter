@@ -3,7 +3,9 @@ use crate::adapters::sprite_resolver::{
     canonical_display_name, canonical_id, fallback_sprite_url, primary_sprite_url,
 };
 use crate::domain::format::Format;
-use crate::domain::usage_stats::{MetaSnapshot, MovesetUsage, PokemonUsage, UsageEntry};
+use crate::domain::usage_stats::{
+    MetaSnapshot, MovesetUsage, PokemonUsage, TeammateUsage, UsageEntry,
+};
 use chrono::Utc;
 use std::collections::{HashMap, HashSet};
 
@@ -37,11 +39,15 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
             // repeats a form still counts once toward the team-fraction.
             let mut seen_on_team: HashSet<String> = HashSet::new();
 
-            let teammates: Vec<(String, String)> = deck
+            // (id, display, canonical) — canonical is the hyphenated form the
+            // sprite CDN understands; display is the prettified version for UI.
+            let teammates: Vec<(String, String, String)> = deck
                 .iter()
                 .filter_map(|d| {
-                    d.species_name()
-                        .map(|s| (canonical_id(s), prettify(&canonical_display_name(s))))
+                    d.species_name().map(|s| {
+                        let canonical = canonical_display_name(s);
+                        (canonical_id(s), prettify(&canonical), canonical)
+                    })
                 })
                 .collect();
 
@@ -51,10 +57,11 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
                     continue;
                 };
                 let key = canonical_id(species_raw);
-                let display = prettify(&canonical_display_name(species_raw));
+                let canonical = canonical_display_name(species_raw);
+                let display = prettify(&canonical);
                 let acc = pokemon_count
                     .entry(key.clone())
-                    .or_insert_with(|| PokemonAccumulator::new(display));
+                    .or_insert_with(|| PokemonAccumulator::new(display, canonical));
 
                 if seen_on_team.insert(key.clone()) {
                     acc.count += 1;
@@ -62,9 +69,17 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
 
                 accumulate(entry, acc);
 
-                for (t_canonical, t_display) in &teammates {
-                    if t_canonical != &key {
-                        *acc.teammates.entry(t_display.clone()).or_insert(0) += 1;
+                for (t_key, t_display, t_canonical) in &teammates {
+                    if t_key != &key {
+                        let slot =
+                            acc.teammates
+                                .entry(t_key.clone())
+                                .or_insert_with(|| TeammateAcc {
+                                    display: t_display.clone(),
+                                    canonical: t_canonical.clone(),
+                                    count: 0,
+                                });
+                        slot.count += 1;
                     }
                 }
 
@@ -98,11 +113,12 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
             top_moves: top_n(&acc.moves, 6),
             top_abilities: top_n(&acc.abilities, 3),
             top_tera: Vec::new(),
-            top_teammates: top_n(&acc.teammates, 5),
+            top_teammates: top_teammates(&acc.teammates, 5),
             top_natures: top_n(&acc.natures, 5),
             common_movesets: top_movesets(&acc.movesets, 5),
-            sprite_url: primary_sprite_url(&acc.display),
-            sprite_fallback_url: fallback_sprite_url(&acc.display),
+            sprite_url: primary_sprite_url(&acc.canonical),
+            sprite_fallback_url: fallback_sprite_url(&acc.canonical),
+            home_sprite_url: None,
         })
         .collect();
     pokemon.sort_by(|a, b| b.usage_percent.partial_cmp(&a.usage_percent).unwrap());
@@ -214,20 +230,32 @@ fn prettify(s: &str) -> String {
 }
 
 struct PokemonAccumulator {
+    /// Prettified user-facing name ("Rotom Wash").
     display: String,
+    /// Hyphenated canonical form ("Rotom-Wash") — the sprite resolver's
+    /// expected input. We MUST NOT pass the prettified version to the CDN
+    /// because the gen5 slug needs "-" to split base and forme.
+    canonical: String,
     count: u32,
     items: HashMap<String, u32>,
     moves: HashMap<String, u32>,
     abilities: HashMap<String, u32>,
-    teammates: HashMap<String, u32>,
+    teammates: HashMap<String, TeammateAcc>,
     natures: HashMap<String, u32>,
     movesets: HashMap<Vec<String>, u32>,
 }
 
+struct TeammateAcc {
+    display: String,
+    canonical: String,
+    count: u32,
+}
+
 impl PokemonAccumulator {
-    fn new(display: String) -> Self {
+    fn new(display: String, canonical: String) -> Self {
         Self {
             display,
+            canonical,
             count: 0,
             items: HashMap::new(),
             moves: HashMap::new(),
@@ -237,6 +265,24 @@ impl PokemonAccumulator {
             movesets: HashMap::new(),
         }
     }
+}
+
+fn top_teammates(map: &HashMap<String, TeammateAcc>, n: usize) -> Vec<TeammateUsage> {
+    let total: u32 = map.values().map(|t| t.count).sum();
+    let total = total.max(1) as f32;
+    let mut items: Vec<&TeammateAcc> = map.values().collect();
+    items.sort_by(|a, b| b.count.cmp(&a.count));
+    items
+        .into_iter()
+        .take(n)
+        .map(|t| TeammateUsage {
+            name: t.display.clone(),
+            usage_percent: (t.count as f32 / total) * 100.0,
+            count: t.count,
+            sprite_url: primary_sprite_url(&t.canonical),
+            sprite_fallback_url: fallback_sprite_url(&t.canonical),
+        })
+        .collect()
 }
 
 fn top_movesets(map: &HashMap<Vec<String>, u32>, n: usize) -> Vec<MovesetUsage> {
@@ -345,6 +391,62 @@ mod tests {
                 .iter()
                 .any(|s| *s == "Wash Rotom" || *s == "Heat Rotom"),
             "inverted forms should be normalized; got {species:?}"
+        );
+    }
+
+    #[test]
+    fn rotom_wash_keeps_hyphenated_sprite_slug() {
+        // "Rotom Wash" (prettified, with space) used to reach primary_sprite_url
+        // and collapse to "rotomwash" — a 404 on gen5. The fix routes the
+        // canonical hyphenated form through the resolver so the URL keeps
+        // the "-" the CDN expects.
+        let standings = vec![vec![standing(vec![
+            entry("Wash-Rotom"),
+            entry("Amoonguss"),
+        ])]];
+        let snap = aggregate(Format::RegulationMA, standings);
+        let rotom = snap
+            .pokemon
+            .iter()
+            .find(|p| p.species == "Rotom Wash")
+            .expect("rotom wash should be present");
+        assert!(
+            rotom.sprite_url.ends_with("/rotom-wash.png"),
+            "got {}",
+            rotom.sprite_url
+        );
+        assert_eq!(
+            rotom.sprite_fallback_url.as_deref(),
+            Some("https://play.pokemonshowdown.com/sprites/dex/rotomwash.png")
+        );
+    }
+
+    #[test]
+    fn teammates_carry_sprite_urls() {
+        let standings = vec![vec![standing(vec![
+            entry("Wash-Rotom"),
+            entry("Amoonguss"),
+            entry("Incineroar"),
+        ])]];
+        let snap = aggregate(Format::RegulationMA, standings);
+        let amoonguss = snap
+            .pokemon
+            .iter()
+            .find(|p| p.species == "Amoonguss")
+            .expect("amoonguss");
+        let rotom_mate = amoonguss
+            .top_teammates
+            .iter()
+            .find(|t| t.name == "Rotom Wash")
+            .expect("rotom wash teammate");
+        assert!(
+            rotom_mate.sprite_url.ends_with("/rotom-wash.png"),
+            "got {}",
+            rotom_mate.sprite_url
+        );
+        assert_eq!(
+            rotom_mate.sprite_fallback_url.as_deref(),
+            Some("https://play.pokemonshowdown.com/sprites/dex/rotomwash.png")
         );
     }
 

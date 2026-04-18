@@ -1,20 +1,29 @@
+use crate::adapters::labmaus_client::LabmausDiscoverTeam;
+use crate::adapters::limitless_client::{LimitlessDecklistEntry, LimitlessStanding};
 use crate::adapters::smogon_client::{ChaosStats, SmogonClient};
-use crate::adapters::sprite_resolver::{fallback_sprite_url, primary_sprite_url};
-use crate::adapters::LimitlessClient;
+use crate::adapters::sprite_resolver::{
+    canonical_display_name, fallback_sprite_url, primary_sprite_url,
+};
+use crate::adapters::{LabmausClient, LimitlessClient, PokepasteClient, ShowdownEntry};
 use crate::config;
 use crate::domain::format::Format;
-use crate::domain::usage_stats::{MetaSnapshot, PokemonUsage, UsageEntry};
+use crate::domain::usage_stats::{MetaSnapshot, PokemonUsage, TeammateUsage, UsageEntry};
 use crate::error::AppError;
+use crate::services::date_window::default_window;
 use crate::services::usage_aggregator::{self, top_n_normalized};
 use crate::storage::{CacheRepo, SettingsRepo};
 use chrono::Utc;
+use futures::stream::{self, StreamExt};
 use std::collections::HashMap;
 use std::sync::Arc;
 
 const MIN_LIMITLESS_ENTRIES: u32 = 50;
+const LABMAUS_POKEPASTE_CONCURRENCY: usize = 16;
 
 #[derive(Clone)]
 pub struct MetaService {
+    labmaus: LabmausClient,
+    pokepaste: PokepasteClient,
     limitless: LimitlessClient,
     smogon: SmogonClient,
     cache: Arc<CacheRepo>,
@@ -23,12 +32,16 @@ pub struct MetaService {
 
 impl MetaService {
     pub fn new(
+        labmaus: LabmausClient,
+        pokepaste: PokepasteClient,
         limitless: LimitlessClient,
         smogon: SmogonClient,
         cache: Arc<CacheRepo>,
         settings: Arc<SettingsRepo>,
     ) -> Self {
         Self {
+            labmaus,
+            pokepaste,
             limitless,
             smogon,
             cache,
@@ -42,13 +55,37 @@ impl MetaService {
         tournament_count: Option<usize>,
     ) -> Result<MetaSnapshot, AppError> {
         let count = tournament_count.unwrap_or(config::TOURNAMENTS_PER_SNAPSHOT);
-        let cache_key = format!("meta-snapshot-v6::{}::{}", format.cache_id(), count);
+        let cache_key = format!("meta-snapshot-v7::{}::{}", format.cache_id(), count);
         if let Some(bytes) = self.cache.get(&cache_key)? {
             if let Ok(snap) = serde_json::from_slice::<MetaSnapshot>(&bytes) {
                 return Ok(snap);
             }
         }
 
+        // PRIMARY: labmaus discover_teams + pokepast.es (Regulation M-A only).
+        if format == Format::RegulationMA {
+            match self.build_from_labmaus(format).await {
+                Ok(Some(snap)) if snap.total_entries >= MIN_LIMITLESS_ENTRIES => {
+                    tracing::info!(
+                        source = "labmaus",
+                        total = snap.total_entries,
+                        "meta snapshot"
+                    );
+                    let bytes = serde_json::to_vec(&snap)?;
+                    self.cache
+                        .put(&cache_key, &bytes, config::TTL_META_SNAPSHOT)?;
+                    return Ok(snap);
+                }
+                Ok(other) => tracing::warn!(
+                    source = "labmaus",
+                    entries = other.as_ref().map(|s| s.total_entries).unwrap_or(0),
+                    "labmaus snapshot too thin, falling back to limitless"
+                ),
+                Err(e) => tracing::warn!(error = ?e, "labmaus meta snapshot failed, falling back"),
+            }
+        }
+
+        // FALLBACK: existing Limitless standings path.
         let lim_snap = if format.limitless_code().is_some() {
             let tournaments = self
                 .limitless
@@ -97,6 +134,109 @@ impl MetaService {
             .put(&cache_key, &bytes, config::TTL_META_SNAPSHOT)?;
         Ok(final_snap)
     }
+
+    async fn build_from_labmaus(&self, format: Format) -> Result<Option<MetaSnapshot>, AppError> {
+        let (from, to) = default_window();
+        let teams = self
+            .labmaus
+            .get_discover_teams(&from, &to, config::REGULATION_MA_LABMAUS)
+            .await?;
+        if teams.is_empty() {
+            return Ok(None);
+        }
+
+        let resolved = resolve_pokepastes(&self.pokepaste, &teams).await;
+        let standings = standings_from_labmaus(&teams, &resolved);
+        let mut snap = usage_aggregator::aggregate(format, vec![standings]);
+        snap.source = format!("labmaus.net ({} teams, {} to {})", teams.len(), from, to);
+        snap.from_date = Some(from);
+        snap.to_date = Some(to);
+        Ok(Some(snap))
+    }
+}
+
+pub(crate) async fn resolve_pokepastes(
+    client: &PokepasteClient,
+    teams: &[LabmausDiscoverTeam],
+) -> Vec<Vec<ShowdownEntry>> {
+    let urls: Vec<String> = teams.iter().map(|t| t.team_url.clone()).collect();
+    let fetches: Vec<_> = urls
+        .into_iter()
+        .map(|url| {
+            let client = client.clone();
+            async move {
+                match client.get_team(&url).await {
+                    Ok(v) => v,
+                    Err(e) => {
+                        tracing::debug!(url = %url, error = ?e, "pokepaste fetch failed");
+                        Vec::new()
+                    }
+                }
+            }
+        })
+        .collect();
+    stream::iter(fetches)
+        .buffer_unordered(LABMAUS_POKEPASTE_CONCURRENCY)
+        .collect::<Vec<_>>()
+        .await
+}
+
+pub(crate) fn standings_from_labmaus(
+    teams: &[LabmausDiscoverTeam],
+    resolved: &[Vec<ShowdownEntry>],
+) -> Vec<LimitlessStanding> {
+    teams
+        .iter()
+        .zip(resolved.iter())
+        .map(|(team, paste)| {
+            let deck = if !paste.is_empty() {
+                paste
+                    .iter()
+                    .map(|e| LimitlessDecklistEntry {
+                        id: None,
+                        name: None,
+                        species: Some(e.species.clone()),
+                        pokemon: None,
+                        item: e.item.clone(),
+                        ability: e.ability.clone(),
+                        tera: None,
+                        tera_type: e.tera_type.clone(),
+                        moves: if e.moves.is_empty() {
+                            None
+                        } else {
+                            Some(e.moves.clone())
+                        },
+                        nature: e.nature.clone(),
+                    })
+                    .collect::<Vec<_>>()
+            } else {
+                team.pokemon_names
+                    .iter()
+                    .map(|s| LimitlessDecklistEntry {
+                        id: None,
+                        name: None,
+                        species: Some(s.clone()),
+                        pokemon: None,
+                        item: None,
+                        ability: None,
+                        tera: None,
+                        tera_type: None,
+                        moves: None,
+                        nature: None,
+                    })
+                    .collect::<Vec<_>>()
+            };
+            LimitlessStanding {
+                placing: team.placement,
+                name: Some(team.player.clone()),
+                player: None,
+                country: team.country.clone(),
+                decklist: if deck.is_empty() { None } else { Some(deck) },
+                record: None,
+                drop: None,
+            }
+        })
+        .collect()
 }
 
 pub(crate) fn snapshot_from_smogon(
@@ -170,16 +310,22 @@ pub(crate) fn snapshot_from_smogon(
                 .teammates
                 .into_iter()
                 .take(5)
-                .map(|(k, v)| UsageEntry {
-                    name: usage_aggregator::prettify_public(&k),
-                    usage_percent: (v * 100.0) as f32,
-                    count: 0,
+                .map(|(k, v)| {
+                    let canonical = canonical_display_name(&k);
+                    TeammateUsage {
+                        name: usage_aggregator::prettify_public(&canonical),
+                        usage_percent: (v * 100.0) as f32,
+                        count: 0,
+                        sprite_url: primary_sprite_url(&canonical),
+                        sprite_fallback_url: fallback_sprite_url(&canonical),
+                    }
                 })
                 .collect(),
             top_natures: Vec::new(),
             common_movesets: Vec::new(),
-            sprite_url: primary_sprite_url(&name),
-            sprite_fallback_url: fallback_sprite_url(&name),
+            sprite_url: primary_sprite_url(&canonical_display_name(&name)),
+            sprite_fallback_url: fallback_sprite_url(&canonical_display_name(&name)),
+            home_sprite_url: None,
         })
         .collect();
     pokemon.sort_by(|a, b| b.usage_percent.partial_cmp(&a.usage_percent).unwrap());

@@ -1,0 +1,26 @@
+[
+  {
+    "country": "US",
+    "division": "Masters",
+    "placement": 1,
+    "player": "Wolfe Glick",
+    "record": "9-1",
+    "team": ["727", "901", "976-f", "462", "889", "488"],
+    "pokemon_names": ["Incineroar", "Ursaluna-Bloodmoon", "Kyogre", "Magnezone", "Zamazenta-Crowned", "Cresselia"],
+    "team_url": "https://pokepast.es/8281777eef16f5e6",
+    "tournament_id": 1234,
+    "tournament_name": "Portland Regional 2026"
+  },
+  {
+    "country": "ES",
+    "division": "Masters",
+    "placement": 2,
+    "player": "Eric Rios",
+    "record": "8-2",
+    "team": ["727", "898-s", "149", "462", "898", "642"],
+    "pokemon_names": ["Incineroar", "Calyrex-Shadow", "Dragonite", "Magnezone", "Calyrex", "Thundurus"],
+    "team_url": "https://pokepast.es/aaaa1111bbbb2222",
+    "tournament_id": 1234,
+    "tournament_name": "Portland Regional 2026"
+  }
+]

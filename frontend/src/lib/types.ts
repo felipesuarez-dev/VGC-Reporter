@@ -39,15 +39,19 @@ export type {
   TeamValidationError,
   TeraType,
   TeraUsage,
+  TeammateUsage,
   TopTeam,
   TopTeamMember,
   TopTeamsMeta,
   TopTeamsReport,
   TournamentStanding,
   TranslationTable,
+  TrendingPokemon,
+  TrendingReport,
   UpcomingTournament,
   UsageEntry,
   Violation,
+  EvStatSpread,
 } from "./types.generated";
 
 import type { Format, Nature, PokemonType, Team, TeamMember } from "./types.generated";

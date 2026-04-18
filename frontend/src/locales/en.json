@@ -84,7 +84,11 @@
     "count_label": "Count",
     "tournaments_range": "{{count}} tournaments · {{from}} — {{to}} · {{source}}",
     "loading_patience": "Fetching tournaments and aggregating stats. This can take a moment.",
-    "tournament_count": "Tournaments"
+    "tournament_count": "Tournaments",
+    "trending_title": "Meta trends (last 14 days)",
+    "trending_rising": "Rising",
+    "trending_falling": "Falling",
+    "trending_empty": "No trending data available."
   },
   "tournament": {
     "standings": "Standings",

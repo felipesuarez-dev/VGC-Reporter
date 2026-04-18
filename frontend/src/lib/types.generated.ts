@@ -12,6 +12,8 @@ export type EntityDescriptions = { items: { [key in string]?: LocalizedDescripti
 
 export type EvSpread = { hp: number, atk: number, def: number, spa: number, spd: number, spe: number, };
 
+export type EvStatSpread = { hp: number, atk: number, def: number, spa: number, spd: number, spe: number, };
+
 /**
  * Competitive format. Multi-variant: frontend can switch freely.
  */
@@ -92,7 +94,7 @@ moves: Array<string>, };
 
 export type PokemonType = "Normal" | "Fire" | "Water" | "Electric" | "Grass" | "Ice" | "Fighting" | "Poison" | "Ground" | "Flying" | "Psychic" | "Bug" | "Rock" | "Ghost" | "Dragon" | "Dark" | "Steel" | "Fairy" | "Stellar";
 
-export type PokemonUsage = { species: string, usage_percent: number, count: number, top_items: Array<UsageEntry>, top_moves: Array<UsageEntry>, top_abilities: Array<UsageEntry>, top_tera: Array<UsageEntry>, top_teammates: Array<UsageEntry>, top_natures: Array<UsageEntry>, common_movesets: Array<MovesetUsage>, sprite_url: string, sprite_fallback_url: string | null, };
+export type PokemonUsage = { species: string, usage_percent: number, count: number, top_items: Array<UsageEntry>, top_moves: Array<UsageEntry>, top_abilities: Array<UsageEntry>, top_tera: Array<UsageEntry>, top_teammates: Array<TeammateUsage>, top_natures: Array<UsageEntry>, common_movesets: Array<MovesetUsage>, sprite_url: string, sprite_fallback_url: string | null, home_sprite_url: string | null, };
 
 /**
  * Bundle of curated doubles sets for a Pokémon.
@@ -109,6 +111,8 @@ export type TeamMember = { species: string, item: string | null, ability: string
 
 export type TeamValidationError = { "WrongSize": number } | { "InvalidEvs": number } | { "InvalidMoves": number } | { "EmptySpecies": number } | "EmptyName";
 
+export type TeammateUsage = { name: string, usage_percent: number, count: number, sprite_url: string, sprite_fallback_url: string | null, };
+
 /**
  * Tera Type uses the same type list as Pokémon (including Stellar).
  * We alias to keep the domain small.
@@ -119,7 +123,7 @@ export type TeraUsage = { tera_type: string, usage_percent: number, };
 
 export type TopTeam = { tournament: string, placing: number | null, player: string | null, country: string | null, record: string | null, members: Array<TopTeamMember>, };
 
-export type TopTeamMember = { species: string, sprite_url: string, sprite_fallback_url: string | null, item: string | null, tera_type: string | null, ability: string | null, nature: string | null, moves: Array<string>, };
+export type TopTeamMember = { species: string, sprite_url: string, sprite_fallback_url: string | null, home_sprite_url: string | null, item: string | null, tera_type: string | null, ability: string | null, nature: string | null, moves: Array<string>, level: number | null, evs: EvStatSpread | null, ivs: EvStatSpread | null, };
 
 export type TopTeamsMeta = { tournaments_analyzed: number, battles_analyzed: number, source: string, from_date: string | null, to_date: string | null, };
 
@@ -128,6 +132,10 @@ export type TopTeamsReport = { teams: Array<TopTeam>, meta: TopTeamsMeta, };
 export type TournamentStanding = { placing: number | null, player_name: string | null, player_id: string | null, country: string | null, record: string | null, wins: number, losses: number, ties: number, decklist: Array<DecklistPokemon>, };
 
 export type TranslationTable = { abilities: { [key in string]?: LocalizedName }, moves: { [key in string]?: LocalizedName }, items: { [key in string]?: LocalizedName }, };
+
+export type TrendingPokemon = { species: string, sprite_url: string, sprite_fallback_url: string | null, change_percentage: number, day1_percentage: number, day2_percentage: number, };
+
+export type TrendingReport = { rising: Array<TrendingPokemon>, falling: Array<TrendingPokemon>, from_date: string | null, to_date: string | null, };
 
 export type UpcomingTournament = { id: string, name: string, date: string, url: string, region: string | null, players: number | null, source: string, };
 

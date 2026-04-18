@@ -1,13 +1,18 @@
 pub mod http_client;
+pub mod labmaus_client;
 pub mod limitless_client;
 pub mod pikalytics_client;
 pub mod pkmn_data_client;
 pub mod pokeapi_client;
+pub mod pokepaste_client;
 pub mod showdown_client;
 pub mod smogon_client;
 pub mod sprite_resolver;
 
 pub use http_client::HttpClient;
+pub use labmaus_client::{
+    LabmausClient, LabmausDiscoverTeam, LabmausTournament, LabmausTrend, TrendDirection,
+};
 pub use limitless_client::{
     LimitlessClient, LimitlessDecklistEntry, LimitlessRecord, LimitlessStanding,
     LimitlessTournamentSummary,
@@ -15,6 +20,7 @@ pub use limitless_client::{
 pub use pikalytics_client::PikalyticsClient;
 pub use pkmn_data_client::PkmnDataClient;
 pub use pokeapi_client::{LocalizedDescription, LocalizedName, PokeApiClient, TranslationTable};
+pub use pokepaste_client::{parse_pokepaste_export, PokepasteClient, ShowdownEntry, StatSpread};
 pub use showdown_client::{ShowdownClient, ShowdownDescriptionMaps, ShowdownPokedex};
 pub use smogon_client::SmogonClient;
 pub use sprite_resolver::{

@@ -25,6 +25,18 @@ impl HttpClient {
 
     /// GET with SQLite cache. If `ttl_seconds` is 0, always fetch fresh.
     pub async fn get_cached(&self, url: &str, ttl_seconds: i64) -> Result<Vec<u8>, AppError> {
+        self.get_cached_with_headers(url, &[], ttl_seconds).await
+    }
+
+    /// GET with SQLite cache and per-request headers. Needed for hosts that
+    /// gate requests on Origin/Referer (labmaus). Headers are scoped to this
+    /// call only so they never leak into requests to other hosts.
+    pub async fn get_cached_with_headers(
+        &self,
+        url: &str,
+        headers: &[(&str, &str)],
+        ttl_seconds: i64,
+    ) -> Result<Vec<u8>, AppError> {
         if ttl_seconds > 0 {
             if let Some(bytes) = self.cache.get(url)? {
                 tracing::debug!(url, "cache hit");
@@ -32,7 +44,11 @@ impl HttpClient {
             }
         }
         tracing::debug!(url, "cache miss, fetching");
-        let resp = self.inner.get(url).send().await?;
+        let mut req = self.inner.get(url);
+        for (k, v) in headers {
+            req = req.header(*k, *v);
+        }
+        let resp = req.send().await?;
         if !resp.status().is_success() {
             return Err(AppError::Http(format!(
                 "{} returned status {}",

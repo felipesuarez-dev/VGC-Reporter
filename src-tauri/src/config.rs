@@ -19,6 +19,16 @@ pub const PIKALYTICS_BASE: &str = "https://www.pikalytics.com";
 pub const POKEAPI_CSV_BASE: &str =
     "https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv";
 
+// Labmaus: primary source for top teams + meta snapshot. The public JSON API
+// at labmaus.net/api/* gates every request on Origin/Referer matching the
+// site itself — without them every response is 401. Our HttpClient injects
+// both via get_cached_with_headers so they never leak to other hosts.
+pub const LABMAUS_BASE: &str = "https://labmaus.net";
+pub const LABMAUS_ORIGIN: &str = "https://labmaus.net";
+pub const LABMAUS_REFERER: &str = "https://labmaus.net/";
+pub const POKEPASTE_BASE: &str = "https://pokepast.es";
+pub const REGULATION_MA_LABMAUS: &str = "Regulation Set M-A";
+
 pub const POKEAPI_ABILITY_FLAVOR_CSV: &str = "ability_flavor_text.csv";
 pub const POKEAPI_MOVE_FLAVOR_CSV: &str = "move_flavor_text.csv";
 pub const POKEAPI_ITEM_FLAVOR_CSV: &str = "item_flavor_text.csv";
@@ -31,6 +41,11 @@ pub const TTL_SMOGON_STATS: i64 = 24 * 60 * 60; // 24h
 pub const TTL_META_SNAPSHOT: i64 = 6 * 60 * 60; // 6h aggregated
 pub const TTL_POKEAPI_CSV: i64 = 30 * 24 * 60 * 60; // 30d
 pub const TTL_PIKALYTICS: i64 = 24 * 60 * 60; // 24h
+pub const TTL_LABMAUS_TOURNAMENTS: i64 = 24 * 60 * 60; // 24h
+pub const TTL_LABMAUS_TOP_TEAMS: i64 = 2 * 60 * 60; // 2h
+pub const TTL_LABMAUS_TRENDING: i64 = 4 * 60 * 60; // 4h
+pub const TTL_POKEPASTE: i64 = 30 * 24 * 60 * 60; // 30d (pastes are immutable)
 
 // Dataset sizing
 pub const TOURNAMENTS_PER_SNAPSHOT: usize = 25;
+pub const LABMAUS_WINDOW_DAYS: i64 = 14;

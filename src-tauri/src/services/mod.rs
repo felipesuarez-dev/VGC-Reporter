@@ -1,4 +1,5 @@
 pub mod champions_report_service;
+pub mod date_window;
 pub mod meta_service;
 pub mod pikalytics_service;
 pub mod pokedex_service;
@@ -8,6 +9,7 @@ pub mod showdown_text;
 pub mod team_service;
 pub mod top_teams_service;
 pub mod translations_service;
+pub mod trending_service;
 pub mod upcoming_tournaments_service;
 pub mod usage_aggregator;
 
@@ -19,4 +21,5 @@ pub use sets_service::SetsService;
 pub use team_service::TeamService;
 pub use top_teams_service::{TopTeam, TopTeamsMeta, TopTeamsReport, TopTeamsService};
 pub use translations_service::TranslationsService;
+pub use trending_service::TrendingService;
 pub use upcoming_tournaments_service::UpcomingTournamentsService;

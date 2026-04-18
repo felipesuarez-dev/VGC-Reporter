@@ -84,7 +84,11 @@
     "count_label": "Conteo",
     "tournaments_range": "{{count}} torneos · {{from}} — {{to}} · {{source}}",
     "loading_patience": "Obteniendo torneos y agregando estadísticas. Esto puede tardar un momento.",
-    "tournament_count": "Torneos"
+    "tournament_count": "Torneos",
+    "trending_title": "Tendencias del meta (últimos 14 días)",
+    "trending_rising": "Subiendo",
+    "trending_falling": "Bajando",
+    "trending_empty": "No hay datos de tendencias disponibles."
   },
   "tournament": {
     "standings": "Standings",

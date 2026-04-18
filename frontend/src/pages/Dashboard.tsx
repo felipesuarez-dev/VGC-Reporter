@@ -9,6 +9,7 @@ import { formatDate } from "../lib/formatDate";
 import { type ChampionsTournament } from "../lib/types";
 import { UsageBarChart, type UsageBarItem } from "../components/charts/UsageBarChart";
 import { TopList } from "../components/charts/TopList";
+import { TrendingCard } from "../components/charts/TrendingCard";
 import { PokemonSprite } from "../components/pokemon/PokemonSprite";
 import { PokemonDetailModal } from "../components/pokemon/PokemonDetailModal";
 import { FormatSelector } from "../components/ui/FormatSelector";
@@ -180,6 +181,8 @@ export function Dashboard() {
               onBarClick={handleBarClick}
             />
           </section>
+
+          {format === "regulation-m-a" && <TrendingCard />}
 
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div className="card">

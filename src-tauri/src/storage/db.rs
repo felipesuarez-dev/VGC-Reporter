@@ -6,6 +6,7 @@ pub type DbPool = r2d2::Pool<SqliteConnectionManager>;
 
 const MIGRATION_001: &str = include_str!("migrations/001_init.sql");
 const MIGRATION_002: &str = include_str!("migrations/002_clear_pikalytics_cache.sql");
+const MIGRATION_003: &str = include_str!("migrations/003_invalidate_meta_and_labmaus_cache.sql");
 
 pub fn init_pool(db_path: &Path) -> Result<DbPool, AppError> {
     if let Some(parent) = db_path.parent() {
@@ -24,5 +25,6 @@ pub fn init_pool(db_path: &Path) -> Result<DbPool, AppError> {
     let conn = pool.get().map_err(|e| AppError::Internal(e.to_string()))?;
     conn.execute_batch(MIGRATION_001)?;
     conn.execute_batch(MIGRATION_002)?;
+    conn.execute_batch(MIGRATION_003)?;
     Ok(pool)
 }

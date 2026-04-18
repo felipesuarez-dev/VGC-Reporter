@@ -24,6 +24,8 @@ import { MovesetTierCard } from "./MovesetTierCard";
 import { PikalyticsSection } from "./PikalyticsSection";
 import { useLocalize, type LocalizeKind } from "../../hooks/useTranslations";
 import { prettifyName, statLabel, type StatKey } from "../../lib/labels";
+import { EntityChip } from "../info/EntityChip";
+import { type TeammateUsage } from "../../lib/types";
 
 export function PokemonDetailModal() {
   const { t } = useTranslation();
@@ -282,13 +284,13 @@ function ModalBody({
           >
             {t("pokemon_detail.meta_usage")}
           </h3>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {myUsage && (
               <>
                 <UsageList title={t("drawer.top_items")} entries={myUsage.top_items} kind="item" />
                 <UsageList title={t("drawer.top_moves")} entries={myUsage.top_moves} kind="move" />
+                <TeammatesList title={t("drawer.top_teammates")} entries={myUsage.top_teammates} />
                 <UsageList title={t("drawer.top_abilities")} entries={myUsage.top_abilities} kind="ability" />
-                <UsageList title={t("drawer.top_teammates")} entries={myUsage.top_teammates} />
               </>
             )}
             <NaturesList entries={naturesEntries} />
@@ -448,7 +450,6 @@ function UsageList({
   entries: import("../../lib/types").UsageEntry[];
   kind?: LocalizeKind;
 }) {
-  const localize = useLocalize();
   return (
     <section
       className="rounded-lg border p-3"
@@ -469,15 +470,77 @@ function UsageList({
         <ul className="space-y-1">
           {entries.slice(0, 5).map((e) => (
             <li key={e.name} className="flex items-baseline justify-between gap-2 text-xs">
-              <span className="truncate" style={{ color: "var(--text)" }}>
-                {kind ? localize(kind, e.name) : prettifyName(e.name)}
-              </span>
+              {kind ? (
+                <EntityChip kind={kind} name={e.name} className="truncate" />
+              ) : (
+                <span className="truncate" style={{ color: "var(--text)" }}>
+                  {prettifyName(e.name)}
+                </span>
+              )}
               <span
                 className="shrink-0 tabular-nums"
                 style={{ color: "var(--accent)" }}
               >
                 {e.usage_percent.toFixed(1)}%
               </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function TeammatesList({
+  title,
+  entries,
+}: {
+  title: string;
+  entries: TeammateUsage[];
+}) {
+  const openDetail = usePokedexStore((s) => s.openDetail);
+  return (
+    <section
+      className="rounded-lg border p-3"
+      style={{
+        borderColor: "var(--border)",
+        backgroundColor: "var(--bg-elev)",
+      }}
+    >
+      <h4
+        className="mb-2 text-[10px] font-semibold uppercase tracking-wide"
+        style={{ color: "var(--text-muted)" }}
+      >
+        {title}
+      </h4>
+      {entries.length === 0 ? (
+        <p className="text-xs" style={{ color: "var(--text-dim)" }}>—</p>
+      ) : (
+        <ul className="space-y-1">
+          {entries.slice(0, 5).map((e) => (
+            <li key={e.name} className="text-xs">
+              <button
+                type="button"
+                onClick={() => openDetail(canonicalSpeciesId(e.name))}
+                className="flex w-full items-center gap-2 rounded px-1 py-0.5 text-left transition hover:bg-[var(--bg-elev-strong)]"
+              >
+                <PokemonSprite
+                  url={e.sprite_url}
+                  fallbackUrl={e.sprite_fallback_url ?? undefined}
+                  name={e.name}
+                  size={22}
+                  variant="pixel"
+                />
+                <span className="flex-1 truncate" style={{ color: "var(--text)" }}>
+                  {e.name}
+                </span>
+                <span
+                  className="shrink-0 tabular-nums"
+                  style={{ color: "var(--accent)" }}
+                >
+                  {e.usage_percent.toFixed(1)}%
+                </span>
+              </button>
             </li>
           ))}
         </ul>

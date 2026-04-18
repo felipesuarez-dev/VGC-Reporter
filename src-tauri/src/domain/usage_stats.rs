@@ -13,6 +13,17 @@ pub struct UsageEntry {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
+pub struct TeammateUsage {
+    pub name: String,
+    pub usage_percent: f32,
+    pub count: u32,
+    pub sprite_url: String,
+    #[serde(default)]
+    pub sprite_fallback_url: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
 pub struct MovesetUsage {
     pub moves: Vec<String>,
     pub count: u32,
@@ -30,7 +41,7 @@ pub struct PokemonUsage {
     pub top_abilities: Vec<UsageEntry>,
     #[serde(default)]
     pub top_tera: Vec<UsageEntry>,
-    pub top_teammates: Vec<UsageEntry>,
+    pub top_teammates: Vec<TeammateUsage>,
     #[serde(default)]
     pub top_natures: Vec<UsageEntry>,
     #[serde(default)]
@@ -38,6 +49,8 @@ pub struct PokemonUsage {
     pub sprite_url: String,
     #[serde(default)]
     pub sprite_fallback_url: Option<String>,
+    #[serde(default)]
+    pub home_sprite_url: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]

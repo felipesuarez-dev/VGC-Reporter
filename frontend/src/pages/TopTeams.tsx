@@ -201,6 +201,8 @@ export function TopTeams() {
               members={tt.members.map((m) => ({
                 species: m.species,
                 sprite_url: m.sprite_url,
+                sprite_fallback_url: m.sprite_fallback_url,
+                home_sprite_url: m.home_sprite_url,
                 item: m.item,
                 ability: m.ability,
                 tera_type: m.tera_type,

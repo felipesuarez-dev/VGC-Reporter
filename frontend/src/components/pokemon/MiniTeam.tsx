@@ -5,6 +5,8 @@ import { useLocalize } from "../../hooks/useTranslations";
 export interface MiniTeamMember {
   species: string;
   sprite_url: string;
+  sprite_fallback_url?: string | null;
+  home_sprite_url?: string | null;
   item?: string | null;
   ability?: string | null;
   tera_type?: string | null;
@@ -73,7 +75,13 @@ function SpriteCell({ member, size }: { member: MiniTeamMember; size: number }) 
 
   return (
     <div className="group relative flex items-center justify-center">
-      <PokemonSprite url={member.sprite_url} name={member.species} size={size} />
+      <PokemonSprite
+        url={member.sprite_url}
+        fallbackUrl={member.sprite_fallback_url ?? undefined}
+        homeUrl={member.home_sprite_url ?? undefined}
+        name={member.species}
+        size={size}
+      />
       <div
         role="tooltip"
         className="pointer-events-none invisible absolute left-1/2 bottom-full z-50 mb-2 w-max max-w-[240px] -translate-x-1/2 whitespace-normal rounded-md border px-2 py-1.5 text-[11px] leading-snug opacity-0 shadow-lg transition-opacity duration-150 group-hover:visible group-hover:opacity-100"

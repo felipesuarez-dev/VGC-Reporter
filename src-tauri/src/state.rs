@@ -1,11 +1,11 @@
 use crate::adapters::{
-    HttpClient, LimitlessClient, PikalyticsClient, PkmnDataClient, PokeApiClient, ShowdownClient,
-    SmogonClient,
+    HttpClient, LabmausClient, LimitlessClient, PikalyticsClient, PkmnDataClient, PokeApiClient,
+    PokepasteClient, ShowdownClient, SmogonClient,
 };
 use crate::error::AppError;
 use crate::services::{
     ChampionsReportService, MetaService, PikalyticsService, PokedexService, SetsService,
-    TeamService, TopTeamsService, TranslationsService, UpcomingTournamentsService,
+    TeamService, TopTeamsService, TranslationsService, TrendingService, UpcomingTournamentsService,
 };
 use crate::storage::{init_pool, CacheRepo, DbPool, SettingsRepo, TeamRepo};
 use std::path::Path;
@@ -14,7 +14,7 @@ use std::sync::Arc;
 pub struct AppState {
     pub db: DbPool,
     pub meta: MetaService,
-    pub pokedex: PokedexService,
+    pub pokedex: Arc<PokedexService>,
     pub sets: SetsService,
     pub teams: TeamService,
     pub top_teams: TopTeamsService,
@@ -22,6 +22,7 @@ pub struct AppState {
     pub upcoming: UpcomingTournamentsService,
     pub translations: TranslationsService,
     pub pikalytics: PikalyticsService,
+    pub trending: TrendingService,
     pub settings: Arc<SettingsRepo>,
 }
 
@@ -32,28 +33,43 @@ impl AppState {
         let settings = Arc::new(SettingsRepo::new(pool.clone()));
         let team_repo = Arc::new(TeamRepo::new(pool.clone()));
 
-        let http = HttpClient::new(cache.clone())?;
-        let showdown = ShowdownClient::new(http.clone());
-        let limitless = LimitlessClient::new(http.clone());
-        let smogon = SmogonClient::new(http.clone());
-        let pkmn = PkmnDataClient::new(http.clone());
-        let pokeapi = PokeApiClient::new(http.clone());
-        let pikalytics_client = PikalyticsClient::new(http.clone());
+        let http = Arc::new(HttpClient::new(cache.clone())?);
+        let showdown = ShowdownClient::new((*http).clone());
+        let limitless = LimitlessClient::new((*http).clone());
+        let smogon = SmogonClient::new((*http).clone());
+        let pkmn = PkmnDataClient::new((*http).clone());
+        let pokeapi = PokeApiClient::new((*http).clone());
+        let pikalytics_client = PikalyticsClient::new((*http).clone());
+        let labmaus = LabmausClient::new(http.clone());
+        let pokepaste = PokepasteClient::new(http.clone());
 
         let meta = MetaService::new(
+            labmaus.clone(),
+            pokepaste.clone(),
             limitless.clone(),
             smogon.clone(),
             cache.clone(),
             settings.clone(),
         );
-        let pokedex = PokedexService::new(showdown.clone(), pokeapi.clone(), cache.clone());
+        let pokedex = Arc::new(PokedexService::new(
+            showdown.clone(),
+            pokeapi.clone(),
+            cache.clone(),
+        ));
         let sets = SetsService::new(pkmn.clone(), cache.clone());
         let teams = TeamService::new(team_repo);
-        let top_teams = TopTeamsService::new(limitless.clone(), cache.clone());
+        let top_teams = TopTeamsService::new(
+            labmaus.clone(),
+            pokepaste.clone(),
+            limitless.clone(),
+            pokedex.clone(),
+            cache.clone(),
+        );
         let champions = ChampionsReportService::new(limitless.clone());
         let upcoming = UpcomingTournamentsService::new(limitless.clone());
         let translations = TranslationsService::new(pokeapi);
         let pikalytics = PikalyticsService::new(pikalytics_client, cache.clone());
+        let trending = TrendingService::new(labmaus.clone(), cache.clone());
 
         Ok(Self {
             db: pool,
@@ -66,6 +82,7 @@ impl AppState {
             upcoming,
             translations,
             pikalytics,
+            trending,
             settings,
         })
     }

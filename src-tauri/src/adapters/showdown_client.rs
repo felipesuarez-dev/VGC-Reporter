@@ -421,7 +421,7 @@ mod tests {
     fn extract_js_descriptions_skips_entries_without_desc() {
         let body = r#"{ foo:{name:"Foo Item",spritenum:1}, bar:{name:"Bar Item",shortDesc:"Bar effect."} }"#;
         let out = extract_js_descriptions(body);
-        assert!(out.get("fooitem").is_none());
+        assert!(!out.contains_key("fooitem"));
         assert_eq!(out.get("baritem").map(|s| s.as_str()), Some("Bar effect."));
     }
 }

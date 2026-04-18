@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { ClipboardCopy, X } from "lucide-react";
-import type { Nature, Team, TeamMember, TopTeam } from "../../lib/types";
+import type { EvStatSpread, Nature, Team, TeamMember, TopTeam } from "../../lib/types";
 import { ALL_NATURES, emptyTeamMember } from "../../lib/types";
 import { PokemonSprite } from "../pokemon/PokemonSprite";
 import { EntityChip } from "../info/EntityChip";
@@ -13,6 +13,17 @@ import { useTeamBuilder } from "../../stores/teamBuilderStore";
 interface Props {
   team: TopTeam | null;
   onClose: () => void;
+}
+
+function formatEvs(evs: EvStatSpread): string {
+  const parts: string[] = [];
+  if (evs.hp) parts.push(`${evs.hp} HP`);
+  if (evs.atk) parts.push(`${evs.atk} Atk`);
+  if (evs.def) parts.push(`${evs.def} Def`);
+  if (evs.spa) parts.push(`${evs.spa} SpA`);
+  if (evs.spd) parts.push(`${evs.spd} SpD`);
+  if (evs.spe) parts.push(`${evs.spe} Spe`);
+  return parts.join(" / ") || "—";
 }
 
 function asNature(value: string | null | undefined): Nature | null {
@@ -59,7 +70,16 @@ function toDraftTeam(top: TopTeam): Team {
       nature: asNature(m.nature),
       tera_type: null,
       moves: (m.moves ?? []).filter((mv) => mv && mv.length > 0),
-      evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+      evs: m.evs
+        ? {
+            hp: m.evs.hp,
+            atk: m.evs.atk,
+            def: m.evs.def,
+            spa: m.evs.spa,
+            spd: m.evs.spd,
+            spe: m.evs.spe,
+          }
+        : { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
     };
   });
   const name = top.player
@@ -179,8 +199,10 @@ export function TopTeamDetailModal({ team, onClose }: Props) {
                   <PokemonSprite
                     url={m.sprite_url}
                     fallbackUrl={m.sprite_fallback_url}
+                    homeUrl={m.home_sprite_url ?? undefined}
                     name={m.species}
                     size={96}
+                    variant="hd"
                   />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -213,6 +235,27 @@ export function TopTeamDetailModal({ team, onClose }: Props) {
                           {t("team_builder.nature")}:
                         </span>{" "}
                         {t(`natures.${m.nature}`, { defaultValue: m.nature })}
+                      </div>
+                    )}
+                    {m.tera_type && (
+                      <div style={{ color: "var(--text-muted)" }}>
+                        <span style={{ color: "var(--text-dim)" }}>
+                          {t("top_teams.tera_type")}:
+                        </span>{" "}
+                        <span style={{ color: "var(--text)" }}>
+                          {t(`types.${m.tera_type}`, { defaultValue: m.tera_type })}
+                        </span>
+                      </div>
+                    )}
+                    {m.evs && (
+                      <div style={{ color: "var(--text-muted)" }}>
+                        <span style={{ color: "var(--text-dim)" }}>EVs:</span>{" "}
+                        <span
+                          className="tabular-nums"
+                          style={{ color: "var(--text)" }}
+                        >
+                          {formatEvs(m.evs)}
+                        </span>
                       </div>
                     )}
                   </div>

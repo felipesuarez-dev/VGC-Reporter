@@ -1,0 +1,68 @@
+Incineroar (M) @ Safety Goggles
+Ability: Intimidate
+Level: 50
+Tera Type: Ghost
+EVs: 244 HP / 4 Atk / 4 Def / 4 SpD / 252 Spe
+Jolly Nature
+- Fake Out
+- Knock Off
+- Flare Blitz
+- Parting Shot
+
+Ursaluna-Bloodmoon @ Life Orb
+Ability: Mind's Eye
+Level: 50
+Tera Type: Normal
+EVs: 252 HP / 252 SpA / 4 SpD
+Modest Nature
+IVs: 0 Atk
+- Blood Moon
+- Earth Power
+- Hyper Voice
+- Protect
+
+Kyogre @ Mystic Water
+Ability: Drizzle
+Level: 50
+Tera Type: Water
+EVs: 4 HP / 252 SpA / 252 Spe
+Timid Nature
+- Water Spout
+- Origin Pulse
+- Ice Beam
+- Protect
+
+Magnezone @ Assault Vest
+Ability: Analytic
+Level: 50
+Tera Type: Electric
+EVs: 220 HP / 252 SpA / 36 Spe
+Modest Nature
+IVs: 0 Atk
+- Thunderbolt
+- Flash Cannon
+- Tera Blast
+- Volt Switch
+
+Zamazenta-Crowned @ Rusted Shield
+Ability: Dauntless Shield
+Level: 50
+Tera Type: Fire
+EVs: 252 HP / 4 Atk / 252 Spe
+Jolly Nature
+- Behemoth Bash
+- Body Press
+- Heavy Slam
+- Protect
+
+Cresselia (F) @ Sitrus Berry
+Ability: Levitate
+Level: 50
+Tera Type: Fairy
+EVs: 252 HP / 156 Def / 100 SpD
+Calm Nature
+IVs: 0 Atk
+- Moonblast
+- Helping Hand
+- Trick Room
+- Lunar Blessing
