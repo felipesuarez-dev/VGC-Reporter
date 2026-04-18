@@ -77,6 +77,8 @@ pub struct MetaSnapshot {
     pub source: String,
     pub tournaments_used: u32,
     pub total_entries: u32,
+    #[serde(default)]
+    pub battles_analyzed: u32,
     pub pokemon: Vec<PokemonUsage>,
     pub top_items: Vec<UsageEntry>,
     pub top_moves: Vec<UsageEntry>,
@@ -98,6 +100,7 @@ impl MetaSnapshot {
             source: "no data".into(),
             tournaments_used: 0,
             total_entries: 0,
+            battles_analyzed: 0,
             pokemon: Vec::new(),
             top_items: Vec::new(),
             top_moves: Vec::new(),

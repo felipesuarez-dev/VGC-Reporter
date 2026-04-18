@@ -15,7 +15,7 @@ use crate::services::usage_aggregator::{self, top_n_normalized};
 use crate::storage::{CacheRepo, SettingsRepo};
 use chrono::Utc;
 use futures::stream::{self, StreamExt};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 const MIN_LIMITLESS_ENTRIES: u32 = 50;
@@ -188,6 +188,15 @@ impl MetaService {
         let resolved = resolve_pokepastes(&self.pokepaste, &teams).await;
         let standings = standings_from_labmaus(&teams, &resolved);
         let mut snap = usage_aggregator::aggregate(format, vec![standings]);
+        let distinct_tournaments = teams
+            .iter()
+            .filter_map(|t| t.tournament_name.as_deref())
+            .filter(|s| !s.is_empty())
+            .collect::<HashSet<_>>()
+            .len() as u32;
+        if distinct_tournaments > 0 {
+            snap.tournaments_used = distinct_tournaments;
+        }
         snap.source = format!("labmaus.net ({} teams, {} to {})", teams.len(), from, to);
         snap.from_date = Some(from);
         snap.to_date = Some(to);
@@ -388,6 +397,7 @@ pub(crate) fn snapshot_from_smogon(
         // reads `source` to pick the right label.
         tournaments_used: 0,
         total_entries: species_count,
+        battles_analyzed: 0,
         pokemon,
         top_items: top_n_normalized(&global_items, 15),
         top_moves: top_n_normalized(&global_moves, 20),

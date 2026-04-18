@@ -133,6 +133,7 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
         source: format!("Limitless VGC — {} tournaments", tournaments_used),
         tournaments_used,
         total_entries,
+        battles_analyzed: total_teams,
         pokemon,
         top_items,
         top_moves,

@@ -113,6 +113,13 @@ export function Dashboard() {
                           count: data.tournaments_used,
                         })}
                       </span>
+                      {data.battles_analyzed > 0 && (
+                        <span>
+                          {t("dashboard.meta_tooltip_battles", {
+                            count: data.battles_analyzed,
+                          })}
+                        </span>
+                      )}
                       <span>
                         {t("dashboard.meta_tooltip_range", {
                           from: formatDate(data.from_date, i18n.language),
@@ -127,6 +134,13 @@ export function Dashboard() {
                           count: data.tournaments_used,
                         })}
                       </span>
+                      {data.battles_analyzed > 0 && (
+                        <span>
+                          {t("dashboard.meta_tooltip_battles", {
+                            count: data.battles_analyzed,
+                          })}
+                        </span>
+                      )}
                       <span>
                         {t("dashboard.total_entries")}: {data.total_entries}
                       </span>

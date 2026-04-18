@@ -83,6 +83,7 @@
     "usage_percent_label": "Porcentaje de Uso",
     "count_label": "Conteo",
     "meta_tooltip_count": "{{count}} torneos",
+    "meta_tooltip_battles": "{{count}} equipos analizados",
     "meta_tooltip_range": "{{from}} — {{to}}",
     "loading_patience": "Obteniendo torneos y agregando estadísticas. Esto puede tardar un momento.",
     "tournament_count": "Torneos",

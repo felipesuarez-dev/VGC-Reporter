@@ -25,7 +25,7 @@ export type LocalizedDescription = { en: string, es: string, };
 
 export type LocalizedName = { en: string, es: string, };
 
-export type MetaSnapshot = { format: Format, generated_at: string, source: string, tournaments_used: number, total_entries: number, pokemon: Array<PokemonUsage>, top_items: Array<UsageEntry>, top_moves: Array<UsageEntry>, top_abilities: Array<UsageEntry>, top_tera: Array<UsageEntry>, from_date: string | null, to_date: string | null, };
+export type MetaSnapshot = { format: Format, generated_at: string, source: string, tournaments_used: number, total_entries: number, battles_analyzed: number, pokemon: Array<PokemonUsage>, top_items: Array<UsageEntry>, top_moves: Array<UsageEntry>, top_abilities: Array<UsageEntry>, top_tera: Array<UsageEntry>, from_date: string | null, to_date: string | null, };
 
 export type Move = { id: string, name: string, type_: PokemonType, category: MoveCategory, base_power: number, accuracy: number, pp: number, description: string, };
 
