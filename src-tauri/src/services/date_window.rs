@@ -19,17 +19,6 @@ pub fn default_window() -> (String, String) {
     rolling_window(config::LABMAUS_WINDOW_DAYS)
 }
 
-/// Two consecutive `days`-day windows ending today in UTC.
-/// Returns `((prev_from, prev_to), (curr_from, curr_to))` where `prev_to == curr_from`.
-/// Used by trending to compute a delta between the previous and current week.
-pub fn prev_and_current_windows(days: i64) -> ((String, String), (String, String)) {
-    let today = chrono::Utc::now().date_naive();
-    let mid = today - chrono::Duration::days(days);
-    let prev_from = mid - chrono::Duration::days(days);
-    let fmt = |d: chrono::NaiveDate| d.format("%Y-%m-%d").to_string();
-    ((fmt(prev_from), fmt(mid)), (fmt(mid), fmt(today)))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

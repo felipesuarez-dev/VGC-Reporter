@@ -7,6 +7,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const root = document.documentElement;
     root.classList.remove("theme-gengar", "theme-clefable");
     root.classList.add(`theme-${theme}`);
+    (async () => {
+      try {
+        const { getCurrentWindow } = await import("@tauri-apps/api/window");
+        await getCurrentWindow().setTheme(
+          theme === "gengar" ? "dark" : "light",
+        );
+      } catch {
+        /* no-op outside Tauri (pure Vite dev) */
+      }
+    })();
   }, [theme]);
   return <>{children}</>;
 }

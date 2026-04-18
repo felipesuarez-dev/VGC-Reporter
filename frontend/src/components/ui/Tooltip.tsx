@@ -20,12 +20,18 @@ export function Tooltip({
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(
     null,
   );
+  const [effectivePlacement, setEffectivePlacement] = useState<
+    "top" | "bottom"
+  >(placement);
 
   useLayoutEffect(() => {
     if (!open || !triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
-    const top = placement === "top" ? rect.top - 8 : rect.bottom + 8;
+    const shouldFlip = placement === "top" && rect.top < 96;
+    const eff: "top" | "bottom" = shouldFlip ? "bottom" : placement;
+    const top = eff === "top" ? rect.top - 8 : rect.bottom + 8;
     const left = rect.left + rect.width / 2;
+    setEffectivePlacement(eff);
     setCoords({ top, left });
 
     const close = () => setOpen(false);
@@ -54,7 +60,7 @@ export function Tooltip({
             role="tooltip"
             className={cn(
               "pointer-events-none fixed z-[60] w-max max-w-[240px] -translate-x-1/2 whitespace-normal rounded-md border px-2 py-1 text-[11px] leading-snug shadow-lg",
-              placement === "top" ? "-translate-y-full" : "",
+              effectivePlacement === "top" ? "-translate-y-full" : "",
             )}
             style={{
               top: coords.top,

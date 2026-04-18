@@ -6,7 +6,6 @@ use crate::config;
 use crate::domain::format::Format;
 use crate::domain::trending::{TrendingPokemon, TrendingReport};
 use crate::error::AppError;
-use crate::services::date_window::prev_and_current_windows;
 use crate::services::usage_aggregator::prettify_public;
 use crate::storage::{CacheRepo, SettingsRepo};
 use std::collections::{HashMap, HashSet};
@@ -78,14 +77,17 @@ impl TrendingService {
             )
             .await;
 
-        // Fallback: when the combined weighted window total is thin enough
-        // that the adaptive floor starves the ranking, widen to 2× the
-        // half-window days (so 7+7 becomes 14+14) once before giving up.
-        let report = if weighted_total < config::TRENDING_MIN_WINDOW_TEAMS {
+        // Widen once if the window is too sparse OR the report came back
+        // empty (thin weighted data can also produce a flat report where
+        // every score shrinks to zero after bayes + adaptive floor).
+        let needs_widen = weighted_total < config::TRENDING_MIN_WINDOW_TEAMS
+            || (report.rising.is_empty() && report.falling.is_empty());
+        let report = if needs_widen {
             debug!(
                 weighted_total,
-                threshold = config::TRENDING_MIN_WINDOW_TEAMS,
-                "trending: sparse window, retrying at 2× half-window"
+                rising_len = report.rising.len(),
+                falling_len = report.falling.len(),
+                "trending: sparse or empty window, retrying at 2× half-window"
             );
             let (wide, _) = self
                 .build_report_for(
@@ -99,8 +101,12 @@ impl TrendingService {
             report
         };
 
-        let bytes = serde_json::to_vec(&report)?;
-        self.cache.put(&key, &bytes, config::TTL_LABMAUS_TRENDING)?;
+        // Only cache non-empty reports so a transient miss doesn't stick
+        // for the full TTL.
+        if !report.rising.is_empty() || !report.falling.is_empty() {
+            let bytes = serde_json::to_vec(&report)?;
+            self.cache.put(&key, &bytes, config::TTL_LABMAUS_TRENDING)?;
+        }
         Ok(report)
     }
 
@@ -114,62 +120,87 @@ impl TrendingService {
         format.default_labmaus_name().map(|s| s.to_string())
     }
 
+    /// Fetches a single `2 × half_window_days` slice of labmaus teams (same
+    /// URL/params as `TopTeamsService::build_from_labmaus` when the
+    /// regulation is M-A, so the HTTP cache entry is shared) plus the
+    /// matching completed_tournaments window, then buckets each team into
+    /// prev/curr by its tournament's real date.
     async fn build_report_for(
         &self,
         regulation: &str,
         catalog: &HashMap<String, String>,
         half_window_days: i64,
     ) -> (TrendingReport, f32) {
-        let ((prev_from, prev_to), (curr_from, curr_to)) =
-            prev_and_current_windows(half_window_days);
-        let prev = match self
+        let today = chrono::Utc::now().date_naive();
+        let total_days = 2 * half_window_days;
+        let from_date = today - chrono::Duration::days(total_days);
+        let midpoint = today - chrono::Duration::days(half_window_days);
+        let from = from_date.format("%Y-%m-%d").to_string();
+        let to = today.format("%Y-%m-%d").to_string();
+        let mid_str = midpoint.format("%Y-%m-%d").to_string();
+
+        let teams = match self
             .labmaus
-            .get_discover_teams(&prev_from, &prev_to, regulation)
+            .get_discover_teams(&from, &to, regulation)
             .await
         {
             Ok(v) => {
                 debug!(
-                    window = "prev",
                     regulation,
-                    from = %prev_from,
-                    to = %prev_to,
+                    from = %from,
+                    to = %to,
                     len = v.len(),
                     "trending: discover_teams fetched"
                 );
                 v
             }
             Err(e) => {
-                warn!(error = %e, window = "prev", regulation, "trending: discover_teams failed");
+                warn!(error = %e, regulation, "trending: discover_teams failed");
                 Vec::new()
             }
         };
-        let curr = match self
-            .labmaus
-            .get_discover_teams(&curr_from, &curr_to, regulation)
-            .await
-        {
-            Ok(v) => {
-                debug!(
-                    window = "curr",
-                    regulation,
-                    from = %curr_from,
-                    to = %curr_to,
-                    len = v.len(),
-                    "trending: discover_teams fetched"
-                );
-                v
-            }
+
+        let tournaments = match self.labmaus.get_completed_tournaments(&from, &to).await {
+            Ok(v) => v,
             Err(e) => {
-                warn!(error = %e, window = "curr", regulation, "trending: discover_teams failed");
+                warn!(error = %e, "trending: completed_tournaments failed");
                 Vec::new()
             }
         };
+
+        let date_by_tid: HashMap<String, chrono::NaiveDate> = tournaments
+            .iter()
+            .filter_map(|t| {
+                let id = normalize_id(&t.id)?;
+                let date = chrono::NaiveDate::parse_from_str(&t.date, "%Y-%m-%d").ok()?;
+                Some((id, date))
+            })
+            .collect();
+
+        let mut prev: Vec<LabmausDiscoverTeam> = Vec::new();
+        let mut curr: Vec<LabmausDiscoverTeam> = Vec::new();
+        for team in teams {
+            let Some(tid) = team.tournament_id.as_ref().and_then(normalize_id) else {
+                continue;
+            };
+            let Some(&date) = date_by_tid.get(&tid) else {
+                continue;
+            };
+            if date >= midpoint {
+                curr.push(team);
+            } else {
+                prev.push(team);
+            }
+        }
+
         let prev_total: f32 = prev.iter().map(team_weight).sum();
         let curr_total: f32 = curr.iter().map(team_weight).sum();
-        let report = build_trending_report(&prev, &curr, &curr_from, &curr_to, catalog);
+        let report = build_trending_report(&prev, &curr, &mid_str, &to, catalog);
         debug!(
             regulation,
             half_window_days,
+            prev_len = prev.len(),
+            curr_len = curr.len(),
             prev_total,
             curr_total,
             rising_len = report.rising.len(),
@@ -177,6 +208,14 @@ impl TrendingService {
             "trending: report built"
         );
         (report, prev_total + curr_total)
+    }
+}
+
+fn normalize_id(value: &serde_json::Value) -> Option<String> {
+    match value {
+        serde_json::Value::String(s) if !s.is_empty() => Some(s.clone()),
+        serde_json::Value::Number(n) => Some(n.to_string()),
+        _ => None,
     }
 }
 
