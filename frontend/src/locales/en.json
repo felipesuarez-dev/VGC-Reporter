@@ -333,6 +333,10 @@
     "theme_gengar": "Gengar theme (dark)",
     "theme_clefable": "Clefable theme (light)"
   },
+  "titlebar": {
+    "back": "Back",
+    "forward": "Forward"
+  },
   "validation": {
     "title": "Team validation",
     "ok": "Team passes regulation checks",

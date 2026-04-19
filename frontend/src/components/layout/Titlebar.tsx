@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
-import { Minus, Square, Copy, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { ChevronLeft, ChevronRight, Minus, Square, Copy, X } from "lucide-react";
 
 const TITLE = "VGC Reportes";
 
 export function Titlebar() {
   const [maximized, setMaximized] = useState(false);
+  const navigate = useNavigate();
+  const { t } = useTranslation();
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
@@ -79,6 +83,31 @@ export function Titlebar() {
           draggable={false}
         />
         <span data-tauri-drag-region>{TITLE}</span>
+        <div
+          className="ml-1 flex h-full items-stretch border-l"
+          style={{ borderColor: "var(--border)" }}
+        >
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            aria-label={t("titlebar.back")}
+            title={t("titlebar.back")}
+            className="flex h-full w-8 items-center justify-center hover:bg-[var(--bg-elev-strong)]"
+            style={{ color: "var(--text)" }}
+          >
+            <ChevronLeft size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate(1)}
+            aria-label={t("titlebar.forward")}
+            title={t("titlebar.forward")}
+            className="flex h-full w-8 items-center justify-center hover:bg-[var(--bg-elev-strong)]"
+            style={{ color: "var(--text)" }}
+          >
+            <ChevronRight size={14} />
+          </button>
+        </div>
       </div>
       <div className="flex h-full items-stretch">
         <button
