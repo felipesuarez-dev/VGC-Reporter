@@ -4,8 +4,9 @@
 
 # VGC-Reporter
 
-**Pokémon Champions competitive stats & team builder, as a native desktop app.**
-**"This app was built with pure, hardcore vibe-code and is still a work in progress. You might run into some bugs—nothing major. I’d really appreciate it if you could report them so I can make this app even better."**
+**Pokémon Champions competitive stats & team builder, as a native desktop app.**  
+
+**This app was built with pure, hardcore vibe-code and is still a work in progress. You might run into some bugs—nothing major. I’d really appreciate it if you could report them so I can make this app even better.**
 
 [![Version][version-badge]][version-link]
 [![Tauri][tauri-badge]][tauri-link]
