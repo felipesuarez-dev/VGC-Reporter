@@ -106,12 +106,45 @@ export function Dashboard() {
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">{t("dashboard.title")}</h1>
-          {data && (
-            <div className="mt-1 flex items-center gap-2">
-              <span
-                className="inline-flex flex-wrap items-center gap-x-1 gap-y-0 rounded-full border px-2 py-0.5 text-[11px]"
+        <h1 className="text-2xl font-bold">{t("dashboard.title")}</h1>
+        <div className="flex items-center gap-2">
+          <FormatSelector
+            value={format}
+            favorite={favoriteFormat}
+            onChange={setFormat}
+            onFavoriteChange={setFavoriteFormat}
+            className="w-72"
+          />
+          <select
+            className="input w-20 cursor-pointer"
+            value={tournamentCount}
+            onChange={(e) =>
+              setTournamentCount(Number(e.target.value) as TournamentCount)
+            }
+            title={t("dashboard.tournament_count")}
+            aria-label={t("dashboard.tournament_count")}
+          >
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+          <button
+            className="btn-ghost"
+            onClick={() =>
+              qc.invalidateQueries({
+                queryKey: queryKeys.meta(format, tournamentCount),
+              })
+            }
+          >
+            <RefreshCw size={14} className="mr-1" />
+            {t("dashboard.refresh")}
+          </button>
+        </div>
+      </header>
+      {data && (
+        <div className="-mt-4 flex items-center gap-2">
+          <span
+            className="inline-flex flex-wrap items-center gap-x-1 gap-y-0 rounded-full border px-2 py-0.5 text-[11px]"
                 style={{
                   borderColor: "var(--border)",
                   backgroundColor: "var(--bg-elev)",
@@ -168,44 +201,9 @@ export function Dashboard() {
                     </button>
                   </span>
                 ))}
-              </span>
-            </div>
-          )}
+          </span>
         </div>
-        <div className="flex items-center gap-2">
-          <FormatSelector
-            value={format}
-            favorite={favoriteFormat}
-            onChange={setFormat}
-            onFavoriteChange={setFavoriteFormat}
-            className="w-72"
-          />
-          <select
-            className="input w-20 cursor-pointer"
-            value={tournamentCount}
-            onChange={(e) =>
-              setTournamentCount(Number(e.target.value) as TournamentCount)
-            }
-            title={t("dashboard.tournament_count")}
-            aria-label={t("dashboard.tournament_count")}
-          >
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-          </select>
-          <button
-            className="btn-ghost"
-            onClick={() =>
-              qc.invalidateQueries({
-                queryKey: queryKeys.meta(format, tournamentCount),
-              })
-            }
-          >
-            <RefreshCw size={14} className="mr-1" />
-            {t("dashboard.refresh")}
-          </button>
-        </div>
-      </header>
+      )}
 
       {isLoading && <MetaSkeleton label={t("common.loading")} />}
       {showMetaSkeleton && !isLoading && <MetaSkeleton label={t("common.loading")} />}
