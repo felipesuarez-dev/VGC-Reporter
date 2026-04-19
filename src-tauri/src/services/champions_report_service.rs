@@ -9,6 +9,7 @@ use crate::domain::format::Format;
 use crate::error::AppError;
 use crate::services::pokedex_service::PokedexService;
 use chrono::Utc;
+use futures::future::join_all;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -35,9 +36,15 @@ impl ChampionsReportService {
             .list_tournaments_by_format(format, limit.saturating_mul(3))
             .await?;
 
+        let fetches = raw
+            .iter()
+            .map(|t| self.limitless.get_standings(&t.id))
+            .collect::<Vec<_>>();
+        let results = join_all(fetches).await;
+
         let mut kept: Vec<ChampionsTournament> = Vec::with_capacity(raw.len());
-        for t in raw {
-            let has_any = match self.limitless.get_standings(&t.id).await {
+        for (t, res) in raw.into_iter().zip(results) {
+            let has_any = match res {
                 Ok(standings) => has_any_decklist(&standings),
                 Err(e) => {
                     tracing::warn!("standings fetch failed for {}: {}", t.id, e);

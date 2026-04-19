@@ -123,9 +123,15 @@ impl MetaService {
         let lim_snap = if format.limitless_code().is_some() {
             let tournaments = self
                 .limitless
-                .list_tournaments(format, count)
+                .list_tournaments_by_format(format, count)
                 .await
                 .unwrap_or_default();
+            tracing::info!(
+                source = "limitless",
+                tournaments = tournaments.len(),
+                format = ?format,
+                "meta fallback: aggregating limitless standings"
+            );
             let mut all_standings = Vec::new();
             for t in &tournaments {
                 match self.limitless.get_standings(&t.id).await {
@@ -163,10 +169,30 @@ impl MetaService {
         };
 
         let final_snap = match (lim_snap, sm_snap) {
-            (Some(lim), _) if lim.total_entries >= MIN_LIMITLESS_ENTRIES => lim,
-            (_, Some(sm)) => sm,
-            (Some(lim), None) => lim,
-            (None, None) => MetaSnapshot::empty(format),
+            (Some(lim), _) if lim.total_entries >= MIN_LIMITLESS_ENTRIES => {
+                tracing::info!(
+                    source = "limitless",
+                    total = lim.total_entries,
+                    "meta snapshot"
+                );
+                lim
+            }
+            (_, Some(sm)) => {
+                tracing::info!(source = "smogon", total = sm.total_entries, "meta snapshot");
+                sm
+            }
+            (Some(lim), None) => {
+                tracing::info!(
+                    source = "limitless-thin",
+                    total = lim.total_entries,
+                    "meta snapshot"
+                );
+                lim
+            }
+            (None, None) => {
+                tracing::warn!("meta snapshot empty: no source produced data");
+                MetaSnapshot::empty(format)
+            }
         };
 
         let bytes = serde_json::to_vec(&final_snap)?;

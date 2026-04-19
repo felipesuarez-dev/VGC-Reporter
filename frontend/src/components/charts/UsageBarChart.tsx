@@ -9,12 +9,15 @@ import {
   YAxis,
 } from "recharts";
 import { useTranslation } from "react-i18next";
+import { PokemonSprite } from "../pokemon/PokemonSprite";
 
 export interface UsageBarItem {
   name: string;
   usage_percent: number;
   count?: number;
   sprite_url?: string;
+  sprite_fallback_url?: string | null;
+  home_sprite_url?: string | null;
   id?: string;
 }
 
@@ -38,18 +41,19 @@ interface SpriteTickProps {
 
 function SpriteTick({ x = 0, y = 0, payload, data }: SpriteTickProps) {
   const item = data.find((d) => d.name === payload?.value);
-  const sprite = item?.sprite_url;
   return (
     <g transform={`translate(${x},${y})`}>
-      {sprite && (
-        <image
-          href={sprite}
-          x={-174}
-          y={-16}
-          width={32}
-          height={32}
-          style={{ imageRendering: "pixelated" }}
-        />
+      {item?.sprite_url && (
+        <foreignObject x={-174} y={-16} width={32} height={32}>
+          <PokemonSprite
+            url={item.sprite_url}
+            fallbackUrl={item.sprite_fallback_url}
+            homeUrl={item.home_sprite_url}
+            name={item.name}
+            size={32}
+            variant="pixel"
+          />
+        </foreignObject>
       )}
       <text
         x={-136}
@@ -81,13 +85,13 @@ export function UsageBarChart({ data, height = 320, onBarClick }: Props) {
       >
         <div className="flex items-center gap-2">
           {item.sprite_url && (
-            <img
-              src={item.sprite_url}
-              alt={item.name}
-              width={48}
-              height={48}
-              data-sprite="true"
-              className="shrink-0"
+            <PokemonSprite
+              url={item.sprite_url}
+              fallbackUrl={item.sprite_fallback_url}
+              homeUrl={item.home_sprite_url}
+              name={item.name}
+              size={48}
+              variant="pixel"
             />
           )}
           <div className="text-sm font-semibold" style={{ color: "var(--text)" }}>

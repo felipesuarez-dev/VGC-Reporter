@@ -91,6 +91,8 @@ export function Dashboard() {
     usage_percent: p.usage_percent,
     count: p.count,
     sprite_url: p.sprite_url,
+    sprite_fallback_url: p.sprite_fallback_url,
+    home_sprite_url: p.home_sprite_url,
     id: p.species,
   }));
   const handleBarClick = (item: UsageBarItem) => {
