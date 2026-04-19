@@ -155,7 +155,8 @@
       "moves": "Movimientos",
       "tera": "Tera",
       "teammates": "Compañeros",
-      "spreads": "Spreads de EVs"
+      "spreads": "Repartos de EVs",
+      "spreads_no_data": "Aún no hay suficientes datos"
     }
   },
   "team_builder": {

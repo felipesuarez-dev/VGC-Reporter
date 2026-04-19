@@ -254,9 +254,14 @@ function SpreadList({
   title: string;
   entries: PikalyticsEvSpread[];
 }) {
+  const { t } = useTranslation();
   return (
     <Card title={title}>
-      {entries.length === 0 && <EmptyRow />}
+      {entries.length === 0 && (
+        <li className="text-xs" style={{ color: "var(--text-dim)" }}>
+          {t("pokemon_detail.pikalytics.spreads_no_data")}
+        </li>
+      )}
       {entries.slice(0, 4).map((e, i) => (
         <li key={i} className="text-xs">
           <div className="flex items-baseline justify-between gap-2">

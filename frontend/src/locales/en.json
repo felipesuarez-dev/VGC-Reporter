@@ -155,7 +155,8 @@
       "moves": "Moves",
       "tera": "Tera",
       "teammates": "Teammates",
-      "spreads": "EV spreads"
+      "spreads": "EV spreads",
+      "spreads_no_data": "Not enough data yet"
     }
   },
   "team_builder": {
