@@ -25,11 +25,18 @@ function canonicalSpeciesId(s: string): string {
 }
 
 const EXTERNAL_SITES: { name: string; url: string }[] = [
+  { name: "Labmaus", url: "https://labmaus.net/" },
   { name: "Pikalytics", url: "https://www.pikalytics.com/" },
   { name: "Pokebase", url: "https://pokebase.app/pokemon-champions" },
   { name: "Pokemon-Zone", url: "https://pokemon-zone.com/" },
   { name: "Champions Lab", url: "https://championslab.xyz/" },
   { name: "Munchstats", url: "https://munchstats.com/" },
+];
+
+const MAIN_SOURCES: { label: string; url: string }[] = [
+  { label: "Labmaus", url: "https://labmaus.net/" },
+  { label: "Limitless", url: "https://play.limitlesstcg.com/tournaments?game=VGC" },
+  { label: "Pikalytics", url: "https://www.pikalytics.com/" },
 ];
 
 async function openExternal(url: string) {
@@ -149,14 +156,28 @@ export function Dashboard() {
                 }
               >
                 <span
-                  className="inline-block rounded-full border px-2 py-0.5 text-[11px]"
+                  className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px]"
                   style={{
                     borderColor: "var(--border)",
                     backgroundColor: "var(--bg-elev)",
                     color: "var(--text-muted)",
                   }}
                 >
-                  {data.source}
+                  {MAIN_SOURCES.map((s, i) => (
+                    <span key={s.label} className="inline-flex items-center gap-1">
+                      {i > 0 && (
+                        <span style={{ color: "var(--text-dim)" }}>/</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => void openExternal(s.url)}
+                        className="hover:underline"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        {s.label}
+                      </button>
+                    </span>
+                  ))}
                 </span>
               </Tooltip>
             </div>

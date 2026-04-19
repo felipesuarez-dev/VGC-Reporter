@@ -7,6 +7,7 @@ import { AboutModal } from "../components/layout/AboutModal";
 import { useDashboardStore } from "../stores/dashboardStore";
 
 const EXTERNAL_LINKS: { key: string; url: string }[] = [
+  { key: "open_labmaus", url: "https://labmaus.net/" },
   { key: "open_pikalytics", url: "https://www.pikalytics.com/" },
   { key: "open_pokemonzone", url: "https://pokemon-zone.com/" },
   { key: "open_porygonlabs", url: "https://porygonlabs.com/" },
