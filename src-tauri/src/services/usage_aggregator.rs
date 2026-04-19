@@ -11,10 +11,20 @@ use std::collections::{HashMap, HashSet};
 
 /// Aggregates Limitless standings into a MetaSnapshot.
 ///
-/// Species usage is reported as **team-fraction** (teams using the species /
-/// total teams), matching Pikalytics' own semantics. Items / moves / abilities
-/// stay on pick-fraction because a single team can use the same item on
-/// multiple members and the "top in meta" card is really asking about picks.
+/// All top-level usage figures in the snapshot are **team-fraction**
+/// (teams using X at least once / total teams). Species, items, moves and
+/// abilities share this semantic so the Panel reads consistently: every
+/// percentage answers "what share of teams use this?". A team carrying the
+/// same item on three members contributes `1`, not `3`.
+///
+/// The per-Pokemon breakdowns inside `PokemonUsage` (`top_items`,
+/// `top_moves`, `top_abilities`) remain pick-fraction within that Pokemon —
+/// i.e. conditional "X% of Incineroars carry Goggles", matching Pikalytics.
+///
+/// The Smogon fallback path in `meta_service.rs` builds top_items/moves/
+/// abilities from a weighted `usage * ratio` sum; it has no per-team concept
+/// and therefore keeps its own semantic. It's only hit when Limitless has no
+/// data for the format.
 pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> MetaSnapshot {
     let tournaments_used = standings.len() as u32;
 
@@ -38,6 +48,13 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
             // De-duplicate by canonical species id so a team that somehow
             // repeats a form still counts once toward the team-fraction.
             let mut seen_on_team: HashSet<String> = HashSet::new();
+
+            // Per-team presence sets: the global top_items / top_moves /
+            // top_abilities are team-fraction, so each unique name gets +1
+            // per team regardless of how many slots carry it.
+            let mut team_items: HashSet<String> = HashSet::new();
+            let mut team_moves: HashSet<String> = HashSet::new();
+            let mut team_abilities: HashSet<String> = HashSet::new();
 
             // (id, display, canonical) — canonical is the hyphenated form the
             // sprite CDN understands; display is the prettified version for UI.
@@ -84,19 +101,26 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
                 }
 
                 if let Some(item) = entry.item.as_deref() {
-                    let item = prettify(item);
-                    *items_count.entry(item).or_insert(0) += 1;
+                    team_items.insert(prettify(item));
                 }
                 if let Some(moves) = &entry.moves {
                     for mv in moves {
-                        let mv = prettify(mv);
-                        *moves_count.entry(mv).or_insert(0) += 1;
+                        team_moves.insert(prettify(mv));
                     }
                 }
                 if let Some(ability) = entry.ability.as_deref() {
-                    let ability = prettify(ability);
-                    *abilities_count.entry(ability).or_insert(0) += 1;
+                    team_abilities.insert(prettify(ability));
                 }
+            }
+
+            for name in team_items {
+                *items_count.entry(name).or_insert(0) += 1;
+            }
+            for name in team_moves {
+                *moves_count.entry(name).or_insert(0) += 1;
+            }
+            for name in team_abilities {
+                *abilities_count.entry(name).or_insert(0) += 1;
             }
         }
     }
@@ -123,9 +147,9 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
         .collect();
     pokemon.sort_by(|a, b| b.usage_percent.partial_cmp(&a.usage_percent).unwrap());
 
-    let top_items = top_n(&items_count, 15);
-    let top_moves = top_n(&moves_count, 20);
-    let top_abilities = top_n(&abilities_count, 10);
+    let top_items = top_n_by_teams(&items_count, total_teams, 15);
+    let top_moves = top_n_by_teams(&moves_count, total_teams, 20);
+    let top_abilities = top_n_by_teams(&abilities_count, total_teams, 10);
 
     MetaSnapshot {
         format,
@@ -171,6 +195,21 @@ fn accumulate(entry: &LimitlessDecklistEntry, acc: &mut PokemonAccumulator) {
             *acc.movesets.entry(signature).or_insert(0) += 1;
         }
     }
+}
+
+fn top_n_by_teams(map: &HashMap<String, u32>, total_teams: u32, n: usize) -> Vec<UsageEntry> {
+    let total = total_teams.max(1) as f32;
+    let mut items: Vec<(String, u32)> = map.iter().map(|(k, v)| (k.clone(), *v)).collect();
+    items.sort_by(|a, b| b.1.cmp(&a.1));
+    items
+        .into_iter()
+        .take(n)
+        .map(|(name, count)| UsageEntry {
+            name,
+            usage_percent: (count as f32 / total) * 100.0,
+            count,
+        })
+        .collect()
 }
 
 fn top_n(map: &HashMap<String, u32>, n: usize) -> Vec<UsageEntry> {
@@ -450,6 +489,101 @@ mod tests {
             rotom_mate.sprite_fallback_url.as_deref(),
             Some("https://play.pokemonshowdown.com/sprites/dex/rotomwash.png")
         );
+    }
+
+    fn loaded_entry(species: &str, item: &str, ability: &str, moves: &[&str]) -> LimitlessDecklistEntry {
+        LimitlessDecklistEntry {
+            id: None,
+            name: None,
+            species: Some(species.to_string()),
+            pokemon: None,
+            item: Some(item.to_string()),
+            ability: Some(ability.to_string()),
+            tera: None,
+            tera_type: None,
+            moves: Some(moves.iter().map(|s| s.to_string()).collect()),
+            nature: None,
+        }
+    }
+
+    #[test]
+    fn top_items_is_team_fraction_not_slot_fraction() {
+        // One team with all 6 members carrying Safety Goggles must yield 100%,
+        // not 600% (nor anything derived from "6 slots / 6 total slots").
+        // Fake Out on 4 of 6 still yields 100% because the team as a whole
+        // carries it; the per-Pokemon breakdown keeps the conditional view.
+        let deck = vec![
+            loaded_entry("Incineroar", "Safety Goggles", "Intimidate", &["Fake Out", "Knock Off"]),
+            loaded_entry("Amoonguss", "Safety Goggles", "Regenerator", &["Fake Out", "Spore"]),
+            loaded_entry("Iron Hands", "Safety Goggles", "Quark Drive", &["Fake Out", "Drain Punch"]),
+            loaded_entry("Rillaboom", "Safety Goggles", "Grassy Surge", &["Fake Out", "Wood Hammer"]),
+            loaded_entry("Dondozo", "Safety Goggles", "Unaware", &["Wave Crash"]),
+            loaded_entry("Tatsugiri", "Safety Goggles", "Commander", &["Draco Meteor"]),
+        ];
+        let snap = aggregate(Format::RegulationMA, vec![vec![standing(deck)]]);
+
+        let goggles = snap
+            .top_items
+            .iter()
+            .find(|e| e.name == "Safety Goggles")
+            .expect("goggles should be in top_items");
+        assert_eq!(goggles.count, 1, "one team carries goggles");
+        assert!(
+            (goggles.usage_percent - 100.0).abs() < 0.01,
+            "got {}",
+            goggles.usage_percent
+        );
+
+        let fake_out = snap
+            .top_moves
+            .iter()
+            .find(|e| e.name == "Fake Out")
+            .expect("fake out should be in top_moves");
+        assert_eq!(fake_out.count, 1, "team-presence, not slot count");
+        assert!(
+            (fake_out.usage_percent - 100.0).abs() < 0.01,
+            "got {}",
+            fake_out.usage_percent
+        );
+    }
+
+    #[test]
+    fn top_items_splits_across_two_teams() {
+        // Two teams, each uniformly carrying a different item: both items must
+        // read 50% (team-fraction), not be renormalised to 100% each.
+        let deck_a = vec![
+            loaded_entry("Incineroar", "Safety Goggles", "Intimidate", &["Fake Out"]),
+            loaded_entry("Amoonguss", "Safety Goggles", "Regenerator", &["Spore"]),
+            loaded_entry("Iron Hands", "Safety Goggles", "Quark Drive", &["Drain Punch"]),
+            loaded_entry("Rillaboom", "Safety Goggles", "Grassy Surge", &["Wood Hammer"]),
+            loaded_entry("Dondozo", "Safety Goggles", "Unaware", &["Wave Crash"]),
+            loaded_entry("Tatsugiri", "Safety Goggles", "Commander", &["Draco Meteor"]),
+        ];
+        let deck_b = vec![
+            loaded_entry("Incineroar", "Assault Vest", "Intimidate", &["Fake Out"]),
+            loaded_entry("Amoonguss", "Assault Vest", "Regenerator", &["Spore"]),
+            loaded_entry("Iron Hands", "Assault Vest", "Quark Drive", &["Drain Punch"]),
+            loaded_entry("Rillaboom", "Assault Vest", "Grassy Surge", &["Wood Hammer"]),
+            loaded_entry("Dondozo", "Assault Vest", "Unaware", &["Wave Crash"]),
+            loaded_entry("Tatsugiri", "Assault Vest", "Commander", &["Draco Meteor"]),
+        ];
+        let snap = aggregate(
+            Format::RegulationMA,
+            vec![vec![standing(deck_a), standing(deck_b)]],
+        );
+
+        let goggles = snap
+            .top_items
+            .iter()
+            .find(|e| e.name == "Safety Goggles")
+            .expect("goggles");
+        let vest = snap
+            .top_items
+            .iter()
+            .find(|e| e.name == "Assault Vest")
+            .expect("assault vest");
+        assert!((goggles.usage_percent - 50.0).abs() < 0.01, "got {}", goggles.usage_percent);
+        assert!((vest.usage_percent - 50.0).abs() < 0.01, "got {}", vest.usage_percent);
     }
 
     #[test]
