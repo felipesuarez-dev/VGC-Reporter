@@ -36,12 +36,16 @@ export function ThemeSelect({ variant = "default" }: Props) {
   const isTitlebar = variant === "titlebar";
   const iconColor =
     theme === "system" ? "var(--text-muted)" : SWATCH[theme].accent;
+  const triggerSwatchBg =
+    theme === "system"
+      ? SWATCH.system.bg
+      : `linear-gradient(135deg, ${SWATCH[theme].bg} 50%, ${SWATCH[theme].accent} 50%)`;
   return (
     <div ref={ref} className="relative">
       <button
         type="button"
         className={cn(
-          "btn-ghost flex items-center",
+          "btn-ghost flex items-center gap-1",
           isTitlebar ? "h-7 px-2 py-0" : "p-1.5",
         )}
         onClick={() => setOpen((o) => !o)}
@@ -49,6 +53,14 @@ export function ThemeSelect({ variant = "default" }: Props) {
         title={label}
       >
         <Palette size={14} style={{ color: iconColor }} />
+        <span
+          aria-hidden
+          className="inline-block h-2.5 w-2.5 shrink-0 rounded-full border"
+          style={{
+            background: triggerSwatchBg,
+            borderColor: "var(--border)",
+          }}
+        />
       </button>
       {open && (
         <div
