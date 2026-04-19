@@ -44,7 +44,7 @@ impl TrendingService {
     /// the network, so a new regulation can be onboarded by seeding one
     /// settings row before its static default is known.
     pub async fn get_trending(&self, format: Format) -> Result<TrendingReport, AppError> {
-        let key = format!("trending::v5::{}", format.cache_id());
+        let key = format!("trending::v6::{}", format.cache_id());
         if let Some(bytes) = self.cache.get(&key)? {
             if let Ok(report) = serde_json::from_slice::<TrendingReport>(&bytes) {
                 return Ok(report);

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "../../lib/cn";
 import { LanguageToggle } from "./LanguageToggle";
+import { Titlebar } from "./Titlebar";
 import { ScrollToTop } from "../ui/ScrollToTop";
 import { useUiStore } from "../../stores/uiStore";
 import { APP_VERSION } from "../../lib/version";
@@ -38,9 +39,11 @@ export function AppShell() {
 
   return (
     <div
-      className="flex h-screen w-screen"
+      className="flex h-screen w-screen flex-col"
       style={{ backgroundColor: "var(--bg)", color: "var(--text)" }}
     >
+      <Titlebar />
+      <div className="flex min-h-0 flex-1">
       <aside
         className={cn(
           "flex shrink-0 flex-col border-r transition-[width] duration-200",
@@ -171,6 +174,7 @@ export function AppShell() {
           <Outlet />
         </div>
       </main>
+      </div>
       <ScrollToTop />
     </div>
   );

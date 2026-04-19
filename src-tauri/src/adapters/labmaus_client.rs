@@ -68,13 +68,19 @@ impl LabmausClient {
     /// Catalog of `id → localised display name` for every VGC Pokémon that
     /// labmaus knows about. Used to recover display names when individual
     /// endpoints ship `pokemon_names` empty (which `/api/discover_teams`
-    /// sometimes does for specific date ranges). Response is an object map.
+    /// frequently does in real responses).
+    ///
+    /// Without `names=true` labmaus returns `[{"id","name"}, ...]` which our
+    /// `LabmausCatalogEntry` parser handles. With `names=true` it returns a
+    /// flat list of strings (no ids), which we cannot key by id and would
+    /// silently fail to deserialize, leaving the catalog empty and dropping
+    /// every species from the trending report.
     pub async fn get_all_vgc_pokemon(
         &self,
         language: &str,
     ) -> Result<HashMap<String, String>, AppError> {
         let url = format!(
-            "{}/api/all_vgc_pokemon?language={}&names=true",
+            "{}/api/all_vgc_pokemon?language={}",
             config::LABMAUS_BASE,
             language
         );

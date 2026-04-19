@@ -69,7 +69,7 @@ impl AppState {
         let champions = ChampionsReportService::new(limitless.clone(), pokedex.clone());
         let upcoming = UpcomingTournamentsService::new(limitless.clone());
         let translations = TranslationsService::new(pokeapi);
-        let pikalytics = PikalyticsService::new(pikalytics_client, cache.clone());
+        let pikalytics = PikalyticsService::new(pikalytics_client, cache.clone(), pokedex.clone());
         let trending = TrendingService::new(labmaus.clone(), cache.clone(), settings.clone());
 
         Ok(Self {

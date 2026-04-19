@@ -16,11 +16,6 @@ interface Props {
   species: string;
 }
 
-function spriteFor(species: string): string {
-  const slug = species.toLowerCase().replace(/[^a-z0-9]+/g, "");
-  return `https://play.pokemonshowdown.com/sprites/gen5/${slug}.png`;
-}
-
 export function PikalyticsSection({ species }: Props) {
   const { t } = useTranslation();
   const { data, isLoading, isError } = usePikalyticsEntry(species);
@@ -207,7 +202,7 @@ function TeammateList({
           >
             <span className="flex min-w-0 items-center gap-2">
               <PokemonSprite
-                url={e.sprite_url ?? spriteFor(e.species)}
+                url={e.sprite_url ?? ""}
                 name={e.species}
                 variant="pixel"
                 size={24}
