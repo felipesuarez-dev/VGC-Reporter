@@ -5,6 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preload" as="image" href="/logo.png" fetchpriority="high" />
     <title>VGC Reporter</title>
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem("vgc-ui");
+          var theme = "system";
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            theme = (parsed && parsed.state && parsed.state.theme) || "system";
+          }
+          if (theme === "system") {
+            theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "gengar" : "clefable";
+          }
+          document.documentElement.classList.add("theme-" + theme);
+        } catch (e) {
+          document.documentElement.classList.add("theme-gengar");
+        }
+      })();
+    </script>
     <style>
       #splash {
         position: fixed;

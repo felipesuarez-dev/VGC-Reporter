@@ -29,6 +29,42 @@ interface TooltipRenderProps {
   payload?: { payload: UsageBarItem }[];
 }
 
+interface SpriteTickProps {
+  x?: number;
+  y?: number;
+  payload?: { value: string };
+  data: UsageBarItem[];
+}
+
+function SpriteTick({ x = 0, y = 0, payload, data }: SpriteTickProps) {
+  const item = data.find((d) => d.name === payload?.value);
+  const sprite = item?.sprite_url;
+  return (
+    <g transform={`translate(${x},${y})`}>
+      {sprite && (
+        <image
+          href={sprite}
+          x={-174}
+          y={-16}
+          width={32}
+          height={32}
+          style={{ imageRendering: "pixelated" }}
+        />
+      )}
+      <text
+        x={-136}
+        y={0}
+        dy={4}
+        textAnchor="start"
+        fill="#94a3b8"
+        fontSize={12}
+      >
+        {payload?.value}
+      </text>
+    </g>
+  );
+}
+
 export function UsageBarChart({ data, height = 320, onBarClick }: Props) {
   const { t } = useTranslation();
 
@@ -98,9 +134,10 @@ export function UsageBarChart({ data, height = 320, onBarClick }: Props) {
           dataKey="name"
           type="category"
           stroke="#94a3b8"
-          width={120}
-          fontSize={11}
+          width={180}
+          fontSize={12}
           interval={0}
+          tick={(props) => <SpriteTick {...props} data={data} />}
         />
         <Tooltip
           content={<CustomTooltip />}
@@ -110,6 +147,7 @@ export function UsageBarChart({ data, height = 320, onBarClick }: Props) {
           dataKey="usage_percent"
           fill="#2b86ff"
           radius={[0, 4, 4, 0]}
+          barSize={28}
           onClick={onBarClick ? (payload) => onBarClick(payload as UsageBarItem) : undefined}
           style={onBarClick ? { cursor: "pointer" } : undefined}
         >
@@ -118,7 +156,7 @@ export function UsageBarChart({ data, height = 320, onBarClick }: Props) {
             position="insideRight"
             formatter={(value: number) => `${value.toFixed(1)}%`}
             fill="#ffffff"
-            fontSize={11}
+            fontSize={12}
             fontWeight={600}
           />
         </Bar>

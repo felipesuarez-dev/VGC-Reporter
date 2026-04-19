@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Calculator, X } from "lucide-react";
 import { ipc } from "../../lib/ipc";
 import { queryKeys } from "../../lib/queryKeys";
 import {
@@ -28,9 +29,15 @@ import { type TeammateUsage } from "../../lib/types";
 
 export function PokemonDetailModal() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const id = usePokedexStore((s) => s.selectedPokemonId);
   const close = usePokedexStore((s) => s.closeDetail);
   const format = useDashboardStore((s) => s.format);
+  const [calcMenuOpen, setCalcMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!id) setCalcMenuOpen(false);
+  }, [id]);
 
   useEffect(() => {
     if (!id) return;
@@ -46,6 +53,13 @@ export function PokemonDetailModal() {
     queryFn: () => ipc.getPokemon(id!),
     enabled: Boolean(id),
   });
+
+  const sendToCalc = (role: "attacker" | "defender") => {
+    if (!pokemon.data) return;
+    setCalcMenuOpen(false);
+    close();
+    navigate("/damage-calc", { state: { species: pokemon.data, role } });
+  };
 
   const meta = useQuery({
     queryKey: queryKeys.meta(format),
@@ -75,13 +89,54 @@ export function PokemonDetailModal() {
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          className="absolute right-3 top-3 rounded p-1 text-[var(--text-muted)] hover:bg-[var(--bg-elev-strong)] hover:text-[var(--text)]"
-          onClick={close}
-          aria-label={t("pokemon_detail.close")}
-        >
-          <X size={18} />
-        </button>
+        <div className="absolute right-3 top-3 flex items-center gap-1">
+          {pokemon.data && (
+            <div className="relative">
+              <button
+                className="rounded p-1 text-[var(--text-muted)] hover:bg-[var(--bg-elev-strong)] hover:text-[var(--text)]"
+                onClick={() => setCalcMenuOpen((o) => !o)}
+                aria-label={t("pokemon_detail.send_to_calc")}
+                title={t("pokemon_detail.send_to_calc")}
+              >
+                <Calculator size={18} />
+              </button>
+              {calcMenuOpen && (
+                <div
+                  className="absolute right-0 top-full z-10 mt-1 flex flex-col rounded-md border shadow-lg"
+                  style={{
+                    backgroundColor: "var(--bg-elev-strong)",
+                    borderColor: "var(--border)",
+                  }}
+                  onMouseLeave={() => setCalcMenuOpen(false)}
+                >
+                  <button
+                    type="button"
+                    className="whitespace-nowrap px-3 py-1.5 text-left text-xs hover:bg-[var(--bg-elev)]"
+                    style={{ color: "var(--text)" }}
+                    onClick={() => sendToCalc("attacker")}
+                  >
+                    {t("damage_calc.attacker")}
+                  </button>
+                  <button
+                    type="button"
+                    className="whitespace-nowrap px-3 py-1.5 text-left text-xs hover:bg-[var(--bg-elev)]"
+                    style={{ color: "var(--text)" }}
+                    onClick={() => sendToCalc("defender")}
+                  >
+                    {t("damage_calc.defender")}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+          <button
+            className="rounded p-1 text-[var(--text-muted)] hover:bg-[var(--bg-elev-strong)] hover:text-[var(--text)]"
+            onClick={close}
+            aria-label={t("pokemon_detail.close")}
+          >
+            <X size={18} />
+          </button>
+        </div>
 
         {pokemon.isLoading && (
           <div style={{ color: "var(--text-muted)" }}>{t("common.loading")}</div>
@@ -180,14 +235,27 @@ function ModalBody({
           size={120}
         />
         <div className="flex-1">
-          <h2 className="text-2xl font-bold" style={{ color: "var(--text)" }}>
-            {pokemon.name}
+          <h2 className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-2xl font-bold" style={{ color: "var(--text)" }}>
+            <span>{pokemon.name}</span>
             <span
-              className="ml-2 text-sm font-normal"
+              className="text-sm font-normal"
               style={{ color: "var(--text-dim)" }}
             >
               #{pokemon.num.toString().padStart(4, "0")}
             </span>
+            {myUsage && (
+              <span
+                className="rounded-full border px-2 py-0.5 text-xs font-semibold tabular-nums"
+                style={{
+                  borderColor: "var(--accent)",
+                  color: "var(--accent)",
+                  backgroundColor: "var(--accent-soft)",
+                }}
+                title={t("dashboard.top_pokemon")}
+              >
+                {myUsage.usage_percent.toFixed(1)}%
+              </span>
+            )}
           </h2>
           <div className="mt-1 flex flex-wrap gap-1">
             {pokemon.types.map((ty) => (

@@ -17,6 +17,17 @@
     --danger: #f87171;
     --warning: #fbbf24;
     --success: #34d399;
+    --badge-bg: rgba(0, 0, 0, 0.55);
+    --badge-foreground: #ffffff;
+    --tier-gold-bg: rgba(245, 158, 11, 0.15);
+    --tier-gold-foreground: #fcd34d;
+    --tier-gold-border: rgba(245, 158, 11, 0.4);
+    --tier-silver-bg: rgba(148, 163, 184, 0.15);
+    --tier-silver-foreground: #e2e8f0;
+    --tier-silver-border: rgba(148, 163, 184, 0.4);
+    --tier-bronze-bg: rgba(146, 64, 14, 0.25);
+    --tier-bronze-foreground: #fcd34d;
+    --tier-bronze-border: rgba(146, 64, 14, 0.5);
   }
 
   :root.theme-clefable {
@@ -33,6 +44,71 @@
     --danger: #dc2626;
     --warning: #d97706;
     --success: #059669;
+    --badge-bg: rgba(43, 26, 37, 0.85);
+    --badge-foreground: #ffffff;
+    --tier-gold-bg: rgba(245, 158, 11, 0.22);
+    --tier-gold-foreground: #78350f;
+    --tier-gold-border: rgba(180, 83, 9, 0.55);
+    --tier-silver-bg: rgba(148, 163, 184, 0.28);
+    --tier-silver-foreground: #334155;
+    --tier-silver-border: rgba(100, 116, 139, 0.6);
+    --tier-bronze-bg: rgba(180, 83, 9, 0.22);
+    --tier-bronze-foreground: #78350f;
+    --tier-bronze-border: rgba(120, 53, 15, 0.55);
+  }
+
+  :root.theme-incineroar {
+    --bg: #140908;
+    --bg-elev: #25120e;
+    --bg-elev-strong: #32160f;
+    --border: #5c2315;
+    --text: #fdecd9;
+    --text-muted: #d09a7a;
+    --text-dim: #9a6d54;
+    --accent: #f97316;
+    --accent-soft: rgba(249, 115, 22, 0.22);
+    --accent-strong: #ea580c;
+    --danger: #f87171;
+    --warning: #fbbf24;
+    --success: #34d399;
+    --badge-bg: rgba(0, 0, 0, 0.55);
+    --badge-foreground: #ffffff;
+    --tier-gold-bg: rgba(249, 115, 22, 0.18);
+    --tier-gold-foreground: #fdba74;
+    --tier-gold-border: rgba(249, 115, 22, 0.5);
+    --tier-silver-bg: rgba(209, 169, 129, 0.14);
+    --tier-silver-foreground: #e5c8a8;
+    --tier-silver-border: rgba(209, 169, 129, 0.4);
+    --tier-bronze-bg: rgba(146, 64, 14, 0.25);
+    --tier-bronze-foreground: #fdba74;
+    --tier-bronze-border: rgba(146, 64, 14, 0.5);
+  }
+
+  :root.theme-tyranitar {
+    --bg: #0b120d;
+    --bg-elev: #152018;
+    --bg-elev-strong: #1d2c21;
+    --border: #3a4a34;
+    --text: #e6efd8;
+    --text-muted: #9fb388;
+    --text-dim: #6e825b;
+    --accent: #84cc16;
+    --accent-soft: rgba(132, 204, 22, 0.2);
+    --accent-strong: #65a30d;
+    --danger: #f87171;
+    --warning: #fbbf24;
+    --success: #34d399;
+    --badge-bg: rgba(0, 0, 0, 0.55);
+    --badge-foreground: #ffffff;
+    --tier-gold-bg: rgba(234, 179, 8, 0.15);
+    --tier-gold-foreground: #fde68a;
+    --tier-gold-border: rgba(234, 179, 8, 0.45);
+    --tier-silver-bg: rgba(148, 163, 184, 0.15);
+    --tier-silver-foreground: #e2e8f0;
+    --tier-silver-border: rgba(148, 163, 184, 0.4);
+    --tier-bronze-bg: rgba(120, 113, 108, 0.2);
+    --tier-bronze-foreground: #d6d3d1;
+    --tier-bronze-border: rgba(87, 83, 78, 0.55);
   }
 
   html,

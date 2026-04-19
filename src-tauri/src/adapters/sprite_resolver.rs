@@ -125,6 +125,14 @@ fn apply_alias(species: &str) -> String {
     }
     let lower = trimmed.to_ascii_lowercase();
 
+    // Regional-prefix formats ("Hisuian Typhlosion", "Alolan Ninetales",
+    // "Paldean Tauros Aqua Breed"). Showdown keys them base-first with a
+    // region suffix (typhlosion-hisui, ninetales-alola, tauros-paldeaaqua),
+    // so rewrite before modifier-first / id normalization.
+    if let Some(rewritten) = rewrite_regional_prefix(trimmed) {
+        return rewritten;
+    }
+
     // Modifier-first legacy formats: Labmaus/Pokepaste sometimes emit
     // "Mega Scizor", "Gigantamax Charizard", "Primal Groudon" (keyword
     // first). Showdown keys them base-first hyphenated, so rewrite here
@@ -188,6 +196,56 @@ fn rewrite_modifier_first(raw: &str) -> Option<String> {
         "primal" => Some(format!("{}-Primal", join_base(&tokens[1..]))),
         _ => None,
     }
+}
+
+/// Detect regional-prefix formats ("Hisuian Typhlosion", "Alolan-Ninetales",
+/// "Paldean Tauros Aqua Breed") and rewrite to Showdown's base-first
+/// suffixed form. Paldean Tauros is a special case because its breeds use
+/// a compound suffix (`tauros-paldeacombat`, etc.).
+fn rewrite_regional_prefix(raw: &str) -> Option<String> {
+    let tokens: Vec<&str> = raw
+        .split(|c: char| c.is_whitespace() || c == '-')
+        .filter(|t| !t.is_empty())
+        .collect();
+    if tokens.len() < 2 {
+        return None;
+    }
+    let head = tokens[0].to_ascii_lowercase();
+    let suffix = match head.as_str() {
+        "hisuian" => "Hisui",
+        "alolan" => "Alola",
+        "galarian" => "Galar",
+        "paldean" => "Paldea",
+        "kantonian" => "Kanto",
+        "unovan" => "Unova",
+        _ => return None,
+    };
+
+    if suffix == "Paldea" && tokens.len() >= 3 {
+        let second = tokens[1].to_ascii_lowercase();
+        if second == "tauros" {
+            let last_is_breed = tokens
+                .last()
+                .map(|t| t.eq_ignore_ascii_case("breed"))
+                .unwrap_or(false);
+            let breed_idx = if last_is_breed { tokens.len() - 2 } else { 2 };
+            if let Some(breed) = tokens.get(breed_idx).map(|t| t.to_ascii_lowercase()) {
+                if matches!(breed.as_str(), "combat" | "blaze" | "aqua") {
+                    return Some(format!("Tauros-Paldea-{}", titlecase(&breed)));
+                }
+            }
+        }
+    }
+
+    let base = tokens[1..]
+        .iter()
+        .map(|t| titlecase(t))
+        .collect::<Vec<_>>()
+        .join("-");
+    if base.is_empty() {
+        return None;
+    }
+    Some(format!("{}-{}", base, suffix))
 }
 
 /// Uppercase the first character, lowercase the rest. Good enough for
@@ -414,6 +472,35 @@ mod tests {
         assert_eq!(canonical_id("Primal Groudon"), "groudonprimal");
         assert_eq!(canonical_id("Primal Kyogre"), "kyogreprimal");
         assert!(primary_sprite_url("Primal Groudon").ends_with("/groudon-primal.png"));
+    }
+
+    #[test]
+    fn regional_prefix_hisuian_alolan_galarian() {
+        assert!(primary_sprite_url("Hisuian Typhlosion").ends_with("/typhlosion-hisui.png"));
+        assert!(primary_sprite_url("Alolan Ninetales").ends_with("/ninetales-alola.png"));
+        assert!(primary_sprite_url("Galarian Moltres").ends_with("/moltres-galar.png"));
+        assert!(primary_sprite_url("Alolan-Ninetales").ends_with("/ninetales-alola.png"));
+        assert_eq!(canonical_id("Hisuian Typhlosion"), "typhlosionhisui");
+        assert_eq!(canonical_id("ALOLAN NINETALES"), "ninetalesalola");
+    }
+
+    #[test]
+    fn regional_prefix_paldean_tauros_breeds() {
+        assert!(primary_sprite_url("Paldean Tauros Aqua Breed").ends_with("/tauros-paldeaaqua.png"));
+        assert!(
+            primary_sprite_url("Paldean Tauros Blaze Breed").ends_with("/tauros-paldeablaze.png")
+        );
+        assert!(
+            primary_sprite_url("Paldean Tauros Combat Breed").ends_with("/tauros-paldeacombat.png")
+        );
+        assert!(primary_sprite_url("Paldean Tauros Aqua").ends_with("/tauros-paldeaaqua.png"));
+        assert!(primary_sprite_url("Tauros-Paldea-Aqua").ends_with("/tauros-paldeaaqua.png"));
+    }
+
+    #[test]
+    fn regional_prefix_does_not_collide_with_modifier_first() {
+        assert_eq!(canonical_id("Mega Scizor"), "scizormega");
+        assert_eq!(canonical_id("Alolan Ninetales"), "ninetalesalola");
     }
 
     #[test]

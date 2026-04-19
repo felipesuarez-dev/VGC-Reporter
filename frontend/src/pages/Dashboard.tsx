@@ -11,12 +11,13 @@ import { type ChampionsTournament } from "../lib/types";
 import { UsageBarChart, type UsageBarItem } from "../components/charts/UsageBarChart";
 import { TopList } from "../components/charts/TopList";
 import { TrendingCard } from "../components/charts/TrendingCard";
-import { PokemonSprite } from "../components/pokemon/PokemonSprite";
 import { PokemonDetailModal } from "../components/pokemon/PokemonDetailModal";
 import { FormatSelector } from "../components/ui/FormatSelector";
 import { XCard } from "../components/dashboard/XCard";
 import { TournamentStandingsDrawer } from "../components/tournament/TournamentStandingsDrawer";
-import { useDashboardStore, type TournamentCount } from "../stores/dashboardStore";
+import { SourcesChip } from "../components/layout/SourcesChip";
+import { SearchTextInput } from "../components/filters/SearchTextInput";
+import { useDashboardStore } from "../stores/dashboardStore";
 import { usePokedexStore } from "../stores/pokedexStore";
 
 function canonicalSpeciesId(s: string): string {
@@ -32,12 +33,6 @@ const EXTERNAL_SITES: { name: string; url: string }[] = [
   { name: "Munchstats", url: "https://munchstats.com/" },
 ];
 
-const MAIN_SOURCES: { label: string; url: string }[] = [
-  { label: "Labmaus", url: "https://labmaus.net/" },
-  { label: "Limitless", url: "https://play.limitlesstcg.com/tournaments?game=VGC" },
-  { label: "Pikalytics", url: "https://www.pikalytics.com/" },
-];
-
 async function openExternal(url: string) {
   try {
     await openUrl(url);
@@ -51,10 +46,8 @@ export function Dashboard() {
   const qc = useQueryClient();
   const format = useDashboardStore((s) => s.format);
   const favoriteFormat = useDashboardStore((s) => s.favoriteFormat);
-  const tournamentCount = useDashboardStore((s) => s.tournamentCount);
   const setFormat = useDashboardStore((s) => s.setFormat);
   const setFavoriteFormat = useDashboardStore((s) => s.setFavoriteFormat);
-  const setTournamentCount = useDashboardStore((s) => s.setTournamentCount);
   const initRef = useRef(false);
   useEffect(() => {
     if (initRef.current) return;
@@ -66,10 +59,14 @@ export function Dashboard() {
   const [selectedTournament, setSelectedTournament] =
     useState<ChampionsTournament | null>(null);
   const [tournamentExpanded, setTournamentExpanded] = useState(false);
+  const [tournamentSearch, setTournamentSearch] = useState("");
   const tournamentLimit = tournamentExpanded ? 20 : 10;
+  const POKE_INITIAL = 10;
+  const POKE_PAGE = 10;
+  const [pokeVisible, setPokeVisible] = useState(POKE_INITIAL);
   const { data, isLoading, isFetching, isError, error } = useQuery({
-    queryKey: queryKeys.meta(format, tournamentCount),
-    queryFn: () => ipc.getMetaStats(format, tournamentCount),
+    queryKey: queryKeys.meta(format),
+    queryFn: () => ipc.getMetaStats(format),
   });
   const { data: championsReportRaw, isFetching: championsFetching } = useQuery({
     queryKey: queryKeys.championsReport(format, tournamentLimit),
@@ -87,7 +84,8 @@ export function Dashboard() {
       }
     : championsReportRaw;
 
-  const topPokemon = data?.pokemon.slice(0, 15) ?? [];
+  const allPokemon = data?.pokemon ?? [];
+  const topPokemon = allPokemon.slice(0, pokeVisible);
   const chartPokemon: UsageBarItem[] = topPokemon.map((p) => ({
     name: p.species,
     usage_percent: p.usage_percent,
@@ -115,24 +113,11 @@ export function Dashboard() {
             onFavoriteChange={setFavoriteFormat}
             className="w-72"
           />
-          <select
-            className="input w-20 cursor-pointer"
-            value={tournamentCount}
-            onChange={(e) =>
-              setTournamentCount(Number(e.target.value) as TournamentCount)
-            }
-            title={t("dashboard.tournament_count")}
-            aria-label={t("dashboard.tournament_count")}
-          >
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-          </select>
           <button
             className="btn-ghost"
             onClick={() =>
               qc.invalidateQueries({
-                queryKey: queryKeys.meta(format, tournamentCount),
+                queryKey: queryKeys.meta(format),
               })
             }
           >
@@ -143,65 +128,13 @@ export function Dashboard() {
       </header>
       {data && (
         <div className="-mt-4 flex items-center gap-2">
-          <span
-            className="inline-flex flex-wrap items-center gap-x-1 gap-y-0 rounded-full border px-2 py-0.5 text-[11px]"
-                style={{
-                  borderColor: "var(--border)",
-                  backgroundColor: "var(--bg-elev)",
-                  color: "var(--text-muted)",
-                }}
-              >
-                <span>
-                  {t("dashboard.meta_tooltip_count", {
-                    count: data.tournaments_used,
-                  })}
-                </span>
-                {data.battles_analyzed > 0 && (
-                  <>
-                    <span style={{ color: "var(--text-dim)" }}>•</span>
-                    <span>
-                      {t("dashboard.meta_tooltip_battles", {
-                        count: data.battles_analyzed,
-                      })}
-                    </span>
-                  </>
-                )}
-                {data.from_date && data.to_date ? (
-                  <>
-                    <span style={{ color: "var(--text-dim)" }}>•</span>
-                    <span>
-                      {t("dashboard.meta_tooltip_range", {
-                        from: formatDate(data.from_date, i18n.language),
-                        to: formatDate(data.to_date, i18n.language),
-                      })}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span style={{ color: "var(--text-dim)" }}>•</span>
-                    <span>
-                      {t("dashboard.total_entries")}: {data.total_entries}
-                    </span>
-                  </>
-                )}
-                <span style={{ color: "var(--text-dim)" }}>|</span>
-                <span>{t("dashboard.sources_label")}:</span>
-                {MAIN_SOURCES.map((s, i) => (
-                  <span key={s.label} className="inline-flex items-center gap-1">
-                    {i > 0 && (
-                      <span style={{ color: "var(--text-dim)" }}>/</span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => void openExternal(s.url)}
-                      className="hover:underline"
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      {s.label}
-                    </button>
-                  </span>
-                ))}
-          </span>
+          <SourcesChip
+            tournamentsUsed={data.tournaments_used}
+            battlesAnalyzed={data.battles_analyzed}
+            fromDate={data.from_date}
+            toDate={data.to_date}
+            totalEntries={data.total_entries}
+          />
         </div>
       )}
 
@@ -226,9 +159,31 @@ export function Dashboard() {
             </h2>
             <UsageBarChart
               data={chartPokemon}
-              height={380}
+              height={Math.max(440, topPokemon.length * 48)}
               onBarClick={handleBarClick}
             />
+            {(allPokemon.length > pokeVisible || pokeVisible > POKE_INITIAL) && (
+              <div className="mt-3 flex justify-center gap-2">
+                {allPokemon.length > pokeVisible && (
+                  <button
+                    type="button"
+                    className="btn-ghost text-xs"
+                    onClick={() => setPokeVisible((n) => n + POKE_PAGE)}
+                  >
+                    {t("common.see_more")}
+                  </button>
+                )}
+                {pokeVisible > POKE_INITIAL && (
+                  <button
+                    type="button"
+                    className="btn-ghost text-xs"
+                    onClick={() => setPokeVisible(POKE_INITIAL)}
+                  >
+                    {t("common.see_less")}
+                  </button>
+                )}
+              </div>
+            )}
           </section>
 
           <TrendingCard format={format} />
@@ -254,32 +209,6 @@ export function Dashboard() {
             </div>
           </section>
 
-          <section>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-              {topPokemon.map((p) => (
-                <button
-                  key={p.species}
-                  type="button"
-                  onClick={() => openSpecies(p.species)}
-                  className="card flex flex-col items-center gap-1 text-center transition hover:border-[var(--accent)] hover:bg-[var(--bg-elev-strong)]"
-                >
-                  <PokemonSprite
-                    url={p.sprite_url}
-                    fallbackUrl={p.sprite_fallback_url ?? undefined}
-                    homeUrl={p.home_sprite_url ?? undefined}
-                    name={p.species}
-                    size={64}
-                  />
-                  <div className="text-xs font-semibold" style={{ color: "var(--text)" }}>
-                    {p.species}
-                  </div>
-                  <div className="text-[10px]" style={{ color: "var(--accent)" }}>
-                    {p.usage_percent.toFixed(1)}%
-                  </div>
-                </button>
-              ))}
-            </div>
-          </section>
         </>
       )}
 
@@ -294,6 +223,15 @@ export function Dashboard() {
             format: formatLabel(t, format),
           })}
         </p>
+        {championsReport && championsReport.tournaments.length > 0 && (
+          <div className="mb-2">
+            <SearchTextInput
+              value={tournamentSearch}
+              onChange={setTournamentSearch}
+              placeholder={t("common.filter_search_tournament")}
+            />
+          </div>
+        )}
         {(championsFetching || !championsReport) && (
           <p className="text-xs" style={{ color: "var(--text-dim)" }}>
             {t("common.loading")}
@@ -308,7 +246,13 @@ export function Dashboard() {
           )}
         {championsReport && championsReport.tournaments.length > 0 && (
           <ul className="divide-y divide-[var(--border)]">
-            {championsReport.tournaments.map((tour) => (
+            {championsReport.tournaments
+              .filter((tour) => {
+                const q = tournamentSearch.trim().toLowerCase();
+                if (!q) return true;
+                return (tour.name ?? "").toLowerCase().includes(q);
+              })
+              .map((tour) => (
               <li
                 key={tour.id}
                 className="flex items-center justify-between gap-3 py-2"

@@ -48,6 +48,11 @@
     "edit": "Editar",
     "search": "Buscar",
     "search_placeholder": "Buscar...",
+    "filter_country": "País",
+    "filter_country_placeholder": "Todos los países",
+    "filter_country_search": "Buscar país",
+    "filter_search_tournament": "Buscar torneo o campeón",
+    "filter_search_player": "Buscar jugador",
     "filter": "Filtrar",
     "all_types": "Todos los tipos",
     "new": "Nuevo",
@@ -86,8 +91,7 @@
     "meta_tooltip_battles": "{{count}} equipos analizados",
     "meta_tooltip_range": "{{from}} — {{to}}",
     "loading_patience": "Obteniendo torneos y agregando estadísticas. Esto puede tardar un momento.",
-    "tournament_count": "Torneos",
-    "trending_title": "Tendencias del meta (últimos 14 días)",
+    "trending_title": "Tendencias del meta (últimos {{days}} días)",
     "trending_rising": "Subiendo",
     "trending_falling": "Bajando",
     "trending_empty": "No hay datos de tendencias disponibles.",
@@ -148,6 +152,7 @@
     "stab_resisted_by": "STAB resistido por",
     "stab_super_effective_on": "STAB supereficaz contra",
     "close": "Cerrar",
+    "send_to_calc": "Enviar a calculadora",
     "pikalytics_unavailable": "Pikalytics no tiene datos para este Pokémon en el formato actual.",
     "pikalytics": {
       "title": "Pikalytics (dobles)",
@@ -327,14 +332,14 @@
     "Misty": "Niebla",
     "Psychic": "Psíquico"
   },
-  "tera": {
-    "label": "Tera"
-  },
   "ui": {
     "collapse_sidebar": "Colapsar barra lateral",
     "expand_sidebar": "Expandir barra lateral",
-    "theme_gengar": "Tema Gengar (oscuro)",
-    "theme_clefable": "Tema Clefable (claro)"
+    "theme_gengar": "Gengar (oscuro)",
+    "theme_clefable": "Clefable (claro)",
+    "theme_system": "Sistema",
+    "theme_incineroar": "Incineroar",
+    "theme_tyranitar": "Tyranitar"
   },
   "titlebar": {
     "back": "Atrás",

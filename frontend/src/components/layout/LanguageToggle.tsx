@@ -1,7 +1,12 @@
 import { useTranslation } from "react-i18next";
 import { ipc } from "../../lib/ipc";
+import { cn } from "../../lib/cn";
 
-export function LanguageToggle() {
+interface Props {
+  variant?: "default" | "titlebar";
+}
+
+export function LanguageToggle({ variant = "default" }: Props) {
   const { i18n } = useTranslation();
   const current = i18n.language.startsWith("es") ? "es" : "en";
 
@@ -20,7 +25,12 @@ export function LanguageToggle() {
     <button
       type="button"
       onClick={toggle}
-      className="rounded border px-2 py-0.5 text-xs uppercase tracking-wider transition-colors hover:bg-[var(--bg-elev-strong)]"
+      className={cn(
+        "rounded border uppercase tracking-wider transition-colors hover:bg-[var(--bg-elev-strong)]",
+        variant === "titlebar"
+          ? "px-2 py-0.5 text-[10px]"
+          : "px-2 py-0.5 text-xs",
+      )}
       style={{
         borderColor: "var(--border)",
         color: "var(--text-muted)",

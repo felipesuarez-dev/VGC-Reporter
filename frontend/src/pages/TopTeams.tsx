@@ -9,7 +9,10 @@ import { MiniTeam } from "../components/pokemon/MiniTeam";
 import { TopTeamDetailModal } from "../components/team/TopTeamDetailModal";
 import { TournamentStandingsDrawer } from "../components/tournament/TournamentStandingsDrawer";
 import { PokemonMultiSelect } from "../components/filters/PokemonMultiSelect";
-import { formatDate, formatDateTime } from "../lib/formatDate";
+import { SearchTextInput } from "../components/filters/SearchTextInput";
+import { CountryFilter } from "../components/filters/CountryFilter";
+import { SourcesChip } from "../components/layout/SourcesChip";
+import { formatDateTime } from "../lib/formatDate";
 import { formatLabel } from "../lib/labels";
 
 const FORMAT: Format = "regulation-m-a";
@@ -36,7 +39,10 @@ export function TopTeams() {
   const [selectedTeam, setSelectedTeam] = useState<TopTeam | null>(null);
   const [visibleCards, setVisibleCards] = useState(CARDS_PAGE);
   const [recentExpanded, setRecentExpanded] = useState(false);
+  const [recentSearch, setRecentSearch] = useState("");
   const [speciesFilter, setSpeciesFilter] = useState<string[]>([]);
+  const [teamSearch, setTeamSearch] = useState("");
+  const [countryFilter, setCountryFilter] = useState<string[]>([]);
 
   const { data: report, isLoading, isError, isFetching } = useQuery({
     queryKey: queryKeys.topTeams(FORMAT),
@@ -55,19 +61,34 @@ export function TopTeams() {
 
   const teams = report?.teams ?? [];
   const meta = report?.meta;
-  const filteredTeams = speciesFilter.length === 0
-    ? teams
-    : teams.filter((tt) => {
-        const memberIds = new Set(tt.members.map((m) => canonical(m.species)));
-        return speciesFilter.every((id) => memberIds.has(id));
-      });
+  const countryOptions = Array.from(
+    new Set(teams.map((tt) => tt.country).filter((c): c is string => !!c && c.length === 2)),
+  );
+  const filteredTeams = teams.filter((tt) => {
+    if (speciesFilter.length > 0) {
+      const memberIds = new Set(tt.members.map((m) => canonical(m.species)));
+      if (!speciesFilter.every((id) => memberIds.has(id))) return false;
+    }
+    if (countryFilter.length > 0) {
+      if (!tt.country || !countryFilter.includes(tt.country.toUpperCase())) return false;
+    }
+    const q = teamSearch.trim().toLowerCase();
+    if (q) {
+      const hay = `${tt.player ?? ""} ${tt.tournament ?? ""}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
   const visibleTeams = filteredTeams.slice(0, visibleCards);
 
   const recentLimit = recentExpanded ? RECENT_EXPANDED : RECENT_INITIAL;
-  const recentTournaments =
-    championsReport?.tournaments.slice(0, recentLimit) ?? [];
-  const hasMoreRecent =
-    (championsReport?.tournaments.length ?? 0) > RECENT_INITIAL;
+  const recentQuery = recentSearch.trim().toLowerCase();
+  const filteredRecent =
+    championsReport?.tournaments.filter((tour) =>
+      recentQuery ? (tour.name ?? "").toLowerCase().includes(recentQuery) : true,
+    ) ?? [];
+  const recentTournaments = filteredRecent.slice(0, recentLimit);
+  const hasMoreRecent = filteredRecent.length > RECENT_INITIAL;
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: queryKeys.topTeams(FORMAT) });
@@ -97,33 +118,14 @@ export function TopTeams() {
       </header>
 
       {meta && (
-        <div
-          className="card flex flex-wrap gap-x-4 gap-y-1 text-xs"
-          style={{ color: "var(--text-muted)" }}
-        >
-          <span style={{ color: "var(--text)" }}>
-            {formatLabel(t, FORMAT)}
-          </span>
-          <span>
-            {t("top_teams.tournaments_analyzed")}:{" "}
-            <span style={{ color: "var(--text)" }}>
-              {meta.tournaments_analyzed}
-            </span>
-          </span>
-          <span>
-            {t("top_teams.battles")}:{" "}
-            <span style={{ color: "var(--text)" }}>{meta.battles_analyzed}</span>
-          </span>
-          {meta.from_date && meta.to_date && (
-            <span>
-              {formatDate(meta.from_date, i18n.language)} —{" "}
-              {formatDate(meta.to_date, i18n.language)}
-            </span>
-          )}
-          <span>
-            {t("common.source")}:{" "}
-            <span style={{ color: "var(--text)" }}>{meta.source}</span>
-          </span>
+        <div className="flex items-center gap-2">
+          <SourcesChip
+            tournamentsUsed={meta.tournaments_analyzed}
+            battlesAnalyzed={meta.battles_analyzed}
+            fromDate={meta.from_date}
+            toDate={meta.to_date}
+            prefix={formatLabel(t, FORMAT)}
+          />
         </div>
       )}
 
@@ -144,13 +146,34 @@ export function TopTeams() {
       )}
 
       {teams.length > 0 && (
-        <div className="card space-y-1">
-          <label className="label">{t("top_teams.filter_by_pokemon")}</label>
-          <PokemonMultiSelect
-            pokedex={pokedex}
-            selected={speciesFilter}
-            onChange={setSpeciesFilter}
-          />
+        <div className="card space-y-3">
+          <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2">
+            <div className="space-y-1">
+              <label className="label">{t("common.search")}</label>
+              <SearchTextInput
+                value={teamSearch}
+                onChange={setTeamSearch}
+                placeholder={t("common.filter_search_player")}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="label">{t("common.filter_country")}</label>
+              <CountryFilter
+                options={countryOptions}
+                selected={countryFilter}
+                onChange={setCountryFilter}
+                placeholder={t("common.filter_country_placeholder")}
+              />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <label className="label">{t("top_teams.filter_by_pokemon")}</label>
+            <PokemonMultiSelect
+              pokedex={pokedex}
+              selected={speciesFilter}
+              onChange={setSpeciesFilter}
+            />
+          </div>
         </div>
       )}
 
@@ -220,15 +243,26 @@ export function TopTeams() {
         ))}
       </div>
 
-      {filteredTeams.length > visibleCards && (
-        <div className="flex justify-center">
-          <button
-            type="button"
-            className="btn-ghost text-xs"
-            onClick={() => setVisibleCards((n) => n + CARDS_PAGE)}
-          >
-            {t("common.see_more")}
-          </button>
+      {(filteredTeams.length > visibleCards || visibleCards > CARDS_PAGE) && (
+        <div className="flex justify-center gap-2">
+          {filteredTeams.length > visibleCards && (
+            <button
+              type="button"
+              className="btn-ghost text-xs"
+              onClick={() => setVisibleCards((n) => n + CARDS_PAGE)}
+            >
+              {t("common.see_more")}
+            </button>
+          )}
+          {visibleCards > CARDS_PAGE && (
+            <button
+              type="button"
+              className="btn-ghost text-xs"
+              onClick={() => setVisibleCards(CARDS_PAGE)}
+            >
+              {t("common.see_less")}
+            </button>
+          )}
         </div>
       )}
 
@@ -241,6 +275,15 @@ export function TopTeams() {
             format: formatLabel(t, FORMAT),
           })}
         </p>
+        {championsReport && championsReport.tournaments.length > 0 && (
+          <div className="mb-2">
+            <SearchTextInput
+              value={recentSearch}
+              onChange={setRecentSearch}
+              placeholder={t("common.filter_search_tournament")}
+            />
+          </div>
+        )}
         {(tournamentsFetching || !championsReport) && (
           <p className="text-xs" style={{ color: "var(--text-dim)" }}>
             {t("common.loading")}

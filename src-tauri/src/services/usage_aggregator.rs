@@ -491,7 +491,12 @@ mod tests {
         );
     }
 
-    fn loaded_entry(species: &str, item: &str, ability: &str, moves: &[&str]) -> LimitlessDecklistEntry {
+    fn loaded_entry(
+        species: &str,
+        item: &str,
+        ability: &str,
+        moves: &[&str],
+    ) -> LimitlessDecklistEntry {
         LimitlessDecklistEntry {
             id: None,
             name: None,
@@ -513,12 +518,37 @@ mod tests {
         // Fake Out on 4 of 6 still yields 100% because the team as a whole
         // carries it; the per-Pokemon breakdown keeps the conditional view.
         let deck = vec![
-            loaded_entry("Incineroar", "Safety Goggles", "Intimidate", &["Fake Out", "Knock Off"]),
-            loaded_entry("Amoonguss", "Safety Goggles", "Regenerator", &["Fake Out", "Spore"]),
-            loaded_entry("Iron Hands", "Safety Goggles", "Quark Drive", &["Fake Out", "Drain Punch"]),
-            loaded_entry("Rillaboom", "Safety Goggles", "Grassy Surge", &["Fake Out", "Wood Hammer"]),
+            loaded_entry(
+                "Incineroar",
+                "Safety Goggles",
+                "Intimidate",
+                &["Fake Out", "Knock Off"],
+            ),
+            loaded_entry(
+                "Amoonguss",
+                "Safety Goggles",
+                "Regenerator",
+                &["Fake Out", "Spore"],
+            ),
+            loaded_entry(
+                "Iron Hands",
+                "Safety Goggles",
+                "Quark Drive",
+                &["Fake Out", "Drain Punch"],
+            ),
+            loaded_entry(
+                "Rillaboom",
+                "Safety Goggles",
+                "Grassy Surge",
+                &["Fake Out", "Wood Hammer"],
+            ),
             loaded_entry("Dondozo", "Safety Goggles", "Unaware", &["Wave Crash"]),
-            loaded_entry("Tatsugiri", "Safety Goggles", "Commander", &["Draco Meteor"]),
+            loaded_entry(
+                "Tatsugiri",
+                "Safety Goggles",
+                "Commander",
+                &["Draco Meteor"],
+            ),
         ];
         let snap = aggregate(Format::RegulationMA, vec![vec![standing(deck)]]);
 
@@ -554,16 +584,41 @@ mod tests {
         let deck_a = vec![
             loaded_entry("Incineroar", "Safety Goggles", "Intimidate", &["Fake Out"]),
             loaded_entry("Amoonguss", "Safety Goggles", "Regenerator", &["Spore"]),
-            loaded_entry("Iron Hands", "Safety Goggles", "Quark Drive", &["Drain Punch"]),
-            loaded_entry("Rillaboom", "Safety Goggles", "Grassy Surge", &["Wood Hammer"]),
+            loaded_entry(
+                "Iron Hands",
+                "Safety Goggles",
+                "Quark Drive",
+                &["Drain Punch"],
+            ),
+            loaded_entry(
+                "Rillaboom",
+                "Safety Goggles",
+                "Grassy Surge",
+                &["Wood Hammer"],
+            ),
             loaded_entry("Dondozo", "Safety Goggles", "Unaware", &["Wave Crash"]),
-            loaded_entry("Tatsugiri", "Safety Goggles", "Commander", &["Draco Meteor"]),
+            loaded_entry(
+                "Tatsugiri",
+                "Safety Goggles",
+                "Commander",
+                &["Draco Meteor"],
+            ),
         ];
         let deck_b = vec![
             loaded_entry("Incineroar", "Assault Vest", "Intimidate", &["Fake Out"]),
             loaded_entry("Amoonguss", "Assault Vest", "Regenerator", &["Spore"]),
-            loaded_entry("Iron Hands", "Assault Vest", "Quark Drive", &["Drain Punch"]),
-            loaded_entry("Rillaboom", "Assault Vest", "Grassy Surge", &["Wood Hammer"]),
+            loaded_entry(
+                "Iron Hands",
+                "Assault Vest",
+                "Quark Drive",
+                &["Drain Punch"],
+            ),
+            loaded_entry(
+                "Rillaboom",
+                "Assault Vest",
+                "Grassy Surge",
+                &["Wood Hammer"],
+            ),
             loaded_entry("Dondozo", "Assault Vest", "Unaware", &["Wave Crash"]),
             loaded_entry("Tatsugiri", "Assault Vest", "Commander", &["Draco Meteor"]),
         ];
@@ -582,8 +637,16 @@ mod tests {
             .iter()
             .find(|e| e.name == "Assault Vest")
             .expect("assault vest");
-        assert!((goggles.usage_percent - 50.0).abs() < 0.01, "got {}", goggles.usage_percent);
-        assert!((vest.usage_percent - 50.0).abs() < 0.01, "got {}", vest.usage_percent);
+        assert!(
+            (goggles.usage_percent - 50.0).abs() < 0.01,
+            "got {}",
+            goggles.usage_percent
+        );
+        assert!(
+            (vest.usage_percent - 50.0).abs() < 0.01,
+            "got {}",
+            vest.usage_percent
+        );
     }
 
     #[test]

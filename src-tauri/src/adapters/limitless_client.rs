@@ -117,10 +117,12 @@ fn filter_champions(
                 .to_lowercase()
                 .replace(['-', ' ', '_'], "");
             let name_lc = t.name.to_lowercase();
-            normalized == "ma"
+            let is_champions_like = normalized == "ma"
                 || normalized == "m2a"
                 || normalized.starts_with("ma")
-                || name_lc.contains("champions")
+                || name_lc.contains("champions");
+            let has_players = t.players.map(|n| n > 0).unwrap_or(false);
+            is_champions_like && has_players
         })
         .take(limit)
         .collect()
@@ -349,7 +351,7 @@ mod tests {
                 id: i.to_string(),
                 name: format!("Champions {}", i),
                 date: None,
-                players: None,
+                players: Some(64),
                 format: None,
                 organizer_id: None,
                 game: None,
@@ -357,5 +359,41 @@ mod tests {
             .collect();
         let kept = filter_champions(list, 10);
         assert_eq!(kept.len(), 10);
+    }
+
+    #[test]
+    fn filter_champions_excludes_empty_tournaments() {
+        let list = vec![
+            LimitlessTournamentSummary {
+                id: "empty".into(),
+                name: "Glitch VGC Champions Tournament #1".into(),
+                date: None,
+                players: Some(0),
+                format: None,
+                organizer_id: None,
+                game: None,
+            },
+            LimitlessTournamentSummary {
+                id: "unknown".into(),
+                name: "Champions Regional".into(),
+                date: None,
+                players: None,
+                format: None,
+                organizer_id: None,
+                game: None,
+            },
+            LimitlessTournamentSummary {
+                id: "valid".into(),
+                name: "Champions Invitational".into(),
+                date: None,
+                players: Some(64),
+                format: None,
+                organizer_id: None,
+                game: None,
+            },
+        ];
+        let kept = filter_champions(list, 10);
+        let ids: Vec<&str> = kept.iter().map(|t| t.id.as_str()).collect();
+        assert_eq!(ids, vec!["valid"]);
     }
 }

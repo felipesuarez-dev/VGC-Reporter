@@ -135,7 +135,7 @@ export type TranslationTable = { abilities: { [key in string]?: LocalizedName },
 
 export type TrendingPokemon = { species: string, sprite_url: string, sprite_fallback_url: string | null, home_sprite_url: string | null, change_percentage: number, day1_percentage: number, day2_percentage: number, };
 
-export type TrendingReport = { rising: Array<TrendingPokemon>, falling: Array<TrendingPokemon>, from_date: string | null, to_date: string | null, };
+export type TrendingReport = { rising: Array<TrendingPokemon>, falling: Array<TrendingPokemon>, from_date: string | null, to_date: string | null, window_days: number, };
 
 export type UpcomingTournament = { id: string, name: string, date: string, url: string, region: string | null, players: number | null, source: string, };
 

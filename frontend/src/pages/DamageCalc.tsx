@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   calculate,
@@ -12,7 +13,6 @@ import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
 import {
   ALL_NATURES,
-  ALL_TYPES,
   type EvSpread,
   type MoveSummary,
   type Nature,
@@ -23,7 +23,7 @@ import { SearchSelect } from "../components/ui/SearchSelect";
 import { EVSliders } from "../components/team/EVSliders";
 import { PokemonSprite } from "../components/pokemon/PokemonSprite";
 import { TypeBadge } from "../components/pokemon/TypeBadge";
-import { natureLabel, terrainLabel, typeLabel, weatherLabel } from "../lib/labels";
+import { natureLabel, terrainLabel, weatherLabel } from "../lib/labels";
 import { useLocalize } from "../hooks/useTranslations";
 
 const GEN = Generations.get(9);
@@ -36,7 +36,6 @@ interface SideState {
   item: string | null;
   ability: string | null;
   nature: Nature | null;
-  tera: PokemonType | null;
   level: number;
   evs: EvSpread;
   moves: (string | null)[];
@@ -49,7 +48,6 @@ const makeSide = (level = 50): SideState => ({
   item: null,
   ability: null,
   nature: null,
-  tera: null,
   level,
   evs: { ...emptyEvs },
   moves: [null, null, null, null],
@@ -62,7 +60,6 @@ function buildCalcPokemon(side: SideState): CalcPokemon | null {
     item: side.item ?? undefined,
     ability: side.ability ?? undefined,
     nature: side.nature ?? undefined,
-    teraType: side.tera ?? undefined,
     evs: side.evs,
   });
 }
@@ -92,6 +89,22 @@ export function DamageCalc() {
   const [defender, setDefender] = useState<SideState>(makeSide());
   const [weather, setWeather] = useState<(typeof WEATHERS)[number]>("");
   const [terrain, setTerrain] = useState<(typeof TERRAINS)[number]>("");
+
+  const location = useLocation();
+  const navigate = useNavigate();
+  const appliedStateRef = useRef(false);
+  useEffect(() => {
+    if (appliedStateRef.current) return;
+    const state = location.state as
+      | { species?: Pokemon; role?: "attacker" | "defender" }
+      | null;
+    if (!state?.species || !state.role) return;
+    appliedStateRef.current = true;
+    const preload: SideState = { ...makeSide(), species: state.species };
+    if (state.role === "attacker") setAttacker(preload);
+    else setDefender(preload);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.state, location.pathname, navigate]);
 
   const results = useMemo(() => {
     if (!attacker.species || !defender.species) return [];
@@ -281,11 +294,6 @@ function SidePanel({ title, side, setSide, pokedex, items, moves, showMoves }: S
               {side.species.types.map((ty) => (
                 <TypeBadge key={ty} type={ty} />
               ))}
-              {side.tera && (
-                <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                  · {t("tera.label")}: <TypeBadge type={side.tera} />
-                </span>
-              )}
             </div>
             <div className="text-[10px]" style={{ color: "var(--text-dim)" }}>
               {side.item && <span>{localize("item", side.item)}</span>}
@@ -336,16 +344,6 @@ function SidePanel({ title, side, setSide, pokedex, items, moves, showMoves }: S
             options={[...ALL_NATURES]}
             onChange={(n) => update({ nature: n })}
             getOptionLabel={(n) => natureLabel(t, n)}
-            className="mt-1"
-          />
-        </div>
-        <div>
-          <label className="label">{t("team_builder.tera_type")}</label>
-          <SearchSelect<PokemonType>
-            value={side.tera}
-            options={[...ALL_TYPES]}
-            onChange={(ty) => update({ tera: ty })}
-            getOptionLabel={(ty) => typeLabel(t, ty)}
             className="mt-1"
           />
         </div>

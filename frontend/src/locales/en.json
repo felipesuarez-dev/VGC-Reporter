@@ -48,6 +48,11 @@
     "edit": "Edit",
     "search": "Search",
     "search_placeholder": "Search...",
+    "filter_country": "Country",
+    "filter_country_placeholder": "All countries",
+    "filter_country_search": "Search country",
+    "filter_search_tournament": "Search tournament or winner",
+    "filter_search_player": "Search player",
     "filter": "Filter",
     "all_types": "All types",
     "new": "New",
@@ -86,8 +91,7 @@
     "meta_tooltip_battles": "{{count}} teams analyzed",
     "meta_tooltip_range": "{{from}} — {{to}}",
     "loading_patience": "Fetching tournaments and aggregating stats. This can take a moment.",
-    "tournament_count": "Tournaments",
-    "trending_title": "Meta trends (last 14 days)",
+    "trending_title": "Meta trends (last {{days}} days)",
     "trending_rising": "Rising",
     "trending_falling": "Falling",
     "trending_empty": "No trending data available.",
@@ -148,6 +152,7 @@
     "stab_resisted_by": "STAB resisted by",
     "stab_super_effective_on": "STAB super-effective on",
     "close": "Close",
+    "send_to_calc": "Send to damage calc",
     "pikalytics_unavailable": "Pikalytics has no data for this Pokémon in the current format.",
     "pikalytics": {
       "title": "Pikalytics (doubles)",
@@ -327,14 +332,14 @@
     "Misty": "Misty",
     "Psychic": "Psychic"
   },
-  "tera": {
-    "label": "Tera"
-  },
   "ui": {
     "collapse_sidebar": "Collapse sidebar",
     "expand_sidebar": "Expand sidebar",
-    "theme_gengar": "Gengar theme (dark)",
-    "theme_clefable": "Clefable theme (light)"
+    "theme_gengar": "Gengar (dark)",
+    "theme_clefable": "Clefable (light)",
+    "theme_system": "System",
+    "theme_incineroar": "Incineroar",
+    "theme_tyranitar": "Tyranitar"
   },
   "titlebar": {
     "back": "Back",

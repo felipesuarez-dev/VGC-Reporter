@@ -24,6 +24,8 @@ pub struct TrendingReport {
     pub from_date: Option<String>,
     #[serde(default)]
     pub to_date: Option<String>,
+    #[serde(default)]
+    pub window_days: u32,
 }
 
 impl TrendingReport {
@@ -33,6 +35,7 @@ impl TrendingReport {
             falling: Vec::new(),
             from_date: None,
             to_date: None,
+            window_days: 0,
         }
     }
 }

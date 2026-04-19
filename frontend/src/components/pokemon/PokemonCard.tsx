@@ -22,8 +22,8 @@ export function PokemonCard({ pokemon, usage }: Props) {
       <span
         className="absolute right-1 top-1 rounded px-1.5 py-0.5 text-[10px] font-semibold"
         style={{
-          backgroundColor: "rgba(0,0,0,0.55)",
-          color: usagePct > 0 ? "var(--accent)" : "var(--text-dim)",
+          backgroundColor: "var(--badge-bg)",
+          color: usagePct > 0 ? "var(--badge-foreground)" : "var(--text-dim)",
         }}
       >
         {usagePct.toFixed(1)}%

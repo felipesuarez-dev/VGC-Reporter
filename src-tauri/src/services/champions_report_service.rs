@@ -32,10 +32,28 @@ impl ChampionsReportService {
     ) -> Result<ChampionsReport, AppError> {
         let raw = self
             .limitless
-            .list_tournaments_by_format(format, limit)
+            .list_tournaments_by_format(format, limit.saturating_mul(3))
             .await?;
+
+        let mut kept: Vec<ChampionsTournament> = Vec::with_capacity(raw.len());
+        for t in raw {
+            let has_any = match self.limitless.get_standings(&t.id).await {
+                Ok(standings) => has_any_decklist(&standings),
+                Err(e) => {
+                    tracing::warn!("standings fetch failed for {}: {}", t.id, e);
+                    false
+                }
+            };
+            if has_any {
+                kept.push(into_tournament(t));
+                if kept.len() >= limit {
+                    break;
+                }
+            }
+        }
+
         Ok(ChampionsReport {
-            tournaments: raw.into_iter().map(into_tournament).collect(),
+            tournaments: kept,
             fetched_at: Utc::now(),
         })
     }
@@ -71,6 +89,12 @@ impl ChampionsReportService {
         }
         out
     }
+}
+
+fn has_any_decklist(standings: &[LimitlessStanding]) -> bool {
+    standings
+        .iter()
+        .any(|s| s.decklist.as_ref().map(|d| !d.is_empty()).unwrap_or(false))
 }
 
 fn into_tournament(t: LimitlessTournamentSummary) -> ChampionsTournament {
@@ -184,6 +208,59 @@ mod tests {
         assert_eq!(s.decklist[0].tera_type.as_deref(), Some("Ghost"));
         assert!(s.decklist[0].sprite_url.contains("incineroar"));
         assert!(s.decklist[0].home_sprite_url.is_none());
+    }
+
+    fn standing_with(decklist: Option<Vec<LimitlessDecklistEntry>>) -> LimitlessStanding {
+        LimitlessStanding {
+            placing: Some(1),
+            name: Some("x".into()),
+            player: None,
+            country: None,
+            decklist,
+            record: None,
+            drop: None,
+        }
+    }
+
+    fn dummy_entry() -> LimitlessDecklistEntry {
+        LimitlessDecklistEntry {
+            id: Some("incineroar".into()),
+            name: Some("Incineroar".into()),
+            species: None,
+            pokemon: None,
+            item: None,
+            ability: None,
+            tera: None,
+            tera_type: None,
+            moves: None,
+            nature: None,
+        }
+    }
+
+    #[test]
+    fn has_any_decklist_empty_vec() {
+        assert!(!has_any_decklist(&[]));
+    }
+
+    #[test]
+    fn has_any_decklist_none_field() {
+        let s = [standing_with(None)];
+        assert!(!has_any_decklist(&s));
+    }
+
+    #[test]
+    fn has_any_decklist_empty_inner() {
+        let s = [standing_with(Some(vec![]))];
+        assert!(!has_any_decklist(&s));
+    }
+
+    #[test]
+    fn has_any_decklist_populated() {
+        let s = [
+            standing_with(None),
+            standing_with(Some(vec![dummy_entry()])),
+        ];
+        assert!(has_any_decklist(&s));
     }
 
     #[test]

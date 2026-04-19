@@ -92,9 +92,14 @@ export function PokemonMultiSelect({
             </span>
           );
         })}
-        <span className="text-[11px]" style={{ color: "var(--text-dim)" }}>
-          {selected.length}/{max}
-        </span>
+        {selected.length > 0 && (
+          <span
+            className="text-[11px]"
+            style={{ color: atCap ? "var(--warning)" : "var(--text-dim)" }}
+          >
+            {selected.length}/{max}
+          </span>
+        )}
       </div>
       <div className="relative">
         <div className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[var(--text-dim)]">

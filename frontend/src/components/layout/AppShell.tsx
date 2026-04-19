@@ -8,22 +8,19 @@ import {
   Trophy,
   Calculator,
   Settings as SettingsIcon,
-  Moon,
-  Sun,
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
 import { cn } from "../../lib/cn";
-import { LanguageToggle } from "./LanguageToggle";
 import { Titlebar } from "./Titlebar";
 import { ScrollToTop } from "../ui/ScrollToTop";
 import { useUiStore } from "../../stores/uiStore";
 import { APP_VERSION } from "../../lib/version";
+import { useNavHistorySync } from "../../hooks/useNavHistorySync";
 
 export function AppShell() {
   const { t } = useTranslation();
-  const theme = useUiStore((s) => s.theme);
-  const toggleTheme = useUiStore((s) => s.toggleTheme);
+  useNavHistorySync();
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
 
@@ -135,30 +132,6 @@ export function AppShell() {
             color: "var(--text-muted)",
           }}
         >
-          <div
-            className={cn(
-              "mb-2 flex items-center gap-1",
-              collapsed ? "flex-col" : "justify-between",
-            )}
-          >
-            <button
-              className="btn-ghost p-1.5"
-              onClick={toggleTheme}
-              aria-label={
-                theme === "gengar"
-                  ? t("ui.theme_clefable")
-                  : t("ui.theme_gengar")
-              }
-              title={
-                theme === "gengar"
-                  ? t("ui.theme_clefable")
-                  : t("ui.theme_gengar")
-              }
-            >
-              {theme === "gengar" ? <Sun size={14} /> : <Moon size={14} />}
-            </button>
-            {!collapsed && <LanguageToggle />}
-          </div>
           {!collapsed && (
             <>
               <div>

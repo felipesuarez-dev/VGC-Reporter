@@ -11,19 +11,19 @@ interface Props {
 
 const TIER_STYLES = [
   {
-    ring: "ring-amber-400/60",
-    accent: "text-amber-300",
-    chip: "bg-amber-500/15 text-amber-200 border-amber-500/40",
+    ring: "ring-[var(--tier-gold-border)]",
+    accent: "text-[var(--tier-gold-foreground)]",
+    chip: "bg-[var(--tier-gold-bg)] text-[var(--tier-gold-foreground)] border-[var(--tier-gold-border)]",
   },
   {
-    ring: "ring-slate-300/60",
-    accent: "text-slate-200",
-    chip: "bg-slate-400/15 text-slate-200 border-slate-400/40",
+    ring: "ring-[var(--tier-silver-border)]",
+    accent: "text-[var(--tier-silver-foreground)]",
+    chip: "bg-[var(--tier-silver-bg)] text-[var(--tier-silver-foreground)] border-[var(--tier-silver-border)]",
   },
   {
-    ring: "ring-amber-700/60",
-    accent: "text-amber-600",
-    chip: "bg-amber-800/20 text-amber-300 border-amber-800/40",
+    ring: "ring-[var(--tier-bronze-border)]",
+    accent: "text-[var(--tier-bronze-foreground)]",
+    chip: "bg-[var(--tier-bronze-bg)] text-[var(--tier-bronze-foreground)] border-[var(--tier-bronze-border)]",
   },
 ];
 

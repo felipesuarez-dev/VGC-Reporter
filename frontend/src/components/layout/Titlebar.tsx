@@ -1,14 +1,44 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { matchPath, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight, Minus, Square, Copy, X } from "lucide-react";
+import { useNavHistoryStore } from "../../stores/navHistoryStore";
+import { LanguageToggle } from "./LanguageToggle";
+import { ThemeSelect } from "./ThemeSelect";
 
 const TITLE = "VGC Reportes";
+
+const ROUTE_I18N: { pattern: string; key: string }[] = [
+  { pattern: "/dashboard", key: "nav.dashboard" },
+  { pattern: "/pokedex", key: "nav.pokedex" },
+  { pattern: "/team-builder", key: "nav.team_builder" },
+  { pattern: "/team-builder/:id", key: "nav.team_builder" },
+  { pattern: "/my-teams", key: "nav.my_teams" },
+  { pattern: "/top-teams", key: "nav.top_teams" },
+  { pattern: "/damage-calc", key: "nav.damage_calc" },
+  { pattern: "/settings", key: "nav.settings" },
+];
+
+function routeLabel(path: string | undefined): string | null {
+  if (!path) return null;
+  for (const { pattern, key } of ROUTE_I18N) {
+    if (matchPath({ path: pattern, end: true }, path)) return key;
+  }
+  return null;
+}
 
 export function Titlebar() {
   const [maximized, setMaximized] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const entries = useNavHistoryStore((s) => s.entries);
+  const index = useNavHistoryStore((s) => s.index);
+  const backKey = routeLabel(entries[index - 1]);
+  const forwardKey = routeLabel(entries[index + 1]);
+  const backTitle = backKey ? t(backKey) : t("titlebar.back");
+  const forwardTitle = forwardKey ? t(forwardKey) : t("titlebar.forward");
+  const canBack = index > 0;
+  const canForward = index >= 0 && index < entries.length - 1;
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
@@ -90,9 +120,10 @@ export function Titlebar() {
           <button
             type="button"
             onClick={() => navigate(-1)}
-            aria-label={t("titlebar.back")}
-            title={t("titlebar.back")}
-            className="flex h-full w-8 items-center justify-center hover:bg-[var(--bg-elev-strong)]"
+            aria-label={backTitle}
+            title={backTitle}
+            disabled={!canBack}
+            className="flex h-full w-8 items-center justify-center hover:bg-[var(--bg-elev-strong)] disabled:opacity-40 disabled:hover:bg-transparent"
             style={{ color: "var(--text)" }}
           >
             <ChevronLeft size={14} />
@@ -100,9 +131,10 @@ export function Titlebar() {
           <button
             type="button"
             onClick={() => navigate(1)}
-            aria-label={t("titlebar.forward")}
-            title={t("titlebar.forward")}
-            className="flex h-full w-8 items-center justify-center hover:bg-[var(--bg-elev-strong)]"
+            aria-label={forwardTitle}
+            title={forwardTitle}
+            disabled={!canForward}
+            className="flex h-full w-8 items-center justify-center hover:bg-[var(--bg-elev-strong)] disabled:opacity-40 disabled:hover:bg-transparent"
             style={{ color: "var(--text)" }}
           >
             <ChevronRight size={14} />
@@ -110,6 +142,12 @@ export function Titlebar() {
         </div>
       </div>
       <div className="flex h-full items-stretch">
+        <div className="flex items-center px-2">
+          <ThemeSelect variant="titlebar" />
+        </div>
+        <div className="flex items-center px-2">
+          <LanguageToggle variant="titlebar" />
+        </div>
         <button
           type="button"
           onClick={minimize}

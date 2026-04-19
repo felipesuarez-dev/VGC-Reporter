@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
@@ -7,6 +7,10 @@ import { ClipboardCopy, X } from "lucide-react";
 import { ipc } from "../../lib/ipc";
 import { queryKeys } from "../../lib/queryKeys";
 import { formatDateTime } from "../../lib/formatDate";
+import { SearchTextInput } from "../filters/SearchTextInput";
+import { CountryFilter } from "../filters/CountryFilter";
+import { PokemonMultiSelect } from "../filters/PokemonMultiSelect";
+import type { Pokemon } from "../../lib/types";
 import type {
   ChampionsTournament,
   DecklistPokemon,
@@ -87,6 +91,54 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
     queryFn: () => ipc.getTournamentStandings(tournament!.id),
     enabled: Boolean(tournament),
   });
+  const pokedexQ = useQuery({
+    queryKey: queryKeys.pokedex.all,
+    queryFn: () => ipc.listPokemon(),
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+  const pokedex: Pokemon[] = pokedexQ.data ?? [];
+
+  const [search, setSearch] = useState("");
+  const [countryFilter, setCountryFilter] = useState<string[]>([]);
+  const [pokemonFilter, setPokemonFilter] = useState<string[]>([]);
+  const [visibleRows, setVisibleRows] = useState(8);
+
+  useEffect(() => {
+    if (!tournament) {
+      setSearch("");
+      setCountryFilter([]);
+      setPokemonFilter([]);
+      setVisibleRows(8);
+    }
+  }, [tournament]);
+
+  const countryOptions = useMemo(() => {
+    const list = standings.data ?? [];
+    return Array.from(
+      new Set(list.map((s) => s.country).filter((c): c is string => !!c && c.length === 2)),
+    );
+  }, [standings.data]);
+
+  const filteredStandings = useMemo(() => {
+    const list = standings.data ?? [];
+    const q = search.trim().toLowerCase();
+    return list.filter((s) => {
+      if (q) {
+        const hay = `${s.player_name ?? ""} ${s.player_id ?? ""}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      if (countryFilter.length > 0) {
+        if (!s.country || !countryFilter.includes(s.country.toUpperCase())) return false;
+      }
+      if (pokemonFilter.length > 0) {
+        const ids = new Set(
+          s.decklist.map((p) => (p.id ?? p.name).toLowerCase().replace(/[^a-z0-9]/g, "")),
+        );
+        if (!pokemonFilter.every((id) => ids.has(id))) return false;
+      }
+      return true;
+    });
+  }, [standings.data, search, countryFilter, pokemonFilter]);
 
   if (!tournament) return null;
 
@@ -98,8 +150,14 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
     navigate("/team-builder");
   };
 
-  const winner = standings.data?.[0];
-  const top = standings.data?.slice(0, 8) ?? [];
+  const hasFilters =
+    search.trim().length > 0 || countryFilter.length > 0 || pokemonFilter.length > 0;
+  const displayList = hasFilters ? filteredStandings : standings.data ?? [];
+  const winner = hasFilters ? undefined : standings.data?.[0];
+  const rest = hasFilters ? displayList : displayList.slice(1);
+  const visibleRest = rest.slice(0, visibleRows);
+  const canShowMore = rest.length > visibleRows;
+  const canShowLess = visibleRows > 8;
 
   return (
     <div
@@ -159,6 +217,38 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
           <div style={{ color: "var(--text-dim)" }}>{t("tournament.no_standings")}</div>
         )}
 
+        {standings.data && standings.data.length > 0 && (
+          <div className="mb-4 space-y-3">
+            <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2">
+              <div className="space-y-1">
+                <label className="label">{t("common.search")}</label>
+                <SearchTextInput
+                  value={search}
+                  onChange={setSearch}
+                  placeholder={t("common.filter_search_player")}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="label">{t("common.filter_country")}</label>
+                <CountryFilter
+                  options={countryOptions}
+                  selected={countryFilter}
+                  onChange={setCountryFilter}
+                  placeholder={t("common.filter_country_placeholder")}
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="label">{t("top_teams.filter_by_pokemon")}</label>
+              <PokemonMultiSelect
+                pokedex={pokedex}
+                selected={pokemonFilter}
+                onChange={setPokemonFilter}
+              />
+            </div>
+          </div>
+        )}
+
         {winner && (
           <section className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
             <div className="mb-2 flex items-center justify-between gap-2">
@@ -187,7 +277,7 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
           </section>
         )}
 
-        {top.length > 1 && (
+        {visibleRest.length > 0 && (
           <section className="space-y-3">
             <h3
               className="text-xs font-semibold uppercase tracking-wide"
@@ -195,14 +285,41 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
             >
               {t("tournament.standings")}
             </h3>
-            {top.slice(1).map((s, i) => (
+            {visibleRest.map((s, i) => (
               <StandingRow
                 key={`${s.player_id ?? s.player_name ?? i}-${i}`}
                 standing={s}
                 onCopy={() => copyStandingToBuilder(s)}
               />
             ))}
+            {(canShowMore || canShowLess) && (
+              <div className="flex justify-center gap-2 pt-1">
+                {canShowMore && (
+                  <button
+                    type="button"
+                    className="btn-ghost text-xs"
+                    onClick={() => setVisibleRows((n) => n + 8)}
+                  >
+                    {t("common.see_more")}
+                  </button>
+                )}
+                {canShowLess && (
+                  <button
+                    type="button"
+                    className="btn-ghost text-xs"
+                    onClick={() => setVisibleRows(8)}
+                  >
+                    {t("common.see_less")}
+                  </button>
+                )}
+              </div>
+            )}
           </section>
+        )}
+        {hasFilters && displayList.length === 0 && (
+          <div className="text-xs" style={{ color: "var(--text-dim)" }}>
+            {t("common.empty")}
+          </div>
         )}
       </div>
     </div>

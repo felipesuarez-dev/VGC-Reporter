@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { TrendingDown, TrendingUp } from "lucide-react";
@@ -6,6 +7,9 @@ import { queryKeys } from "../../lib/queryKeys";
 import { type Format, type TrendingPokemon } from "../../lib/types";
 import { PokemonSprite } from "../pokemon/PokemonSprite";
 import { usePokedexStore } from "../../stores/pokedexStore";
+
+const INITIAL_ROWS = 8;
+const PAGE_ROWS = 8;
 
 function canonicalSpeciesId(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -19,11 +23,14 @@ export function TrendingCard({ format }: { format: Format }) {
     staleTime: 30 * 60 * 1000,
   });
 
+  const days = data?.window_days ?? 0;
+  const title = t("dashboard.trending_title", { days });
+
   if (isLoading) {
     return (
       <section className="card">
         <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
-          {t("dashboard.trending_title")}
+          {title}
         </h2>
         <p className="text-xs" style={{ color: "var(--text-dim)" }}>
           {t("common.loading")}
@@ -36,7 +43,7 @@ export function TrendingCard({ format }: { format: Format }) {
     return (
       <section className="card">
         <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
-          {t("dashboard.trending_title")}
+          {title}
         </h2>
         <p className="text-xs" style={{ color: "var(--text-dim)" }}>
           {t("dashboard.trending_empty")}
@@ -48,7 +55,7 @@ export function TrendingCard({ format }: { format: Format }) {
   return (
     <section className="card">
       <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
-        {t("dashboard.trending_title")}
+        {title}
       </h2>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <TrendingColumn
@@ -75,12 +82,16 @@ function TrendingColumn({
   direction: "up" | "down";
   entries: TrendingPokemon[];
 }) {
+  const { t } = useTranslation();
   const openDetail = usePokedexStore((s) => s.openDetail);
-  const rows = entries.slice(0, 8);
+  const [visible, setVisible] = useState(INITIAL_ROWS);
+  const rows = entries.slice(0, visible);
   const Icon = direction === "up" ? TrendingUp : TrendingDown;
   const accentColor = direction === "up" ? "#34d399" : "#f87171";
+  const canShowMore = entries.length > visible;
+  const canShowLess = visible > INITIAL_ROWS;
 
-  if (rows.length === 0) {
+  if (entries.length === 0) {
     return (
       <div>
         <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold" style={{ color: accentColor }}>
@@ -135,6 +146,28 @@ function TrendingColumn({
           </li>
         ))}
       </ul>
+      {(canShowMore || canShowLess) && (
+        <div className="mt-2 flex justify-center gap-2">
+          {canShowMore && (
+            <button
+              type="button"
+              className="btn-ghost text-xs"
+              onClick={() => setVisible((n) => n + PAGE_ROWS)}
+            >
+              {t("common.see_more")}
+            </button>
+          )}
+          {canShowLess && (
+            <button
+              type="button"
+              className="btn-ghost text-xs"
+              onClick={() => setVisible(INITIAL_ROWS)}
+            >
+              {t("common.see_less")}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

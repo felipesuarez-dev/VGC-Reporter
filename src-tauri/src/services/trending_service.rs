@@ -202,7 +202,14 @@ impl TrendingService {
 
         let prev_total: f32 = prev.iter().map(team_weight).sum();
         let curr_total: f32 = curr.iter().map(team_weight).sum();
-        let report = build_trending_report(&prev, &curr, &mid_str, &to, catalog);
+        let report = build_trending_report(
+            &prev,
+            &curr,
+            &mid_str,
+            &to,
+            catalog,
+            total_days.max(0) as u32,
+        );
         debug!(
             regulation,
             half_window_days,
@@ -226,6 +233,7 @@ fn build_trending_report(
     curr_from: &str,
     curr_to: &str,
     catalog: &HashMap<String, String>,
+    window_days: u32,
 ) -> TrendingReport {
     let prev_stats = aggregate(prev, catalog);
     let curr_stats = aggregate(curr, catalog);
@@ -239,6 +247,7 @@ fn build_trending_report(
             falling: Vec::new(),
             from_date: Some(curr_from.to_string()),
             to_date: Some(curr_to.to_string()),
+            window_days,
         };
     }
 
@@ -320,6 +329,7 @@ fn build_trending_report(
         falling,
         from_date: Some(curr_from.to_string()),
         to_date: Some(curr_to.to_string()),
+        window_days,
     }
 }
 
@@ -462,7 +472,7 @@ mod tests {
             curr.push(team(&["727"], &["Incineroar"]));
         }
         let empty = HashMap::new();
-        let report = build_trending_report(&prev, &curr, "2026-04-10", "2026-04-17", &empty);
+        let report = build_trending_report(&prev, &curr, "2026-04-10", "2026-04-17", &empty, 14);
         assert_eq!(report.rising[0].species, "Zamazenta");
         assert!(report.rising[0].change_percentage > 0.0);
         assert!(
@@ -491,7 +501,7 @@ mod tests {
             curr.push(team_with_placement(&["002"], &["Ivysaur"], Some(200 + i)));
         }
         let empty = HashMap::new();
-        let report = build_trending_report(&prev, &curr, "a", "b", &empty);
+        let report = build_trending_report(&prev, &curr, "a", "b", &empty, 14);
         let bulba_pos = report.rising.iter().position(|t| t.species == "Bulbasaur");
         let ivy_pos = report.rising.iter().position(|t| t.species == "Ivysaur");
         assert!(bulba_pos.is_some(), "Bulbasaur should be in rising");
@@ -530,7 +540,7 @@ mod tests {
             ));
         }
         let empty = HashMap::new();
-        let report = build_trending_report(&prev, &curr, "a", "b", &empty);
+        let report = build_trending_report(&prev, &curr, "a", "b", &empty, 14);
         assert!(
             report.rising.iter().any(|t| t.species == "Ivysaur"),
             "1%→5% tail mover should make it into rising"
@@ -574,7 +584,7 @@ mod tests {
             curr.push(team(&["727"], &["Incineroar"]));
         }
         let empty = HashMap::new();
-        let report = build_trending_report(&prev, &curr, "a", "b", &empty);
+        let report = build_trending_report(&prev, &curr, "a", "b", &empty, 14);
         let calyrex = report
             .falling
             .iter()
@@ -599,7 +609,7 @@ mod tests {
         let mut catalog = HashMap::new();
         catalog.insert("727".to_string(), "Incineroar".to_string());
         catalog.insert("889".to_string(), "Zamazenta".to_string());
-        let report = build_trending_report(&prev, &curr, "a", "b", &catalog);
+        let report = build_trending_report(&prev, &curr, "a", "b", &catalog, 14);
         let incineroar = report
             .falling
             .iter()
@@ -615,7 +625,7 @@ mod tests {
         let prev: Vec<LabmausDiscoverTeam> = (0..10).map(|_| team(&["9999"], &[])).collect();
         let curr: Vec<LabmausDiscoverTeam> = (0..20).map(|_| team(&["9999"], &[])).collect();
         let empty = HashMap::new();
-        let report = build_trending_report(&prev, &curr, "a", "b", &empty);
+        let report = build_trending_report(&prev, &curr, "a", "b", &empty, 14);
         assert!(report.rising.is_empty());
         assert!(report.falling.is_empty());
     }
