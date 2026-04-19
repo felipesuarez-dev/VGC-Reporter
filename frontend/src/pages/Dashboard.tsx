@@ -16,7 +16,6 @@ import { PokemonDetailModal } from "../components/pokemon/PokemonDetailModal";
 import { FormatSelector } from "../components/ui/FormatSelector";
 import { XCard } from "../components/dashboard/XCard";
 import { TournamentStandingsDrawer } from "../components/tournament/TournamentStandingsDrawer";
-import { Tooltip } from "../components/ui/Tooltip";
 import { useDashboardStore, type TournamentCount } from "../stores/dashboardStore";
 import { usePokedexStore } from "../stores/pokedexStore";
 
@@ -111,75 +110,65 @@ export function Dashboard() {
           <h1 className="text-2xl font-bold">{t("dashboard.title")}</h1>
           {data && (
             <div className="mt-1 flex items-center gap-2">
-              <Tooltip
-                content={
-                  data.from_date && data.to_date ? (
-                    <div className="flex flex-col gap-0.5">
-                      <span>
-                        {t("dashboard.meta_tooltip_count", {
-                          count: data.tournaments_used,
-                        })}
-                      </span>
-                      {data.battles_analyzed > 0 && (
-                        <span>
-                          {t("dashboard.meta_tooltip_battles", {
-                            count: data.battles_analyzed,
-                          })}
-                        </span>
-                      )}
-                      <span>
-                        {t("dashboard.meta_tooltip_range", {
-                          from: formatDate(data.from_date, i18n.language),
-                          to: formatDate(data.to_date, i18n.language),
-                        })}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-0.5">
-                      <span>
-                        {t("dashboard.meta_tooltip_count", {
-                          count: data.tournaments_used,
-                        })}
-                      </span>
-                      {data.battles_analyzed > 0 && (
-                        <span>
-                          {t("dashboard.meta_tooltip_battles", {
-                            count: data.battles_analyzed,
-                          })}
-                        </span>
-                      )}
-                      <span>
-                        {t("dashboard.total_entries")}: {data.total_entries}
-                      </span>
-                    </div>
-                  )
-                }
+              <span
+                className="inline-flex flex-wrap items-center gap-x-1 gap-y-0 rounded-full border px-2 py-0.5 text-[11px]"
+                style={{
+                  borderColor: "var(--border)",
+                  backgroundColor: "var(--bg-elev)",
+                  color: "var(--text-muted)",
+                }}
               >
-                <span
-                  className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px]"
-                  style={{
-                    borderColor: "var(--border)",
-                    backgroundColor: "var(--bg-elev)",
-                    color: "var(--text-muted)",
-                  }}
-                >
-                  {MAIN_SOURCES.map((s, i) => (
-                    <span key={s.label} className="inline-flex items-center gap-1">
-                      {i > 0 && (
-                        <span style={{ color: "var(--text-dim)" }}>/</span>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => void openExternal(s.url)}
-                        className="hover:underline"
-                        style={{ color: "var(--text-muted)" }}
-                      >
-                        {s.label}
-                      </button>
-                    </span>
-                  ))}
+                <span>
+                  {t("dashboard.meta_tooltip_count", {
+                    count: data.tournaments_used,
+                  })}
                 </span>
-              </Tooltip>
+                {data.battles_analyzed > 0 && (
+                  <>
+                    <span style={{ color: "var(--text-dim)" }}>•</span>
+                    <span>
+                      {t("dashboard.meta_tooltip_battles", {
+                        count: data.battles_analyzed,
+                      })}
+                    </span>
+                  </>
+                )}
+                {data.from_date && data.to_date ? (
+                  <>
+                    <span style={{ color: "var(--text-dim)" }}>•</span>
+                    <span>
+                      {t("dashboard.meta_tooltip_range", {
+                        from: formatDate(data.from_date, i18n.language),
+                        to: formatDate(data.to_date, i18n.language),
+                      })}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span style={{ color: "var(--text-dim)" }}>•</span>
+                    <span>
+                      {t("dashboard.total_entries")}: {data.total_entries}
+                    </span>
+                  </>
+                )}
+                <span style={{ color: "var(--text-dim)" }}>|</span>
+                <span>{t("dashboard.sources_label")}:</span>
+                {MAIN_SOURCES.map((s, i) => (
+                  <span key={s.label} className="inline-flex items-center gap-1">
+                    {i > 0 && (
+                      <span style={{ color: "var(--text-dim)" }}>/</span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => void openExternal(s.url)}
+                      className="hover:underline"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      {s.label}
+                    </button>
+                  </span>
+                ))}
+              </span>
             </div>
           )}
         </div>

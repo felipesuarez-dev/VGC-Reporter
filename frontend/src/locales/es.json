@@ -90,7 +90,8 @@
     "trending_title": "Tendencias del meta (últimos 14 días)",
     "trending_rising": "Subiendo",
     "trending_falling": "Bajando",
-    "trending_empty": "No hay datos de tendencias disponibles."
+    "trending_empty": "No hay datos de tendencias disponibles.",
+    "sources_label": "Fuentes"
   },
   "tournament": {
     "standings": "Clasificaciones",

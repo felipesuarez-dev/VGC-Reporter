@@ -90,7 +90,8 @@
     "trending_title": "Meta trends (last 14 days)",
     "trending_rising": "Rising",
     "trending_falling": "Falling",
-    "trending_empty": "No trending data available."
+    "trending_empty": "No trending data available.",
+    "sources_label": "Sources"
   },
   "tournament": {
     "standings": "Standings",
