@@ -85,30 +85,30 @@
   }
 
   :root.theme-milotic {
-    --bg: #f0fbff;
-    --bg-elev: #dff4fb;
-    --bg-elev-strong: #c5e9f3;
-    --border: #8fd3e2;
-    --text: #0f2b3a;
-    --text-muted: #3f6a7d;
-    --text-dim: #7aa4b5;
-    --accent: #06b6d4;
-    --accent-soft: rgba(6, 182, 212, 0.18);
-    --accent-strong: #0891b2;
-    --danger: #dc2626;
-    --warning: #d97706;
-    --success: #059669;
-    --badge-bg: rgba(15, 43, 58, 0.85);
+    --bg: #06161f;
+    --bg-elev: #0c2432;
+    --bg-elev-strong: #143546;
+    --border: #2a5f74;
+    --text: #e8f7f9;
+    --text-muted: #8fc0cc;
+    --text-dim: #5c8c9a;
+    --accent: #22d3ee;
+    --accent-soft: rgba(34, 211, 238, 0.2);
+    --accent-strong: #06b6d4;
+    --danger: #fb7185;
+    --warning: #fbbf24;
+    --success: #34d399;
+    --badge-bg: rgba(0, 0, 0, 0.6);
     --badge-foreground: #ffffff;
-    --tier-gold-bg: rgba(244, 114, 182, 0.22);
-    --tier-gold-foreground: #9d174d;
-    --tier-gold-border: rgba(219, 39, 119, 0.5);
-    --tier-silver-bg: rgba(148, 163, 184, 0.25);
-    --tier-silver-foreground: #334155;
-    --tier-silver-border: rgba(100, 116, 139, 0.55);
-    --tier-bronze-bg: rgba(217, 119, 6, 0.22);
-    --tier-bronze-foreground: #78350f;
-    --tier-bronze-border: rgba(180, 83, 9, 0.55);
+    --tier-gold-bg: rgba(251, 113, 133, 0.18);
+    --tier-gold-foreground: #fecdd3;
+    --tier-gold-border: rgba(251, 113, 133, 0.5);
+    --tier-silver-bg: rgba(165, 219, 230, 0.14);
+    --tier-silver-foreground: #d2edf3;
+    --tier-silver-border: rgba(165, 219, 230, 0.4);
+    --tier-bronze-bg: rgba(34, 211, 238, 0.15);
+    --tier-bronze-foreground: #a5f3fc;
+    --tier-bronze-border: rgba(34, 211, 238, 0.45);
   }
 
   :root.theme-tyranitar {

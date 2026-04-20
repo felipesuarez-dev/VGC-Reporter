@@ -6,6 +6,7 @@ const CONCRETE_CLASSES = [
   "theme-clefable",
   "theme-incineroar",
   "theme-tyranitar",
+  "theme-milotic",
 ];
 
 function resolveTheme(theme: Theme, prefersDark: boolean): string {

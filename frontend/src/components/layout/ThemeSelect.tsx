@@ -7,7 +7,7 @@ import { cn } from "../../lib/cn";
 const SWATCH: Record<Theme, { bg: string; accent: string }> = {
   system: { bg: "linear-gradient(135deg, #0b0a14 50%, #fff5f7 50%)", accent: "#8b5cf6" },
   clefable: { bg: "#fff5f7", accent: "#ec4899" },
-  milotic: { bg: "#dff4fb", accent: "#06b6d4" },
+  milotic: { bg: "#06161f", accent: "#22d3ee" },
   gengar: { bg: "#0b0a14", accent: "#8b5cf6" },
   incineroar: { bg: "#140908", accent: "#f97316" },
   tyranitar: { bg: "#0b120d", accent: "#84cc16" },

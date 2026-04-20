@@ -5,17 +5,17 @@ export type Theme =
   | "system"
   | "gengar"
   | "clefable"
-  | "milotic"
   | "incineroar"
-  | "tyranitar";
+  | "tyranitar"
+  | "milotic";
 
 export const ALL_THEMES: Theme[] = [
   "system",
   "clefable",
-  "milotic",
   "gengar",
   "incineroar",
   "tyranitar",
+  "milotic",
 ];
 
 interface UiState {
