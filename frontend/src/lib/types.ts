@@ -86,13 +86,40 @@ export function canonicalSpeciesId(name: string): string {
 }
 
 /**
+ * Form suffixes that represent gameplay mechanics no current VGC
+ * regulation permits (Mega Evolution, Gigantamax, Primal Reversion,
+ * Eternamax). Mirrors the backend constant in
+ * `services/regulations/common.rs` so the picker hides what the
+ * validator would reject.
+ */
+const FORBIDDEN_FORM_TOKENS: ReadonlySet<string> = new Set([
+  "mega",
+  "megax",
+  "megay",
+  "primal",
+  "gmax",
+  "eternamax",
+]);
+
+function hasForbiddenFormToken(name: string): boolean {
+  const tail = name.split("-").slice(1).map((s) => s.toLowerCase());
+  if (tail.length === 0) return false;
+  if (FORBIDDEN_FORM_TOKENS.has(tail.join(""))) return true;
+  return tail.some((seg) => FORBIDDEN_FORM_TOKENS.has(seg));
+}
+
+/**
  * `true` when `name` matches an entry in `allowedKeys` either directly or
  * via its base form (Showdown form suffix stripped: `Slowking-Galar` →
  * `Slowking`). `allowedKeys` must already contain canonicalised entries.
+ *
+ * Mega/Gmax/Primal/Eternamax forms never fall back to base — they require
+ * an explicit allow-list entry, which no current regulation provides.
  */
 export function isAllowedName(name: string, allowedKeys: ReadonlySet<string>): boolean {
   if (allowedKeys.size === 0) return true;
   if (allowedKeys.has(canonicalSpeciesId(name))) return true;
+  if (hasForbiddenFormToken(name)) return false;
   const base = name.split("-")[0];
   if (base && allowedKeys.has(canonicalSpeciesId(base))) return true;
   return false;
