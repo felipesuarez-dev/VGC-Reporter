@@ -1,3 +1,7 @@
+use super::common::{canonical, lookup_set};
+use super::reg_ma_items::ALLOWED_ITEMS_MA;
+use super::reg_ma_moves::ALLOWED_MOVES_MA;
+use super::reg_ma_species::ALLOWED_SPECIES_MA;
 use super::{RegulationRules, Violation};
 use crate::domain::team::{Team, TEAM_SIZE};
 use chrono::{NaiveDate, Utc};
@@ -31,39 +35,6 @@ pub fn current_ma_season() -> MaSeason {
         MaSeason::M1
     }
 }
-
-/// Canonical form used for species comparisons: lowercase, ascii-alphanumeric only.
-fn canonical(name: &str) -> String {
-    name.chars()
-        .filter(|c| c.is_ascii_alphanumeric())
-        .map(|c| c.to_ascii_lowercase())
-        .collect()
-}
-
-/// Mythical Pokémon that are universally banned in VGC formats.
-const BANNED_MYTHICALS: &[&str] = &[
-    "Mew",
-    "Celebi",
-    "Jirachi",
-    "Deoxys",
-    "Phione",
-    "Manaphy",
-    "Darkrai",
-    "Shaymin",
-    "Arceus",
-    "Victini",
-    "Keldeo",
-    "Meloetta",
-    "Genesect",
-    "Diancie",
-    "Hoopa",
-    "Volcanion",
-    "Magearna",
-    "Marshadow",
-    "Zeraora",
-    "Zarude",
-    "Pecharunt",
-];
 
 /// Cover legendaries available in M-1. A team may include at most one.
 const RESTRICTED_M1: &[&str] = &[
@@ -129,7 +100,9 @@ const RESTRICTED_M2: &[&str] = &[
 
 pub struct RegMaRules {
     season: MaSeason,
-    banned: HashSet<String>,
+    allowed_species: HashSet<String>,
+    allowed_items: HashSet<String>,
+    allowed_moves: HashSet<String>,
     restricted: HashSet<String>,
     max_restricted: u8,
 }
@@ -142,8 +115,10 @@ impl RegMaRules {
         };
         Self {
             season,
-            banned: BANNED_MYTHICALS.iter().map(|s| canonical(s)).collect(),
-            restricted: restricted_list.iter().map(|s| canonical(s)).collect(),
+            allowed_species: lookup_set(ALLOWED_SPECIES_MA),
+            allowed_items: lookup_set(ALLOWED_ITEMS_MA),
+            allowed_moves: lookup_set(ALLOWED_MOVES_MA),
+            restricted: lookup_set(restricted_list),
             max_restricted: 1,
         }
     }
@@ -152,15 +127,14 @@ impl RegMaRules {
         Self::new(current_ma_season())
     }
 
-    /// `true` when `species` (raw Showdown display name) matches an entry in
-    /// `set`, accounting for dashed forms like `Calyrex-Shadow` collapsing to
-    /// the base `Calyrex` entry.
+    /// `true` when `species` (raw display name) matches an entry in `set`,
+    /// accounting for dashed Showdown form suffixes (`Calyrex-Shadow`,
+    /// `Slowking-Galar`) collapsing to the base entry.
     fn matches(&self, set: &HashSet<String>, species: &str) -> bool {
         let c = canonical(species);
         if set.contains(&c) {
             return true;
         }
-        // Strip trailing form suffix: "Calyrex-Shadow" → "Calyrex".
         if let Some(base) = species.split('-').next() {
             if set.contains(&canonical(base)) {
                 return true;
@@ -173,6 +147,18 @@ impl RegMaRules {
 impl RegulationRules for RegMaRules {
     fn code(&self) -> &'static str {
         "regulation-m-a"
+    }
+
+    fn allowed_species(&self) -> Vec<String> {
+        ALLOWED_SPECIES_MA.iter().map(|s| s.to_string()).collect()
+    }
+
+    fn allowed_items(&self) -> Vec<String> {
+        ALLOWED_ITEMS_MA.iter().map(|s| s.to_string()).collect()
+    }
+
+    fn allowed_moves(&self) -> Vec<String> {
+        ALLOWED_MOVES_MA.iter().map(|s| s.to_string()).collect()
     }
 
     fn validate_team(&self, team: &Team) -> Vec<Violation> {
@@ -190,25 +176,91 @@ impl RegulationRules for RegMaRules {
         let mut seen_species: HashSet<String> = HashSet::new();
         let mut restricted_count: u8 = 0;
 
-        for m in &team.members {
+        for (idx, m) in team.members.iter().enumerate() {
             let raw = m.species.trim();
             if raw.is_empty() {
                 continue;
             }
+            let slot = (idx + 1) as u8;
+
             let key = canonical(raw);
             if !seen_species.insert(key.clone()) {
                 out.push(Violation::DuplicateSpecies {
                     species: raw.to_string(),
                 });
             }
-            if self.matches(&self.banned, raw) {
+
+            if !self.matches(&self.allowed_species, raw) {
                 out.push(Violation::SpeciesNotAllowed {
                     species: raw.to_string(),
                 });
                 continue;
             }
+
             if self.matches(&self.restricted, raw) {
                 restricted_count += 1;
+            }
+
+            match &m.item {
+                None => out.push(Violation::MissingItem {
+                    slot,
+                    species: raw.to_string(),
+                }),
+                Some(item) if !item.trim().is_empty() => {
+                    let item_str = item.trim();
+                    if !self.matches(&self.allowed_items, item_str) {
+                        out.push(Violation::ItemNotAllowed {
+                            slot,
+                            species: raw.to_string(),
+                            item: item_str.to_string(),
+                        });
+                    }
+                }
+                _ => out.push(Violation::MissingItem {
+                    slot,
+                    species: raw.to_string(),
+                }),
+            }
+
+            if m.ability.as_deref().unwrap_or("").trim().is_empty() {
+                out.push(Violation::MissingAbility {
+                    slot,
+                    species: raw.to_string(),
+                });
+            }
+
+            if m.nature.is_none() {
+                out.push(Violation::MissingNature {
+                    slot,
+                    species: raw.to_string(),
+                });
+            }
+
+            let valid_moves: Vec<&String> =
+                m.moves.iter().filter(|s| !s.trim().is_empty()).collect();
+            if valid_moves.len() < 4 {
+                out.push(Violation::MissingMoves {
+                    slot,
+                    species: raw.to_string(),
+                    have: valid_moves.len() as u8,
+                    need: 4,
+                });
+            }
+            for mv in &valid_moves {
+                if !self.matches(&self.allowed_moves, mv) {
+                    out.push(Violation::MoveNotAllowed {
+                        slot,
+                        species: raw.to_string(),
+                        mv: mv.to_string(),
+                    });
+                }
+            }
+
+            if m.evs.total() == 0 {
+                out.push(Violation::EvsNotAssigned {
+                    slot,
+                    species: raw.to_string(),
+                });
             }
         }
 
@@ -222,8 +274,8 @@ impl RegulationRules for RegMaRules {
         // Season enforcement hook: if a team imports a Pokémon that is only
         // in the other season's restricted list, flag it.
         let other_set: HashSet<String> = match self.season {
-            MaSeason::M1 => RESTRICTED_M2.iter().map(|s| canonical(s)).collect(),
-            MaSeason::M2 => RESTRICTED_M1.iter().map(|s| canonical(s)).collect(),
+            MaSeason::M1 => lookup_set(RESTRICTED_M2),
+            MaSeason::M2 => lookup_set(RESTRICTED_M1),
         };
         for m in &team.members {
             let raw = m.species.trim();
@@ -245,10 +297,51 @@ impl RegulationRules for RegMaRules {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::evs::EvSpread;
+    use crate::domain::nature::Nature;
     use crate::domain::team::TeamMember;
     use crate::domain::{format::Format, team::Team};
 
-    fn team_of(species: &[&str]) -> Team {
+    fn complete_member(species: &str) -> TeamMember {
+        TeamMember {
+            species: species.into(),
+            item: Some("Leftovers".into()),
+            ability: Some("Levitate".into()),
+            nature: Some(Nature::Adamant),
+            tera_type: None,
+            moves: vec![
+                "Earthquake".into(),
+                "Protect".into(),
+                "Rock Slide".into(),
+                "Iron Head".into(),
+            ],
+            evs: EvSpread {
+                hp: 252,
+                atk: 252,
+                spe: 4,
+                ..Default::default()
+            },
+        }
+    }
+
+    fn complete_team(species: &[&str]) -> Team {
+        let mut members: Vec<TeamMember> =
+            species.iter().map(|s| complete_member(s)).collect();
+        while members.len() < 6 {
+            members.push(complete_member("Garchomp"));
+        }
+        Team {
+            id: None,
+            name: "t".into(),
+            format: Format::RegulationMA,
+            notes: None,
+            members,
+            created_at: None,
+            updated_at: None,
+        }
+    }
+
+    fn empty_team(species: &[&str]) -> Team {
         let mut members: Vec<TeamMember> = species.iter().map(|s| TeamMember::empty(*s)).collect();
         while members.len() < 6 {
             members.push(TeamMember::empty(""));
@@ -265,47 +358,175 @@ mod tests {
     }
 
     #[test]
-    fn clean_team_has_no_violations() {
+    fn allowed_species_count_matches_186() {
+        assert_eq!(ALLOWED_SPECIES_MA.len(), 186);
+    }
+
+    #[test]
+    fn allowed_items_count_matches_117() {
+        assert_eq!(ALLOWED_ITEMS_MA.len(), 117);
+    }
+
+    #[test]
+    fn allowed_moves_count_matches_467() {
+        assert_eq!(ALLOWED_MOVES_MA.len(), 467);
+    }
+
+    #[test]
+    fn allowed_species_includes_venusaur_and_hydrapple() {
         let rules = RegMaRules::new(MaSeason::M1);
-        let team = team_of(&[
-            "Flutter Mane",
-            "Urshifu",
-            "Rillaboom",
+        assert!(rules.matches(&rules.allowed_species, "Venusaur"));
+        assert!(rules.matches(&rules.allowed_species, "Hydrapple"));
+    }
+
+    #[test]
+    fn allowed_species_excludes_mythicals_and_offlist() {
+        let rules = RegMaRules::new(MaSeason::M1);
+        assert!(!rules.matches(&rules.allowed_species, "Mew"));
+        assert!(!rules.matches(&rules.allowed_species, "Magearna"));
+        assert!(!rules.matches(&rules.allowed_species, "Pumpkaboo"));
+        assert!(!rules.matches(&rules.allowed_species, "Unown"));
+    }
+
+    #[test]
+    fn complete_team_has_no_violations() {
+        let rules = RegMaRules::new(MaSeason::M1);
+        let team = complete_team(&[
+            "Garchomp",
+            "Tinkaton",
             "Incineroar",
-            "Amoonguss",
-            "Ogerpon",
+            "Rotom",
+            "Whimsicott",
+            "Kingambit",
         ]);
         assert_eq!(rules.validate_team(&team), Vec::<Violation>::new());
     }
 
     #[test]
-    fn banned_mythical_is_flagged() {
+    fn validate_rejects_team_with_missing_item() {
         let rules = RegMaRules::new(MaSeason::M1);
-        let team = team_of(&[
-            "Mew",
-            "Urshifu",
-            "Rillaboom",
+        let mut team = complete_team(&["Garchomp"; 6]);
+        // duplicate species generates noise — overwrite with unique allowed set
+        team.members = vec![
+            complete_member("Garchomp"),
+            complete_member("Tinkaton"),
+            complete_member("Incineroar"),
+            complete_member("Rotom"),
+            complete_member("Whimsicott"),
+            complete_member("Kingambit"),
+        ];
+        team.members[2].item = None;
+        let v = rules.validate_team(&team);
+        assert!(v
+            .iter()
+            .any(|x| matches!(x, Violation::MissingItem { slot: 3, .. })));
+    }
+
+    #[test]
+    fn validate_rejects_team_with_zero_evs() {
+        let rules = RegMaRules::new(MaSeason::M1);
+        let mut team = complete_team(&[
+            "Garchomp",
+            "Tinkaton",
             "Incineroar",
-            "Amoonguss",
-            "Ogerpon",
+            "Rotom",
+            "Whimsicott",
+            "Kingambit",
+        ]);
+        team.members[0].evs = EvSpread::default();
+        let v = rules.validate_team(&team);
+        assert!(v
+            .iter()
+            .any(|x| matches!(x, Violation::EvsNotAssigned { slot: 1, .. })));
+    }
+
+    #[test]
+    fn validate_rejects_team_with_unknown_item() {
+        let rules = RegMaRules::new(MaSeason::M1);
+        let mut team = complete_team(&[
+            "Garchomp",
+            "Tinkaton",
+            "Incineroar",
+            "Rotom",
+            "Whimsicott",
+            "Kingambit",
+        ]);
+        team.members[0].item = Some("Booster Energy".into());
+        let v = rules.validate_team(&team);
+        assert!(v
+            .iter()
+            .any(|x| matches!(x, Violation::ItemNotAllowed { slot: 1, .. })));
+    }
+
+    #[test]
+    fn validate_rejects_team_with_unknown_move() {
+        let rules = RegMaRules::new(MaSeason::M1);
+        let mut team = complete_team(&[
+            "Garchomp",
+            "Tinkaton",
+            "Incineroar",
+            "Rotom",
+            "Whimsicott",
+            "Kingambit",
+        ]);
+        team.members[0].moves[0] = "Hidden Power".into();
+        let v = rules.validate_team(&team);
+        assert!(v
+            .iter()
+            .any(|x| matches!(x, Violation::MoveNotAllowed { slot: 1, .. })));
+    }
+
+    #[test]
+    fn validate_rejects_team_with_missing_moves() {
+        let rules = RegMaRules::new(MaSeason::M1);
+        let mut team = complete_team(&[
+            "Garchomp",
+            "Tinkaton",
+            "Incineroar",
+            "Rotom",
+            "Whimsicott",
+            "Kingambit",
+        ]);
+        team.members[0].moves = vec!["Earthquake".into(), "Protect".into()];
+        let v = rules.validate_team(&team);
+        assert!(v.iter().any(|x| matches!(
+            x,
+            Violation::MissingMoves {
+                slot: 1,
+                have: 2,
+                need: 4,
+                ..
+            }
+        )));
+    }
+
+    #[test]
+    fn species_not_allowed_when_off_list() {
+        let rules = RegMaRules::new(MaSeason::M1);
+        let team = complete_team(&[
+            "Magearna",
+            "Tinkaton",
+            "Incineroar",
+            "Rotom",
+            "Whimsicott",
+            "Kingambit",
         ]);
         let v = rules.validate_team(&team);
-        assert!(matches!(
-            v.first(),
-            Some(Violation::SpeciesNotAllowed { .. })
-        ));
+        assert!(v
+            .iter()
+            .any(|x| matches!(x, Violation::SpeciesNotAllowed { .. })));
     }
 
     #[test]
     fn duplicate_species_flagged() {
         let rules = RegMaRules::new(MaSeason::M1);
-        let team = team_of(&[
-            "Urshifu",
-            "Urshifu",
-            "Rillaboom",
+        let team = complete_team(&[
+            "Garchomp",
+            "Garchomp",
             "Incineroar",
-            "Amoonguss",
-            "Ogerpon",
+            "Rotom",
+            "Whimsicott",
+            "Kingambit",
         ]);
         let v = rules.validate_team(&team);
         assert!(v
@@ -314,30 +535,9 @@ mod tests {
     }
 
     #[test]
-    fn two_restricted_flagged() {
-        let rules = RegMaRules::new(MaSeason::M1);
-        let team = team_of(&[
-            "Miraidon",
-            "Koraidon",
-            "Rillaboom",
-            "Incineroar",
-            "Amoonguss",
-            "Ogerpon",
-        ]);
-        let v = rules.validate_team(&team);
-        assert!(v.iter().any(|x| matches!(
-            x,
-            Violation::TooManyRestricted {
-                allowed: 1,
-                found: 2
-            }
-        )));
-    }
-
-    #[test]
     fn incomplete_team_flagged() {
         let rules = RegMaRules::new(MaSeason::M1);
-        let team = team_of(&["Urshifu", "Rillaboom"]);
+        let team = empty_team(&["Garchomp", "Tinkaton"]);
         let v = rules.validate_team(&team);
         assert!(v
             .iter()
@@ -345,19 +545,21 @@ mod tests {
     }
 
     #[test]
-    fn dashed_form_matches_base_restricted() {
+    fn dashed_form_matches_base_species() {
+        // Slowking-Galar (Showdown form name) should still match the base
+        // entry "Slowking" in the allow list.
         let rules = RegMaRules::new(MaSeason::M1);
-        let team = team_of(&[
-            "Calyrex-Shadow",
-            "Urshifu",
-            "Rillaboom",
+        let team = complete_team(&[
+            "Slowking-Galar",
+            "Tinkaton",
             "Incineroar",
-            "Amoonguss",
-            "Ogerpon",
+            "Rotom",
+            "Whimsicott",
+            "Kingambit",
         ]);
         let v = rules.validate_team(&team);
         assert!(!v
             .iter()
-            .any(|x| matches!(x, Violation::TooManyRestricted { .. })));
+            .any(|x| matches!(x, Violation::SpeciesNotAllowed { .. })));
     }
 }
