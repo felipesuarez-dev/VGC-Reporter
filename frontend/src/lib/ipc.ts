@@ -60,6 +60,12 @@ export const ipc = {
     call<string>("export_team_to_showdown", { team }),
   validateTeam: (team: Team, regulation: string) =>
     call<Violation[]>("validate_team", { team, regulation }),
+  getAllowedSpecies: (format: Format) =>
+    call<string[]>("get_allowed_species", { format }),
+  getAllowedItems: (format: Format) =>
+    call<string[]>("get_allowed_items", { format }),
+  getAllowedMoves: (format: Format) =>
+    call<string[]>("get_allowed_moves", { format }),
   getTopTeams: (format: Format, limit = 20) =>
     call<TopTeamsReport>("get_top_teams", { format, limit }),
   saveTopTeamsMarkdown: (format: Format, limit: number, path: string) =>

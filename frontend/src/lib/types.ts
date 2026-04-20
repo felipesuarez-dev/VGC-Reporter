@@ -76,46 +76,25 @@ export const ALL_FORMATS: FormatOption[] = [
 ];
 
 /**
- * Mythical species that cannot be picked in VGC Regulation M-A. This mirrors
- * the backend list in `services/regulations/reg_ma.rs`; keep them in sync.
- * Stored as lowercase alphanumeric ids so we can compare against canonicalised
- * species names (handles Deoxys forms, Shaymin-Sky, etc.).
+ * Canonical key for comparing display names against backend allow-lists.
+ * Mirrors `regulations::common::canonical` on the Rust side: lowercase,
+ * ascii-alphanumeric only. Lets `"Choice Scarf"`, `"choice-scarf"`, and
+ * `"CHOICESCARF"` collide, and `Mr Rime` / `Mr. Rime` agree.
  */
-export const BANNED_SPECIES_MA: ReadonlySet<string> = new Set([
-  "mew",
-  "celebi",
-  "jirachi",
-  "deoxys",
-  "phione",
-  "manaphy",
-  "darkrai",
-  "shaymin",
-  "arceus",
-  "victini",
-  "keldeo",
-  "meloetta",
-  "genesect",
-  "diancie",
-  "hoopa",
-  "volcanion",
-  "magearna",
-  "marshadow",
-  "zeraora",
-  "zarude",
-  "pecharunt",
-]);
-
 export function canonicalSpeciesId(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-export function isBannedInFormat(species: string, format: Format): boolean {
-  if (format !== "regulation-m-a") return false;
-  const id = canonicalSpeciesId(species);
-  if (BANNED_SPECIES_MA.has(id)) return true;
-  // Strip "-Shadow", "-Sky" style form suffixes so Shaymin-Sky also matches.
-  const base = species.split("-")[0];
-  if (base && BANNED_SPECIES_MA.has(canonicalSpeciesId(base))) return true;
+/**
+ * `true` when `name` matches an entry in `allowedKeys` either directly or
+ * via its base form (Showdown form suffix stripped: `Slowking-Galar` →
+ * `Slowking`). `allowedKeys` must already contain canonicalised entries.
+ */
+export function isAllowedName(name: string, allowedKeys: ReadonlySet<string>): boolean {
+  if (allowedKeys.size === 0) return true;
+  if (allowedKeys.has(canonicalSpeciesId(name))) return true;
+  const base = name.split("-")[0];
+  if (base && allowedKeys.has(canonicalSpeciesId(base))) return true;
   return false;
 }
 

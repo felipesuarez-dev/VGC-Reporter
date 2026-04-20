@@ -3,8 +3,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  AlertTriangle,
-  CheckCircle2,
   ClipboardCopy,
   ClipboardPaste,
   Save,
@@ -12,12 +10,12 @@ import {
 } from "lucide-react";
 import { ipc, AppError } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
-import { formatViolation } from "../lib/labels";
 import type { Violation } from "../lib/types";
-import { isBannedInFormat } from "../lib/types";
+import { canonicalSpeciesId, isAllowedName } from "../lib/types";
 import { useTeamBuilder } from "../stores/teamBuilderStore";
 import { TeamMemberForm } from "../components/team/TeamMemberForm";
 import { ImportCompletionModal } from "../components/team/ImportCompletionModal";
+import { ValidationModal } from "../components/team/ValidationModal";
 
 export function TeamBuilder() {
   const { id } = useParams();
@@ -39,24 +37,61 @@ export function TeamBuilder() {
     queryFn: () => ipc.listPokemon(),
   });
 
-  const pokedex = useMemo(
-    () => pokedexAll.filter((p) => !isBannedInFormat(p.name, team.format)),
-    [pokedexAll, team.format],
-  );
-
-  const { data: items = [] } = useQuery({
+  const { data: itemsAll = [] } = useQuery({
     queryKey: queryKeys.items.all,
     queryFn: () => ipc.listItems(),
     staleTime: Infinity,
     gcTime: 24 * 60 * 60 * 1000,
   });
 
-  const { data: moves = [] } = useQuery({
+  const { data: movesAll = [] } = useQuery({
     queryKey: queryKeys.moves.all,
     queryFn: () => ipc.listMoves(),
     staleTime: Infinity,
     gcTime: 24 * 60 * 60 * 1000,
   });
+
+  const { data: allowedSpeciesList = [] } = useQuery({
+    queryKey: queryKeys.allowedSpecies(team.format),
+    queryFn: () => ipc.getAllowedSpecies(team.format),
+    staleTime: Infinity,
+  });
+  const { data: allowedItemsList = [] } = useQuery({
+    queryKey: queryKeys.allowedItems(team.format),
+    queryFn: () => ipc.getAllowedItems(team.format),
+    staleTime: Infinity,
+  });
+  const { data: allowedMovesList = [] } = useQuery({
+    queryKey: queryKeys.allowedMoves(team.format),
+    queryFn: () => ipc.getAllowedMoves(team.format),
+    staleTime: Infinity,
+  });
+
+  const allowedSpeciesKeys = useMemo(
+    () => new Set(allowedSpeciesList.map((s) => canonicalSpeciesId(s))),
+    [allowedSpeciesList],
+  );
+  const allowedItemsKeys = useMemo(
+    () => new Set(allowedItemsList.map((s) => canonicalSpeciesId(s))),
+    [allowedItemsList],
+  );
+  const allowedMovesKeys = useMemo(
+    () => new Set(allowedMovesList.map((s) => canonicalSpeciesId(s))),
+    [allowedMovesList],
+  );
+
+  const pokedex = useMemo(
+    () => pokedexAll.filter((p) => isAllowedName(p.name, allowedSpeciesKeys)),
+    [pokedexAll, allowedSpeciesKeys],
+  );
+  const items = useMemo(
+    () => itemsAll.filter((it) => isAllowedName(it, allowedItemsKeys)),
+    [itemsAll, allowedItemsKeys],
+  );
+  const moves = useMemo(
+    () => movesAll.filter((mv) => isAllowedName(mv, allowedMovesKeys)),
+    [movesAll, allowedMovesKeys],
+  );
 
   const { data: loaded } = useQuery({
     queryKey: queryKeys.teams.detail(teamId ?? -1),
@@ -92,11 +127,11 @@ export function TeamBuilder() {
     try {
       setStatus(null);
       const issues = await ipc.validateTeam(team, team.format);
-      setViolations(issues);
       if (issues.length > 0) {
-        setStatus(t("team_builder.fix_violations_first"));
+        setViolations(issues);
         return;
       }
+      setViolations(null);
       const newId = await ipc.saveTeam(team);
       await qc.invalidateQueries({ queryKey: queryKeys.teams.list });
       setStatus(t("team_builder.saved"));
@@ -105,11 +140,6 @@ export function TeamBuilder() {
       setStatus(e instanceof AppError ? e.message : String(e));
     }
   };
-
-  const violationMessages = useMemo(
-    () => (violations ?? []).map((v) => formatViolation(t, v)),
-    [violations, t],
-  );
 
   const handleImport = async () => {
     try {
@@ -193,35 +223,6 @@ export function TeamBuilder() {
 
       {status && <div className="card text-xs text-brand-300">{status}</div>}
 
-      {violations && (
-        <div
-          className={`card text-xs ${
-            violations.length === 0 ? "text-emerald-300" : "text-amber-200"
-          }`}
-        >
-          <div className="mb-1 flex items-center gap-2 font-semibold">
-            {violations.length === 0 ? (
-              <>
-                <CheckCircle2 size={14} />
-                {t("validation.ok")}
-              </>
-            ) : (
-              <>
-                <AlertTriangle size={14} />
-                {t("validation.has_violations")}
-              </>
-            )}
-          </div>
-          {violations.length > 0 && (
-            <ul className="list-disc space-y-0.5 pl-5">
-              {violationMessages.map((msg, i) => (
-                <li key={i}>{msg}</li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
         {team.members.map((m, i) => (
           <TeamMemberForm
@@ -240,6 +241,12 @@ export function TeamBuilder() {
         open={importMissing !== null}
         missing={importMissing ?? []}
         onClose={() => setImportMissing(null)}
+      />
+
+      <ValidationModal
+        open={violations !== null && violations.length > 0}
+        violations={violations ?? []}
+        onClose={() => setViolations(null)}
       />
 
       {importOpen && (
