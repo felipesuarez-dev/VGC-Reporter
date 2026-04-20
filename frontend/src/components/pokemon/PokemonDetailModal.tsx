@@ -67,7 +67,7 @@ export function PokemonDetailModal() {
   });
 
   const topTeams = useQuery({
-    queryKey: queryKeys.topTeams(format),
+    queryKey: queryKeys.topTeams(format, 100),
     queryFn: () => ipc.getTopTeams(format, 100),
     staleTime: 30 * 60 * 1000,
   });

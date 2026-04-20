@@ -226,8 +226,14 @@
     "export_md": "Exportar MD",
     "export_count_label": "Equipos",
     "export_count_all": "Todos",
+    "export_count_all_n": "Todos ({{count}})",
     "exporting": "Exportando…",
-    "export_save_title": "Guardar exportación de Top Teams"
+    "export_save_title": "Guardar exportación de Top Teams",
+    "confirm_all_title": "¿Cargar todos los equipos?",
+    "confirm_all_body": "Se descargarán y renderizarán {{count}} equipos. La operación puede tardar un momento y consumir más memoria.",
+    "confirm_all_dont_ask": "No volver a preguntar",
+    "confirm_all_cancel": "Cancelar",
+    "confirm_all_proceed": "Cargar todos"
   },
   "damage_calc": {
     "title": "Calculador de daño",

@@ -34,7 +34,7 @@ src/
   components/
     layout/               # AppShell, LanguageToggle
     pokemon/              # Card, Sprite, TypeBadge, MiniTeam
-    team/                 # TeamMemberForm, EVSliders, TopTeamDetailModal
+    team/                 # TeamMemberForm, EVSliders, TopTeamDetailModal, ValidationModal, LoadAllTeamsConfirmModal
     charts/               # UsageBarChart, TopList, TrendingCard
     tournament/           # TournamentStandingsDrawer
     dashboard/            # XCard (Twitter embeds)
@@ -76,7 +76,11 @@ Species/item/move comboboxes in the Team Builder (`pages/TeamBuilder.tsx`) filte
 
 - **Server state** → TanStack Query (cache, invalidation). Never copy server data into Zustand.
 - **Form state** → local `useState` / React Hook Form for complex forms.
-- **UI global state** → Zustand (`stores/`). Currently: `teamBuilderStore` (draft + pending import), `dashboardStore` (selected format, tournament count), `pokedexStore` (detail modal target + filters), `filtersStore`, `uiStore` (sidebar collapse, theme).
+- **UI global state** → Zustand (`stores/`). Currently: `teamBuilderStore` (draft + pending import), `dashboardStore` (selected format, tournament count), `pokedexStore` (detail modal target + filters), `filtersStore`, `uiStore` (sidebar collapse, theme, font size, `confirmAllTopTeams` opt-out flag).
+
+## Modal pattern
+
+Confirmation/validation dialogs (`ValidationModal`, `LoadAllTeamsConfirmModal`, `ImportCompletionModal`) share one shape: fixed overlay with `bg-black/60`, `bg-elev` inner card, ESC-to-close handler in a `useEffect`, click-outside via `onClick`/`stopPropagation`. Reuse this layout when adding new dialogs instead of pulling in a third-party modal lib.
 
 ## Gotchas
 

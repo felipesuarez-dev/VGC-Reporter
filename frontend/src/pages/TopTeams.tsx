@@ -8,6 +8,7 @@ import { queryKeys } from "../lib/queryKeys";
 import type { ChampionsTournament, Format, TopTeam } from "../lib/types";
 import { MiniTeam } from "../components/pokemon/MiniTeam";
 import { TopTeamDetailModal } from "../components/team/TopTeamDetailModal";
+import { LoadAllTeamsConfirmModal } from "../components/team/LoadAllTeamsConfirmModal";
 import { TournamentStandingsDrawer } from "../components/tournament/TournamentStandingsDrawer";
 import { PokemonMultiSelect } from "../components/filters/PokemonMultiSelect";
 import { SearchTextInput } from "../components/filters/SearchTextInput";
@@ -15,6 +16,7 @@ import { CountryFilter } from "../components/filters/CountryFilter";
 import { SourcesChip } from "../components/layout/SourcesChip";
 import { formatDateTime } from "../lib/formatDate";
 import { formatLabel } from "../lib/labels";
+import { useUiStore } from "../stores/uiStore";
 
 const FORMAT: Format = "regulation-m-a";
 const RECENT_INITIAL = 5;
@@ -47,12 +49,17 @@ export function TopTeams() {
   const [teamSearch, setTeamSearch] = useState("");
   const [countryFilter, setCountryFilter] = useState<string[]>([]);
   const [displayLimit, setDisplayLimit] = useState<DisplayLimit>(20);
+  const [fetchLimit, setFetchLimit] = useState<number>(TOP_TEAMS_FETCH_LIMIT);
   const [isPendingDisplay, startDisplayTransition] = useTransition();
   const [isExporting, setIsExporting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingAllCount, setPendingAllCount] = useState(0);
+  const confirmAllTopTeams = useUiStore((s) => s.confirmAllTopTeams);
+  const setConfirmAllTopTeams = useUiStore((s) => s.setConfirmAllTopTeams);
 
   const { data: report, isLoading, isError, isFetching } = useQuery({
-    queryKey: queryKeys.topTeams(FORMAT),
-    queryFn: () => ipc.getTopTeams(FORMAT, TOP_TEAMS_FETCH_LIMIT),
+    queryKey: queryKeys.topTeams(FORMAT, fetchLimit),
+    queryFn: () => ipc.getTopTeams(FORMAT, fetchLimit),
   });
   const { data: pokedex = [] } = useQuery({
     queryKey: queryKeys.pokedex.all,
@@ -99,11 +106,20 @@ export function TopTeams() {
   const hasMoreRecent = filteredRecent.length > RECENT_INITIAL;
 
   const refresh = () => {
-    qc.invalidateQueries({ queryKey: queryKeys.topTeams(FORMAT) });
+    qc.invalidateQueries({ queryKey: queryKeys.topTeams(FORMAT, fetchLimit) });
     qc.invalidateQueries({
       queryKey: queryKeys.championsReport(FORMAT, RECENT_EXPANDED),
     });
   };
+
+  const applyAll = (total: number) => {
+    startDisplayTransition(() => {
+      setDisplayLimit(ALL_SENTINEL);
+      setFetchLimit((current) => (total > current ? total : current));
+    });
+  };
+
+  const allTeamsCount = meta?.battles_analyzed ?? filteredTeams.length;
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -155,8 +171,16 @@ export function TopTeams() {
               value={displayLimit}
               onChange={(e) => {
                 const v = e.target.value;
-                const next: DisplayLimit =
-                  v === ALL_SENTINEL ? ALL_SENTINEL : Number(v);
+                if (v === ALL_SENTINEL) {
+                  if (confirmAllTopTeams) {
+                    setPendingAllCount(allTeamsCount);
+                    setConfirmOpen(true);
+                    return;
+                  }
+                  applyAll(allTeamsCount);
+                  return;
+                }
+                const next = Number(v);
                 startDisplayTransition(() => setDisplayLimit(next));
               }}
               className="input h-7 px-1 py-0 text-xs"
@@ -164,7 +188,11 @@ export function TopTeams() {
             >
               {DISPLAY_OPTIONS.map((opt) => (
                 <option key={String(opt)} value={opt}>
-                  {opt === ALL_SENTINEL ? t("top_teams.export_count_all") : opt}
+                  {opt === ALL_SENTINEL
+                    ? meta
+                      ? t("top_teams.export_count_all_n", { count: allTeamsCount })
+                      : t("top_teams.export_count_all")
+                    : opt}
                 </option>
               ))}
             </select>
@@ -420,6 +448,16 @@ export function TopTeams() {
       <TopTeamDetailModal
         team={selectedTeam}
         onClose={() => setSelectedTeam(null)}
+      />
+      <LoadAllTeamsConfirmModal
+        open={confirmOpen}
+        count={pendingAllCount}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={(dontAsk) => {
+          if (dontAsk) setConfirmAllTopTeams(false);
+          setConfirmOpen(false);
+          applyAll(pendingAllCount);
+        }}
       />
     </div>
   );

@@ -32,11 +32,13 @@ interface UiState {
   theme: Theme;
   sidebarCollapsed: boolean;
   fontSizePx: number;
+  confirmAllTopTeams: boolean;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   setFontSizePx: (px: number) => void;
+  setConfirmAllTopTeams: (v: boolean) => void;
 }
 
 export const useUiStore = create<UiState>()(
@@ -45,6 +47,7 @@ export const useUiStore = create<UiState>()(
       theme: "system",
       sidebarCollapsed: false,
       fontSizePx: FONT_SIZE_DEFAULT,
+      confirmAllTopTeams: true,
       setTheme: (theme) => set({ theme }),
       toggleTheme: () => {
         const current = get().theme;
@@ -55,10 +58,11 @@ export const useUiStore = create<UiState>()(
       toggleSidebar: () => set({ sidebarCollapsed: !get().sidebarCollapsed }),
       setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
       setFontSizePx: (px) => set({ fontSizePx: clampFontSize(px) }),
+      setConfirmAllTopTeams: (confirmAllTopTeams) => set({ confirmAllTopTeams }),
     }),
     {
       name: "vgc-ui",
-      version: 2,
+      version: 3,
       migrate: (persisted: unknown, version: number) => {
         const prior = (persisted ?? {}) as Partial<UiState> & { theme?: string };
         let theme: Theme;
@@ -76,6 +80,10 @@ export const useUiStore = create<UiState>()(
             typeof prior.fontSizePx === "number"
               ? clampFontSize(prior.fontSizePx)
               : FONT_SIZE_DEFAULT,
+          confirmAllTopTeams:
+            typeof prior.confirmAllTopTeams === "boolean"
+              ? prior.confirmAllTopTeams
+              : true,
         } as UiState;
       },
     },
