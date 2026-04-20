@@ -23,6 +23,17 @@ commands/  →  services/  →  domain/
 3. Registrarlo en `lib.rs` dentro de `tauri::generate_handler![...]`.
 4. El tipo de retorno **debe** ser `Result<T, AppError>` para serializar el error al frontend.
 
+## Añadir una regulación nueva
+
+`services/regulations/` aloja un trait `RegulationRules` (`code`, `validate_team`, `allowed_species`, `allowed_items`, `allowed_moves`) y un registry `rules_for_code()`. Para añadir una regulación:
+
+1. Crear `services/regulations/reg_xx.rs` con un struct que implemente `RegulationRules`. Reusar `regulations::common::{canonical, lookup_set}` para normalizar nombres y construir los `HashSet<String>` de allow-list.
+2. Si las listas son grandes (cientos de entradas), partirlas en `reg_xx_species.rs`/`reg_xx_items.rs`/`reg_xx_moves.rs` (mismo patrón que Reg M-A).
+3. Añadir el código en el match de `rules_for_code()` y declarar el módulo en `regulations/mod.rs`.
+4. Añadir la variante a `Format` en `domain/format.rs` y al mapeo `cache_id() ↔ código de regulación`. Regenerar bindings con `cargo test`.
+
+Los tres commands `get_allowed_{species,items,moves}` ya consumen el registry — no hace falta tocarlos.
+
 ## Añadir un campo persistido
 
 1. Nueva migración en `storage/migrations/00X_xxx.sql` (usar `ALTER TABLE`; nunca editar 001).

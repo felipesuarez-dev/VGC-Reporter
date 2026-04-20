@@ -68,6 +68,10 @@ src/
 3. Add a query key entry in `src/lib/queryKeys.ts`.
 4. Consume with `useQuery`/`useMutation` in the page.
 
+## Regulation-aware pickers
+
+Species/item/move comboboxes in the Team Builder (`pages/TeamBuilder.tsx`) filter their datasets through three backend allow-lists exposed as `ipc.getAllowed{Species,Items,Moves}(format)`. Don't hardcode regulation knowledge in the frontend — when a new regulation is added on the Rust side, these pickers update automatically. Use `canonicalSpeciesId` + `isAllowedName` from `lib/types.ts` to compare display names against the canonicalised allow-list keys (handles Showdown form suffixes like `Slowking-Galar`).
+
 ## State
 
 - **Server state** → TanStack Query (cache, invalidation). Never copy server data into Zustand.

@@ -48,7 +48,7 @@ First launch downloads and caches Pokédex, moves, items, abilities and usage st
 |---|---|
 | **Dashboard** | Format selector with favorite star, top Pokémon hero chart, Top Items / Moves / Abilities / Tera lists with click-through drill-down, recent Champions tournaments with **inline decklists**, Twitter cards for `@VGCdata` / `@VGChampStats` |
 | **Pokédex** | Sortable by generation / alphabetical / meta usage; click any Pokémon for a large modal with curated competitive sets (Doubles & Singles tabs), live meta usage and **type matchups** (weak/strong against) |
-| **Team Builder** | 6 slots with searchable comboboxes for Pokémon / item / ability / nature / Tera / moves, EV sliders, validated against VGC rules |
+| **Team Builder** | 6 slots with searchable comboboxes for Pokémon / item / ability / nature / Tera / moves, EV sliders. Pickers are filtered live by the active regulation (only legal species, items and moves shown), and Save runs full validation (completeness, EVs assigned, allow-list checks) surfacing issues in a modal |
 | **My Teams** | Local SQLite persistence with rename / duplicate / delete |
 | **Top Teams** | Tournament-winning teams from Limitless rendered as mini-grids |
 | **Damage Calc** | `@smogon/calc` Gen 9 with searchable inputs for every field, real items & moves loaded from Showdown |
