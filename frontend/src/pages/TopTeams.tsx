@@ -170,7 +170,7 @@ export function TopTeams() {
             </select>
             {isPendingDisplay && (
               <Loader2
-                size={14}
+                size={20}
                 className="animate-spin"
                 style={{ color: "var(--accent)" }}
                 aria-label={t("common.loading")}
@@ -179,7 +179,7 @@ export function TopTeams() {
             <button
               type="button"
               onClick={handleExport}
-              className="btn-ghost flex items-center gap-1 text-xs"
+              className="btn-ghost flex items-center gap-1 whitespace-nowrap px-2 text-xs"
               disabled={isExporting || isLoading}
             >
               <Download size={14} />
