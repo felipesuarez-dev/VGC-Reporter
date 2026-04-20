@@ -178,7 +178,7 @@ VGC-Reporter/
 MIT © 2026 PumaSoft — see [LICENSE](LICENSE).
 
 <!-- Reference-style definitions -->
-[version-badge]: https://img.shields.io/badge/version-0.0.8.20260417-2b86ff?style=flat-square&labelColor=0a0e14
+[version-badge]: https://img.shields.io/badge/version-0.0.9.20260420-2b86ff?style=flat-square&labelColor=0a0e14
 [version-link]: #
 [tauri-badge]: https://img.shields.io/badge/Tauri-2.4-24c8db?style=flat-square&labelColor=0a0e14&logo=tauri
 [tauri-link]: https://tauri.app
