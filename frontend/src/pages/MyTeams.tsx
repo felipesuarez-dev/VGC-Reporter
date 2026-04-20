@@ -57,7 +57,11 @@ export function MyTeams() {
             <div key={team.id ?? team.name} className="card space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+                  <div
+                    className="truncate text-sm font-semibold"
+                    title={team.name}
+                    style={{ color: "var(--text)" }}
+                  >
                     {team.name}
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-1">
