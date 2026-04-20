@@ -168,14 +168,6 @@ export function TopTeams() {
                 </option>
               ))}
             </select>
-            {isPendingDisplay && (
-              <Loader2
-                size={20}
-                className="animate-spin"
-                style={{ color: "var(--accent)" }}
-                aria-label={t("common.loading")}
-              />
-            )}
             <button
               type="button"
               onClick={handleExport}
@@ -268,11 +260,24 @@ export function TopTeams() {
         </div>
       )}
 
-      <div
-        className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 transition-opacity"
-        style={{ opacity: isPendingDisplay ? 0.5 : 1 }}
-        aria-busy={isPendingDisplay}
-      >
+      {isPendingDisplay && teams.length > 0 && (
+        <div
+          className="card flex min-h-[240px] flex-col items-center justify-center gap-3"
+          style={{ color: "var(--text-muted)" }}
+          aria-busy="true"
+          aria-live="polite"
+        >
+          <Loader2
+            size={48}
+            className="animate-spin"
+            style={{ color: "var(--accent)" }}
+          />
+          <span className="text-base">{t("common.loading")}</span>
+        </div>
+      )}
+
+      {!isPendingDisplay && (
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
         {visibleTeams.map((tt, idx) => (
           <button
             key={`${tt.tournament}-${idx}`}
@@ -331,6 +336,7 @@ export function TopTeams() {
           </button>
         ))}
       </div>
+      )}
 
       <section className="card">
         <h2 className="mb-1 text-sm font-semibold" style={{ color: "var(--text)" }}>
