@@ -1,4 +1,8 @@
+pub mod common;
 pub mod reg_ma;
+mod reg_ma_items;
+mod reg_ma_moves;
+mod reg_ma_species;
 
 use crate::domain::team::Team;
 use serde::{Deserialize, Serialize};
@@ -18,11 +22,21 @@ pub enum Violation {
     RestrictedNotInSeason { species: String, season: String },
     DuplicateSpecies { species: String },
     DuplicateItem { item: String },
+    MissingItem { slot: u8, species: String },
+    MissingAbility { slot: u8, species: String },
+    MissingNature { slot: u8, species: String },
+    MissingMoves { slot: u8, species: String, have: u8, need: u8 },
+    EvsNotAssigned { slot: u8, species: String },
+    ItemNotAllowed { slot: u8, species: String, item: String },
+    MoveNotAllowed { slot: u8, species: String, mv: String },
 }
 
 pub trait RegulationRules: Send + Sync {
     fn code(&self) -> &'static str;
     fn validate_team(&self, team: &Team) -> Vec<Violation>;
+    fn allowed_species(&self) -> Vec<String>;
+    fn allowed_items(&self) -> Vec<String>;
+    fn allowed_moves(&self) -> Vec<String>;
 }
 
 pub fn rules_for_code(code: &str) -> Option<Box<dyn RegulationRules>> {
