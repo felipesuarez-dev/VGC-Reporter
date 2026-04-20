@@ -362,6 +362,9 @@
     "title": "Team validation",
     "ok": "Team passes regulation checks",
     "has_violations": "Team has issues",
+    "modal_title": "Cannot save team",
+    "modal_body": "Fix the following issues before saving:",
+    "modal_dismiss": "OK",
     "team_incomplete": "Team is incomplete ({{filled}}/6 Pokémon).",
     "species_not_allowed": "{{species}} is not legal in this regulation.",
     "item_banned": "{{species}} holds a banned item: {{item}}.",
@@ -369,6 +372,13 @@
     "too_many_restricted": "Too many Restricted Pokémon (max {{allowed}}, found {{found}}).",
     "restricted_not_in_season": "{{species}} is not legal in season {{season}}.",
     "duplicate_species": "{{species}} appears more than once (species clause).",
-    "duplicate_item": "Duplicate item: {{item}}."
+    "duplicate_item": "Duplicate item: {{item}}.",
+    "missing_item": "Slot {{slot}} ({{species}}): missing held item.",
+    "missing_ability": "Slot {{slot}} ({{species}}): missing ability.",
+    "missing_nature": "Slot {{slot}} ({{species}}): missing nature.",
+    "missing_moves": "Slot {{slot}} ({{species}}): only {{have}} of {{need}} moves selected.",
+    "evs_not_assigned": "Slot {{slot}} ({{species}}): EVs not assigned.",
+    "item_not_allowed": "Slot {{slot}} ({{species}}): item \"{{item}}\" is not legal in this regulation.",
+    "move_not_allowed": "Slot {{slot}} ({{species}}): move \"{{mv}}\" is not legal in this regulation."
   }
 }

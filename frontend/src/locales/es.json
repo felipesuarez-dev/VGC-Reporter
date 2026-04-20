@@ -362,6 +362,9 @@
     "title": "Validación del equipo",
     "ok": "El equipo cumple con la regulación",
     "has_violations": "El equipo tiene problemas",
+    "modal_title": "No se puede guardar el equipo",
+    "modal_body": "Corrige los siguientes problemas antes de guardar:",
+    "modal_dismiss": "OK",
     "team_incomplete": "El equipo está incompleto ({{filled}}/6 Pokémon).",
     "species_not_allowed": "{{species}} no está permitido en esta regulación.",
     "item_banned": "{{species}} lleva un objeto prohibido: {{item}}.",
@@ -369,6 +372,13 @@
     "too_many_restricted": "Demasiados Pokémon restringidos (máx {{allowed}}, encontrados {{found}}).",
     "restricted_not_in_season": "{{species}} no es legal en la temporada {{season}}.",
     "duplicate_species": "{{species}} aparece más de una vez (regla de especies).",
-    "duplicate_item": "El objeto {{item}} está repetido."
+    "duplicate_item": "El objeto {{item}} está repetido.",
+    "missing_item": "Slot {{slot}} ({{species}}): falta el objeto.",
+    "missing_ability": "Slot {{slot}} ({{species}}): falta la habilidad.",
+    "missing_nature": "Slot {{slot}} ({{species}}): falta la naturaleza.",
+    "missing_moves": "Slot {{slot}} ({{species}}): solo {{have}} de {{need}} movimientos seleccionados.",
+    "evs_not_assigned": "Slot {{slot}} ({{species}}): EVs sin asignar.",
+    "item_not_allowed": "Slot {{slot}} ({{species}}): el objeto \"{{item}}\" no es legal en esta regulación.",
+    "move_not_allowed": "Slot {{slot}} ({{species}}): el movimiento \"{{mv}}\" no es legal en esta regulación."
   }
 }

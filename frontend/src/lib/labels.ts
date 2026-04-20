@@ -84,5 +84,44 @@ export function formatViolation(t: TFunction, v: Violation): string {
       return t("validation.duplicate_species", { species: v.species });
     case "duplicate_item":
       return t("validation.duplicate_item", { item: v.item });
+    case "missing_item":
+      return t("validation.missing_item", {
+        slot: v.slot + 1,
+        species: v.species,
+      });
+    case "missing_ability":
+      return t("validation.missing_ability", {
+        slot: v.slot + 1,
+        species: v.species,
+      });
+    case "missing_nature":
+      return t("validation.missing_nature", {
+        slot: v.slot + 1,
+        species: v.species,
+      });
+    case "missing_moves":
+      return t("validation.missing_moves", {
+        slot: v.slot + 1,
+        species: v.species,
+        have: v.have,
+        need: v.need,
+      });
+    case "evs_not_assigned":
+      return t("validation.evs_not_assigned", {
+        slot: v.slot + 1,
+        species: v.species,
+      });
+    case "item_not_allowed":
+      return t("validation.item_not_allowed", {
+        slot: v.slot + 1,
+        species: v.species,
+        item: v.item,
+      });
+    case "move_not_allowed":
+      return t("validation.move_not_allowed", {
+        slot: v.slot + 1,
+        species: v.species,
+        mv: v.mv,
+      });
   }
 }
