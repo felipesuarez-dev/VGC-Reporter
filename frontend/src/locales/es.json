@@ -225,6 +225,7 @@
     "filter_no_matches": "Ningún equipo contiene todos los Pokémon seleccionados.",
     "export_md": "Exportar MD",
     "export_count_label": "Equipos",
+    "export_count_all": "Todos",
     "exporting": "Exportando…",
     "export_save_title": "Guardar exportación de Top Teams"
   },

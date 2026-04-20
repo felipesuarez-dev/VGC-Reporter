@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Download, RefreshCw } from "lucide-react";
+import { Download, Loader2, RefreshCw } from "lucide-react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
@@ -19,8 +19,10 @@ import { formatLabel } from "../lib/labels";
 const FORMAT: Format = "regulation-m-a";
 const RECENT_INITIAL = 5;
 const RECENT_EXPANDED = 20;
-const CARDS_PAGE = 20;
-const EXPORT_OPTIONS = [5, 10, 20, 50, 100] as const;
+const TOP_TEAMS_FETCH_LIMIT = 1000;
+const ALL_SENTINEL = "all" as const;
+type DisplayLimit = number | typeof ALL_SENTINEL;
+const DISPLAY_OPTIONS: readonly DisplayLimit[] = [5, 10, 20, 50, 100, ALL_SENTINEL];
 
 function flagEmoji(code: string | null | undefined): string {
   if (!code || code.length !== 2) return "";
@@ -39,18 +41,17 @@ export function TopTeams() {
   const [selectedTournament, setSelectedTournament] =
     useState<ChampionsTournament | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<TopTeam | null>(null);
-  const [visibleCards, setVisibleCards] = useState(CARDS_PAGE);
   const [recentExpanded, setRecentExpanded] = useState(false);
   const [recentSearch, setRecentSearch] = useState("");
   const [speciesFilter, setSpeciesFilter] = useState<string[]>([]);
   const [teamSearch, setTeamSearch] = useState("");
   const [countryFilter, setCountryFilter] = useState<string[]>([]);
-  const [exportLimit, setExportLimit] = useState<number>(20);
+  const [displayLimit, setDisplayLimit] = useState<DisplayLimit>(20);
   const [isExporting, setIsExporting] = useState(false);
 
   const { data: report, isLoading, isError, isFetching } = useQuery({
     queryKey: queryKeys.topTeams(FORMAT),
-    queryFn: () => ipc.getTopTeams(FORMAT, 100),
+    queryFn: () => ipc.getTopTeams(FORMAT, TOP_TEAMS_FETCH_LIMIT),
   });
   const { data: pokedex = [] } = useQuery({
     queryKey: queryKeys.pokedex.all,
@@ -83,7 +84,9 @@ export function TopTeams() {
     }
     return true;
   });
-  const visibleTeams = filteredTeams.slice(0, visibleCards);
+  const effectiveLimit =
+    displayLimit === ALL_SENTINEL ? filteredTeams.length : displayLimit;
+  const visibleTeams = filteredTeams.slice(0, effectiveLimit);
 
   const recentLimit = recentExpanded ? RECENT_EXPANDED : RECENT_INITIAL;
   const recentQuery = recentSearch.trim().toLowerCase();
@@ -104,13 +107,19 @@ export function TopTeams() {
   const handleExport = async () => {
     setIsExporting(true);
     try {
+      const exportN =
+        displayLimit === ALL_SENTINEL
+          ? Math.max(1, teams.length)
+          : displayLimit;
+      const filenameSuffix =
+        displayLimit === ALL_SENTINEL ? "all" : String(displayLimit);
       const path = await save({
-        defaultPath: `top-${exportLimit}-teams-regulation-m-a.md`,
+        defaultPath: `top-${filenameSuffix}-teams-regulation-m-a.md`,
         filters: [{ name: "Markdown", extensions: ["md"] }],
         title: t("top_teams.export_save_title"),
       });
       if (!path) return;
-      await ipc.saveTopTeamsMarkdown(FORMAT, exportLimit, path);
+      await ipc.saveTopTeamsMarkdown(FORMAT, exportN, path);
     } finally {
       setIsExporting(false);
     }
@@ -126,30 +135,46 @@ export function TopTeams() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-1 text-xs" style={{ color: "var(--text-dim)" }}>
-            <span>{t("top_teams.export_count_label")}</span>
+          <div
+            className="flex items-center gap-2 rounded-lg px-2 py-1"
+            style={{
+              backgroundColor: "color-mix(in srgb, var(--bg-elev) 85%, transparent)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <label
+              htmlFor="top-teams-display-limit"
+              className="text-xs"
+              style={{ color: "var(--text-dim)" }}
+            >
+              {t("top_teams.export_count_label")}
+            </label>
             <select
-              value={exportLimit}
-              onChange={(e) => setExportLimit(Number(e.target.value))}
+              id="top-teams-display-limit"
+              value={displayLimit}
+              onChange={(e) => {
+                const v = e.target.value;
+                setDisplayLimit(v === ALL_SENTINEL ? ALL_SENTINEL : Number(v));
+              }}
               className="input h-7 px-1 py-0 text-xs"
               disabled={isExporting}
             >
-              {EXPORT_OPTIONS.map((n) => (
-                <option key={n} value={n}>
-                  {n}
+              {DISPLAY_OPTIONS.map((opt) => (
+                <option key={String(opt)} value={opt}>
+                  {opt === ALL_SENTINEL ? t("top_teams.export_count_all") : opt}
                 </option>
               ))}
             </select>
-          </label>
-          <button
-            type="button"
-            onClick={handleExport}
-            className="btn-ghost flex items-center gap-1 text-xs"
-            disabled={isExporting || isLoading}
-          >
-            <Download size={14} />
-            {isExporting ? t("top_teams.exporting") : t("top_teams.export_md")}
-          </button>
+            <button
+              type="button"
+              onClick={handleExport}
+              className="btn-ghost flex items-center gap-1 text-xs"
+              disabled={isExporting || isLoading}
+            >
+              <Download size={14} />
+              {isExporting ? t("top_teams.exporting") : t("top_teams.export_md")}
+            </button>
+          </div>
           <button
             type="button"
             onClick={refresh}
@@ -175,8 +200,12 @@ export function TopTeams() {
       )}
 
       {isLoading && (
-        <div className="card" style={{ color: "var(--text-muted)" }}>
-          {t("common.loading")}
+        <div
+          className="card flex items-center gap-2"
+          style={{ color: "var(--text-muted)" }}
+        >
+          <Loader2 size={16} className="animate-spin" />
+          <span>{t("common.loading")}</span>
         </div>
       )}
       {isError && (
@@ -287,29 +316,6 @@ export function TopTeams() {
           </button>
         ))}
       </div>
-
-      {(filteredTeams.length > visibleCards || visibleCards > CARDS_PAGE) && (
-        <div className="flex justify-center gap-2">
-          {filteredTeams.length > visibleCards && (
-            <button
-              type="button"
-              className="btn-ghost text-xs"
-              onClick={() => setVisibleCards((n) => n + CARDS_PAGE)}
-            >
-              {t("common.see_more")}
-            </button>
-          )}
-          {visibleCards > CARDS_PAGE && (
-            <button
-              type="button"
-              className="btn-ghost text-xs"
-              onClick={() => setVisibleCards(CARDS_PAGE)}
-            >
-              {t("common.see_less")}
-            </button>
-          )}
-        </div>
-      )}
 
       <section className="card">
         <h2 className="mb-1 text-sm font-semibold" style={{ color: "var(--text)" }}>
