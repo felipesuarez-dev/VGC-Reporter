@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { RefreshCw } from "lucide-react";
+import { Download, RefreshCw } from "lucide-react";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
 import type { ChampionsTournament, Format, TopTeam } from "../lib/types";
@@ -19,6 +19,7 @@ const FORMAT: Format = "regulation-m-a";
 const RECENT_INITIAL = 5;
 const RECENT_EXPANDED = 20;
 const CARDS_PAGE = 20;
+const EXPORT_OPTIONS = [5, 10, 20, 50, 100] as const;
 
 function flagEmoji(code: string | null | undefined): string {
   if (!code || code.length !== 2) return "";
@@ -43,6 +44,8 @@ export function TopTeams() {
   const [speciesFilter, setSpeciesFilter] = useState<string[]>([]);
   const [teamSearch, setTeamSearch] = useState("");
   const [countryFilter, setCountryFilter] = useState<string[]>([]);
+  const [exportLimit, setExportLimit] = useState<number>(20);
+  const [isExporting, setIsExporting] = useState(false);
 
   const { data: report, isLoading, isError, isFetching } = useQuery({
     queryKey: queryKeys.topTeams(FORMAT),
@@ -97,6 +100,24 @@ export function TopTeams() {
     });
   };
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const md = await ipc.exportTopTeamsMarkdown(FORMAT, exportLimit);
+      const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `top-${exportLimit}-teams-regulation-m-a.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <header className="flex flex-wrap items-start justify-between gap-2">
@@ -106,15 +127,41 @@ export function TopTeams() {
             {t("top_teams.subtitle")}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={refresh}
-          className="btn-ghost flex items-center gap-1 text-xs"
-          disabled={isFetching}
-        >
-          <RefreshCw size={14} className={isFetching ? "animate-spin" : ""} />
-          {t("dashboard.refresh")}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="flex items-center gap-1 text-xs" style={{ color: "var(--text-dim)" }}>
+            <span>{t("top_teams.export_count_label")}</span>
+            <select
+              value={exportLimit}
+              onChange={(e) => setExportLimit(Number(e.target.value))}
+              className="input h-7 px-1 py-0 text-xs"
+              disabled={isExporting}
+            >
+              {EXPORT_OPTIONS.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={handleExport}
+            className="btn-ghost flex items-center gap-1 text-xs"
+            disabled={isExporting || isLoading}
+          >
+            <Download size={14} />
+            {isExporting ? t("top_teams.exporting") : t("top_teams.export_md")}
+          </button>
+          <button
+            type="button"
+            onClick={refresh}
+            className="btn-ghost flex items-center gap-1 text-xs"
+            disabled={isFetching}
+          >
+            <RefreshCw size={14} className={isFetching ? "animate-spin" : ""} />
+            {t("dashboard.refresh")}
+          </button>
+        </div>
       </header>
 
       {meta && (

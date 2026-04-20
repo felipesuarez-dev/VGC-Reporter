@@ -222,7 +222,10 @@
     "tournaments_analyzed": "Tournaments analyzed",
     "copy_to_builder": "Copy to builder",
     "filter_by_pokemon": "Filter by Pokémon (up to 6)",
-    "filter_no_matches": "No team contains every selected Pokémon."
+    "filter_no_matches": "No team contains every selected Pokémon.",
+    "export_md": "Export MD",
+    "export_count_label": "Teams",
+    "exporting": "Exporting…"
   },
   "damage_calc": {
     "title": "Damage Calculator",

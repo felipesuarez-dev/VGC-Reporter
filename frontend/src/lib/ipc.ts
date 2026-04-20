@@ -62,6 +62,8 @@ export const ipc = {
     call<Violation[]>("validate_team", { team, regulation }),
   getTopTeams: (format: Format, limit = 20) =>
     call<TopTeamsReport>("get_top_teams", { format, limit }),
+  exportTopTeamsMarkdown: (format: Format, limit: number) =>
+    call<string>("export_top_teams_markdown", { format, limit }),
   listItems: () => call<string[]>("list_items"),
   listMoves: () => call<string[]>("list_moves"),
   listMovesForSpecies: (species: string) =>
