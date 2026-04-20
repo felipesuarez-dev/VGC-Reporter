@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Download, Loader2, RefreshCw } from "lucide-react";
@@ -47,6 +47,7 @@ export function TopTeams() {
   const [teamSearch, setTeamSearch] = useState("");
   const [countryFilter, setCountryFilter] = useState<string[]>([]);
   const [displayLimit, setDisplayLimit] = useState<DisplayLimit>(20);
+  const [isPendingDisplay, startDisplayTransition] = useTransition();
   const [isExporting, setIsExporting] = useState(false);
 
   const { data: report, isLoading, isError, isFetching } = useQuery({
@@ -154,7 +155,9 @@ export function TopTeams() {
               value={displayLimit}
               onChange={(e) => {
                 const v = e.target.value;
-                setDisplayLimit(v === ALL_SENTINEL ? ALL_SENTINEL : Number(v));
+                const next: DisplayLimit =
+                  v === ALL_SENTINEL ? ALL_SENTINEL : Number(v);
+                startDisplayTransition(() => setDisplayLimit(next));
               }}
               className="input h-7 px-1 py-0 text-xs"
               disabled={isExporting}
@@ -165,6 +168,14 @@ export function TopTeams() {
                 </option>
               ))}
             </select>
+            {isPendingDisplay && (
+              <Loader2
+                size={14}
+                className="animate-spin"
+                style={{ color: "var(--accent)" }}
+                aria-label={t("common.loading")}
+              />
+            )}
             <button
               type="button"
               onClick={handleExport}
@@ -257,7 +268,11 @@ export function TopTeams() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div
+        className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 transition-opacity"
+        style={{ opacity: isPendingDisplay ? 0.5 : 1 }}
+        aria-busy={isPendingDisplay}
+      >
         {visibleTeams.map((tt, idx) => (
           <button
             key={`${tt.tournament}-${idx}`}
