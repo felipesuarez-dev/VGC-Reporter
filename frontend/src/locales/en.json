@@ -225,7 +225,8 @@
     "filter_no_matches": "No team contains every selected Pokémon.",
     "export_md": "Export MD",
     "export_count_label": "Teams",
-    "exporting": "Exporting…"
+    "exporting": "Exporting…",
+    "export_save_title": "Save Top Teams export"
   },
   "damage_calc": {
     "title": "Damage Calculator",

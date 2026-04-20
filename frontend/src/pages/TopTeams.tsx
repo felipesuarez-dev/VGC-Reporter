@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Download, RefreshCw } from "lucide-react";
+import { save } from "@tauri-apps/plugin-dialog";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
 import type { ChampionsTournament, Format, TopTeam } from "../lib/types";
@@ -103,16 +104,13 @@ export function TopTeams() {
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      const md = await ipc.exportTopTeamsMarkdown(FORMAT, exportLimit);
-      const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `top-${exportLimit}-teams-regulation-m-a.md`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const path = await save({
+        defaultPath: `top-${exportLimit}-teams-regulation-m-a.md`,
+        filters: [{ name: "Markdown", extensions: ["md"] }],
+        title: t("top_teams.export_save_title"),
+      });
+      if (!path) return;
+      await ipc.saveTopTeamsMarkdown(FORMAT, exportLimit, path);
     } finally {
       setIsExporting(false);
     }
