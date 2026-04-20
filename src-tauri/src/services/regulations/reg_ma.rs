@@ -1,4 +1,4 @@
-use super::common::{canonical, lookup_set};
+use super::common::{canonical, has_forbidden_form_token, lookup_set};
 use super::reg_ma_items::ALLOWED_ITEMS_MA;
 use super::reg_ma_moves::ALLOWED_MOVES_MA;
 use super::reg_ma_species::ALLOWED_SPECIES_MA;
@@ -129,11 +129,16 @@ impl RegMaRules {
 
     /// `true` when `species` (raw display name) matches an entry in `set`,
     /// accounting for dashed Showdown form suffixes (`Calyrex-Shadow`,
-    /// `Slowking-Galar`) collapsing to the base entry.
+    /// `Slowking-Galar`) collapsing to the base entry. Mega / Gmax /
+    /// Primal / Eternamax forms never collapse: they require an explicit
+    /// allow-list entry (which no current regulation provides).
     fn matches(&self, set: &HashSet<String>, species: &str) -> bool {
         let c = canonical(species);
         if set.contains(&c) {
             return true;
+        }
+        if has_forbidden_form_token(species) {
+            return false;
         }
         if let Some(base) = species.split('-').next() {
             if set.contains(&canonical(base)) {
@@ -554,6 +559,63 @@ mod tests {
             "Tinkaton",
             "Incineroar",
             "Rotom",
+            "Whimsicott",
+            "Kingambit",
+        ]);
+        let v = rules.validate_team(&team);
+        assert!(!v
+            .iter()
+            .any(|x| matches!(x, Violation::SpeciesNotAllowed { .. })));
+    }
+
+    fn rejects_species(form: &str) {
+        let rules = RegMaRules::new(MaSeason::M1);
+        let team = complete_team(&[form]);
+        let v = rules.validate_team(&team);
+        assert!(
+            v.iter().any(|x| matches!(
+                x,
+                Violation::SpeciesNotAllowed { species } if species == form
+            )),
+            "expected {form} to be rejected, got {:?}",
+            v
+        );
+    }
+
+    #[test]
+    fn mega_form_rejected_even_when_base_is_allowed() {
+        rejects_species("Charizard-Mega-X");
+        rejects_species("Charizard-Mega-Y");
+        rejects_species("Garchomp-Mega");
+    }
+
+    #[test]
+    fn gmax_form_rejected_even_when_base_is_allowed() {
+        rejects_species("Pikachu-Gmax");
+        rejects_species("Charizard-Gmax");
+    }
+
+    #[test]
+    fn primal_form_rejected_even_when_base_is_allowed() {
+        rejects_species("Kyogre-Primal");
+        rejects_species("Groudon-Primal");
+    }
+
+    #[test]
+    fn eternamax_form_rejected_even_when_base_is_allowed() {
+        rejects_species("Eternatus-Eternamax");
+    }
+
+    #[test]
+    fn legal_dashed_forms_still_pass_after_forbidden_form_guard() {
+        // Regression: the new guard must not affect legal regional /
+        // functional form suffixes whose base is in the allow-list.
+        let rules = RegMaRules::new(MaSeason::M1);
+        let team = complete_team(&[
+            "Rotom-Wash",
+            "Tauros-Paldea-Aqua",
+            "Tinkaton",
+            "Incineroar",
             "Whimsicott",
             "Kingambit",
         ]);
