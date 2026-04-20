@@ -58,9 +58,11 @@ export function Dashboard() {
   const openSpecies = (species: string) => openDetail(canonicalSpeciesId(species));
   const [selectedTournament, setSelectedTournament] =
     useState<ChampionsTournament | null>(null);
-  const [tournamentExpanded, setTournamentExpanded] = useState(false);
+  const TOURNAMENT_INITIAL = 10;
+  const TOURNAMENT_PAGE = 10;
+  const [tournamentVisible, setTournamentVisible] = useState(TOURNAMENT_INITIAL);
   const [tournamentSearch, setTournamentSearch] = useState("");
-  const tournamentLimit = tournamentExpanded ? 20 : 10;
+  const tournamentLimit = tournamentVisible;
   const POKE_INITIAL = 10;
   const POKE_PAGE = 10;
   const [pokeVisible, setPokeVisible] = useState(POKE_INITIAL);
@@ -284,16 +286,28 @@ export function Dashboard() {
             ))}
           </ul>
         )}
-        {championsReport &&
-          !tournamentExpanded &&
-          championsReport.tournaments.length >= 10 && (
-            <button
-              className="btn-ghost mt-2 w-full text-xs"
-              onClick={() => setTournamentExpanded(true)}
-            >
-              {t("dashboard.view_more")}
-            </button>
-          )}
+        {championsReport && championsReport.tournaments.length > 0 && (
+          <div className="mt-2 flex justify-center gap-2">
+            {championsReport.tournaments.length >= tournamentVisible && (
+              <button
+                className="btn-ghost text-xs"
+                onClick={() =>
+                  setTournamentVisible((n) => n + TOURNAMENT_PAGE)
+                }
+              >
+                {t("dashboard.view_more")}
+              </button>
+            )}
+            {tournamentVisible > TOURNAMENT_INITIAL && (
+              <button
+                className="btn-ghost text-xs"
+                onClick={() => setTournamentVisible(TOURNAMENT_INITIAL)}
+              >
+                {t("dashboard.view_less")}
+              </button>
+            )}
+          </div>
+        )}
       </section>
 
       <UpcomingTournamentsSection />

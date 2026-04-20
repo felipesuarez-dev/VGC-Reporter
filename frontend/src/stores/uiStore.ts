@@ -5,12 +5,14 @@ export type Theme =
   | "system"
   | "gengar"
   | "clefable"
+  | "milotic"
   | "incineroar"
   | "tyranitar";
 
 export const ALL_THEMES: Theme[] = [
   "system",
   "clefable",
+  "milotic",
   "gengar",
   "incineroar",
   "tyranitar",

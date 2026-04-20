@@ -158,7 +158,7 @@ fn apply_alias(species: &str) -> String {
 
     match lower.as_str() {
         "greninja-bond" | "ash-greninja" => "Greninja-Ash".to_string(),
-        "floette-mega" => "Floette-Eternal".to_string(),
+        "floette" | "floette-mega" => "Floette-Eternal".to_string(),
         _ => trimmed.to_string(),
     }
 }
@@ -303,6 +303,16 @@ fn to_id(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn floette_base_is_aliased_to_eternal() {
+        // In VGC/Regulation M-A only AZ's Floette-Eternal is competitively used;
+        // raw "Floette" from usage/team data is semantically Floette-Eternal.
+        assert_eq!(canonical_display_name("Floette"), "Floette-Eternal");
+        assert_eq!(canonical_id("Floette"), "floetteeternal");
+        assert_eq!(canonical_id("floette"), "floetteeternal");
+        assert_eq!(canonical_display_name("Floette-Mega"), "Floette-Eternal");
+    }
 
     #[test]
     fn basic_sprite_url() {

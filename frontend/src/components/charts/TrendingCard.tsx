@@ -17,6 +17,7 @@ function canonicalSpeciesId(s: string): string {
 
 export function TrendingCard({ format }: { format: Format }) {
   const { t } = useTranslation();
+  const [visible, setVisible] = useState(INITIAL_ROWS);
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.trending(format),
     queryFn: () => ipc.getTrending(format),
@@ -52,6 +53,10 @@ export function TrendingCard({ format }: { format: Format }) {
     );
   }
 
+  const max = Math.max(data.rising.length, data.falling.length);
+  const canShowMore = visible < max;
+  const canShowLess = visible > INITIAL_ROWS;
+
   return (
     <section className="card">
       <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
@@ -62,13 +67,37 @@ export function TrendingCard({ format }: { format: Format }) {
           title={t("dashboard.trending_rising")}
           direction="up"
           entries={data.rising}
+          visible={visible}
         />
         <TrendingColumn
           title={t("dashboard.trending_falling")}
           direction="down"
           entries={data.falling}
+          visible={visible}
         />
       </div>
+      {(canShowMore || canShowLess) && (
+        <div className="mt-3 flex justify-center gap-2">
+          {canShowMore && (
+            <button
+              type="button"
+              className="btn-ghost text-xs"
+              onClick={() => setVisible((n) => n + PAGE_ROWS)}
+            >
+              {t("common.see_more")}
+            </button>
+          )}
+          {canShowLess && (
+            <button
+              type="button"
+              className="btn-ghost text-xs"
+              onClick={() => setVisible(INITIAL_ROWS)}
+            >
+              {t("common.see_less")}
+            </button>
+          )}
+        </div>
+      )}
     </section>
   );
 }
@@ -77,19 +106,17 @@ function TrendingColumn({
   title,
   direction,
   entries,
+  visible,
 }: {
   title: string;
   direction: "up" | "down";
   entries: TrendingPokemon[];
+  visible: number;
 }) {
-  const { t } = useTranslation();
   const openDetail = usePokedexStore((s) => s.openDetail);
-  const [visible, setVisible] = useState(INITIAL_ROWS);
   const rows = entries.slice(0, visible);
   const Icon = direction === "up" ? TrendingUp : TrendingDown;
   const accentColor = direction === "up" ? "#34d399" : "#f87171";
-  const canShowMore = entries.length > visible;
-  const canShowLess = visible > INITIAL_ROWS;
 
   if (entries.length === 0) {
     return (
@@ -146,28 +173,6 @@ function TrendingColumn({
           </li>
         ))}
       </ul>
-      {(canShowMore || canShowLess) && (
-        <div className="mt-2 flex justify-center gap-2">
-          {canShowMore && (
-            <button
-              type="button"
-              className="btn-ghost text-xs"
-              onClick={() => setVisible((n) => n + PAGE_ROWS)}
-            >
-              {t("common.see_more")}
-            </button>
-          )}
-          {canShowLess && (
-            <button
-              type="button"
-              className="btn-ghost text-xs"
-              onClick={() => setVisible(INITIAL_ROWS)}
-            >
-              {t("common.see_less")}
-            </button>
-          )}
-        </div>
-      )}
     </div>
   );
 }

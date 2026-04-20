@@ -83,6 +83,7 @@
     "tournaments_for_format": "Showing tournaments for format: {{format}}",
     "view_standings": "View standings",
     "view_more": "View more",
+    "view_less": "View less",
     "players": "players",
     "open_on_x": "Open on X",
     "usage_percent_label": "Usage %",
@@ -337,6 +338,7 @@
     "expand_sidebar": "Expand sidebar",
     "theme_gengar": "Gengar (dark)",
     "theme_clefable": "Clefable (light)",
+    "theme_milotic": "Milotic (light)",
     "theme_system": "System",
     "theme_incineroar": "Incineroar",
     "theme_tyranitar": "Tyranitar"

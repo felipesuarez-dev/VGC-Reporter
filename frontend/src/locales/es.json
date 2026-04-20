@@ -83,6 +83,7 @@
     "tournaments_for_format": "Mostrando torneos del formato: {{format}}",
     "view_standings": "Ver clasificación",
     "view_more": "Ver más",
+    "view_less": "Ver menos",
     "players": "jugadores",
     "open_on_x": "Abrir en X",
     "usage_percent_label": "Porcentaje de Uso",
@@ -337,6 +338,7 @@
     "expand_sidebar": "Expandir barra lateral",
     "theme_gengar": "Gengar (oscuro)",
     "theme_clefable": "Clefable (claro)",
+    "theme_milotic": "Milotic (claro)",
     "theme_system": "Sistema",
     "theme_incineroar": "Incineroar",
     "theme_tyranitar": "Tyranitar"
