@@ -21,7 +21,7 @@ import { useUiStore } from "../stores/uiStore";
 const FORMAT: Format = "regulation-m-a";
 const RECENT_INITIAL = 5;
 const RECENT_EXPANDED = 20;
-const TOP_TEAMS_FETCH_LIMIT = 1000;
+const TOP_TEAMS_DEFAULT_FETCH = 100;
 const ALL_SENTINEL = "all" as const;
 type DisplayLimit = number | typeof ALL_SENTINEL;
 const DISPLAY_OPTIONS: readonly DisplayLimit[] = [5, 10, 20, 50, 100, ALL_SENTINEL];
@@ -49,7 +49,7 @@ export function TopTeams() {
   const [teamSearch, setTeamSearch] = useState("");
   const [countryFilter, setCountryFilter] = useState<string[]>([]);
   const [displayLimit, setDisplayLimit] = useState<DisplayLimit>(20);
-  const [fetchLimit, setFetchLimit] = useState<number>(TOP_TEAMS_FETCH_LIMIT);
+  const [fetchLimit, setFetchLimit] = useState<number>(TOP_TEAMS_DEFAULT_FETCH);
   const [isPendingDisplay, startDisplayTransition] = useTransition();
   const [isExporting, setIsExporting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -60,6 +60,8 @@ export function TopTeams() {
   const { data: report, isLoading, isError, isFetching } = useQuery({
     queryKey: queryKeys.topTeams(FORMAT, fetchLimit),
     queryFn: () => ipc.getTopTeams(FORMAT, fetchLimit),
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
   });
   const { data: pokedex = [] } = useQuery({
     queryKey: queryKeys.pokedex.all,
