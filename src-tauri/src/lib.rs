@@ -56,6 +56,7 @@ pub fn run() {
             commands::teams::export_team_to_showdown,
             commands::teams::validate_team,
             commands::top_teams::get_top_teams,
+            commands::top_teams_export::export_top_teams_markdown,
             commands::settings::get_settings,
             commands::settings::set_setting,
             commands::champions::list_champions_tournaments,

@@ -5,6 +5,7 @@ pub mod pokedex;
 pub mod settings;
 pub mod teams;
 pub mod top_teams;
+pub mod top_teams_export;
 pub mod translations;
 pub mod trending;
 pub mod upcoming;

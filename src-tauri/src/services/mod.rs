@@ -7,6 +7,7 @@ pub mod regulations;
 pub mod sets_service;
 pub mod showdown_text;
 pub mod team_service;
+pub mod top_teams_export;
 pub mod top_teams_service;
 pub mod translations_service;
 pub mod trending_service;
