@@ -6,7 +6,7 @@ import { useNavHistoryStore } from "../../stores/navHistoryStore";
 import { LanguageToggle } from "./LanguageToggle";
 import { ThemeSelect } from "./ThemeSelect";
 
-const TITLE = "VGC Reportes";
+const TITLE = "VGC Reporter";
 
 const ROUTE_I18N: { pattern: string; key: string }[] = [
   { pattern: "/dashboard", key: "nav.dashboard" },

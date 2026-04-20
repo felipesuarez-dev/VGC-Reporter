@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "VGC Reportes",
+  "productName": "VGC Reporter",
   "version": "0.0.9",
   "identifier": "com.pumasoft.vgcreporter",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "VGC Reportes",
+        "title": "VGC Reporter",
         "width": 1280,
         "height": 800,
         "minWidth": 1024,
@@ -41,7 +41,7 @@
     "copyright": "Copyright © 2026 PumaSoft",
     "category": "Utility",
     "shortDescription": "Pokémon Champions competitive stats & team builder",
-    "longDescription": "VGC Reportes is a desktop companion for Pokémon Champions VGC players. It surfaces real tournament usage stats from Limitless VGC, lets you explore the Pokédex, build teams, and run damage calculations — all offline-friendly with local team storage."
+    "longDescription": "VGC Reporter is a desktop companion for Pokémon Champions VGC players. It surfaces real tournament usage stats from Limitless VGC, lets you explore the Pokédex, build teams, and run damage calculations — all offline-friendly with local team storage."
   },
   "plugins": {}
 }

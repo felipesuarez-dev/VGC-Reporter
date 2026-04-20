@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="assets/logo.png" alt="VGC-Reporter" width="180" />
+<img src="assets/logo.png" alt="VGC Reporter" width="180" />
 
-# VGC-Reporter
+# VGC Reporter
 
 **Pokémon Champions competitive stats & team builder, as a native desktop app.**  
 
@@ -25,7 +25,7 @@
 
 Pokémon Champions launched on 8-Apr-2026 and instantly became the official VGC 2026 / Worlds platform. Usage data is scattered across Pikalytics, Pokemon-Zone, Porygon Labs, Champions Lab, Smogon chaos JSON and Limitless VGC standings. None of these sites share a unified API, and there is no offline-friendly way to browse the meta **and** build a team in the same place.
 
-VGC-Reporter is the tool I wanted while team-building for Regulation M-A: one window, real tournament data, drill-down by Pokémon, and everything cached locally.
+VGC Reporter is the tool I wanted while team-building for Regulation M-A: one window, real tournament data, drill-down by Pokémon, and everything cached locally.
 
 ## Solution
 
