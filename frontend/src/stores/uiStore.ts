@@ -7,7 +7,8 @@ export type Theme =
   | "clefable"
   | "incineroar"
   | "tyranitar"
-  | "milotic";
+  | "milotic"
+  | "sneasler";
 
 export const ALL_THEMES: Theme[] = [
   "system",
@@ -16,6 +17,7 @@ export const ALL_THEMES: Theme[] = [
   "incineroar",
   "tyranitar",
   "milotic",
+  "sneasler",
 ];
 
 export const FONT_SIZE_MIN = 12;

@@ -11,6 +11,7 @@ const SWATCH: Record<Theme, { bg: string; accent: string }> = {
   gengar: { bg: "#0b0a14", accent: "#8b5cf6" },
   incineroar: { bg: "#140908", accent: "#f97316" },
   tyranitar: { bg: "#0b120d", accent: "#84cc16" },
+  sneasler: { bg: "#fef3c7", accent: "#a3478e" },
 };
 
 interface Props {

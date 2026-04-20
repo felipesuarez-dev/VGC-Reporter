@@ -138,6 +138,33 @@
     --tier-bronze-border: rgba(87, 83, 78, 0.55);
   }
 
+  :root.theme-sneasler {
+    --bg: #fef3c7;
+    --bg-elev: #fde68a;
+    --bg-elev-strong: #fbcf6e;
+    --border: #c79534;
+    --text: #3d2410;
+    --text-muted: #6b401a;
+    --text-dim: #8a5a30;
+    --accent: #a3478e;
+    --accent-soft: rgba(163, 71, 142, 0.18);
+    --accent-strong: #7d2c70;
+    --danger: #b91c3c;
+    --warning: #b45309;
+    --success: #15803d;
+    --badge-bg: rgba(61, 36, 16, 0.85);
+    --badge-foreground: #ffffff;
+    --tier-gold-bg: rgba(217, 119, 6, 0.22);
+    --tier-gold-foreground: #7c2d12;
+    --tier-gold-border: rgba(180, 83, 9, 0.55);
+    --tier-silver-bg: rgba(163, 71, 142, 0.18);
+    --tier-silver-foreground: #7d2c70;
+    --tier-silver-border: rgba(125, 44, 112, 0.55);
+    --tier-bronze-bg: rgba(190, 75, 55, 0.2);
+    --tier-bronze-foreground: #7c2d12;
+    --tier-bronze-border: rgba(153, 58, 43, 0.55);
+  }
+
   html,
   body,
   #root {
