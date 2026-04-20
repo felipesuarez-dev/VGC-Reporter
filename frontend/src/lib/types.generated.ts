@@ -4,7 +4,7 @@ export type Ability = { id: string, name: string, description: string, };
 
 export type ChampionsReport = { tournaments: Array<ChampionsTournament>, fetched_at: string, };
 
-export type ChampionsTournament = { id: string, name: string, date: string | null, players: number | null, format: string | null, organizer_id: string | null, };
+export type ChampionsTournament = { id: string, name: string, date: string | null, players: number | null, format: string | null, organizer_id: string | null, champion_name: string | null, };
 
 export type DecklistPokemon = { id: string | null, name: string, item: string | null, ability: string | null, tera_type: string | null, moves: Array<string>, sprite_url: string, sprite_fallback_url: string | null, home_sprite_url: string | null, };
 

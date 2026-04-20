@@ -254,7 +254,9 @@ export function Dashboard() {
               .filter((tour) => {
                 const q = tournamentSearch.trim().toLowerCase();
                 if (!q) return true;
-                return (tour.name ?? "").toLowerCase().includes(q);
+                const name = (tour.name ?? "").toLowerCase();
+                const champ = (tour.champion_name ?? "").toLowerCase();
+                return name.includes(q) || champ.includes(q);
               })
               .map((tour) => (
               <li

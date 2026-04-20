@@ -44,15 +44,18 @@ impl ChampionsReportService {
 
         let mut kept: Vec<ChampionsTournament> = Vec::with_capacity(raw.len());
         for (t, res) in raw.into_iter().zip(results) {
-            let has_any = match res {
-                Ok(standings) => has_any_decklist(&standings),
+            let (has_any, champion_name) = match res {
+                Ok(standings) => {
+                    let champ = extract_champion_name(&standings);
+                    (has_any_decklist(&standings), champ)
+                }
                 Err(e) => {
                     tracing::warn!("standings fetch failed for {}: {}", t.id, e);
-                    false
+                    (false, None)
                 }
             };
             if has_any {
-                kept.push(into_tournament(t));
+                kept.push(into_tournament(t, champion_name));
                 if kept.len() >= limit {
                     break;
                 }
@@ -104,7 +107,10 @@ fn has_any_decklist(standings: &[LimitlessStanding]) -> bool {
         .any(|s| s.decklist.as_ref().map(|d| !d.is_empty()).unwrap_or(false))
 }
 
-fn into_tournament(t: LimitlessTournamentSummary) -> ChampionsTournament {
+fn into_tournament(
+    t: LimitlessTournamentSummary,
+    champion_name: Option<String>,
+) -> ChampionsTournament {
     ChampionsTournament {
         id: t.id,
         name: t.name,
@@ -112,7 +118,18 @@ fn into_tournament(t: LimitlessTournamentSummary) -> ChampionsTournament {
         players: t.players,
         format: t.format,
         organizer_id: t.organizer_id,
+        champion_name,
     }
+}
+
+fn extract_champion_name(standings: &[LimitlessStanding]) -> Option<String> {
+    standings
+        .iter()
+        .find(|s| s.placing == Some(1))
+        .or_else(|| standings.first())
+        .and_then(|s| s.name.clone())
+        .map(|n| n.trim().to_string())
+        .filter(|n| !n.is_empty())
 }
 
 fn decklist_display_name(e: &LimitlessDecklistEntry) -> Option<String> {

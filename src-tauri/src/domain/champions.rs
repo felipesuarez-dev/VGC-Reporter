@@ -11,6 +11,7 @@ pub struct ChampionsTournament {
     pub players: Option<u32>,
     pub format: Option<String>,
     pub organizer_id: Option<String>,
+    pub champion_name: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
