@@ -5,6 +5,12 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { FormatSelector } from "../components/ui/FormatSelector";
 import { AboutModal } from "../components/layout/AboutModal";
 import { useDashboardStore } from "../stores/dashboardStore";
+import {
+  FONT_SIZE_DEFAULT,
+  FONT_SIZE_MAX,
+  FONT_SIZE_MIN,
+  useUiStore,
+} from "../stores/uiStore";
 
 const EXTERNAL_LINKS: { key: string; url: string }[] = [
   { key: "open_labmaus", url: "https://labmaus.net/" },
@@ -23,6 +29,8 @@ export function Settings() {
   const format = useDashboardStore((s) => s.favoriteFormat);
   const setFavoriteFormat = useDashboardStore((s) => s.setFavoriteFormat);
   const setFormat = useDashboardStore((s) => s.setFormat);
+  const fontSizePx = useUiStore((s) => s.fontSizePx);
+  const setFontSizePx = useUiStore((s) => s.setFontSizePx);
   const [aboutOpen, setAboutOpen] = useState(false);
 
   const open = async (url: string) => {
@@ -58,6 +66,50 @@ export function Settings() {
           >
             {t("settings.english")}
           </button>
+        </div>
+      </section>
+
+      <section className="card space-y-3">
+        <div>
+          <div className="flex items-baseline justify-between">
+            <label className="label" htmlFor="font-size-slider">
+              {t("settings.font_size")}
+            </label>
+            <span
+              className="text-xs tabular-nums"
+              style={{ color: "var(--text-muted)" }}
+              aria-live="polite"
+            >
+              {fontSizePx}px
+            </span>
+          </div>
+          <input
+            id="font-size-slider"
+            type="range"
+            min={FONT_SIZE_MIN}
+            max={FONT_SIZE_MAX}
+            step={1}
+            value={fontSizePx}
+            onChange={(e) => setFontSizePx(Number(e.target.value))}
+            className="font-size-slider mt-2 w-full"
+          />
+          <div
+            className="mt-1 flex items-center justify-between text-[10px]"
+            style={{ color: "var(--text-dim)" }}
+          >
+            <span>{t("settings.font_size_small")}</span>
+            <button
+              type="button"
+              className="btn-ghost px-2 py-0.5 text-[10px]"
+              onClick={() => setFontSizePx(FONT_SIZE_DEFAULT)}
+            >
+              {t("settings.font_size_reset")}
+            </button>
+            <span>{t("settings.font_size_large")}</span>
+          </div>
+          <p className="mt-1 text-xs" style={{ color: "var(--text-dim)" }}>
+            {t("settings.font_size_hint")}
+          </p>
         </div>
       </section>
 

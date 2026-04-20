@@ -22,6 +22,7 @@ function applyClass(cls: string) {
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const theme = useUiStore((s) => s.theme);
+  const fontSizePx = useUiStore((s) => s.fontSizePx);
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     applyClass(resolveTheme(theme, media.matches));
@@ -32,5 +33,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     media.addEventListener("change", onChange);
     return () => media.removeEventListener("change", onChange);
   }, [theme]);
+  useEffect(() => {
+    document.documentElement.style.fontSize = `${fontSizePx}px`;
+  }, [fontSizePx]);
   return <>{children}</>;
 }

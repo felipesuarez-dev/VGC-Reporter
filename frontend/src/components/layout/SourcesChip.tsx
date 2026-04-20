@@ -37,7 +37,7 @@ export function SourcesChip({
   const { t, i18n } = useTranslation();
   return (
     <span
-      className="inline-flex flex-wrap items-center gap-x-1 gap-y-0 rounded-full border px-2 py-0.5 text-[11px]"
+      className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5 rounded-full border px-2.5 py-1 text-xs"
       style={{
         borderColor: "var(--border)",
         backgroundColor: "var(--bg-elev)",

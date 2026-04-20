@@ -228,3 +228,41 @@ img[data-sprite="true"] {
   scrollbar-color: var(--border) var(--bg-elev);
   scrollbar-width: thin;
 }
+
+.font-size-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: var(--bg-elev-strong);
+  border-radius: 9999px;
+  outline: none;
+}
+.font-size-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  cursor: grab;
+  transition: transform 0.1s ease-out;
+}
+.font-size-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.1);
+}
+.font-size-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  cursor: grab;
+}
+.font-size-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.font-size-slider:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
