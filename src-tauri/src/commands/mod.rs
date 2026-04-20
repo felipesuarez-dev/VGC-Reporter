@@ -2,6 +2,7 @@ pub mod champions;
 pub mod meta;
 pub mod pikalytics;
 pub mod pokedex;
+pub mod regulations;
 pub mod settings;
 pub mod teams;
 pub mod top_teams;
