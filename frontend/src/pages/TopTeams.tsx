@@ -75,8 +75,6 @@ export function TopTeams() {
   const [fetchLimit, setFetchLimit] = useState<number>(TOP_TEAMS_DEFAULT_FETCH);
   const [isPendingDisplay, startDisplayTransition] = useTransition();
   const [isOpeningTeam, startOpenTeamTransition] = useTransition();
-  const showDisplayHint = useLongLoadingHint(isPendingDisplay);
-  const showOpenTeamHint = useLongLoadingHint(isOpeningTeam);
   const [isExporting, setIsExporting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingAllCount, setPendingAllCount] = useState(0);
@@ -99,6 +97,10 @@ export function TopTeams() {
     queryFn: () => ipc.listChampionsTournaments(FORMAT, RECENT_EXPANDED),
     staleTime: 30 * 60 * 1000,
   });
+
+  const showInitialHint = useLongLoadingHint(isLoading || isFetching);
+  const showDisplayHint = useLongLoadingHint(isPendingDisplay);
+  const showOpenTeamHint = useLongLoadingHint(isOpeningTeam);
 
   const teams = report?.teams ?? [];
   const meta = report?.meta;
@@ -263,11 +265,34 @@ export function TopTeams() {
 
       {isLoading && (
         <div
-          className="card flex items-center gap-2"
+          className="card flex flex-wrap items-center gap-2"
           style={{ color: "var(--text-muted)" }}
+          aria-busy="true"
+          aria-live="polite"
         >
           <Loader2 size={16} className="animate-spin" />
           <span>{t("common.loading")}</span>
+          {showInitialHint && (
+            <span className="text-xs" style={{ color: "var(--text-dim)" }}>
+              · {t("top_teams.loading_long_hint")}
+            </span>
+          )}
+        </div>
+      )}
+      {!isLoading && isFetching && teams.length > 0 && (
+        <div
+          className="card flex flex-wrap items-center gap-2"
+          style={{ color: "var(--text-muted)" }}
+          aria-busy="true"
+          aria-live="polite"
+        >
+          <Loader2 size={16} className="animate-spin" />
+          <span>{t("common.loading")}</span>
+          {showInitialHint && (
+            <span className="text-xs" style={{ color: "var(--text-dim)" }}>
+              · {t("top_teams.loading_long_hint")}
+            </span>
+          )}
         </div>
       )}
       {isError && (
