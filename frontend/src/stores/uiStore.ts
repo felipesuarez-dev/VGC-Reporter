@@ -33,12 +33,14 @@ interface UiState {
   sidebarCollapsed: boolean;
   fontSizePx: number;
   confirmAllTopTeams: boolean;
+  confirmLargeMdExport: boolean;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   setFontSizePx: (px: number) => void;
   setConfirmAllTopTeams: (v: boolean) => void;
+  setConfirmLargeMdExport: (v: boolean) => void;
 }
 
 export const useUiStore = create<UiState>()(
@@ -48,6 +50,7 @@ export const useUiStore = create<UiState>()(
       sidebarCollapsed: false,
       fontSizePx: FONT_SIZE_DEFAULT,
       confirmAllTopTeams: true,
+      confirmLargeMdExport: true,
       setTheme: (theme) => set({ theme }),
       toggleTheme: () => {
         const current = get().theme;
@@ -59,10 +62,12 @@ export const useUiStore = create<UiState>()(
       setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
       setFontSizePx: (px) => set({ fontSizePx: clampFontSize(px) }),
       setConfirmAllTopTeams: (confirmAllTopTeams) => set({ confirmAllTopTeams }),
+      setConfirmLargeMdExport: (confirmLargeMdExport) =>
+        set({ confirmLargeMdExport }),
     }),
     {
       name: "vgc-ui",
-      version: 3,
+      version: 4,
       migrate: (persisted: unknown, version: number) => {
         const prior = (persisted ?? {}) as Partial<UiState> & { theme?: string };
         let theme: Theme;
@@ -83,6 +88,10 @@ export const useUiStore = create<UiState>()(
           confirmAllTopTeams:
             typeof prior.confirmAllTopTeams === "boolean"
               ? prior.confirmAllTopTeams
+              : true,
+          confirmLargeMdExport:
+            typeof prior.confirmLargeMdExport === "boolean"
+              ? prior.confirmLargeMdExport
               : true,
         } as UiState;
       },

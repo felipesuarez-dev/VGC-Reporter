@@ -9,6 +9,7 @@ import type { ChampionsTournament, Format, TopTeam } from "../lib/types";
 import { MiniTeam } from "../components/pokemon/MiniTeam";
 import { TopTeamDetailModal } from "../components/team/TopTeamDetailModal";
 import { LoadAllTeamsConfirmModal } from "../components/team/LoadAllTeamsConfirmModal";
+import { ExportLargeMdConfirmModal } from "../components/team/ExportLargeMdConfirmModal";
 import { TournamentStandingsDrawer } from "../components/tournament/TournamentStandingsDrawer";
 import { PokemonMultiSelect } from "../components/filters/PokemonMultiSelect";
 import { SearchTextInput } from "../components/filters/SearchTextInput";
@@ -78,8 +79,12 @@ export function TopTeams() {
   const [isExporting, setIsExporting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingAllCount, setPendingAllCount] = useState(0);
+  const [exportConfirmOpen, setExportConfirmOpen] = useState(false);
+  const [pendingExportCount, setPendingExportCount] = useState(0);
   const confirmAllTopTeams = useUiStore((s) => s.confirmAllTopTeams);
   const setConfirmAllTopTeams = useUiStore((s) => s.setConfirmAllTopTeams);
+  const confirmLargeMdExport = useUiStore((s) => s.confirmLargeMdExport);
+  const setConfirmLargeMdExport = useUiStore((s) => s.setConfirmLargeMdExport);
 
   const { data: report, isLoading, isError, isFetching } = useQuery({
     queryKey: queryKeys.topTeams(FORMAT, fetchLimit),
@@ -104,6 +109,8 @@ export function TopTeams() {
   const showDisplayPatience = useLongLoadingHint(isPendingDisplay, 60_000);
   const showOpenTeamHint = useLongLoadingHint(isOpeningTeam);
   const showOpenTeamPatience = useLongLoadingHint(isOpeningTeam, 60_000);
+  // Datos ya disponibles, solo queda el render del nuevo batch.
+  const isRenderingTail = !isFetching && isPendingDisplay;
 
   const teams = report?.teams ?? [];
   const meta = report?.meta;
@@ -154,13 +161,12 @@ export function TopTeams() {
 
   const allTeamsCount = meta?.battles_analyzed ?? filteredTeams.length;
 
-  const handleExport = async () => {
+  const computeExportN = () =>
+    displayLimit === ALL_SENTINEL ? Math.max(1, teams.length) : displayLimit;
+
+  const runExport = async (exportN: number) => {
     setIsExporting(true);
     try {
-      const exportN =
-        displayLimit === ALL_SENTINEL
-          ? Math.max(1, teams.length)
-          : displayLimit;
       const filenameSuffix =
         displayLimit === ALL_SENTINEL ? "all" : String(displayLimit);
       const path = await save({
@@ -173,6 +179,19 @@ export function TopTeams() {
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const handleExport = async () => {
+    const exportN = computeExportN();
+    const displayN =
+      displayLimit === ALL_SENTINEL ? allTeamsCount : displayLimit;
+    const triggerCount = Math.max(displayN, exportN);
+    if (triggerCount >= 500 && confirmLargeMdExport) {
+      setPendingExportCount(triggerCount);
+      setExportConfirmOpen(true);
+      return;
+    }
+    await runExport(exportN);
   };
 
   return (
@@ -384,6 +403,11 @@ export function TopTeams() {
               {t("top_teams.loading_patience_hint")}
             </span>
           )}
+          {isRenderingTail && (
+            <span className="max-w-md text-center text-xs" style={{ color: "var(--text-dim)" }}>
+              {t("top_teams.loading_almost_done_hint")}
+            </span>
+          )}
         </div>
       )}
 
@@ -540,6 +564,16 @@ export function TopTeams() {
           if (dontAsk) setConfirmAllTopTeams(false);
           setConfirmOpen(false);
           applyAll(pendingAllCount);
+        }}
+      />
+      <ExportLargeMdConfirmModal
+        open={exportConfirmOpen}
+        count={pendingExportCount}
+        onCancel={() => setExportConfirmOpen(false)}
+        onConfirm={(dontAsk) => {
+          if (dontAsk) setConfirmLargeMdExport(false);
+          setExportConfirmOpen(false);
+          void runExport(computeExportN());
         }}
       />
       {isOpeningTeam && (

@@ -43,3 +43,6 @@ yarn-error.log*
 
 # Claude Code local state
 .claude/
+
+# Local installer staging — never committed
+/release-artifacts/

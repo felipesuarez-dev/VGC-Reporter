@@ -236,11 +236,17 @@
     "confirm_all_cancel": "Cancelar",
     "confirm_all_proceed": "Cargar todos",
     "loading_long_hint": "Descargando y renderizando equipos, esto puede tardar un momento",
-    "loading_patience_hint": "Esto está tardando más de lo que parece, ten paciencia."
+    "loading_patience_hint": "Esto está tardando más de lo habitual, ten paciencia.",
+    "loading_almost_done_hint": "Ya falta poco, estamos renderizando los últimos equipos",
+    "export_warning_title": "Exportación grande",
+    "export_warning_body": "Vas a exportar {{count}} equipos como Markdown. Esto puede tardar y ralentizar la app mientras se procesa.",
+    "export_warning_dont_ask": "No volver a mostrar este mensaje",
+    "export_warning_cancel": "Cancelar",
+    "export_warning_confirm": "Exportar de todas formas"
   },
   "damage_calc": {
     "title": "Calculador de daño",
-    "subtitle": "Los Pokémon se consideran a nivel 50 (formato VGC Doubles). La calculadora respeta Tera Types activos, ítems ofensivos/defensivos y modificadores de naturaleza / EVs / stats.",
+    "subtitle": "Los Pokémon se consideran a nivel 50 (formato VGC Doubles). La calculadora respeta ítems ofensivos/defensivos y modificadores de naturaleza / EVs / stats.",
     "attacker": "Atacante",
     "defender": "Defensor",
     "move": "Movimiento",

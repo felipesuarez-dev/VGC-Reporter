@@ -236,11 +236,17 @@
     "confirm_all_cancel": "Cancel",
     "confirm_all_proceed": "Load all",
     "loading_long_hint": "Downloading and rendering teams, this may take a moment",
-    "loading_patience_hint": "This is taking longer than expected, please be patient."
+    "loading_patience_hint": "This is taking longer than expected, please be patient.",
+    "loading_almost_done_hint": "Almost there — rendering the last teams",
+    "export_warning_title": "Large export",
+    "export_warning_body": "You're about to export {{count}} teams as Markdown. This may take a moment and could slow the app while it runs.",
+    "export_warning_dont_ask": "Don't show this message again",
+    "export_warning_cancel": "Cancel",
+    "export_warning_confirm": "Export anyway"
   },
   "damage_calc": {
     "title": "Damage Calculator",
-    "subtitle": "Pokémon are treated at level 50 (VGC Doubles format). The calculator respects active Tera Types, offensive/defensive items, and nature / EVs / stat modifiers.",
+    "subtitle": "Pokémon are treated at level 50 (VGC Doubles format). The calculator respects offensive/defensive items, and nature / EVs / stat modifiers.",
     "attacker": "Attacker",
     "defender": "Defender",
     "move": "Move",

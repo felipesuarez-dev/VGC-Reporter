@@ -6,16 +6,17 @@
 
 **Pokémon Champions competitive stats & team builder, as a native desktop app.**  
 
-**This app was built with pure, hardcore vibe-code and is still a work in progress. You might run into some bugs—nothing major. I’d really appreciate it if you could report them so I can make this app even better.**
+**Public beta — first release! Built with pure, hardcore vibe-code. Expect rough edges; please report any issue you hit so we can iterate fast.**
 
 [![Version][version-badge]][version-link]
+[![Beta][beta-badge]](#download)
 [![Tauri][tauri-badge]][tauri-link]
 [![Rust][rust-badge]][rust-link]
 [![React][react-badge]][react-link]
 [![License][license-badge]](LICENSE)
 [![PumaSoft][pumasoft-badge]][pumasoft-link]
 
-[Quick Start](#quick-start) · [Features](#features) · [Data Sources](#data-sources) · [Architecture](#architecture) · [Development](#development)
+[Download](#download) · [Quick Start](#quick-start) · [Features](#features) · [Known Issues](#known-issues-beta) · [Data Sources](#data-sources) · [Architecture](#architecture) · [Development](#development)
 
 </div>
 
@@ -32,6 +33,23 @@ VGC Reporter is the tool I wanted while team-building for Regulation M-A: one wi
 - **Real tournament data, not just ladder** — aggregates Limitless VGC standings into usage stats, with Smogon chaos as fallback when the format is too fresh. Recent Champions tournaments are listed with full decklists rendered inline.
 - **Format switcher with favorite** — Regulation M-A (Champions doubles), Champions Singles, Regulation I, Gen 9 OU. Pin one as favorite so it opens first every time.
 - **Offline-friendly by design** — SQLite-backed HTTP cache, all network I/O on the Rust side, zero CORS pain.
+
+## Download
+
+Pre-built installers for the **`v0.1.0.20260420-beta`** release:
+
+| Platform | Installer | Notes |
+|---|---|---|
+| Windows 10/11 | `VGC.Reporter_0.1.0_x64_en-US.msi` | MSI installer (recommended) |
+| Windows 10/11 | `VGC.Reporter_0.1.0_x64-setup.exe` | NSIS installer (portable-friendly) |
+| macOS 12+ (Apple Silicon) | `VGC.Reporter_0.1.0_aarch64.dmg` | Unsigned — right-click → Open the first time |
+| macOS 12+ (Intel) | `VGC.Reporter_0.1.0_x64.dmg` | Unsigned — right-click → Open the first time |
+| Linux (Debian/Ubuntu) | `vgc-reporter_0.1.0_amd64.deb` | Requires `webkit2gtk-4.1` |
+| Linux (any distro) | `vgc-reporter_0.1.0_amd64.AppImage` | `chmod +x` then run |
+
+**[→ Download from the latest GitHub Release](https://github.com/felipesuarez-dev/vgc-reporter/releases/latest)**
+
+First launch downloads ~10 MB of Pokédex / moves / items / abilities and caches them locally; subsequent launches work offline until caches expire.
 
 ## Quick Start
 
@@ -55,6 +73,17 @@ First launch downloads and caches Pokédex, moves, items, abilities and usage st
 | **External sources** | Quick-launch panel for Pikalytics / Pokebase / Pokemon-Zone / Champions Lab / Munchstats (no scraping — just links) |
 | **Localized tooltips** | Item / move / ability descriptions served in ES (PokéAPI flavor text) with automatic EN fallback when Spanish is missing |
 | **UX polish** | Window opens maximized, splash screen visible from the first frame, full ES/EN toggle persisted locally |
+
+## Known Issues (beta)
+
+- **Top Teams "Show all"** can render 4000+ team cards in a single page. Performance is acceptable but expect 5–15s render on first display; the app shows progressive hints while loading.
+- **macOS bundles are unsigned**. Gatekeeper will block the first launch — right-click the app → Open → Open Anyway. Code signing is on the post-beta roadmap.
+- **Linux**: requires `webkit2gtk-4.1` (Ubuntu 22.04+ / Fedora 38+ ship it). Older distros need to install it manually.
+- **First-run cache**: first launch needs internet. If a data source is down (Labmaus, Limitless), partial data is still rendered with a warning banner.
+- **Pikalytics breakdown** depends on Pikalytics being up; falls back to Showdown chaos data when unavailable.
+- **No auto-updater yet**: download new beta builds manually from the [Releases page](https://github.com/felipesuarez-dev/vgc-reporter/releases).
+
+Found something else? [Open an issue](https://github.com/felipesuarez-dev/vgc-reporter/issues/new) — beta feedback is gold.
 
 ## Data Sources
 
@@ -178,8 +207,9 @@ VGC-Reporter/
 MIT © 2026 PumaSoft — see [LICENSE](LICENSE).
 
 <!-- Reference-style definitions -->
-[version-badge]: https://img.shields.io/badge/version-0.0.9.20260420-2b86ff?style=flat-square&labelColor=0a0e14
-[version-link]: #
+[version-badge]: https://img.shields.io/badge/version-0.1.0.20260420--beta-2b86ff?style=flat-square&labelColor=0a0e14
+[version-link]: #download
+[beta-badge]: https://img.shields.io/badge/release-beta-ff6b6b?style=flat-square&labelColor=0a0e14
 [tauri-badge]: https://img.shields.io/badge/Tauri-2.4-24c8db?style=flat-square&labelColor=0a0e14&logo=tauri
 [tauri-link]: https://tauri.app
 [rust-badge]: https://img.shields.io/badge/Rust-2021-dea584?style=flat-square&labelColor=0a0e14&logo=rust
