@@ -233,7 +233,8 @@
     "confirm_all_body": "This will fetch and render {{count}} teams. The operation may take a long time, use more memory, and noticeably slow down the app while interacting with the list (filters, opening team details, etc.).",
     "confirm_all_dont_ask": "Don't ask me again",
     "confirm_all_cancel": "Cancel",
-    "confirm_all_proceed": "Load all"
+    "confirm_all_proceed": "Load all",
+    "loading_long_hint": "Downloading and rendering teams, this may take a moment"
   },
   "damage_calc": {
     "title": "Damage Calculator",

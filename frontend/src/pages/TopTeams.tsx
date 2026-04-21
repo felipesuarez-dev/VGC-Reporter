@@ -1,4 +1,4 @@
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Download, Loader2, RefreshCw } from "lucide-react";
@@ -47,6 +47,19 @@ function canonical(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+function useLongLoadingHint(active: boolean, delayMs = 10_000): boolean {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    if (!active) {
+      setShow(false);
+      return;
+    }
+    const id = window.setTimeout(() => setShow(true), delayMs);
+    return () => window.clearTimeout(id);
+  }, [active, delayMs]);
+  return show;
+}
+
 export function TopTeams() {
   const { t, i18n } = useTranslation();
   const qc = useQueryClient();
@@ -62,6 +75,8 @@ export function TopTeams() {
   const [fetchLimit, setFetchLimit] = useState<number>(TOP_TEAMS_DEFAULT_FETCH);
   const [isPendingDisplay, startDisplayTransition] = useTransition();
   const [isOpeningTeam, startOpenTeamTransition] = useTransition();
+  const showDisplayHint = useLongLoadingHint(isPendingDisplay);
+  const showOpenTeamHint = useLongLoadingHint(isOpeningTeam);
   const [isExporting, setIsExporting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingAllCount, setPendingAllCount] = useState(0);
@@ -317,6 +332,11 @@ export function TopTeams() {
             style={{ color: "var(--accent)" }}
           />
           <span className="text-base">{t("common.loading")}</span>
+          {showDisplayHint && (
+            <span className="max-w-md text-center text-xs" style={{ color: "var(--text-dim)" }}>
+              {t("top_teams.loading_long_hint")}
+            </span>
+          )}
         </div>
       )}
 
@@ -482,7 +502,7 @@ export function TopTeams() {
           aria-live="polite"
         >
           <div
-            className="flex items-center gap-3 rounded-lg px-4 py-3 shadow-2xl"
+            className="flex max-w-md items-center gap-3 rounded-lg px-4 py-3 shadow-2xl"
             style={{
               backgroundColor: "var(--bg-elev)",
               border: "1px solid var(--border)",
@@ -491,6 +511,11 @@ export function TopTeams() {
           >
             <Loader2 size={20} className="animate-spin" style={{ color: "var(--accent)" }} />
             <span className="text-sm">{t("common.loading")}</span>
+            {showOpenTeamHint && (
+              <span className="text-xs" style={{ color: "var(--text-dim)" }}>
+                · {t("top_teams.loading_long_hint")}
+              </span>
+            )}
           </div>
         </div>
       )}

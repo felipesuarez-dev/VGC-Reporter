@@ -233,7 +233,8 @@
     "confirm_all_body": "Se descargarán y renderizarán {{count}} equipos. La operación puede tardar bastante, consumir más memoria y ralentizar notablemente el aplicativo al interactuar con la lista (filtros, abrir detalles de equipo, etc.).",
     "confirm_all_dont_ask": "No volver a preguntar",
     "confirm_all_cancel": "Cancelar",
-    "confirm_all_proceed": "Cargar todos"
+    "confirm_all_proceed": "Cargar todos",
+    "loading_long_hint": "Descargando y renderizando equipos, esto puede tardar un momento"
   },
   "damage_calc": {
     "title": "Calculador de daño",
