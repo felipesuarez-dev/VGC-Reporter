@@ -16,7 +16,7 @@
 [![License][license-badge]](LICENSE)
 [![PumaSoft][pumasoft-badge]][pumasoft-link]
 
-[Download](#download) · [Quick Start](#quick-start) · [Features](#features) · [Known Issues](#known-issues-beta) · [Data Sources](#data-sources) · [Architecture](#architecture) · [Development](#development)
+[Download](#download) · [Screenshots](#screenshots) · [Quick Start](#quick-start) · [Features](#features) · [Known Issues](#known-issues-beta) · [Data Sources](#data-sources) · [Architecture](#architecture) · [Development](#development)
 
 </div>
 
@@ -33,6 +33,41 @@ VGC Reporter is the tool I wanted while team-building for Regulation M-A: one wi
 - **Real tournament data, not just ladder** — aggregates Limitless VGC standings into usage stats, with Smogon chaos as fallback when the format is too fresh. Recent Champions tournaments are listed with full decklists rendered inline.
 - **Format switcher with favorite** — Regulation M-A (Champions doubles), Champions Singles, Regulation I, Gen 9 OU. Pin one as favorite so it opens first every time.
 - **Offline-friendly by design** — SQLite-backed HTTP cache, all network I/O on the Rust side, zero CORS pain.
+
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="assets/screen-dashboard.png" alt="Dashboard" width="420" /><br/>
+      <sub><b>Dashboard</b> — meta snapshot, top usage, recent tournaments</sub>
+    </td>
+    <td align="center">
+      <img src="assets/screen-pokedex.png" alt="Pokédex" width="420" /><br/>
+      <sub><b>Pokédex</b> — competitive sets, usage and type matchups</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/screen-builder.png" alt="Team Builder" width="420" /><br/>
+      <sub><b>Team Builder</b> — regulation-aware pickers and EV sliders</sub>
+    </td>
+    <td align="center">
+      <img src="assets/screen-myteams.png" alt="My Teams" width="420" /><br/>
+      <sub><b>My Teams</b> — local team library (rename / duplicate / delete)</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/screen-topteams.png" alt="Top Teams" width="420" /><br/>
+      <sub><b>Top Teams</b> — tournament-winning teams from Limitless, with filters and Markdown export</sub>
+    </td>
+    <td align="center">
+      <img src="assets/screen-damagecalc.png" alt="Damage Calc" width="420" /><br/>
+      <sub><b>Damage Calc</b> — <code>@smogon/calc</code> Gen 9 with searchable inputs</sub>
+    </td>
+  </tr>
+</table>
 
 ## Download
 
