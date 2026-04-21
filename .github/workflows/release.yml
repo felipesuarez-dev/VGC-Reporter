@@ -59,8 +59,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}-manual', github.run_number) }}
-          releaseName: 'VGC Reporter ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}-manual', github.run_number) }}'
+          tagName: ${{ github.ref_name }}
+          releaseName: VGC Reporter ${{ github.ref_name }}
           releaseBody: |
             See the [README](https://github.com/felipesuarez-dev/vgc-reporter#download) for download notes.
 
