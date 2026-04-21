@@ -99,8 +99,11 @@ export function TopTeams() {
   });
 
   const showInitialHint = useLongLoadingHint(isLoading || isFetching);
+  const showInitialPatience = useLongLoadingHint(isLoading || isFetching, 60_000);
   const showDisplayHint = useLongLoadingHint(isPendingDisplay);
+  const showDisplayPatience = useLongLoadingHint(isPendingDisplay, 60_000);
   const showOpenTeamHint = useLongLoadingHint(isOpeningTeam);
+  const showOpenTeamPatience = useLongLoadingHint(isOpeningTeam, 60_000);
 
   const teams = report?.teams ?? [];
   const meta = report?.meta;
@@ -265,32 +268,46 @@ export function TopTeams() {
 
       {isLoading && (
         <div
-          className="card flex flex-wrap items-center gap-2"
+          className="card flex flex-col gap-1"
           style={{ color: "var(--text-muted)" }}
           aria-busy="true"
           aria-live="polite"
         >
-          <Loader2 size={16} className="animate-spin" />
-          <span>{t("common.loading")}</span>
+          <div className="flex items-center gap-2">
+            <Loader2 size={16} className="animate-spin" />
+            <span>{t("common.loading")}</span>
+          </div>
           {showInitialHint && (
             <span className="text-xs" style={{ color: "var(--text-dim)" }}>
-              · {t("top_teams.loading_long_hint")}
+              {t("top_teams.loading_long_hint")}
+            </span>
+          )}
+          {showInitialPatience && (
+            <span className="text-xs" style={{ color: "var(--text-dim)" }}>
+              {t("top_teams.loading_patience_hint")}
             </span>
           )}
         </div>
       )}
       {!isLoading && isFetching && teams.length > 0 && (
         <div
-          className="card flex flex-wrap items-center gap-2"
+          className="card flex flex-col gap-1"
           style={{ color: "var(--text-muted)" }}
           aria-busy="true"
           aria-live="polite"
         >
-          <Loader2 size={16} className="animate-spin" />
-          <span>{t("common.loading")}</span>
+          <div className="flex items-center gap-2">
+            <Loader2 size={16} className="animate-spin" />
+            <span>{t("common.loading")}</span>
+          </div>
           {showInitialHint && (
             <span className="text-xs" style={{ color: "var(--text-dim)" }}>
-              · {t("top_teams.loading_long_hint")}
+              {t("top_teams.loading_long_hint")}
+            </span>
+          )}
+          {showInitialPatience && (
+            <span className="text-xs" style={{ color: "var(--text-dim)" }}>
+              {t("top_teams.loading_patience_hint")}
             </span>
           )}
         </div>
@@ -360,6 +377,11 @@ export function TopTeams() {
           {showDisplayHint && (
             <span className="max-w-md text-center text-xs" style={{ color: "var(--text-dim)" }}>
               {t("top_teams.loading_long_hint")}
+            </span>
+          )}
+          {showDisplayPatience && (
+            <span className="max-w-md text-center text-xs" style={{ color: "var(--text-dim)" }}>
+              {t("top_teams.loading_patience_hint")}
             </span>
           )}
         </div>
@@ -527,18 +549,25 @@ export function TopTeams() {
           aria-live="polite"
         >
           <div
-            className="flex max-w-md items-center gap-3 rounded-lg px-4 py-3 shadow-2xl"
+            className="flex max-w-md flex-col gap-2 rounded-lg px-4 py-3 shadow-2xl"
             style={{
               backgroundColor: "var(--bg-elev)",
               border: "1px solid var(--border)",
               color: "var(--text)",
             }}
           >
-            <Loader2 size={20} className="animate-spin" style={{ color: "var(--accent)" }} />
-            <span className="text-sm">{t("common.loading")}</span>
+            <div className="flex items-center gap-3">
+              <Loader2 size={20} className="animate-spin" style={{ color: "var(--accent)" }} />
+              <span className="text-sm">{t("common.loading")}</span>
+            </div>
             {showOpenTeamHint && (
               <span className="text-xs" style={{ color: "var(--text-dim)" }}>
-                · {t("top_teams.loading_long_hint")}
+                {t("top_teams.loading_long_hint")}
+              </span>
+            )}
+            {showOpenTeamPatience && (
+              <span className="text-xs" style={{ color: "var(--text-dim)" }}>
+                {t("top_teams.loading_patience_hint")}
               </span>
             )}
           </div>

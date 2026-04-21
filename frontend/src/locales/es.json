@@ -63,6 +63,7 @@
     "scroll_to_top": "Volver arriba",
     "see_more": "Ver más",
     "see_less": "Ver menos",
+    "see_all": "Ver todos",
     "copy": "Copiar"
   },
   "dashboard": {
@@ -234,7 +235,8 @@
     "confirm_all_dont_ask": "No volver a preguntar",
     "confirm_all_cancel": "Cancelar",
     "confirm_all_proceed": "Cargar todos",
-    "loading_long_hint": "Descargando y renderizando equipos, esto puede tardar un momento"
+    "loading_long_hint": "Descargando y renderizando equipos, esto puede tardar un momento",
+    "loading_patience_hint": "Esto está tardando más de lo que parece, ten paciencia."
   },
   "damage_calc": {
     "title": "Calculador de daño",

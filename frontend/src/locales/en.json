@@ -63,6 +63,7 @@
     "scroll_to_top": "Back to top",
     "see_more": "See more",
     "see_less": "See less",
+    "see_all": "See all",
     "copy": "Copy"
   },
   "dashboard": {
@@ -234,7 +235,8 @@
     "confirm_all_dont_ask": "Don't ask me again",
     "confirm_all_cancel": "Cancel",
     "confirm_all_proceed": "Load all",
-    "loading_long_hint": "Downloading and rendering teams, this may take a moment"
+    "loading_long_hint": "Downloading and rendering teams, this may take a moment",
+    "loading_patience_hint": "This is taking longer than expected, please be patient."
   },
   "damage_calc": {
     "title": "Damage Calculator",

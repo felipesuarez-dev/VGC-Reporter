@@ -303,6 +303,15 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
                     {t("common.see_more")}
                   </button>
                 )}
+                {canShowMore && (
+                  <button
+                    type="button"
+                    className="btn-ghost text-xs"
+                    onClick={() => setVisibleRows(rest.length)}
+                  >
+                    {t("common.see_all")}
+                  </button>
+                )}
                 {canShowLess && (
                   <button
                     type="button"
