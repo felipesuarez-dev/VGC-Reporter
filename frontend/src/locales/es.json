@@ -230,7 +230,7 @@
     "exporting": "Exportando…",
     "export_save_title": "Guardar exportación de Top Teams",
     "confirm_all_title": "¿Cargar todos los equipos?",
-    "confirm_all_body": "Se descargarán y renderizarán {{count}} equipos. La operación puede tardar un momento y consumir más memoria.",
+    "confirm_all_body": "Se descargarán y renderizarán {{count}} equipos. La operación puede tardar bastante, consumir más memoria y ralentizar notablemente el aplicativo al interactuar con la lista (filtros, abrir detalles de equipo, etc.).",
     "confirm_all_dont_ask": "No volver a preguntar",
     "confirm_all_cancel": "Cancelar",
     "confirm_all_proceed": "Cargar todos"

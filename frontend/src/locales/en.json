@@ -230,7 +230,7 @@
     "exporting": "Exporting…",
     "export_save_title": "Save Top Teams export",
     "confirm_all_title": "Load all teams?",
-    "confirm_all_body": "This will fetch and render {{count}} teams. The operation may take a moment and use more memory.",
+    "confirm_all_body": "This will fetch and render {{count}} teams. The operation may take a long time, use more memory, and noticeably slow down the app while interacting with the list (filters, opening team details, etc.).",
     "confirm_all_dont_ask": "Don't ask me again",
     "confirm_all_cancel": "Cancel",
     "confirm_all_proceed": "Load all"

@@ -24,7 +24,17 @@ const RECENT_EXPANDED = 20;
 const TOP_TEAMS_DEFAULT_FETCH = 100;
 const ALL_SENTINEL = "all" as const;
 type DisplayLimit = number | typeof ALL_SENTINEL;
-const DISPLAY_OPTIONS: readonly DisplayLimit[] = [5, 10, 20, 50, 100, ALL_SENTINEL];
+const DISPLAY_OPTIONS: readonly DisplayLimit[] = [
+  5,
+  10,
+  20,
+  50,
+  100,
+  500,
+  1000,
+  2000,
+  ALL_SENTINEL,
+];
 
 function flagEmoji(code: string | null | undefined): string {
   if (!code || code.length !== 2) return "";
@@ -51,6 +61,7 @@ export function TopTeams() {
   const [displayLimit, setDisplayLimit] = useState<DisplayLimit>(20);
   const [fetchLimit, setFetchLimit] = useState<number>(TOP_TEAMS_DEFAULT_FETCH);
   const [isPendingDisplay, startDisplayTransition] = useTransition();
+  const [isOpeningTeam, startOpenTeamTransition] = useTransition();
   const [isExporting, setIsExporting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingAllCount, setPendingAllCount] = useState(0);
@@ -183,7 +194,10 @@ export function TopTeams() {
                   return;
                 }
                 const next = Number(v);
-                startDisplayTransition(() => setDisplayLimit(next));
+                startDisplayTransition(() => {
+                  setDisplayLimit(next);
+                  setFetchLimit((current) => (next > current ? next : current));
+                });
               }}
               className="input h-7 px-1 py-0 text-xs"
               disabled={isExporting}
@@ -312,7 +326,7 @@ export function TopTeams() {
           <button
             key={`${tt.tournament}-${idx}`}
             type="button"
-            onClick={() => setSelectedTeam(tt)}
+            onClick={() => startOpenTeamTransition(() => setSelectedTeam(tt))}
             className="card space-y-3 text-left transition hover:border-[var(--accent)]"
           >
             <div className="flex items-start justify-between gap-2">
@@ -461,6 +475,25 @@ export function TopTeams() {
           applyAll(pendingAllCount);
         }}
       />
+      {isOpeningTeam && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
+          aria-busy="true"
+          aria-live="polite"
+        >
+          <div
+            className="flex items-center gap-3 rounded-lg px-4 py-3 shadow-2xl"
+            style={{
+              backgroundColor: "var(--bg-elev)",
+              border: "1px solid var(--border)",
+              color: "var(--text)",
+            }}
+          >
+            <Loader2 size={20} className="animate-spin" style={{ color: "var(--accent)" }} />
+            <span className="text-sm">{t("common.loading")}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
