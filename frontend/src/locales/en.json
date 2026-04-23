@@ -92,7 +92,8 @@
     "meta_tooltip_count": "{{count}} tournaments",
     "meta_tooltip_battles": "{{count}} teams analyzed",
     "meta_tooltip_range": "{{from}} — {{to}}",
-    "loading_patience": "Fetching tournaments and aggregating stats. This can take a moment.",
+    "loading_long_hint": "Downloading meta stats, this may take a moment",
+    "loading_patience_hint": "This is taking longer than expected, please be patient.",
     "trending_title": "Meta trends (last {{days}} days)",
     "trending_rising": "Rising",
     "trending_falling": "Falling",
@@ -371,7 +372,28 @@
   },
   "titlebar": {
     "back": "Back",
-    "forward": "Forward"
+    "forward": "Forward",
+    "search": "Search (Ctrl+K)"
+  },
+  "updater": {
+    "available_title": "Update available",
+    "available_body": "Version {{version}} is available. You're on {{current}}.",
+    "install_now": "Install now",
+    "download_manual": "Download manually",
+    "later": "Later",
+    "downloading": "Downloading {{pct}}%",
+    "check_failed": "Couldn't check for updates"
+  },
+  "search": {
+    "open": "Search",
+    "placeholder": "Search Pokémon, moves, items, abilities...",
+    "section_pokemon": "Pokémon",
+    "section_moves": "Moves",
+    "section_items": "Items",
+    "section_abilities": "Abilities",
+    "loading": "Loading...",
+    "no_results": "No results",
+    "close": "Close"
   },
   "validation": {
     "title": "Team validation",

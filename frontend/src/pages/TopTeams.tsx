@@ -1,4 +1,4 @@
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Download, Loader2, RefreshCw } from "lucide-react";
@@ -18,6 +18,7 @@ import { SourcesChip } from "../components/layout/SourcesChip";
 import { formatDateTime } from "../lib/formatDate";
 import { formatLabel } from "../lib/labels";
 import { useUiStore } from "../stores/uiStore";
+import { useLongLoadingHint } from "../hooks/useLoadingHint";
 
 const FORMAT: Format = "regulation-m-a";
 const RECENT_INITIAL = 5;
@@ -46,19 +47,6 @@ function flagEmoji(code: string | null | undefined): string {
 
 function canonical(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
-function useLongLoadingHint(active: boolean, delayMs = 10_000): boolean {
-  const [show, setShow] = useState(false);
-  useEffect(() => {
-    if (!active) {
-      setShow(false);
-      return;
-    }
-    const id = window.setTimeout(() => setShow(true), delayMs);
-    return () => window.clearTimeout(id);
-  }, [active, delayMs]);
-  return show;
 }
 
 export function TopTeams() {

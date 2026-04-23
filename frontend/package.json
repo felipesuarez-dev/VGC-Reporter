@@ -1,6 +1,6 @@
 {
   "name": "frontend",
-  "version": "0.1.0-20260420-beta",
+  "version": "0.1.1-20260423-beta",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,6 +14,8 @@
     "@tauri-apps/api": "^2.4.0",
     "@tauri-apps/plugin-dialog": "^2.2.0",
     "@tauri-apps/plugin-opener": "^2.2.0",
+    "@tauri-apps/plugin-process": "^2.2.0",
+    "@tauri-apps/plugin-updater": "^2.7.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "i18next": "^23.16.0",

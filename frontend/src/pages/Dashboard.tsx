@@ -11,7 +11,6 @@ import { type ChampionsTournament } from "../lib/types";
 import { UsageBarChart, type UsageBarItem } from "../components/charts/UsageBarChart";
 import { TopList } from "../components/charts/TopList";
 import { TrendingCard } from "../components/charts/TrendingCard";
-import { PokemonDetailModal } from "../components/pokemon/PokemonDetailModal";
 import { FormatSelector } from "../components/ui/FormatSelector";
 import { XCard } from "../components/dashboard/XCard";
 import { TournamentStandingsDrawer } from "../components/tournament/TournamentStandingsDrawer";
@@ -19,6 +18,7 @@ import { SourcesChip } from "../components/layout/SourcesChip";
 import { SearchTextInput } from "../components/filters/SearchTextInput";
 import { useDashboardStore } from "../stores/dashboardStore";
 import { usePokedexStore } from "../stores/pokedexStore";
+import { useLongLoadingHint } from "../hooks/useLoadingHint";
 
 function canonicalSpeciesId(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -101,6 +101,9 @@ export function Dashboard() {
     openSpecies(String(item.id));
   };
   const showMetaSkeleton = isFetching && !data;
+  const isLoadingMeta = isLoading || showMetaSkeleton;
+  const showMetaHint = useLongLoadingHint(isLoadingMeta);
+  const showMetaPatience = useLongLoadingHint(isLoadingMeta, 60_000);
   const topItems = data?.top_items ?? [];
   const topMoves = data?.top_moves ?? [];
   const topAbilities = data?.top_abilities ?? [];
@@ -142,8 +145,13 @@ export function Dashboard() {
         </div>
       )}
 
-      {isLoading && <MetaSkeleton label={t("common.loading")} />}
-      {showMetaSkeleton && !isLoading && <MetaSkeleton label={t("common.loading")} />}
+      {isLoadingMeta && (
+        <MetaSkeleton
+          label={t("common.loading")}
+          showHint={showMetaHint}
+          showPatience={showMetaPatience}
+        />
+      )}
       {isError && (
         <div className="card text-red-400">
           {t("common.error")}: {(error as Error)?.message ?? "unknown"}
@@ -337,7 +345,6 @@ export function Dashboard() {
         </div>
       </section>
 
-      <PokemonDetailModal />
       <TournamentStandingsDrawer
         tournament={selectedTournament}
         onClose={() => setSelectedTournament(null)}
@@ -346,7 +353,15 @@ export function Dashboard() {
   );
 }
 
-function MetaSkeleton({ label }: { label: string }) {
+function MetaSkeleton({
+  label,
+  showHint,
+  showPatience,
+}: {
+  label: string;
+  showHint?: boolean;
+  showPatience?: boolean;
+}) {
   const { t } = useTranslation();
   return (
     <div className="space-y-4">
@@ -357,12 +372,22 @@ function MetaSkeleton({ label }: { label: string }) {
         <RefreshCw size={14} className="mt-0.5 animate-spin" />
         <div>
           <div className="text-sm">{label}</div>
-          <div
-            className="mt-0.5 text-[11px]"
-            style={{ color: "var(--text-dim)" }}
-          >
-            {t("dashboard.loading_patience")}
-          </div>
+          {showHint && (
+            <div
+              className="mt-0.5 text-[11px]"
+              style={{ color: "var(--text-dim)" }}
+            >
+              {t("dashboard.loading_long_hint")}
+            </div>
+          )}
+          {showPatience && (
+            <div
+              className="mt-0.5 text-[11px]"
+              style={{ color: "var(--text-dim)" }}
+            >
+              {t("dashboard.loading_patience_hint")}
+            </div>
+          )}
         </div>
       </div>
       <div className="card">
