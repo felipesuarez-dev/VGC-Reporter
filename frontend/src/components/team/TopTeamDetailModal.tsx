@@ -4,11 +4,12 @@ import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { ClipboardCopy, X } from "lucide-react";
 import type { EvStatSpread, Nature, Team, TeamMember, TopTeam } from "../../lib/types";
-import { ALL_NATURES, emptyTeamMember } from "../../lib/types";
+import { ALL_NATURES, canonicalSpeciesId, emptyTeamMember } from "../../lib/types";
 import { PokemonSprite } from "../pokemon/PokemonSprite";
 import { EntityChip } from "../info/EntityChip";
 import { Tooltip } from "../ui/Tooltip";
 import { useTeamBuilder } from "../../stores/teamBuilderStore";
+import { usePokedexStore } from "../../stores/pokedexStore";
 
 interface Props {
   team: TopTeam | null;
@@ -103,11 +104,14 @@ export function TopTeamDetailModal({ team, onClose }: Props) {
   const setPendingImportMissing = useTeamBuilder(
     (s) => s.setPendingImportMissing,
   );
+  const openPokemonDetail = usePokedexStore((s) => s.openDetail);
 
   useEffect(() => {
     if (!team) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape") return;
+      if (usePokedexStore.getState().selectedPokemonId) return;
+      onClose();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -131,7 +135,7 @@ export function TopTeamDetailModal({ team, onClose }: Props) {
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4"
       onClick={onClose}
     >
       <div
@@ -195,7 +199,13 @@ export function TopTeamDetailModal({ team, onClose }: Props) {
               }}
             >
               <div className="flex items-start gap-3">
-                <div className="flex aspect-square h-24 w-24 shrink-0 items-center justify-center">
+                <button
+                  type="button"
+                  onClick={() => openPokemonDetail(canonicalSpeciesId(m.species))}
+                  className="flex aspect-square h-24 w-24 shrink-0 items-center justify-center rounded transition hover:bg-[var(--bg-elev-strong)]"
+                  aria-label={m.species}
+                  title={m.species}
+                >
                   <PokemonSprite
                     url={m.sprite_url}
                     fallbackUrl={m.sprite_fallback_url}
@@ -204,14 +214,16 @@ export function TopTeamDetailModal({ team, onClose }: Props) {
                     size={96}
                     variant="hd"
                   />
-                </div>
+                </button>
                 <div className="min-w-0 flex-1">
-                  <div
-                    className="text-sm font-semibold"
+                  <button
+                    type="button"
+                    onClick={() => openPokemonDetail(canonicalSpeciesId(m.species))}
+                    className="text-left text-sm font-semibold underline decoration-dotted decoration-[var(--text-dim)] underline-offset-2 hover:text-[var(--accent)]"
                     style={{ color: "var(--text)" }}
                   >
                     {m.species}
-                  </div>
+                  </button>
                   <div className="mt-1 space-y-0.5 text-[11px]">
                     {m.item && (
                       <div style={{ color: "var(--text-muted)" }}>

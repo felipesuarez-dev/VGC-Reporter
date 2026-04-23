@@ -15,12 +15,20 @@ import { cn } from "../../lib/cn";
 import { Titlebar } from "./Titlebar";
 import { ScrollToTop } from "../ui/ScrollToTop";
 import { useUiStore } from "../../stores/uiStore";
-import { APP_VERSION } from "../../lib/version";
+import { APP_VERSION, shortVersion } from "../../lib/version";
 import { useNavHistorySync } from "../../hooks/useNavHistorySync";
+import { useAutoUpdate } from "../../hooks/useAutoUpdate";
+import { PokemonDetailModal } from "../pokemon/PokemonDetailModal";
+import { UpdaterModal } from "./UpdaterModal";
+import { GlobalSearchPalette } from "../search/GlobalSearchPalette";
+import { MoveDetailModal } from "../info/MoveDetailModal";
+import { ItemDetailModal } from "../info/ItemDetailModal";
+import { AbilityDetailModal } from "../info/AbilityDetailModal";
 
 export function AppShell() {
   const { t } = useTranslation();
   useNavHistorySync();
+  useAutoUpdate();
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
 
@@ -126,13 +134,18 @@ export function AppShell() {
         </nav>
 
         <div
-          className="border-t px-3 py-3 text-xs"
+          className={cn(
+            "border-t text-xs",
+            collapsed ? "px-2 py-2 text-center text-[10px]" : "px-3 py-3",
+          )}
           style={{
             borderColor: "var(--border)",
             color: "var(--text-muted)",
           }}
         >
-          {!collapsed && (
+          {collapsed ? (
+            <span title={APP_VERSION}>{shortVersion(APP_VERSION)}</span>
+          ) : (
             <>
               <div>
                 {t("app.version")} {APP_VERSION}
@@ -149,6 +162,12 @@ export function AppShell() {
       </main>
       </div>
       <ScrollToTop />
+      <PokemonDetailModal />
+      <MoveDetailModal />
+      <ItemDetailModal />
+      <AbilityDetailModal />
+      <GlobalSearchPalette />
+      <UpdaterModal />
     </div>
   );
 }

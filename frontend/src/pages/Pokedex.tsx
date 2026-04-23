@@ -10,7 +10,6 @@ import {
   type PokemonType,
 } from "../lib/types";
 import { PokemonCard } from "../components/pokemon/PokemonCard";
-import { PokemonDetailModal } from "../components/pokemon/PokemonDetailModal";
 import { SearchSelect } from "../components/ui/SearchSelect";
 import { MultiTypeSelect } from "../components/ui/MultiTypeSelect";
 import { typeLabel } from "../lib/labels";
@@ -381,8 +380,6 @@ export function Pokedex() {
           ))}
         </div>
       )}
-
-      <PokemonDetailModal />
     </div>
   );
 }

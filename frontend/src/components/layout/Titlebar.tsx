@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { matchPath, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, ChevronRight, Minus, Square, Copy, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Minus, Square, Copy, Search, X } from "lucide-react";
 import { useNavHistoryStore } from "../../stores/navHistoryStore";
+import { useSearchStore } from "../../stores/searchStore";
 import { LanguageToggle } from "./LanguageToggle";
 import { ThemeSelect } from "./ThemeSelect";
 
@@ -138,6 +139,17 @@ export function Titlebar() {
             style={{ color: "var(--text)" }}
           >
             <ChevronRight size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={() => useSearchStore.getState().setOpen(true)}
+            aria-label={t("titlebar.search")}
+            title={t("titlebar.search")}
+            aria-keyshortcuts="Control+K Meta+K"
+            className="flex h-full w-8 items-center justify-center hover:bg-[var(--bg-elev-strong)]"
+            style={{ color: "var(--text)" }}
+          >
+            <Search size={14} />
           </button>
         </div>
       </div>
