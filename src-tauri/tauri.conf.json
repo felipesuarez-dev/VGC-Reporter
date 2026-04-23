@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "VGC Reporter",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "identifier": "com.pumasoft.vgcreporter",
   "build": {
     "beforeDevCommand": "npm run dev --workspace frontend",
@@ -30,6 +30,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -43,5 +44,12 @@
     "shortDescription": "Pokémon Champions competitive stats & team builder",
     "longDescription": "VGC Reporter is a desktop companion for Pokémon Champions VGC players. It surfaces real tournament usage stats from Limitless VGC, lets you explore the Pokédex, build teams, and run damage calculations — all offline-friendly with local team storage."
   },
-  "plugins": {}
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/felipesuarez-dev/VGC-Reporter/releases/latest/download/latest.json"
+      ],
+      "pubkey": "PASTE_TAURI_UPDATER_PUBKEY_HERE"
+    }
+  }
 }

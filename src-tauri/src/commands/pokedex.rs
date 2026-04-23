@@ -41,6 +41,11 @@ pub async fn list_moves(state: State<'_, AppState>) -> Result<Vec<String>, AppEr
 }
 
 #[tauri::command]
+pub async fn list_abilities(state: State<'_, AppState>) -> Result<Vec<String>, AppError> {
+    state.pokedex.list_abilities().await
+}
+
+#[tauri::command]
 pub async fn list_moves_for_species(
     state: State<'_, AppState>,
     species: String,

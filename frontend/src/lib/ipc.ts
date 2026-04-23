@@ -72,6 +72,7 @@ export const ipc = {
     call<void>("save_top_teams_markdown", { format, limit, path }),
   listItems: () => call<string[]>("list_items"),
   listMoves: () => call<string[]>("list_moves"),
+  listAbilities: () => call<string[]>("list_abilities"),
   listMovesForSpecies: (species: string) =>
     call<MoveSummary[]>("list_moves_for_species", { species }),
   getPokemonSets: (species: string) =>

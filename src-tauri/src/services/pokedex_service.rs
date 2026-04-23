@@ -157,6 +157,28 @@ impl PokedexService {
         Ok(list)
     }
 
+    pub async fn list_abilities(&self) -> Result<Vec<String>, AppError> {
+        const KEY: &str = "showdown::abilities_from_pokedex";
+        if let Some(bytes) = self.cache.get(KEY)? {
+            if let Ok(list) = serde_json::from_slice::<Vec<String>>(&bytes) {
+                return Ok(list);
+            }
+        }
+        let pokemon = self.all().await?;
+        let mut set: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+        for p in &pokemon {
+            for a in &p.abilities {
+                if !a.is_empty() {
+                    set.insert(a.clone());
+                }
+            }
+        }
+        let list: Vec<String> = set.into_iter().collect();
+        let bytes = serde_json::to_vec(&list)?;
+        self.cache.put(KEY, &bytes, config::TTL_SHOWDOWN_DATA)?;
+        Ok(list)
+    }
+
     pub async fn move_catalog(&self) -> Result<HashMap<String, MoveSummary>, AppError> {
         self.move_details().await
     }

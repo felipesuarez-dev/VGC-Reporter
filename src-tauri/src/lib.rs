@@ -28,6 +28,12 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
+            #[cfg(desktop)]
+            app.handle()
+                .plugin(tauri_plugin_updater::Builder::new().build())?;
+            #[cfg(desktop)]
+            app.handle().plugin(tauri_plugin_process::init())?;
+
             let app_data = app
                 .path()
                 .app_data_dir()
@@ -44,6 +50,7 @@ pub fn run() {
             commands::pokedex::get_pokemon,
             commands::pokedex::list_items,
             commands::pokedex::list_moves,
+            commands::pokedex::list_abilities,
             commands::pokedex::list_moves_for_species,
             commands::pokedex::get_pokemon_sets,
             commands::pokedex::get_entity_descriptions,
