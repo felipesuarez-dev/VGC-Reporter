@@ -330,8 +330,7 @@ mod tests {
     }
 
     fn complete_team(species: &[&str]) -> Team {
-        let mut members: Vec<TeamMember> =
-            species.iter().map(|s| complete_member(s)).collect();
+        let mut members: Vec<TeamMember> = species.iter().map(|s| complete_member(s)).collect();
         while members.len() < 6 {
             members.push(complete_member("Garchomp"));
         }

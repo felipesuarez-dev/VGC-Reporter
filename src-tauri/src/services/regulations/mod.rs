@@ -14,21 +14,66 @@ pub use reg_ma::{current_ma_season, MaSeason, RegMaRules};
 #[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Violation {
-    TeamIncomplete { filled: u8 },
-    SpeciesNotAllowed { species: String },
-    ItemBanned { species: String, item: String },
-    MoveBanned { species: String, mv: String },
-    TooManyRestricted { allowed: u8, found: u8 },
-    RestrictedNotInSeason { species: String, season: String },
-    DuplicateSpecies { species: String },
-    DuplicateItem { item: String },
-    MissingItem { slot: u8, species: String },
-    MissingAbility { slot: u8, species: String },
-    MissingNature { slot: u8, species: String },
-    MissingMoves { slot: u8, species: String, have: u8, need: u8 },
-    EvsNotAssigned { slot: u8, species: String },
-    ItemNotAllowed { slot: u8, species: String, item: String },
-    MoveNotAllowed { slot: u8, species: String, mv: String },
+    TeamIncomplete {
+        filled: u8,
+    },
+    SpeciesNotAllowed {
+        species: String,
+    },
+    ItemBanned {
+        species: String,
+        item: String,
+    },
+    MoveBanned {
+        species: String,
+        mv: String,
+    },
+    TooManyRestricted {
+        allowed: u8,
+        found: u8,
+    },
+    RestrictedNotInSeason {
+        species: String,
+        season: String,
+    },
+    DuplicateSpecies {
+        species: String,
+    },
+    DuplicateItem {
+        item: String,
+    },
+    MissingItem {
+        slot: u8,
+        species: String,
+    },
+    MissingAbility {
+        slot: u8,
+        species: String,
+    },
+    MissingNature {
+        slot: u8,
+        species: String,
+    },
+    MissingMoves {
+        slot: u8,
+        species: String,
+        have: u8,
+        need: u8,
+    },
+    EvsNotAssigned {
+        slot: u8,
+        species: String,
+    },
+    ItemNotAllowed {
+        slot: u8,
+        species: String,
+        item: String,
+    },
+    MoveNotAllowed {
+        slot: u8,
+        species: String,
+        mv: String,
+    },
 }
 
 pub trait RegulationRules: Send + Sync {

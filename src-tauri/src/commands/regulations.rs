@@ -2,11 +2,12 @@ use crate::domain::format::Format;
 use crate::error::AppError;
 use crate::services::regulations::rules_for_code;
 
-fn rules_for_format(format: Format) -> Result<Box<dyn crate::services::regulations::RegulationRules>, AppError> {
+fn rules_for_format(
+    format: Format,
+) -> Result<Box<dyn crate::services::regulations::RegulationRules>, AppError> {
     let code = format.cache_id();
-    rules_for_code(code).ok_or_else(|| {
-        AppError::Validation(format!("No regulation rules registered for {code}"))
-    })
+    rules_for_code(code)
+        .ok_or_else(|| AppError::Validation(format!("No regulation rules registered for {code}")))
 }
 
 #[tauri::command]

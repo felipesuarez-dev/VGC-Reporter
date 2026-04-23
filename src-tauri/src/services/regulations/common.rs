@@ -20,9 +20,7 @@ pub fn lookup_set(slice: &[&'static str]) -> HashSet<String> {
 /// regulation permits (Mega Evolution, Gigantamax, Primal Reversion,
 /// Eternamax). Stored canonical (lowercase, no separators) so they can
 /// be matched against either dashed segments or their canonical join.
-const FORBIDDEN_FORM_TOKENS: &[&str] = &[
-    "mega", "megax", "megay", "primal", "gmax", "eternamax",
-];
+const FORBIDDEN_FORM_TOKENS: &[&str] = &["mega", "megax", "megay", "primal", "gmax", "eternamax"];
 
 /// `true` if the species name carries a Mega/Gmax/Primal/Eternamax suffix.
 /// Used to short-circuit the base-form fallback in regulation `matches`,
