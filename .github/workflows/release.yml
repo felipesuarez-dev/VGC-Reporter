@@ -55,16 +55,21 @@ jobs:
         run: npm ci
 
       - name: Build & release with tauri-action
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v0.6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: VGC Reporter ${{ github.ref_name }}
           releaseBody: |
             See the [README](https://github.com/felipesuarez-dev/vgc-reporter#download) for download notes.
 
-            macOS bundles are unsigned — right-click the app → Open on first launch.
+            Windows and Linux builds auto-update from this release onward.
+            macOS bundles are unsigned — right-click the app → Open on first launch, and updates must be downloaded manually from the Releases page.
           releaseDraft: true
           prerelease: true
+          includeUpdaterJson: true
+          updaterJsonPreferNsis: false
           args: ${{ matrix.args }}
