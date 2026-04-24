@@ -35,13 +35,20 @@ export function AppShell() {
   const sidebarWidthPx = useUiStore((s) => s.sidebarWidthPx);
   const setSidebarWidthPx = useUiStore((s) => s.setSidebarWidthPx);
   const [isResizing, setIsResizing] = useState(false);
+  const [hoverHandle, setHoverHandle] = useState(false);
   const asideRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!isResizing) return;
     const onMove = (e: MouseEvent) => {
       const left = asideRef.current?.getBoundingClientRect().left ?? 0;
-      setSidebarWidthPx(e.clientX - left);
+      const delta = e.clientX - left;
+      if (delta < 150) {
+        useUiStore.getState().setSidebarCollapsed(true);
+        setIsResizing(false);
+        return;
+      }
+      setSidebarWidthPx(delta);
     };
     const onUp = () => setIsResizing(false);
     document.addEventListener("mousemove", onMove);
@@ -98,7 +105,7 @@ export function AppShell() {
           <img
             src="/logo.png"
             alt="PumaSoft"
-            className="h-9 w-9 shrink-0 rounded-full"
+            className="h-9 w-9 shrink-0 rounded-full object-cover"
           />
           {!collapsed && (
             <div className="flex min-w-0 flex-col">
@@ -170,11 +177,13 @@ export function AppShell() {
               e.preventDefault();
               setIsResizing(true);
             }}
+            onMouseEnter={() => setHoverHandle(true)}
+            onMouseLeave={() => setHoverHandle(false)}
             onDoubleClick={() => setSidebarWidthPx(240)}
-            className="absolute right-0 top-0 z-10 h-full w-1.5 cursor-col-resize transition-opacity hover:opacity-100"
+            className="absolute right-0 top-0 z-10 h-full w-1.5 cursor-col-resize transition-opacity"
             style={{
               backgroundColor: "var(--accent)",
-              opacity: isResizing ? 0.6 : 0,
+              opacity: isResizing ? 0.6 : hoverHandle ? 0.35 : 0,
             }}
           />
         )}
