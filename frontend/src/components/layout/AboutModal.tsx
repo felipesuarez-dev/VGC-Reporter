@@ -1,7 +1,17 @@
-import { X, ExternalLink } from "lucide-react";
+import { useState } from "react";
+import {
+  AlertTriangle,
+  Check,
+  ExternalLink,
+  Loader2,
+  RefreshCw,
+  X,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { APP_VERSION } from "../../lib/version";
+import { useUpdaterStore } from "../../stores/updaterStore";
+import { runUpdateCheck, type CheckOutcome } from "../../hooks/useAutoUpdate";
 
 interface Props {
   open: boolean;
@@ -12,6 +22,12 @@ const REPO_URL = "https://github.com/felipesuarez-dev/VGC-Reporter";
 
 export function AboutModal({ open, onClose }: Props) {
   const { t } = useTranslation();
+  const isChecking = useUpdaterStore((s) => s.isChecking);
+  const lastCheckedAt = useUpdaterStore((s) => s.lastCheckedAt);
+  const error = useUpdaterStore((s) => s.error);
+  const available = useUpdaterStore((s) => s.available);
+  const [lastOutcome, setLastOutcome] = useState<CheckOutcome | null>(null);
+
   if (!open) return null;
 
   const openRepo = async () => {
@@ -21,6 +37,70 @@ export function AboutModal({ open, onClose }: Props) {
       window.open(REPO_URL, "_blank");
     }
   };
+
+  const handleCheck = async () => {
+    const outcome = await runUpdateCheck();
+    setLastOutcome(outcome);
+  };
+
+  const statusBlock = (() => {
+    if (isChecking) {
+      return (
+        <span
+          className="inline-flex items-center gap-1"
+          style={{ color: "var(--text-muted)" }}
+        >
+          <Loader2 size={12} className="animate-spin" />
+          {t("about.checking")}
+        </span>
+      );
+    }
+    if (error && lastOutcome === "error") {
+      return (
+        <span
+          className="inline-flex items-center gap-1 break-all"
+          style={{ color: "var(--danger)" }}
+        >
+          <AlertTriangle size={12} />
+          <span className="font-mono text-[10px]">{error}</span>
+        </span>
+      );
+    }
+    if (available) {
+      return (
+        <span
+          className="inline-flex items-center gap-1"
+          style={{ color: "var(--accent)" }}
+        >
+          <RefreshCw size={12} />
+          {t("about.update_available", { version: available.version })}
+        </span>
+      );
+    }
+    if (lastOutcome === "up_to_date") {
+      return (
+        <span
+          className="inline-flex items-center gap-1"
+          style={{ color: "var(--accent)" }}
+        >
+          <Check size={12} />
+          {t("about.up_to_date")}
+        </span>
+      );
+    }
+    if (lastCheckedAt) {
+      return (
+        <span style={{ color: "var(--text-dim)" }}>
+          {t("about.last_checked", {
+            when: new Date(lastCheckedAt).toLocaleString(),
+          })}
+        </span>
+      );
+    }
+    return (
+      <span style={{ color: "var(--text-dim)" }}>{t("about.never_checked")}</span>
+    );
+  })();
 
   return (
     <div
@@ -73,6 +153,33 @@ export function AboutModal({ open, onClose }: Props) {
         <p className="mt-3 text-xs" style={{ color: "var(--text-muted)" }}>
           {t("about.description")}
         </p>
+        <div
+          className="mt-4 rounded-md border p-3"
+          style={{ borderColor: "var(--border)" }}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span
+              className="text-xs font-semibold uppercase tracking-wide"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {t("about.updates")}
+            </span>
+            <button
+              type="button"
+              onClick={() => void handleCheck()}
+              disabled={isChecking}
+              className="btn-ghost flex items-center gap-1 text-xs"
+            >
+              {isChecking ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                <RefreshCw size={12} />
+              )}
+              {t("about.check_for_updates")}
+            </button>
+          </div>
+          <div className="mt-2 text-[11px]">{statusBlock}</div>
+        </div>
         <button
           type="button"
           onClick={openRepo}

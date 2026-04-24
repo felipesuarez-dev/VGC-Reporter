@@ -293,7 +293,14 @@
     "author": "Author",
     "year": "Year",
     "description": "Companion tool for competitive Pokémon Champions analysis (VGC 2026). Team building, meta insights, and damage calculation in one place.",
-    "view_repo": "View repository on GitHub"
+    "view_repo": "View repository on GitHub",
+    "updates": "Updates",
+    "check_for_updates": "Check for updates",
+    "checking": "Checking...",
+    "up_to_date": "You're on the latest version",
+    "update_available": "Update available: v{{version}}",
+    "last_checked": "Last checked: {{when}}",
+    "never_checked": "Not checked yet"
   },
   "stats": {
     "hp": "HP",

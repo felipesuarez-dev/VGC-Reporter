@@ -10,10 +10,16 @@ interface UpdaterState {
   progress: number | null;
   error: string | null;
   dismissed: boolean;
+  errorDismissed: boolean;
+  isChecking: boolean;
+  lastCheckedAt: number | null;
   setAvailable: (v: AvailableUpdate | null) => void;
   setProgress: (p: number | null) => void;
   setError: (e: string | null) => void;
   dismiss: () => void;
+  dismissError: () => void;
+  setChecking: (checking: boolean) => void;
+  recordCheck: () => void;
 }
 
 export const useUpdaterStore = create<UpdaterState>((set) => ({
@@ -21,8 +27,15 @@ export const useUpdaterStore = create<UpdaterState>((set) => ({
   progress: null,
   error: null,
   dismissed: false,
-  setAvailable: (available) => set({ available }),
+  errorDismissed: false,
+  isChecking: false,
+  lastCheckedAt: null,
+  setAvailable: (available) =>
+    set(() => ({ available, dismissed: false })),
   setProgress: (progress) => set({ progress }),
-  setError: (error) => set({ error }),
+  setError: (error) => set(() => ({ error, errorDismissed: false })),
   dismiss: () => set({ dismissed: true }),
+  dismissError: () => set({ errorDismissed: true }),
+  setChecking: (isChecking) => set({ isChecking }),
+  recordCheck: () => set({ lastCheckedAt: Date.now() }),
 }));

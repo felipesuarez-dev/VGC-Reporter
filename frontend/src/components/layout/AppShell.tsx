@@ -19,6 +19,7 @@ import { useNavHistorySync } from "../../hooks/useNavHistorySync";
 import { useAutoUpdate } from "../../hooks/useAutoUpdate";
 import { PokemonDetailModal } from "../pokemon/PokemonDetailModal";
 import { UpdaterModal } from "./UpdaterModal";
+import { UpdaterErrorBanner } from "./UpdaterErrorBanner";
 import { GlobalSearchPalette } from "../search/GlobalSearchPalette";
 import { MoveDetailModal } from "../info/MoveDetailModal";
 import { ItemDetailModal } from "../info/ItemDetailModal";
@@ -73,6 +74,7 @@ export function AppShell() {
       style={{ backgroundColor: "var(--bg)", color: "var(--text)" }}
     >
       <Titlebar />
+      <UpdaterErrorBanner />
       <div className="flex min-h-0 flex-1">
       <aside
         ref={asideRef}
