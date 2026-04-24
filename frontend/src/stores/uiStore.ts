@@ -24,13 +24,25 @@ export const FONT_SIZE_MIN = 12;
 export const FONT_SIZE_MAX = 22;
 export const FONT_SIZE_DEFAULT = 16;
 
+export const SIDEBAR_WIDTH_MIN = 180;
+export const SIDEBAR_WIDTH_MAX = 400;
+export const SIDEBAR_WIDTH_DEFAULT = 240;
+
 function clampFontSize(px: number): number {
   return Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, Math.round(px)));
+}
+
+function clampSidebarWidth(px: number): number {
+  return Math.max(
+    SIDEBAR_WIDTH_MIN,
+    Math.min(SIDEBAR_WIDTH_MAX, Math.round(px)),
+  );
 }
 
 interface UiState {
   theme: Theme;
   sidebarCollapsed: boolean;
+  sidebarWidthPx: number;
   fontSizePx: number;
   confirmAllTopTeams: boolean;
   confirmLargeMdExport: boolean;
@@ -38,6 +50,7 @@ interface UiState {
   toggleTheme: () => void;
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
+  setSidebarWidthPx: (px: number) => void;
   setFontSizePx: (px: number) => void;
   setConfirmAllTopTeams: (v: boolean) => void;
   setConfirmLargeMdExport: (v: boolean) => void;
@@ -48,6 +61,7 @@ export const useUiStore = create<UiState>()(
     (set, get) => ({
       theme: "system",
       sidebarCollapsed: false,
+      sidebarWidthPx: SIDEBAR_WIDTH_DEFAULT,
       fontSizePx: FONT_SIZE_DEFAULT,
       confirmAllTopTeams: true,
       confirmLargeMdExport: true,
@@ -60,6 +74,7 @@ export const useUiStore = create<UiState>()(
       },
       toggleSidebar: () => set({ sidebarCollapsed: !get().sidebarCollapsed }),
       setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
+      setSidebarWidthPx: (px) => set({ sidebarWidthPx: clampSidebarWidth(px) }),
       setFontSizePx: (px) => set({ fontSizePx: clampFontSize(px) }),
       setConfirmAllTopTeams: (confirmAllTopTeams) => set({ confirmAllTopTeams }),
       setConfirmLargeMdExport: (confirmLargeMdExport) =>
@@ -67,7 +82,7 @@ export const useUiStore = create<UiState>()(
     }),
     {
       name: "vgc-ui",
-      version: 4,
+      version: 5,
       migrate: (persisted: unknown, version: number) => {
         const prior = (persisted ?? {}) as Partial<UiState> & { theme?: string };
         let theme: Theme;
@@ -81,6 +96,10 @@ export const useUiStore = create<UiState>()(
         return {
           theme,
           sidebarCollapsed: prior.sidebarCollapsed ?? false,
+          sidebarWidthPx:
+            typeof prior.sidebarWidthPx === "number"
+              ? clampSidebarWidth(prior.sidebarWidthPx)
+              : SIDEBAR_WIDTH_DEFAULT,
           fontSizePx:
             typeof prior.fontSizePx === "number"
               ? clampFontSize(prior.fontSizePx)

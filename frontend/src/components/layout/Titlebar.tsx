@@ -1,9 +1,20 @@
 import { useEffect, useState } from "react";
 import { matchPath, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, ChevronRight, Minus, Square, Copy, Search, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Minus,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Search,
+  Square,
+  X,
+} from "lucide-react";
 import { useNavHistoryStore } from "../../stores/navHistoryStore";
 import { useSearchStore } from "../../stores/searchStore";
+import { useUiStore } from "../../stores/uiStore";
 import { LanguageToggle } from "./LanguageToggle";
 import { ThemeSelect } from "./ThemeSelect";
 
@@ -34,6 +45,8 @@ export function Titlebar() {
   const { t } = useTranslation();
   const entries = useNavHistoryStore((s) => s.entries);
   const index = useNavHistoryStore((s) => s.index);
+  const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
+  const toggleSidebar = useUiStore((s) => s.toggleSidebar);
   const backKey = routeLabel(entries[index - 1]);
   const forwardKey = routeLabel(entries[index + 1]);
   const backTitle = backKey ? t(backKey) : t("titlebar.back");
@@ -114,8 +127,30 @@ export function Titlebar() {
           draggable={false}
         />
         <span data-tauri-drag-region>{TITLE}</span>
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          aria-label={
+            sidebarCollapsed
+              ? t("titlebar.expand_sidebar")
+              : t("titlebar.collapse_sidebar")
+          }
+          title={
+            sidebarCollapsed
+              ? t("titlebar.expand_sidebar")
+              : t("titlebar.collapse_sidebar")
+          }
+          className="flex h-full w-8 items-center justify-center hover:bg-[var(--bg-elev-strong)]"
+          style={{ color: "var(--text)" }}
+        >
+          {sidebarCollapsed ? (
+            <PanelLeftOpen size={14} />
+          ) : (
+            <PanelLeftClose size={14} />
+          )}
+        </button>
         <div
-          className="ml-1 flex h-full items-stretch border-l"
+          className="flex h-full items-stretch border-l"
           style={{ borderColor: "var(--border)" }}
         >
           <button

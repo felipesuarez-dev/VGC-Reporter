@@ -46,7 +46,8 @@ export function useLocalize() {
       if (!table) return name;
       const entry = table[normalizeKey(name)];
       if (!entry) return name;
-      return lang === "es" ? entry.es : entry.en;
+      if (lang === "es") return entry.es || entry.en || name;
+      return entry.en || name;
     },
     [data, lang],
   );

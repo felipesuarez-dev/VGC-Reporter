@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { ExternalLink, RefreshCw } from "lucide-react";
+import {
+  BarChart3,
+  Check,
+  ExternalLink,
+  ListOrdered,
+  Loader2,
+  PieChart as PieChartIcon,
+  RefreshCw,
+} from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
@@ -9,6 +17,9 @@ import { formatDate, formatDateTime } from "../lib/formatDate";
 import { formatLabel } from "../lib/labels";
 import { type ChampionsTournament } from "../lib/types";
 import { UsageBarChart, type UsageBarItem } from "../components/charts/UsageBarChart";
+import { UsageDonutChart } from "../components/charts/UsageDonutChart";
+import { UsageRankingList } from "../components/charts/UsageRankingList";
+import { cn } from "../lib/cn";
 import { TopList } from "../components/charts/TopList";
 import { TrendingCard } from "../components/charts/TrendingCard";
 import { FormatSelector } from "../components/ui/FormatSelector";
@@ -48,6 +59,8 @@ export function Dashboard() {
   const favoriteFormat = useDashboardStore((s) => s.favoriteFormat);
   const setFormat = useDashboardStore((s) => s.setFormat);
   const setFavoriteFormat = useDashboardStore((s) => s.setFavoriteFormat);
+  const topPokemonView = useDashboardStore((s) => s.topPokemonView);
+  const setTopPokemonView = useDashboardStore((s) => s.setTopPokemonView);
   const initRef = useRef(false);
   useEffect(() => {
     if (initRef.current) return;
@@ -104,6 +117,16 @@ export function Dashboard() {
   const isLoadingMeta = isLoading || showMetaSkeleton;
   const showMetaHint = useLongLoadingHint(isLoadingMeta);
   const showMetaPatience = useLongLoadingHint(isLoadingMeta, 60_000);
+  const [justRefreshed, setJustRefreshed] = useState(false);
+  const wasFetchingRef = useRef(false);
+  useEffect(() => {
+    if (wasFetchingRef.current && !isFetching) {
+      setJustRefreshed(true);
+      const id = window.setTimeout(() => setJustRefreshed(false), 2000);
+      return () => window.clearTimeout(id);
+    }
+    wasFetchingRef.current = isFetching;
+  }, [isFetching]);
   const topItems = data?.top_items ?? [];
   const topMoves = data?.top_moves ?? [];
   const topAbilities = data?.top_abilities ?? [];
@@ -122,14 +145,29 @@ export function Dashboard() {
           />
           <button
             className="btn-ghost"
+            disabled={isFetching}
             onClick={() =>
               qc.invalidateQueries({
                 queryKey: queryKeys.meta(format),
               })
             }
           >
-            <RefreshCw size={14} className="mr-1" />
-            {t("dashboard.refresh")}
+            {isFetching ? (
+              <Loader2 size={14} className="mr-1 animate-spin" />
+            ) : justRefreshed ? (
+              <Check
+                size={14}
+                className="mr-1"
+                style={{ color: "var(--accent)" }}
+              />
+            ) : (
+              <RefreshCw size={14} className="mr-1" />
+            )}
+            {isFetching
+              ? t("dashboard.refreshing")
+              : justRefreshed
+                ? t("dashboard.refreshed")
+                : t("dashboard.refresh")}
           </button>
         </div>
       </header>
@@ -166,14 +204,62 @@ export function Dashboard() {
       {data && data.pokemon.length > 0 && (
         <>
           <section className="card">
-            <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--text)" }}>
-              {t("dashboard.top_pokemon")}
-            </h2>
-            <UsageBarChart
-              data={chartPokemon}
-              height={Math.max(440, topPokemon.length * 48)}
-              onBarClick={handleBarClick}
-            />
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+                {t("dashboard.top_pokemon")}
+              </h2>
+              <div
+                className="flex overflow-hidden rounded-md border"
+                style={{ borderColor: "var(--border)" }}
+                role="tablist"
+                aria-label={t("dashboard.chart_view")}
+              >
+                {(
+                  [
+                    { id: "bar", Icon: BarChart3, label: t("dashboard.chart_view_bar") },
+                    { id: "donut", Icon: PieChartIcon, label: t("dashboard.chart_view_donut") },
+                    { id: "list", Icon: ListOrdered, label: t("dashboard.chart_view_list") },
+                  ] as const
+                ).map(({ id, Icon, label }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={topPokemonView === id}
+                    title={label}
+                    onClick={() => setTopPokemonView(id)}
+                    className={cn(
+                      "flex h-7 w-8 items-center justify-center transition-colors",
+                      topPokemonView === id
+                        ? "bg-[var(--accent-soft)] text-[var(--accent)]"
+                        : "text-[var(--text-muted)] hover:bg-[var(--bg-elev-strong)]",
+                    )}
+                  >
+                    <Icon size={14} />
+                  </button>
+                ))}
+              </div>
+            </div>
+            {topPokemonView === "bar" && (
+              <UsageBarChart
+                data={chartPokemon}
+                height={Math.max(440, topPokemon.length * 48)}
+                onBarClick={handleBarClick}
+              />
+            )}
+            {topPokemonView === "donut" && (
+              <UsageDonutChart
+                data={chartPokemon}
+                height={Math.max(440, topPokemon.length * 24)}
+                onSliceClick={handleBarClick}
+              />
+            )}
+            {topPokemonView === "list" && (
+              <UsageRankingList
+                data={chartPokemon}
+                onItemClick={handleBarClick}
+              />
+            )}
             {(allPokemon.length > pokeVisible || pokeVisible > POKE_INITIAL) && (
               <div className="mt-3 flex justify-center gap-2">
                 {allPokemon.length > pokeVisible && (
@@ -434,10 +520,11 @@ function MetaSkeleton({
 
 function UpcomingTournamentsSection() {
   const { t, i18n } = useTranslation();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: queryKeys.upcomingTournaments(),
     queryFn: () => ipc.listUpcomingTournaments(),
     staleTime: 30 * 60 * 1000,
+    retry: 1,
   });
   const events = data ?? [];
   return (
@@ -453,7 +540,27 @@ function UpcomingTournamentsSection() {
           {t("common.loading")}
         </p>
       )}
-      {!isLoading && events.length === 0 && (
+      {isError && (
+        <div
+          className="flex flex-col gap-2 text-xs"
+          style={{ color: "var(--danger)" }}
+        >
+          <span>
+            {t("common.error_with_detail", {
+              detail: (error as Error)?.message ?? "unknown",
+            })}
+          </span>
+          <button
+            type="button"
+            className="btn-ghost self-start text-xs"
+            onClick={() => refetch()}
+            disabled={isFetching}
+          >
+            {t("common.retry")}
+          </button>
+        </div>
+      )}
+      {!isLoading && !isError && events.length === 0 && (
         <p className="text-xs" style={{ color: "var(--text-dim)" }}>
           {t("upcoming.empty")}
         </p>

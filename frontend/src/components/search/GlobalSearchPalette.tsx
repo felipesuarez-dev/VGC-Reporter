@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Command } from "cmdk";
+import { Clock, X } from "lucide-react";
 import { ipc } from "../../lib/ipc";
 import { queryKeys } from "../../lib/queryKeys";
-import { canonicalSpeciesId } from "../../lib/types";
+import { canonicalSpeciesId, type Pokemon } from "../../lib/types";
 import { useSearchStore } from "../../stores/searchStore";
 import { usePokedexStore } from "../../stores/pokedexStore";
 import {
@@ -12,9 +13,33 @@ import {
   useItemDetailStore,
   useAbilityDetailStore,
 } from "../../stores/entityDetailStore";
+import {
+  useRecentSearchesStore,
+  type RecentSearchKind,
+} from "../../stores/recentSearchesStore";
 import { useLocalize } from "../../hooks/useTranslations";
+import { useMoveSummary } from "../../hooks/useMoveCatalog";
+import { PokemonSprite } from "../pokemon/PokemonSprite";
+import { TypeBadge } from "../pokemon/TypeBadge";
+import { MoveCategoryIcon } from "../pokemon/MoveCategoryIcon";
 
-const RESULT_CAP = 25;
+const PER_SECTION_CAP = 15;
+
+function norm(s: string): string {
+  return s.toLowerCase();
+}
+
+function pokemonMatches(q: string, p: Pokemon): boolean {
+  return (
+    norm(p.name).includes(q) ||
+    norm(p.id).includes(q) ||
+    p.types.some((t) => norm(t).includes(q))
+  );
+}
+
+function textMatches(q: string, ...haystacks: (string | null | undefined)[]): boolean {
+  return haystacks.some((h) => h != null && norm(h).includes(q));
+}
 
 export function GlobalSearchPalette() {
   const { t } = useTranslation();
@@ -24,10 +49,14 @@ export function GlobalSearchPalette() {
   const setQuery = useSearchStore((s) => s.setQuery);
 
   const localize = useLocalize();
+  const moveSummary = useMoveSummary();
   const openPokemon = usePokedexStore((s) => s.openDetail);
   const openMove = useMoveDetailStore((s) => s.open);
   const openItem = useItemDetailStore((s) => s.open);
   const openAbility = useAbilityDetailStore((s) => s.open);
+  const recents = useRecentSearchesStore((s) => s.recents);
+  const addRecent = useRecentSearchesStore((s) => s.addRecent);
+  const clearRecents = useRecentSearchesStore((s) => s.clearRecents);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -71,25 +100,69 @@ export function GlobalSearchPalette() {
     staleTime: Infinity,
   });
 
+  const q = query.trim();
+  const qn = norm(q);
+  const hasQuery = q.length > 0;
+
+  const pokemonMatchesList = useMemo(() => {
+    if (!hasQuery || !pokemon.data) return [] as Pokemon[];
+    return pokemon.data
+      .filter((p) => pokemonMatches(qn, p))
+      .slice(0, PER_SECTION_CAP);
+  }, [hasQuery, qn, pokemon.data]);
+
+  const movesMatchesList = useMemo(() => {
+    if (!hasQuery || !moves.data) return [] as string[];
+    return moves.data
+      .filter((m) => textMatches(qn, m, localize("move", m)))
+      .slice(0, PER_SECTION_CAP);
+  }, [hasQuery, qn, moves.data, localize]);
+
+  const itemsMatchesList = useMemo(() => {
+    if (!hasQuery || !items.data) return [] as string[];
+    return items.data
+      .filter((i) => textMatches(qn, i, localize("item", i)))
+      .slice(0, PER_SECTION_CAP);
+  }, [hasQuery, qn, items.data, localize]);
+
+  const abilitiesMatchesList = useMemo(() => {
+    if (!hasQuery || !abilities.data) return [] as string[];
+    return abilities.data
+      .filter((a) => textMatches(qn, a, localize("ability", a)))
+      .slice(0, PER_SECTION_CAP);
+  }, [hasQuery, qn, abilities.data, localize]);
+
+  const pokemonByKey = useMemo(() => {
+    const map = new Map<string, Pokemon>();
+    if (pokemon.data) {
+      for (const p of pokemon.data) {
+        map.set(canonicalSpeciesId(p.name), p);
+      }
+    }
+    return map;
+  }, [pokemon.data]);
+
   if (!open) return null;
 
-  const q = query.trim();
-  const hasQuery = q.length > 0;
   const anyLoading =
     pokemon.isLoading ||
     moves.isLoading ||
     items.isLoading ||
     abilities.isLoading;
 
+  const totalMatches =
+    pokemonMatchesList.length +
+    movesMatchesList.length +
+    itemsMatchesList.length +
+    abilitiesMatchesList.length;
+
   const close = () => {
     setOpen(false);
     setQuery("");
   };
 
-  const choose = (
-    kind: "pokemon" | "move" | "item" | "ability",
-    name: string,
-  ) => {
+  const choose = (kind: RecentSearchKind, name: string) => {
+    addRecent(kind, name);
     close();
     if (kind === "pokemon") openPokemon(canonicalSpeciesId(name));
     else if (kind === "move") openMove(name);
@@ -106,35 +179,63 @@ export function GlobalSearchPalette() {
       onClick={close}
     >
       <div
-        className="w-full max-w-lg overflow-hidden rounded-xl border shadow-2xl"
+        className="w-full max-w-xl overflow-hidden rounded-xl border shadow-2xl"
         style={{
           backgroundColor: "var(--bg-elev)",
           borderColor: "var(--border)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <Command label={t("search.open")} shouldFilter={hasQuery}>
+        <Command label={t("search.open")} shouldFilter={false}>
           <Command.Input
             autoFocus
             value={query}
             onValueChange={setQuery}
             placeholder={t("search.placeholder")}
             className="w-full border-b bg-transparent px-4 py-3 text-sm outline-none"
-            style={{
-              borderColor: "var(--border)",
-              color: "var(--text)",
-            }}
+            style={{ borderColor: "var(--border)", color: "var(--text)" }}
           />
-          <Command.List className="max-h-[60vh] overflow-y-auto p-2">
-            {!hasQuery && !anyLoading && (
+          <Command.List className="max-h-[65vh] overflow-y-auto p-2">
+            {!hasQuery && recents.length === 0 && !anyLoading && (
               <div
-                className="px-3 py-6 text-center text-xs"
+                className="px-3 py-8 text-center text-xs"
                 style={{ color: "var(--text-dim)" }}
               >
                 {t("search.placeholder")}
               </div>
             )}
-            {anyLoading && (
+            {!hasQuery && recents.length > 0 && (
+              <Command.Group
+                heading={
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Clock size={11} />
+                      {t("search.recent")}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={clearRecents}
+                      className="text-[10px] underline decoration-dotted hover:text-[var(--text)]"
+                      style={{ color: "var(--text-dim)" }}
+                    >
+                      {t("search.clear_recent")}
+                    </button>
+                  </div>
+                }
+              >
+                {recents.map((r) => (
+                  <RecentItem
+                    key={`recent:${r.kind}:${r.name}`}
+                    recent={r}
+                    pokemonByKey={pokemonByKey}
+                    localize={localize}
+                    moveSummary={moveSummary}
+                    onSelect={() => choose(r.kind, r.name)}
+                  />
+                ))}
+              </Command.Group>
+            )}
+            {hasQuery && anyLoading && (
               <div
                 className="px-3 py-4 text-center text-xs"
                 style={{ color: "var(--text-dim)" }}
@@ -142,79 +243,193 @@ export function GlobalSearchPalette() {
                 {t("search.loading")}
               </div>
             )}
-            {hasQuery && (
-              <>
-                <Command.Empty
-                  className="px-3 py-4 text-center text-xs"
-                  style={{ color: "var(--text-dim)" }}
-                >
-                  {t("search.no_results")}
-                </Command.Empty>
-                {pokemon.data && (
-                  <Command.Group heading={t("search.section_pokemon")}>
-                    {pokemon.data.slice(0, RESULT_CAP * 4).map((p) => (
-                      <Command.Item
-                        key={`pokemon:${p.name}`}
-                        value={`pokemon ${p.name}`}
-                        onSelect={() => choose("pokemon", p.name)}
-                        className="cursor-pointer rounded px-3 py-1.5 text-sm data-[selected=true]:bg-[var(--bg-elev-strong)]"
-                        style={{ color: "var(--text)" }}
-                      >
-                        {p.name}
-                      </Command.Item>
-                    ))}
-                  </Command.Group>
-                )}
-                {moves.data && (
-                  <Command.Group heading={t("search.section_moves")}>
-                    {moves.data.map((m) => (
-                      <Command.Item
-                        key={`move:${m}`}
-                        value={`move ${m} ${localize("move", m)}`}
-                        onSelect={() => choose("move", m)}
-                        className="cursor-pointer rounded px-3 py-1.5 text-sm data-[selected=true]:bg-[var(--bg-elev-strong)]"
-                        style={{ color: "var(--text)" }}
-                      >
-                        {localize("move", m) || m}
-                      </Command.Item>
-                    ))}
-                  </Command.Group>
-                )}
-                {items.data && (
-                  <Command.Group heading={t("search.section_items")}>
-                    {items.data.map((i) => (
-                      <Command.Item
-                        key={`item:${i}`}
-                        value={`item ${i} ${localize("item", i)}`}
-                        onSelect={() => choose("item", i)}
-                        className="cursor-pointer rounded px-3 py-1.5 text-sm data-[selected=true]:bg-[var(--bg-elev-strong)]"
-                        style={{ color: "var(--text)" }}
-                      >
-                        {localize("item", i) || i}
-                      </Command.Item>
-                    ))}
-                  </Command.Group>
-                )}
-                {abilities.data && (
-                  <Command.Group heading={t("search.section_abilities")}>
-                    {abilities.data.map((a) => (
-                      <Command.Item
-                        key={`ability:${a}`}
-                        value={`ability ${a} ${localize("ability", a)}`}
-                        onSelect={() => choose("ability", a)}
-                        className="cursor-pointer rounded px-3 py-1.5 text-sm data-[selected=true]:bg-[var(--bg-elev-strong)]"
-                        style={{ color: "var(--text)" }}
-                      >
-                        {localize("ability", a) || a}
-                      </Command.Item>
-                    ))}
-                  </Command.Group>
-                )}
-              </>
+            {hasQuery && !anyLoading && totalMatches === 0 && (
+              <div
+                className="px-3 py-6 text-center text-xs"
+                style={{ color: "var(--text-dim)" }}
+              >
+                {t("search.no_results")}
+              </div>
+            )}
+            {hasQuery && pokemonMatchesList.length > 0 && (
+              <Command.Group heading={t("search.section_pokemon")}>
+                {pokemonMatchesList.map((p) => (
+                  <Command.Item
+                    key={`pokemon:${p.name}`}
+                    value={`pokemon-${p.name}-${p.id}`}
+                    onSelect={() => choose("pokemon", p.name)}
+                    className="cursor-pointer rounded px-2 py-1.5 text-sm data-[selected=true]:bg-[var(--bg-elev-strong)]"
+                    style={{ color: "var(--text)" }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center">
+                        <PokemonSprite
+                          url={p.sprite_url}
+                          fallbackUrl={p.sprite_fallback_url}
+                          homeUrl={p.home_sprite_url ?? undefined}
+                          name={p.name}
+                          size={28}
+                          variant="pixel"
+                        />
+                      </div>
+                      <span className="flex-1 truncate">{p.name}</span>
+                      <div className="flex gap-0.5">
+                        {p.types.map((ty) => (
+                          <TypeBadge key={ty} type={ty} />
+                        ))}
+                      </div>
+                    </div>
+                  </Command.Item>
+                ))}
+              </Command.Group>
+            )}
+            {hasQuery && movesMatchesList.length > 0 && (
+              <Command.Group heading={t("search.section_moves")}>
+                {movesMatchesList.map((m) => {
+                  const summary = moveSummary(m);
+                  return (
+                    <Command.Item
+                      key={`move:${m}`}
+                      value={`move-${m}`}
+                      onSelect={() => choose("move", m)}
+                      className="cursor-pointer rounded px-2 py-1.5 text-sm data-[selected=true]:bg-[var(--bg-elev-strong)]"
+                      style={{ color: "var(--text)" }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="flex-1 truncate">
+                          {localize("move", m) || m}
+                        </span>
+                        {summary && (
+                          <>
+                            <TypeBadge type={summary.type_} />
+                            <span
+                              className="inline-flex items-center rounded border px-1 py-0.5 text-[9px]"
+                              style={{
+                                color: "var(--text-muted)",
+                                borderColor: "var(--border)",
+                              }}
+                              title={t(
+                                `tooltip.move_category.${summary.category.toLowerCase()}`,
+                              )}
+                            >
+                              <MoveCategoryIcon category={summary.category} />
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </Command.Item>
+                  );
+                })}
+              </Command.Group>
+            )}
+            {hasQuery && itemsMatchesList.length > 0 && (
+              <Command.Group heading={t("search.section_items")}>
+                {itemsMatchesList.map((i) => (
+                  <Command.Item
+                    key={`item:${i}`}
+                    value={`item-${i}`}
+                    onSelect={() => choose("item", i)}
+                    className="cursor-pointer rounded px-2 py-1.5 text-sm data-[selected=true]:bg-[var(--bg-elev-strong)]"
+                    style={{ color: "var(--text)" }}
+                  >
+                    {localize("item", i) || i}
+                  </Command.Item>
+                ))}
+              </Command.Group>
+            )}
+            {hasQuery && abilitiesMatchesList.length > 0 && (
+              <Command.Group heading={t("search.section_abilities")}>
+                {abilitiesMatchesList.map((a) => (
+                  <Command.Item
+                    key={`ability:${a}`}
+                    value={`ability-${a}`}
+                    onSelect={() => choose("ability", a)}
+                    className="cursor-pointer rounded px-2 py-1.5 text-sm data-[selected=true]:bg-[var(--bg-elev-strong)]"
+                    style={{ color: "var(--text)" }}
+                  >
+                    {localize("ability", a) || a}
+                  </Command.Item>
+                ))}
+              </Command.Group>
             )}
           </Command.List>
         </Command>
       </div>
     </div>
+  );
+}
+
+interface RecentItemProps {
+  recent: { kind: RecentSearchKind; name: string };
+  pokemonByKey: Map<string, Pokemon>;
+  localize: (kind: "ability" | "move" | "item", n: string) => string;
+  moveSummary: ReturnType<typeof useMoveSummary>;
+  onSelect: () => void;
+}
+
+function RecentItem({
+  recent,
+  pokemonByKey,
+  localize,
+  moveSummary,
+  onSelect,
+}: RecentItemProps) {
+  const { t } = useTranslation();
+  const { kind, name } = recent;
+  const sectionKey = `search.section_${
+    kind === "pokemon" ? "pokemon" : kind + "s"
+  }` as const;
+
+  let label = name;
+  if (kind === "move" || kind === "item" || kind === "ability") {
+    label = localize(kind, name) || name;
+  }
+
+  const p = kind === "pokemon" ? pokemonByKey.get(canonicalSpeciesId(name)) : null;
+  const summary = kind === "move" ? moveSummary(name) : null;
+
+  return (
+    <Command.Item
+      value={`recent-${kind}-${name}`}
+      onSelect={onSelect}
+      className="cursor-pointer rounded px-2 py-1.5 text-sm data-[selected=true]:bg-[var(--bg-elev-strong)]"
+      style={{ color: "var(--text)" }}
+    >
+      <div className="flex items-center gap-2">
+        {p ? (
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center">
+            <PokemonSprite
+              url={p.sprite_url}
+              fallbackUrl={p.sprite_fallback_url}
+              homeUrl={p.home_sprite_url ?? undefined}
+              name={p.name}
+              size={28}
+              variant="pixel"
+            />
+          </div>
+        ) : (
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center">
+            <Clock size={14} style={{ color: "var(--text-dim)" }} />
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="truncate">{label}</div>
+          <div
+            className="text-[10px] uppercase tracking-wide"
+            style={{ color: "var(--text-dim)" }}
+          >
+            {t(sectionKey)}
+          </div>
+        </div>
+        {p && (
+          <div className="flex gap-0.5">
+            {p.types.map((ty) => (
+              <TypeBadge key={ty} type={ty} />
+            ))}
+          </div>
+        )}
+        {summary && <TypeBadge type={summary.type_} />}
+      </div>
+    </Command.Item>
   );
 }

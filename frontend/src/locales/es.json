@@ -78,6 +78,12 @@
     "tournaments_used": "Torneos analizados",
     "total_entries": "Entradas totales",
     "refresh": "Actualizar",
+    "refreshing": "Actualizando...",
+    "refreshed": "Actualizado",
+    "chart_view": "Vista del gráfico",
+    "chart_view_bar": "Barras",
+    "chart_view_donut": "Dona",
+    "chart_view_list": "Ranking",
     "format_favorite": "Marca como favorito (aparece primero al abrir)",
     "champions_report": "Torneos recientes de Champions",
     "recent_tournaments": "Torneos recientes",
@@ -109,7 +115,7 @@
   },
   "upcoming": {
     "title": "Próximos torneos",
-    "window": "Torneos anunciados para los próximos 14 días",
+    "window": "Torneos anunciados para los próximos 30 días",
     "empty": "Sin torneos próximos anunciados.",
     "open": "Abrir"
   },
@@ -362,6 +368,7 @@
   "ui": {
     "collapse_sidebar": "Colapsar barra lateral",
     "expand_sidebar": "Expandir barra lateral",
+    "resize_sidebar": "Arrastra para redimensionar",
     "theme_gengar": "Gengar (oscuro)",
     "theme_clefable": "Clefable (claro)",
     "theme_milotic": "Milotic",
@@ -373,7 +380,9 @@
   "titlebar": {
     "back": "Atrás",
     "forward": "Adelante",
-    "search": "Buscar (Ctrl+K)"
+    "search": "Buscar (Ctrl+K)",
+    "collapse_sidebar": "Colapsar barra lateral",
+    "expand_sidebar": "Expandir barra lateral"
   },
   "updater": {
     "available_title": "Actualización disponible",
@@ -393,6 +402,8 @@
     "section_abilities": "Habilidades",
     "loading": "Cargando...",
     "no_results": "Sin resultados",
+    "recent": "Recientes",
+    "clear_recent": "Limpiar",
     "close": "Cerrar"
   },
   "validation": {

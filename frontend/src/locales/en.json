@@ -78,6 +78,12 @@
     "tournaments_used": "Tournaments analyzed",
     "total_entries": "Total entries",
     "refresh": "Refresh",
+    "refreshing": "Refreshing...",
+    "refreshed": "Refreshed",
+    "chart_view": "Chart view",
+    "chart_view_bar": "Bar chart",
+    "chart_view_donut": "Donut",
+    "chart_view_list": "Ranking list",
     "format_favorite": "Mark as favorite (appears first when opening)",
     "champions_report": "Recent Champions tournaments",
     "recent_tournaments": "Recent tournaments",
@@ -109,7 +115,7 @@
   },
   "upcoming": {
     "title": "Upcoming tournaments",
-    "window": "Tournaments announced within the next 14 days",
+    "window": "Tournaments announced within the next 30 days",
     "empty": "No upcoming tournaments announced.",
     "open": "Open"
   },
@@ -362,6 +368,7 @@
   "ui": {
     "collapse_sidebar": "Collapse sidebar",
     "expand_sidebar": "Expand sidebar",
+    "resize_sidebar": "Drag to resize sidebar",
     "theme_gengar": "Gengar (dark)",
     "theme_clefable": "Clefable (light)",
     "theme_milotic": "Milotic",
@@ -373,7 +380,9 @@
   "titlebar": {
     "back": "Back",
     "forward": "Forward",
-    "search": "Search (Ctrl+K)"
+    "search": "Search (Ctrl+K)",
+    "collapse_sidebar": "Collapse sidebar",
+    "expand_sidebar": "Expand sidebar"
   },
   "updater": {
     "available_title": "Update available",
@@ -393,6 +402,8 @@
     "section_abilities": "Abilities",
     "loading": "Loading...",
     "no_results": "No results",
+    "recent": "Recent",
+    "clear_recent": "Clear",
     "close": "Close"
   },
   "validation": {

@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -8,8 +9,6 @@ import {
   Trophy,
   Calculator,
   Settings as SettingsIcon,
-  ChevronsLeft,
-  ChevronsRight,
 } from "lucide-react";
 import { cn } from "../../lib/cn";
 import { Titlebar } from "./Titlebar";
@@ -25,12 +24,38 @@ import { MoveDetailModal } from "../info/MoveDetailModal";
 import { ItemDetailModal } from "../info/ItemDetailModal";
 import { AbilityDetailModal } from "../info/AbilityDetailModal";
 
+const SIDEBAR_COLLAPSED_WIDTH = 64;
+
 export function AppShell() {
   const { t } = useTranslation();
   useNavHistorySync();
   useAutoUpdate();
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
-  const toggleSidebar = useUiStore((s) => s.toggleSidebar);
+  const sidebarWidthPx = useUiStore((s) => s.sidebarWidthPx);
+  const setSidebarWidthPx = useUiStore((s) => s.setSidebarWidthPx);
+  const [isResizing, setIsResizing] = useState(false);
+  const asideRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!isResizing) return;
+    const onMove = (e: MouseEvent) => {
+      const left = asideRef.current?.getBoundingClientRect().left ?? 0;
+      setSidebarWidthPx(e.clientX - left);
+    };
+    const onUp = () => setIsResizing(false);
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    const prevCursor = document.body.style.cursor;
+    const prevUserSelect = document.body.style.userSelect;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    return () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = prevCursor;
+      document.body.style.userSelect = prevUserSelect;
+    };
+  }, [isResizing, setSidebarWidthPx]);
 
   const navItems = [
     { to: "/dashboard", icon: LayoutDashboard, label: t("nav.dashboard") },
@@ -50,18 +75,20 @@ export function AppShell() {
       <Titlebar />
       <div className="flex min-h-0 flex-1">
       <aside
-        className={cn(
-          "flex shrink-0 flex-col border-r transition-[width] duration-200",
-          collapsed ? "w-16" : "w-60",
-        )}
+        ref={asideRef}
+        className="relative flex shrink-0 flex-col border-r"
         style={{
           backgroundColor: "var(--bg-elev)",
           borderColor: "var(--border)",
+          width: collapsed
+            ? `${SIDEBAR_COLLAPSED_WIDTH}px`
+            : `${sidebarWidthPx}px`,
+          transition: isResizing ? "none" : "width 200ms ease",
         }}
       >
         <div
           className={cn(
-            "relative flex items-center gap-3 border-b px-3 py-4",
+            "flex items-center gap-3 border-b px-3 py-4",
             collapsed && "justify-center px-2",
           )}
           style={{ borderColor: "var(--border)" }}
@@ -72,7 +99,7 @@ export function AppShell() {
             className="h-9 w-9 shrink-0 rounded-full"
           />
           {!collapsed && (
-            <div className="flex min-w-0 flex-col pr-6">
+            <div className="flex min-w-0 flex-col">
               <span className="text-lg font-bold leading-tight tracking-tight">
                 {t("app.name")}
               </span>
@@ -84,28 +111,6 @@ export function AppShell() {
               </span>
             </div>
           )}
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            className={cn(
-              "absolute rounded-md p-1 transition-colors",
-              "hover:bg-[var(--bg-elev-strong)]",
-              collapsed ? "bottom-1 left-1/2 -translate-x-1/2" : "right-2 top-2",
-            )}
-            style={{ color: "var(--text-muted)" }}
-            aria-label={
-              collapsed ? t("ui.expand_sidebar") : t("ui.collapse_sidebar")
-            }
-            title={
-              collapsed ? t("ui.expand_sidebar") : t("ui.collapse_sidebar")
-            }
-          >
-            {collapsed ? (
-              <ChevronsRight size={14} />
-            ) : (
-              <ChevronsLeft size={14} />
-            )}
-          </button>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2 py-2">
@@ -154,6 +159,23 @@ export function AppShell() {
             </>
           )}
         </div>
+        {!collapsed && (
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label={t("ui.resize_sidebar")}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setIsResizing(true);
+            }}
+            onDoubleClick={() => setSidebarWidthPx(240)}
+            className="absolute right-0 top-0 z-10 h-full w-1.5 cursor-col-resize transition-opacity hover:opacity-100"
+            style={{
+              backgroundColor: "var(--accent)",
+              opacity: isResizing ? 0.6 : 0,
+            }}
+          />
+        )}
       </aside>
       <main id="app-main" className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-7xl px-6 py-6">
