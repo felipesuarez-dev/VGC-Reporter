@@ -69,7 +69,7 @@ jobs:
             Windows and Linux builds auto-update from this release onward.
             macOS bundles are unsigned — right-click the app → Open on first launch, and updates must be downloaded manually from the Releases page.
           releaseDraft: true
-          prerelease: true
+          prerelease: false
           includeUpdaterJson: true
           updaterJsonPreferNsis: false
           args: ${{ matrix.args }}
