@@ -37,12 +37,17 @@ interface SpriteTickProps {
   y?: number;
   payload?: { value: string };
   data: UsageBarItem[];
+  onClickItem?: (item: UsageBarItem) => void;
 }
 
-function SpriteTick({ x = 0, y = 0, payload, data }: SpriteTickProps) {
+function SpriteTick({ x = 0, y = 0, payload, data, onClickItem }: SpriteTickProps) {
   const item = data.find((d) => d.name === payload?.value);
   return (
-    <g transform={`translate(${x},${y})`}>
+    <g
+      transform={`translate(${x},${y})`}
+      onClick={() => item && onClickItem?.(item)}
+      style={onClickItem ? { cursor: "pointer" } : undefined}
+    >
       {item?.sprite_url && (
         <foreignObject x={-174} y={-16} width={32} height={32}>
           <PokemonSprite
@@ -141,7 +146,7 @@ export function UsageBarChart({ data, height = 320, onBarClick }: Props) {
           width={180}
           fontSize={12}
           interval={0}
-          tick={(props) => <SpriteTick {...props} data={data} />}
+          tick={(props) => <SpriteTick {...props} data={data} onClickItem={onBarClick} />}
         />
         <Tooltip
           content={<CustomTooltip />}

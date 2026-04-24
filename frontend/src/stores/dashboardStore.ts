@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Format } from "../lib/types";
 
-export type TopPokemonView = "bar" | "donut" | "list";
+export type TopPokemonView = "bar" | "grid" | "list";
 
 interface DashboardState {
   format: Format;
@@ -25,7 +25,7 @@ export const useDashboardStore = create<DashboardState>()(
     }),
     {
       name: "vgc-dashboard",
-      version: 5,
+      version: 6,
       migrate: (persisted: unknown, version: number) => {
         if (version < 2) {
           const prior = (persisted ?? {}) as { format?: Format };
@@ -39,10 +39,11 @@ export const useDashboardStore = create<DashboardState>()(
         const prior = (persisted ?? {}) as Partial<DashboardState> & {
           tournamentCount?: number;
         };
+        const rawView = (prior as Record<string, unknown>).topPokemonView as string | undefined;
         return {
           format: prior.format ?? "regulation-m-a",
           favoriteFormat: prior.favoriteFormat ?? prior.format ?? "regulation-m-a",
-          topPokemonView: prior.topPokemonView ?? "bar",
+          topPokemonView: (rawView === "donut" ? "grid" : rawView ?? "bar") as TopPokemonView,
         } as DashboardState;
       },
     },

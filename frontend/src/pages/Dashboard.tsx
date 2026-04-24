@@ -5,9 +5,9 @@ import {
   BarChart3,
   Check,
   ExternalLink,
+  LayoutGrid,
   ListOrdered,
   Loader2,
-  PieChart as PieChartIcon,
   RefreshCw,
 } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -17,7 +17,7 @@ import { formatDate, formatDateTime } from "../lib/formatDate";
 import { formatLabel } from "../lib/labels";
 import { type ChampionsTournament } from "../lib/types";
 import { UsageBarChart, type UsageBarItem } from "../components/charts/UsageBarChart";
-import { UsageDonutChart } from "../components/charts/UsageDonutChart";
+import { UsageGridView } from "../components/charts/UsageGridView";
 import { UsageRankingList } from "../components/charts/UsageRankingList";
 import { cn } from "../lib/cn";
 import { TopList } from "../components/charts/TopList";
@@ -217,7 +217,7 @@ export function Dashboard() {
                 {(
                   [
                     { id: "bar", Icon: BarChart3, label: t("dashboard.chart_view_bar") },
-                    { id: "donut", Icon: PieChartIcon, label: t("dashboard.chart_view_donut") },
+                    { id: "grid", Icon: LayoutGrid, label: t("dashboard.chart_view_grid") },
                     { id: "list", Icon: ListOrdered, label: t("dashboard.chart_view_list") },
                   ] as const
                 ).map(({ id, Icon, label }) => (
@@ -247,11 +247,10 @@ export function Dashboard() {
                 onBarClick={handleBarClick}
               />
             )}
-            {topPokemonView === "donut" && (
-              <UsageDonutChart
+            {topPokemonView === "grid" && (
+              <UsageGridView
                 data={chartPokemon}
-                height={Math.max(440, topPokemon.length * 24)}
-                onSliceClick={handleBarClick}
+                onItemClick={handleBarClick}
               />
             )}
             {topPokemonView === "list" && (
