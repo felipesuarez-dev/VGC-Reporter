@@ -5,7 +5,7 @@ use chrono::{Duration, NaiveDate, Utc};
 
 const LIMITLESS_TOURNAMENT_URL: &str = "https://play.limitlesstcg.com/tournament";
 const LIMITLESS_SOURCE: &str = "limitless";
-const WINDOW_DAYS: i64 = 14;
+const WINDOW_DAYS: i64 = 30;
 
 #[derive(Clone)]
 pub struct UpcomingTournamentsService {
@@ -21,25 +21,26 @@ impl UpcomingTournamentsService {
         let today = Utc::now().date_naive();
         let window_end = today + Duration::days(WINDOW_DAYS);
 
-        let raw = match self.limitless.list_all_vgc(100).await {
-            Ok(list) => list,
-            Err(e) => {
-                tracing::warn!(error = %e, "upcoming tournaments fetch failed");
-                return Ok(Vec::new());
-            }
-        };
-
+        let raw = self.limitless.list_all_vgc(200).await?;
         let fetched = raw.len();
+        let mut with_date = 0usize;
         let mut upcoming: Vec<UpcomingTournament> = raw
             .into_iter()
-            .filter_map(|t| to_upcoming(t, today, window_end))
+            .filter_map(|t| {
+                if t.date.is_some() {
+                    with_date += 1;
+                }
+                to_upcoming(t, today, window_end)
+            })
             .collect();
         upcoming.sort_by(|a, b| a.date.cmp(&b.date));
-        tracing::debug!(
+        tracing::info!(
             fetched,
+            with_date,
             kept = upcoming.len(),
             today = %today,
             window_end = %window_end,
+            window_days = WINDOW_DAYS,
             "upcoming tournaments filtered"
         );
         Ok(upcoming)

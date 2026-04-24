@@ -21,6 +21,29 @@ fn canonical_species_id(s: &str) -> String {
 /// Joins Showdown English descriptions (authoritative for competitive text)
 /// with PokéAPI Spanish flavor. Keys come from the English map since that is
 /// what the frontend already asks for (normalized Showdown names).
+/// Overlays a curated Spanish description supplement. Only fills entries
+/// where PokéAPI had no Spanish flavor text (signalled by `es == en` after
+/// `merge_lang`). Real PokéAPI Spanish translations win.
+fn apply_description_supplement(
+    into: &mut HashMap<String, LocalizedDescription>,
+    supplement: HashMap<String, LocalizedDescription>,
+) {
+    for (key, sup) in supplement {
+        match into.get_mut(&key) {
+            Some(existing) if existing.es != existing.en => continue,
+            Some(existing) => {
+                existing.es = sup.es;
+                if existing.en.is_empty() {
+                    existing.en = sup.en;
+                }
+            }
+            None => {
+                into.insert(key, sup);
+            }
+        }
+    }
+}
+
 fn merge_lang(
     en: HashMap<String, String>,
     es_map: &HashMap<String, LocalizedDescription>,
@@ -210,9 +233,10 @@ impl PokedexService {
     }
 
     pub async fn get_entity_descriptions(&self) -> Result<EntityDescriptions, AppError> {
-        // v2 bumps the cache key now that descriptions are bilingual
-        // (LocalizedDescription instead of plain String).
-        const KEY: &str = "showdown::entity_descriptions::v2";
+        // v3 bumps the cache key now that the Gen 9 Spanish supplement is
+        // overlaid onto the PokéAPI merge — older caches were built without
+        // it and would mask the new translations.
+        const KEY: &str = "showdown::entity_descriptions::v3";
         if let Some(bytes) = self.cache.get(KEY)? {
             if let Ok(data) = serde_json::from_slice::<EntityDescriptions>(&bytes) {
                 return Ok(data);
@@ -235,10 +259,21 @@ impl PokedexService {
         let es_moves = es_moves.unwrap_or_default();
         let es_items = es_items.unwrap_or_default();
 
+        let mut moves = merge_lang(en_maps.moves, &es_moves);
+        let mut abilities = merge_lang(en_maps.abilities, &es_abilities);
+        apply_description_supplement(
+            &mut moves,
+            crate::adapters::gen9_supplement::gen9_move_descriptions(),
+        );
+        apply_description_supplement(
+            &mut abilities,
+            crate::adapters::gen9_supplement::gen9_ability_descriptions(),
+        );
+
         let data = EntityDescriptions {
             items: merge_lang(en_maps.items, &es_items),
-            moves: merge_lang(en_maps.moves, &es_moves),
-            abilities: merge_lang(en_maps.abilities, &es_abilities),
+            moves,
+            abilities,
         };
 
         let bytes = serde_json::to_vec(&data)?;

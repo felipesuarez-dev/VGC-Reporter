@@ -1,3 +1,4 @@
+pub mod gen9_supplement;
 pub mod http_client;
 pub mod labmaus_client;
 pub mod limitless_client;
