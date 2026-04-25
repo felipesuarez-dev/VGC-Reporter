@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "../../lib/cn";
 import { Titlebar } from "./Titlebar";
+import { MobileTopbar } from "./MobileTopbar";
 import { ScrollToTop } from "../ui/ScrollToTop";
 import { useUiStore } from "../../stores/uiStore";
 import { APP_VERSION, shortVersion } from "../../lib/version";
@@ -29,17 +30,17 @@ const SIDEBAR_COLLAPSED_WIDTH = 64;
 
 export function AppShell() {
   const { t } = useTranslation();
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches,
+  );
   useNavHistorySync();
-  useAutoUpdate();
+  useAutoUpdate(!isMobile);
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
   const sidebarWidthPx = useUiStore((s) => s.sidebarWidthPx);
   const setSidebarWidthPx = useUiStore((s) => s.setSidebarWidthPx);
   const [isResizing, setIsResizing] = useState(false);
   const [hoverHandle, setHoverHandle] = useState(false);
   const asideRef = useRef<HTMLElement>(null);
-  const [isMobile, setIsMobile] = useState(
-    () => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches,
-  );
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -94,8 +95,8 @@ export function AppShell() {
       className="flex h-screen w-screen flex-col"
       style={{ backgroundColor: "var(--bg)", color: "var(--text)" }}
     >
-      <Titlebar />
-      <UpdaterErrorBanner />
+      {isMobile ? <MobileTopbar /> : <Titlebar />}
+      {!isMobile && <UpdaterErrorBanner />}
       <div className="flex min-h-0 flex-1">
       {isMobile && !collapsed && (
         <div
@@ -227,7 +228,7 @@ export function AppShell() {
       <ItemDetailModal />
       <AbilityDetailModal />
       <GlobalSearchPalette />
-      <UpdaterModal />
+      {!isMobile && <UpdaterModal />}
     </div>
   );
 }

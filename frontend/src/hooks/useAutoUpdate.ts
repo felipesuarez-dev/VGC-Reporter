@@ -26,17 +26,17 @@ export async function runUpdateCheck(): Promise<CheckOutcome> {
   }
 }
 
-export function useAutoUpdate() {
+export function useAutoUpdate(enabled = true) {
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
     (async () => {
       const outcome = await runUpdateCheck();
       if (cancelled) return;
-      // nothing else; the store drives the UI.
       void outcome;
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [enabled]);
 }
