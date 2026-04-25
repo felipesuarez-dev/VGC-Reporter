@@ -33,6 +33,15 @@ jobs:
           fi
           echo "Range: $RANGE"
 
+          clean_subject() {
+            local s="$1"
+            s=$(echo "$s" | sed -E 's/^\[[^]]+\][[:space:]]*//')
+            local first rest
+            first=$(printf '%s' "${s:0:1}" | tr '[:lower:]' '[:upper:]')
+            rest="${s:1}"
+            printf '%s%s' "$first" "$rest"
+          }
+
           CHANGES=""
           FIXES=""
           while IFS= read -r line; do
@@ -40,10 +49,15 @@ jobs:
             case "$line" in
               \[release\]*|\[ci\]*) continue ;;
             esac
+            is_fix=0
             if echo "$line" | grep -iqE '\bfix(es|ed)?\b|\bbug\b|\bhotfix\b|\bresolve[sd]?\b'; then
-              FIXES="${FIXES}- ${line}"$'\n'
+              is_fix=1
+            fi
+            cleaned=$(clean_subject "$line")
+            if [ "$is_fix" -eq 1 ]; then
+              FIXES="${FIXES}- ${cleaned}"$'\n'
             else
-              CHANGES="${CHANGES}- ${line}"$'\n'
+              CHANGES="${CHANGES}- ${cleaned}"$'\n'
             fi
           done < <(git log --pretty='%s' "$RANGE")
 
