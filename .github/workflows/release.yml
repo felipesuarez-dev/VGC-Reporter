@@ -64,10 +64,13 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: VGC Reporter ${{ github.ref_name }}
           releaseBody: |
-            See the [README](https://github.com/felipesuarez-dev/vgc-reporter#download) for download notes.
+            ## Changes
 
-            Windows and Linux builds auto-update from this release onward.
-            macOS bundles are unsigned — right-click the app → Open on first launch, and updates must be downloaded manually from the Releases page.
+            <!-- List new features and improvements -->
+
+            ## Fixes
+
+            <!-- List bug fixes -->
           releaseDraft: true
           prerelease: false
           includeUpdaterJson: true
@@ -76,6 +79,7 @@ jobs:
 
   android:
     runs-on: ubuntu-latest
+    needs: [build]
     if: startsWith(github.ref, 'refs/tags/')
     steps:
       - uses: actions/checkout@v4
@@ -142,3 +146,35 @@ jobs:
           done
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sign APK for Tauri updater (minisign)
+        env:
+          PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          SIGNED_APK="VGC.Reporter_${{ github.ref_name }}_android.apk"
+          npx tauri signer sign -k "$PRIVATE_KEY" -p "$PRIVATE_KEY_PASSWORD" "$SIGNED_APK"
+
+      - name: Inject Android platform into latest.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          SIGNED_APK="VGC.Reporter_${TAG}_android.apk"
+          APK_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/${SIGNED_APK}"
+          for i in 1 2 3 4 5; do
+            if gh release download "$TAG" --pattern "latest.json" --output latest.json 2>/dev/null; then
+              echo "latest.json downloaded"
+              break
+            fi
+            echo "Retry $i/5 in 30s..."
+            sleep 30
+          done
+          python3 -c "
+import json, sys
+data = json.load(open('latest.json'))
+sig = open(sys.argv[1] + '.sig').read().strip()
+data['platforms']['android'] = {'signature': sig, 'url': sys.argv[2]}
+json.dump(data, open('latest.json', 'w'), indent=2)
+" "$SIGNED_APK" "$APK_URL"
+          gh release upload "$TAG" latest.json --clobber

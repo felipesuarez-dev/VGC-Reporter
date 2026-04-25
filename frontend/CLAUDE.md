@@ -92,9 +92,9 @@ The app targets both desktop and Android via the same codebase. Key conventions:
 - **`MobileTopbar`** — replaces `Titlebar` on mobile. Contains hamburger, logo, search, theme/language toggles.
 - **Sidebar** — `fixed inset-y-0 left-0 z-40` on mobile (overlay drawer). Collapsed by default; toggled by the hamburger. `translateX(-100%)` when collapsed.
 - **Safe-area insets** — use `env(safe-area-inset-top)` / `env(safe-area-inset-bottom)` in inline styles on elements that touch the screen edges (sidebar header, sidebar footer, main content bottom). Never in Tailwind classes because `viewport-fit=cover` only works with inline style on Android WebView.
-- **`useAutoUpdate`** — skipped on mobile (`useAutoUpdate(!isMobile)`) because `tauri-plugin-updater` is desktop-only.
+- **`useAutoUpdate`** — enabled on all platforms including Android (`useAutoUpdate(true)`). On Android the updater downloads the APK and hands off to the system package installer; the user taps Install once.
 - **`useModalBack`** (`hooks/useModalBack.ts`) — push a dummy history entry on modal open so the Android back button closes the modal instead of navigating behind it. Apply to every modal/dialog.
-- **Desktop-only UI** — `UpdaterModal`, `UpdaterErrorBanner`, and the check-for-updates block in `AboutModal` are all guarded with `!isMobile`.
+- **`UpdaterErrorBanner`** — desktop-only (shown in the Titlebar row, not rendered on mobile). `UpdaterModal` and the check-for-updates block in `AboutModal` are shown on all platforms.
 
 ## Gotchas
 

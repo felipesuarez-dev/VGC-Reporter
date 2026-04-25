@@ -34,7 +34,7 @@ export function AppShell() {
     () => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches,
   );
   useNavHistorySync();
-  useAutoUpdate(!isMobile);
+  useAutoUpdate(true);
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
   const sidebarWidthPx = useUiStore((s) => s.sidebarWidthPx);
   const setSidebarWidthPx = useUiStore((s) => s.setSidebarWidthPx);
@@ -63,6 +63,7 @@ export function AppShell() {
         setIsResizing(false);
         return;
       }
+      useUiStore.getState().setSidebarCollapsed(false);
       setSidebarWidthPx(delta);
     };
     const onUp = () => setIsResizing(false);
@@ -200,7 +201,7 @@ export function AppShell() {
             </>
           )}
         </div>
-        {!collapsed && !isMobile && (
+        {!isMobile && (
           <div
             role="separator"
             aria-orientation="vertical"
@@ -211,8 +212,11 @@ export function AppShell() {
             }}
             onMouseEnter={() => setHoverHandle(true)}
             onMouseLeave={() => setHoverHandle(false)}
-            onDoubleClick={() => setSidebarWidthPx(240)}
-            className="absolute right-0 top-0 z-10 h-full w-1.5 cursor-col-resize transition-opacity"
+            onDoubleClick={() => {
+              useUiStore.getState().setSidebarCollapsed(false);
+              setSidebarWidthPx(240);
+            }}
+            className={`absolute right-0 top-0 z-10 h-full w-1.5 transition-opacity ${collapsed ? "cursor-e-resize" : "cursor-col-resize"}`}
             style={{
               backgroundColor: "var(--accent)",
               opacity: isResizing ? 0.6 : hoverHandle ? 0.35 : 0,
@@ -232,7 +236,7 @@ export function AppShell() {
       <ItemDetailModal />
       <AbilityDetailModal />
       <GlobalSearchPalette />
-      {!isMobile && <UpdaterModal />}
+      <UpdaterModal />
     </div>
   );
 }

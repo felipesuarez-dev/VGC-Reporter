@@ -1,7 +1,7 @@
 # VGC-Reporter — Guía raíz
 
 **Producto:** VGC-Reporter
-**Versión:** 0.1.7.20260425-beta
+**Versión:** 0.1.8.20260425-beta
 **Autor:** PumaSoft
 
 Aplicación Tauri 2 + Rust + React para estadísticas competitivas de Pokémon Champions (VGC 2026, Regulation M-A) y construcción de equipos propios.
@@ -83,3 +83,25 @@ Todo el fetching pasa por `HttpClient::get_cached` (SQLite TTL). No añadir `req
 - **Código:** nada de comentarios que expliquen el *qué*; solo *por qué* cuando no es obvio.
 - **Idioma UI:** claves en inglés (ej. `dashboard.top_pokemon`), traducidas vía `i18next` a ES/EN.
 - **Errores:** `thiserror` en Rust, `Result<T, AppError>` en commands. El frontend los recibe como objetos serializados.
+
+## Releases
+
+Al crear un release, actualizar la versión en todos los sitios correspondientes (ver tabla abajo), hacer tag y push. El workflow CI genera un draft con todos los artefactos. Antes de publicar el draft:
+
+- En el body del release **reemplazar** los placeholders del template con los cambios reales:
+  - **Changes:** novedades y mejoras
+  - **Fixes:** correcciones de bugs (un bullet por fix)
+  - Si hubo PRs mergeados, mencionar el número inline
+  - NO incluir notas de plataforma ni instrucciones de descarga — eso está en el README
+
+### Dónde actualizar la versión
+
+| Archivo | Campo |
+|---------|-------|
+| `src-tauri/tauri.conf.json` | `"version"` |
+| `src-tauri/Cargo.toml` | `version` (línea 3) |
+| `frontend/src/lib/version.ts` | `APP_VERSION` |
+| `package.json` (raíz) | `"version"` |
+| `frontend/package.json` | `"version"` |
+| `README.md` | badge `[version-badge]` + tabla de descarga |
+| `CLAUDE.md` (este archivo) | `**Versión:**` en el encabezado |

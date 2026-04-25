@@ -71,17 +71,17 @@ VGC Reporter is the tool I wanted while team-building for Regulation M-A: one wi
 
 ## Download
 
-Pre-built installers for the **`v0.1.7.20260425-beta`** release:
+Pre-built installers for the **`v0.1.8.20260425-beta`** release:
 
 | Platform | Installer | Notes |
 |---|---|---|
-| Windows 10/11 | `VGC.Reporter_0.1.7_x64_en-US.msi` | MSI installer (recommended) |
-| Windows 10/11 | `VGC.Reporter_0.1.7_x64-setup.exe` | NSIS installer (portable-friendly) |
-| macOS 12+ (Apple Silicon) | `VGC.Reporter_0.1.7_aarch64.dmg` | Unsigned — right-click → Open the first time |
-| macOS 12+ (Intel) | `VGC.Reporter_0.1.7_x64.dmg` | Unsigned — right-click → Open the first time |
-| Linux (Debian/Ubuntu) | `vgc-reporter_0.1.7_amd64.deb` | Requires `webkit2gtk-4.1` |
-| Linux (any distro) | `vgc-reporter_0.1.7_amd64.AppImage` | `chmod +x` then run |
-| Android 7+ (arm64) | `VGC.Reporter_0.1.7_aarch64.apk` | Sideload: enable "Unknown sources" first |
+| Windows 10/11 | `VGC.Reporter_0.1.8_x64_en-US.msi` | MSI installer (recommended) |
+| Windows 10/11 | `VGC.Reporter_0.1.8_x64-setup.exe` | NSIS installer (portable-friendly) |
+| macOS 12+ (Apple Silicon) | `VGC.Reporter_0.1.8_aarch64.dmg` | Unsigned — right-click → Open the first time |
+| macOS 12+ (Intel) | `VGC.Reporter_0.1.8_x64.dmg` | Unsigned — right-click → Open the first time |
+| Linux (Debian/Ubuntu) | `vgc-reporter_0.1.8_amd64.deb` | Requires `webkit2gtk-4.1` |
+| Linux (any distro) | `vgc-reporter_0.1.8_amd64.AppImage` | `chmod +x` then run |
+| Android 7+ (arm64) | `VGC.Reporter_v0.1.8_android.apk` | Sideload: enable "Unknown sources" first |
 
 **[→ Download from the latest GitHub Release](https://github.com/felipesuarez-dev/vgc-reporter/releases/latest)**
 
@@ -116,7 +116,7 @@ First launch downloads and caches Pokédex, moves, items, abilities and usage st
 - **macOS bundles are unsigned**. Gatekeeper will block the first launch — right-click the app → Open → Open Anyway. Code signing is on the post-beta roadmap.
 - **Linux**: requires `webkit2gtk-4.1` (Ubuntu 22.04+ / Fedora 38+ ship it). Older distros need to install it manually.
 - **Android APK is unsigned** (sideload only). Play Store distribution is on the roadmap.
-- **Auto-updater desktop only**: the in-app update check is hidden on Android. Download new APKs manually from the [Releases page](https://github.com/felipesuarez-dev/vgc-reporter/releases).
+- **Android auto-update**: the app will notify you when a new version is available and guide you through the install. You still need "Install from unknown sources" enabled.
 - **First-run cache**: first launch needs internet. If a data source is down (Labmaus, Limitless), partial data is still rendered with a warning banner.
 - **Pikalytics breakdown** depends on Pikalytics being up; falls back to Showdown chaos data when unavailable.
 
@@ -251,7 +251,7 @@ VGC-Reporter/
 MIT © 2026 PumaSoft — see [LICENSE](LICENSE).
 
 <!-- Reference-style definitions -->
-[version-badge]: https://img.shields.io/badge/version-0.1.7.20260425--beta-2b86ff?style=flat-square&labelColor=0a0e14
+[version-badge]: https://img.shields.io/badge/version-0.1.8.20260425--beta-2b86ff?style=flat-square&labelColor=0a0e14
 [version-link]: #download
 [beta-badge]: https://img.shields.io/badge/release-beta-ff6b6b?style=flat-square&labelColor=0a0e14
 [tauri-badge]: https://img.shields.io/badge/Tauri-2.4-24c8db?style=flat-square&labelColor=0a0e14&logo=tauri

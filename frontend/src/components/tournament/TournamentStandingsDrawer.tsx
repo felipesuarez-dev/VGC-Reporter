@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useModalBack } from "../../hooks/useModalBack";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -105,6 +105,7 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
   const [countryFilter, setCountryFilter] = useState<string[]>([]);
   const [pokemonFilter, setPokemonFilter] = useState<string[]>([]);
   const [visibleRows, setVisibleRows] = useState(8);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!tournament) {
@@ -170,6 +171,7 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
       onClick={onClose}
     >
       <div
+        ref={containerRef}
         className="relative max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-xl border p-5 shadow-2xl"
         style={{
           backgroundColor: "var(--bg-elev)",
@@ -283,10 +285,13 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
         {visibleRest.length > 0 && (
           <section className="space-y-3">
             <h3
-              className="text-xs font-semibold uppercase tracking-wide"
+              className="flex items-baseline gap-2 text-xs font-semibold uppercase tracking-wide"
               style={{ color: "var(--text-muted)" }}
             >
               {t("tournament.standings")}
+              <span className="font-normal normal-case tracking-normal" style={{ color: "var(--text-dim)" }}>
+                {visibleRest.length} / {rest.length}
+              </span>
             </h3>
             {visibleRest.map((s, i) => (
               <StandingRow
@@ -310,7 +315,10 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
                   <button
                     type="button"
                     className="btn-ghost text-xs"
-                    onClick={() => setVisibleRows(rest.length)}
+                    onClick={() => {
+                      setVisibleRows(rest.length);
+                      containerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
                   >
                     {t("common.see_all")}
                   </button>

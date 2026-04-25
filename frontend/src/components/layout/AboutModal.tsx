@@ -24,7 +24,6 @@ const REPO_URL = "https://github.com/felipesuarez-dev/VGC-Reporter";
 export function AboutModal({ open, onClose }: Props) {
   const { t } = useTranslation();
   useModalBack(open, onClose);
-  const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
   const isChecking = useUpdaterStore((s) => s.isChecking);
   const lastCheckedAt = useUpdaterStore((s) => s.lastCheckedAt);
   const error = useUpdaterStore((s) => s.error);
@@ -156,8 +155,7 @@ export function AboutModal({ open, onClose }: Props) {
         <p className="mt-3 text-xs" style={{ color: "var(--text-muted)" }}>
           {t("about.description")}
         </p>
-        {!isMobile && (
-          <div
+        <div
             className="mt-4 rounded-md border p-3"
             style={{ borderColor: "var(--border)" }}
           >
@@ -184,7 +182,6 @@ export function AboutModal({ open, onClose }: Props) {
             </div>
             <div className="mt-2 text-[11px]">{statusBlock}</div>
           </div>
-        )}
         <button
           type="button"
           onClick={openRepo}
