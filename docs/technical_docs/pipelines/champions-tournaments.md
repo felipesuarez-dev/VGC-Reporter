@@ -16,7 +16,7 @@ Delegados a `ChampionsReportService` (`services/champions_report_service.rs`).
 
 ## get_standings
 
-1. `LimitlessClient::get_standings(id)` — incluye decklist inline cuando el organizador la publicó.
+1. `LimitlessClient::get_standings(id)` — llama a `?limit=500` para obtener todos los participantes. Sin este parámetro la API Limitless devuelve ~5 entradas por defecto, lo que causaba que torneos con 9+ jugadores sólo mostraran 5 equipos.
 2. **Sprite batching**: recolecta nombres de display únicos (`decklist_display_name`) y los resuelve en bloque vía `PokedexService::sprite_urls_for`. Cada nombre toca pokedex una sola vez aunque aparezca en muchos teams.
 3. `into_standing` mapea cada raw a `TournamentStanding`, inyectando los 3 sprite URLs (`primary`, `fallback`, `home`) desde el batch.
 4. Si el batch no encontró el nombre, cae a `primary_sprite_url` / `fallback_sprite_url` heurístico.

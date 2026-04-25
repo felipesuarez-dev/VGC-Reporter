@@ -1,6 +1,6 @@
 # Guía del usuario
 
-Bienvenido a **VGC-Reporter**, una aplicación de escritorio para seguir estadísticas de torneos Pokémon VGC Champions (Regulation M-A) y armar tus propios equipos competitivos.
+Bienvenido a **VGC-Reporter**, una aplicación nativa (desktop y Android) para seguir estadísticas de torneos Pokémon VGC Champions (Regulation M-A) y armar tus propios equipos competitivos.
 
 ## Qué puedes hacer
 
@@ -28,11 +28,17 @@ Bienvenido a **VGC-Reporter**, una aplicación de escritorio para seguir estadí
 
 ## Idioma y tema
 
-En el titlebar tienes:
-- Selector de idioma (ES/EN).
-- Selector de tema (System, Gengar, Clefable, Incineroar, Tyranitar). La bolita bicolor al lado del ícono de paleta indica qué tema está activo.
+**Desktop** — en el titlebar tienes el selector de idioma (ES/EN) y el selector de tema (System, Gengar, Clefable, Incineroar, Tyranitar).
+
+**Android** — en la barra superior (topbar) tienes los mismos botones de idioma y tema, más el botón de hamburguesa para abrir el menú lateral.
+
+## Navegación en Android
+
+- El menú lateral se abre con el botón de hamburguesa (☰) en la barra superior y se cierra con la X o tocando fuera.
+- El **botón Atrás** del sistema cierra el modal o cajón abierto en ese momento. Si no hay ninguno abierto, navega hacia la pantalla anterior.
+- Los tooltips de movimientos, objetos y habilidades se ajustan automáticamente para no salirse de los bordes de la pantalla.
 
 ## Privacidad
 
-- Tus **equipos guardados** viven sólo en tu PC (SQLite local). No se suben a ningún servidor.
+- Tus **equipos guardados** viven sólo en tu dispositivo (SQLite local). No se suben a ningún servidor.
 - La app consulta fuentes públicas (Labmaus, Limitless, Pikalytics, Showdown, Smogon, PokéAPI, Pokepaste) para obtener estadísticas. No se envía información personal.

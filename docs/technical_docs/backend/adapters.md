@@ -21,10 +21,10 @@ Host: `https://labmaus.net/api/*`.
 ## LimitlessClient (`limitless_client.rs`)
 Host: `https://play.limitlesstcg.com/api`. TTL 1h listas / 24h detalle.
 
-- `list_tournaments(format, limit)` — sin filtrar.
+- `list_tournaments(format, limit)` — sin filtrar. URL: `?game=VGC&format={code}&limit={limit}`.
 - `list_tournaments_by_format(format, limit)` — aplica `filter_champions` + `players > 0`.
 - `list_all_vgc(limit)` — todos los VGC sin filtro de formato.
-- `get_standings(id)` — incluye decklist inline cuando el organizador lo publicó.
+- `get_standings(id)` — URL: `?limit=500`. Sin este parámetro la API devuelve ~5 entradas por defecto. Incluye decklist inline cuando el organizador lo publicó.
 
 ## ShowdownClient (`showdown_client.rs`)
 Host: `https://play.pokemonshowdown.com/data`. TTL 7d.

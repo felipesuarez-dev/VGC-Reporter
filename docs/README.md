@@ -1,6 +1,6 @@
 # Documentación VGC-Reporter
 
-Aplicación de escritorio (Tauri 2 + Rust + React) para estadísticas de Pokémon VGC Champions (Regulation M-A) y construcción de equipos.
+Aplicación nativa (Tauri 2 + Rust + React) para estadísticas de Pokémon VGC Champions (Regulation M-A) y construcción de equipos. Disponible en **desktop** (Windows, macOS, Linux) y **Android** (APK, API 24+).
 
 Esta carpeta tiene dos secciones:
 
@@ -9,10 +9,11 @@ Esta carpeta tiene dos secciones:
 
 ## Resumen de un vistazo
 
-- **Backend**: Rust + Tauri 2.4. Clean architecture (`domain` ← `services` ← `adapters`/`storage` ← `commands`).
-- **Frontend**: React 19 + TypeScript + Vite + Tailwind. Sólo consume IPC tipado (nunca HTTP directo).
+- **Backend**: Rust + Tauri 2.10. Clean architecture (`domain` ← `services` ← `adapters`/`storage` ← `commands`).
+- **Frontend**: React 19 + TypeScript + Vite + Tailwind. Sólo consume IPC tipado (nunca HTTP directo). Responsive: mismo codebase para desktop y Android.
 - **Datos**: Labmaus (primario), Limitless (fallback), Smogon, Pokepaste, Pikalytics, Showdown, PokéAPI.
 - **Cache**: SQLite con TTL por endpoint.
 - **Tipos compartidos**: generados con `ts-rs` desde Rust hacia `frontend/src/lib/types.generated.ts`.
 
-Para empezar a contribuir: `npm run tauri:dev`.
+Para empezar a contribuir en desktop: `npm run tauri:dev`.  
+Para Android: ver [`technical_docs/frontend/architecture.md`](./technical_docs/frontend/architecture.md#mobile-android).
