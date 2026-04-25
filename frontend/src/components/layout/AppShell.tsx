@@ -47,15 +47,22 @@ export function AppShell() {
 
   useEffect(() => {
     if (!isResizing) return;
+    const startedCollapsed = useUiStore.getState().sidebarCollapsed;
     const onMove = (e: MouseEvent) => {
       const left = asideRef.current?.getBoundingClientRect().left ?? 0;
       const delta = e.clientX - left;
+      if (startedCollapsed) {
+        if (delta >= 150) {
+          useUiStore.getState().setSidebarCollapsed(false);
+          setSidebarWidthPx(delta);
+        }
+        return;
+      }
       if (delta < 150) {
         useUiStore.getState().setSidebarCollapsed(true);
         setIsResizing(false);
         return;
       }
-      useUiStore.getState().setSidebarCollapsed(false);
       setSidebarWidthPx(delta);
     };
     const onUp = () => setIsResizing(false);
