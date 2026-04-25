@@ -14,7 +14,9 @@ src-tauri/target/
 Cargo.lock
 
 # Tauri
-src-tauri/gen/
+src-tauri/gen/desktop-schema.json
+src-tauri/gen/acl-manifests.json
+src-tauri/gen/windows-schema.json
 src-tauri/WixTools/
 
 # Env / secrets
