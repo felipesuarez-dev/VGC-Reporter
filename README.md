@@ -81,7 +81,7 @@ Pre-built installers for the **`v0.1.8.20260425-beta`** release:
 | macOS 12+ (Intel) | `VGC.Reporter_0.1.8_x64.dmg` | Unsigned — right-click → Open the first time |
 | Linux (Debian/Ubuntu) | `vgc-reporter_0.1.8_amd64.deb` | Requires `webkit2gtk-4.1` |
 | Linux (any distro) | `vgc-reporter_0.1.8_amd64.AppImage` | `chmod +x` then run |
-| Android 7+ (arm64) | `VGC.Reporter_v0.1.8_android.apk` | Sideload: enable "Unknown sources" first |
+| Android 7+ (arm64) | `VGC.Reporter_v0.1.8.20260425-beta_android.apk` | Sideload: enable "Unknown sources" first |
 
 **[→ Download from the latest GitHub Release](https://github.com/felipesuarez-dev/vgc-reporter/releases/latest)**
 
