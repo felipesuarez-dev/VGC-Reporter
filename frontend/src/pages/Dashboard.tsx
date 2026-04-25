@@ -142,8 +142,9 @@ export function Dashboard() {
   const ptrState = usePullToRefresh(refreshAll, isMobile);
 
   return (
-    <div className="space-y-6">
+    <div>
       {isMobile && <PullToRefreshIndicator state={ptrState} />}
+      <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{t("dashboard.title")}</h1>
         <div className="flex items-center gap-2">
@@ -447,6 +448,7 @@ export function Dashboard() {
         tournament={selectedTournament}
         onClose={() => setSelectedTournament(null)}
       />
+      </div>
     </div>
   );
 }

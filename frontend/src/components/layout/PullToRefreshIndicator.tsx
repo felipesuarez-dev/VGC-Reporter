@@ -29,7 +29,6 @@ export function PullToRefreshIndicator({ state }: Props) {
         height: `${pullDistance}px`,
         opacity: isRefreshing ? 1 : opacity,
         transition: pullDistance === 0 ? "height 220ms ease, opacity 220ms ease" : "none",
-        marginTop: "calc(env(safe-area-inset-top, 0px) * -1)",
       }}
     >
       <div

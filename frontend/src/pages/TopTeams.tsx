@@ -188,8 +188,9 @@ export function TopTeams() {
   };
 
   return (
-    <div className="space-y-4">
+    <div>
       {isMobile && <PullToRefreshIndicator state={ptrState} />}
+      <div className="space-y-4">
       <header className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold">{t("top_teams.title")}</h1>
@@ -603,6 +604,7 @@ export function TopTeams() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
