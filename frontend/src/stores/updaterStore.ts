@@ -3,6 +3,7 @@ import { create } from "zustand";
 export interface AvailableUpdate {
   version: string;
   notes: string | null;
+  downloadUrl: string | null;
 }
 
 interface UpdaterState {

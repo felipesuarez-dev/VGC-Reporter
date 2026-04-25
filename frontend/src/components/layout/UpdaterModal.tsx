@@ -6,12 +6,16 @@ import { relaunch } from "@tauri-apps/plugin-process";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useUpdaterStore } from "../../stores/updaterStore";
 import { APP_VERSION } from "../../lib/version";
+import { useIsMobile } from "../../hooks/useIsMobile";
 
 function isMacOS(): boolean {
   const p = typeof navigator !== "undefined" ? navigator.platform : "";
   const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
   return /Mac|iPhone|iPad|iPod/i.test(p) || /Mac OS X/i.test(ua);
 }
+
+const RELEASES_PAGE_URL =
+  "https://github.com/felipesuarez-dev/VGC-Reporter/releases/latest";
 
 export function UpdaterModal() {
   const { t } = useTranslation();
@@ -54,21 +58,17 @@ export function UpdaterModal() {
     }
   };
 
-  const downloadManual = async () => {
+  const downloadManual = async (target: string) => {
     try {
-      await openUrl(
-        "https://github.com/felipesuarez-dev/VGC-Reporter/releases/latest",
-      );
+      await openUrl(target);
     } catch {
-      window.open(
-        "https://github.com/felipesuarez-dev/VGC-Reporter/releases/latest",
-        "_blank",
-      );
+      window.open(target, "_blank");
     }
     dismiss();
   };
 
   const mac = isMacOS();
+  const isMobile = useIsMobile();
 
   return (
     <div
@@ -147,11 +147,21 @@ export function UpdaterModal() {
           >
             {t("updater.later")}
           </button>
-          {mac ? (
+          {isMobile ? (
             <button
               type="button"
               className="btn-primary text-xs"
-              onClick={downloadManual}
+              onClick={() =>
+                void downloadManual(available.downloadUrl ?? RELEASES_PAGE_URL)
+              }
+            >
+              {t("updater.download_update")}
+            </button>
+          ) : mac ? (
+            <button
+              type="button"
+              className="btn-primary text-xs"
+              onClick={() => void downloadManual(RELEASES_PAGE_URL)}
             >
               {t("updater.download_manual")}
             </button>

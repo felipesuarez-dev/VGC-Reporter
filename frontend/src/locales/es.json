@@ -400,6 +400,7 @@
     "available_body": "La versión {{version}} está disponible. Tienes la {{current}}.",
     "install_now": "Instalar ahora",
     "download_manual": "Descargar manualmente",
+    "download_update": "Descargar actualización",
     "later": "Más tarde",
     "downloading": "Descargando {{pct}}%",
     "check_failed": "No se pudo buscar actualizaciones"
