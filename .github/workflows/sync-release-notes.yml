@@ -1,0 +1,38 @@
+name: Sync Release Notes to latest.json
+
+on:
+  release:
+    types: [published, edited]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v0.1.8.20260425-beta)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.release.draft == false
+    steps:
+      - name: Resolve tag
+        id: rel
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Fetch release body and update latest.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ steps.rel.outputs.tag }}
+        run: |
+          gh release view "$TAG" --repo "$REPO" --json body -q .body > release_body.txt
+          gh release download "$TAG" --repo "$REPO" --pattern "latest.json" --output latest.json
+          python3 -c "import json; d=json.load(open('latest.json')); d['notes']=open('release_body.txt').read(); json.dump(d,open('latest.json','w'),indent=2)"
+          gh release upload "$TAG" latest.json --repo "$REPO" --clobber

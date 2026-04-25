@@ -86,13 +86,47 @@ Todo el fetching pasa por `HttpClient::get_cached` (SQLite TTL). No añadir `req
 
 ## Releases
 
-Al crear un release, actualizar la versión en todos los sitios correspondientes (ver tabla abajo), hacer tag y push. El workflow CI genera un draft con todos los artefactos. Antes de publicar el draft:
+Al crear un release, actualizar la versión en todos los sitios correspondientes (ver tabla abajo), hacer tag con el formato `vX.Y.Z.YYYYMMDD-beta` y push. El workflow CI genera un draft con todos los artefactos. Antes de publicar el draft, **reemplazar el body con cambios reales** siguiendo el formato exacto:
 
-- En el body del release **reemplazar** los placeholders del template con los cambios reales:
-  - **Changes:** novedades y mejoras
-  - **Fixes:** correcciones de bugs (un bullet por fix)
-  - Si hubo PRs mergeados, mencionar el número inline
-  - NO incluir notas de plataforma ni instrucciones de descarga — eso está en el README
+### Formato obligatorio del body
+
+```markdown
+## Changes
+
+- Add <feature nueva>
+- Update <mejora existente>
+- Improve <enhancement>
+
+## Fixes
+
+- Fix <bug específico>
+- Resolve <issue específico>
+```
+
+Reglas:
+- Cada bullet empieza con un **verbo en infinitivo en inglés** (`Add`, `Update`, `Improve`, `Fix`, `Resolve`, `Refactor`, `Remove`).
+- Una línea por cambio, concisa pero específica (no "various fixes" — describir cada uno).
+- Si hubo PRs mergeados, mencionar `(#123)` al final del bullet.
+- **Omitir** la sección entera si no hay items (no dejar `## Fixes` vacío).
+- **Nunca** incluir comentarios HTML placeholder (`<!-- ... -->`), notas de plataforma, instrucciones de descarga ni texto sobre auto-update — todo eso vive en el README.
+
+### Ejemplo válido
+
+```markdown
+## Changes
+
+- Add auto-update functionality to the mobile application
+- Update and improve documentation
+
+## Fixes
+
+- Fix tag versioning
+- Improve version labels and release notes for better user experience when reviewing changes
+```
+
+### Sincronización con el auto-updater
+
+`latest.json` (consumido por `tauri-plugin-updater`) se genera con el body del draft, que es el placeholder. Tras editar el body manualmente y publicar el release, el workflow `sync-release-notes.yml` se dispara automáticamente (`release: published` / `edited`) y actualiza el campo `notes` de `latest.json` con el body real. Si el auto-trigger falla, se puede re-disparar manualmente desde **Actions → Sync Release Notes to latest.json → Run workflow** indicando el tag.
 
 ### Dónde actualizar la versión
 
