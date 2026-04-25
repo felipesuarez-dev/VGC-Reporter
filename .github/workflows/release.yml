@@ -170,11 +170,5 @@ jobs:
             echo "Retry $i/5 in 30s..."
             sleep 30
           done
-          python3 -c "
-import json, sys
-data = json.load(open('latest.json'))
-sig = open(sys.argv[1] + '.sig').read().strip()
-data['platforms']['android'] = {'signature': sig, 'url': sys.argv[2]}
-json.dump(data, open('latest.json', 'w'), indent=2)
-" "$SIGNED_APK" "$APK_URL"
+          python3 -c "import json,sys; d=json.load(open('latest.json')); d['platforms']['android']={'signature':open(sys.argv[1]+'.sig').read().strip(),'url':sys.argv[2]}; json.dump(d,open('latest.json','w'),indent=2)" "$SIGNED_APK" "$APK_URL"
           gh release upload "$TAG" latest.json --clobber
