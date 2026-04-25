@@ -195,36 +195,38 @@ export function Titlebar() {
         <div className="flex items-center px-2">
           <LanguageToggle variant="titlebar" />
         </div>
-        <button
-          type="button"
-          onClick={minimize}
-          aria-label="Minimize"
-          title="Minimize"
-          className="flex h-full w-11 items-center justify-center hover:bg-[var(--bg-elev-strong)]"
-          style={{ color: "var(--text)" }}
-        >
-          <Minus size={14} />
-        </button>
-        <button
-          type="button"
-          onClick={toggleMax}
-          aria-label={maximized ? "Restore" : "Maximize"}
-          title={maximized ? "Restore" : "Maximize"}
-          className="flex h-full w-11 items-center justify-center hover:bg-[var(--bg-elev-strong)]"
-          style={{ color: "var(--text)" }}
-        >
-          {maximized ? <Copy size={12} /> : <Square size={12} />}
-        </button>
-        <button
-          type="button"
-          onClick={close}
-          aria-label="Close"
-          title="Close"
-          className="group flex h-full w-11 items-center justify-center hover:bg-red-600"
-          style={{ color: "var(--text)" }}
-        >
-          <X size={14} className="group-hover:text-white" />
-        </button>
+        <div className="hidden md:contents">
+          <button
+            type="button"
+            onClick={minimize}
+            aria-label="Minimize"
+            title="Minimize"
+            className="flex h-full w-11 items-center justify-center hover:bg-[var(--bg-elev-strong)]"
+            style={{ color: "var(--text)" }}
+          >
+            <Minus size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={toggleMax}
+            aria-label={maximized ? "Restore" : "Maximize"}
+            title={maximized ? "Restore" : "Maximize"}
+            className="flex h-full w-11 items-center justify-center hover:bg-[var(--bg-elev-strong)]"
+            style={{ color: "var(--text)" }}
+          >
+            {maximized ? <Copy size={12} /> : <Square size={12} />}
+          </button>
+          <button
+            type="button"
+            onClick={close}
+            aria-label="Close"
+            title="Close"
+            className="group flex h-full w-11 items-center justify-center hover:bg-red-600"
+            style={{ color: "var(--text)" }}
+          >
+            <X size={14} className="group-hover:text-white" />
+          </button>
+        </div>
       </div>
     </div>
   );

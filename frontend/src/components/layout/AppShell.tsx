@@ -37,6 +37,20 @@ export function AppShell() {
   const [isResizing, setIsResizing] = useState(false);
   const [hoverHandle, setHoverHandle] = useState(false);
   const asideRef = useRef<HTMLElement>(null);
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const handler = (e: MediaQueryListEvent) => {
+      setIsMobile(e.matches);
+      if (e.matches) useUiStore.getState().setSidebarCollapsed(true);
+    };
+    mq.addEventListener("change", handler);
+    if (mq.matches) useUiStore.getState().setSidebarCollapsed(true);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   useEffect(() => {
     if (!isResizing) return;
@@ -83,16 +97,28 @@ export function AppShell() {
       <Titlebar />
       <UpdaterErrorBanner />
       <div className="flex min-h-0 flex-1">
+      {isMobile && !collapsed && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50"
+          onClick={() => useUiStore.getState().setSidebarCollapsed(true)}
+        />
+      )}
       <aside
         ref={asideRef}
-        className="relative flex shrink-0 flex-col border-r"
+        className={cn(
+          "flex shrink-0 flex-col border-r",
+          isMobile ? "fixed inset-y-0 left-0 z-40" : "relative",
+        )}
         style={{
           backgroundColor: "var(--bg-elev)",
           borderColor: "var(--border)",
-          width: collapsed
+          width: isMobile
+            ? "280px"
+            : collapsed
             ? `${SIDEBAR_COLLAPSED_WIDTH}px`
             : `${sidebarWidthPx}px`,
-          transition: isResizing ? "none" : "width 200ms ease",
+          transform: isMobile && collapsed ? "translateX(-100%)" : "translateX(0)",
+          transition: isResizing ? "none" : "width 200ms ease, transform 220ms ease",
         }}
       >
         <div
@@ -129,6 +155,7 @@ export function AppShell() {
                 <NavLink
                   to={item.to}
                   title={collapsed ? item.label : undefined}
+                  onClick={isMobile ? () => useUiStore.getState().setSidebarCollapsed(true) : undefined}
                   className={({ isActive }) =>
                     cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
@@ -168,7 +195,7 @@ export function AppShell() {
             </>
           )}
         </div>
-        {!collapsed && (
+        {!collapsed && !isMobile && (
           <div
             role="separator"
             aria-orientation="vertical"
@@ -189,7 +216,7 @@ export function AppShell() {
         )}
       </aside>
       <main id="app-main" className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-7xl px-6 py-6">
+        <div className="mx-auto max-w-7xl px-3 py-4 md:px-6 md:py-6">
           <Outlet />
         </div>
       </main>
