@@ -21,6 +21,8 @@ src-tauri/WixTools/
 
 # Env / secrets
 .env
+*.keystore
+*.jks
 .env.local
 .env.*.local
 

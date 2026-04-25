@@ -118,11 +118,22 @@ jobs:
       - name: Build Android APK
         run: npx tauri android build --apk
 
+      - name: Sign APK
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
+          BUILD_TOOLS=$ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)
+          $BUILD_TOOLS/apksigner sign \
+            --ks keystore.jks \
+            --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
+            --ks-pass "pass:${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
+            --out VGC.Reporter_${{ github.ref_name }}_android.apk \
+            src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
+
       - name: Upload APK to GitHub release
         run: |
-          APK="src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk"
           for i in 1 2 3 4 5; do
-            if gh release upload "${{ github.ref_name }}" "$APK" --clobber; then
+            if gh release upload "${{ github.ref_name }}" "VGC.Reporter_${{ github.ref_name }}_android.apk" --clobber; then
               echo "APK uploaded"
               break
             fi
