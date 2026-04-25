@@ -157,8 +157,15 @@ fn apply_alias(species: &str) -> String {
     }
 
     match lower.as_str() {
-        "greninja-bond" | "ash-greninja" => "Greninja-Ash".to_string(),
-        "floette" | "floette-mega" => "Floette-Eternal".to_string(),
+        "greninja-bond" | "ash-greninja" | "greninjabond" | "ashgreninja" => {
+            "Greninja-Ash".to_string()
+        }
+        "floette"
+        | "floette-mega"
+        | "floettemega"
+        | "floetteeternal"
+        | "floette-eternal"
+        | "floette eternal" => "Floette-Eternal".to_string(),
         _ => trimmed.to_string(),
     }
 }
@@ -312,6 +319,19 @@ mod tests {
         assert_eq!(canonical_id("Floette"), "floetteeternal");
         assert_eq!(canonical_id("floette"), "floetteeternal");
         assert_eq!(canonical_display_name("Floette-Mega"), "Floette-Eternal");
+    }
+
+    #[test]
+    fn floette_eternal_slug_variants_normalize() {
+        // Limitless standings sometimes send the slug-id form ("floetteeternal")
+        // or a space-separated display name ("Floette Eternal"). All variants
+        // must collapse to "Floette-Eternal" so the sprite URL resolves.
+        assert_eq!(canonical_display_name("floetteeternal"), "Floette-Eternal");
+        assert_eq!(canonical_display_name("Floette Eternal"), "Floette-Eternal");
+        assert_eq!(canonical_display_name("Floette-Eternal"), "Floette-Eternal");
+        assert_eq!(canonical_display_name("floettemega"), "Floette-Eternal");
+        assert!(primary_sprite_url("floetteeternal").ends_with("/floette-eternal.png"));
+        assert!(primary_sprite_url("Floette Eternal").ends_with("/floette-eternal.png"));
     }
 
     #[test]
