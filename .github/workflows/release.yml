@@ -10,7 +10,68 @@ permissions:
   contents: write
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      body: ${{ steps.notes.outputs.body }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate release body from git log
+        id: notes
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          PREV_TAG=$(git for-each-ref --sort=-creatordate --format='%(refname:short)' refs/tags \
+            | grep -E '^v[0-9]' | grep -v "^${TAG}$" | head -1 || true)
+          if [ -n "$PREV_TAG" ]; then
+            RANGE="${PREV_TAG}..${TAG}"
+          else
+            RANGE="$TAG"
+          fi
+          echo "Range: $RANGE"
+
+          CHANGES=""
+          FIXES=""
+          while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            case "$line" in
+              \[release\]*|\[ci\]*) continue ;;
+            esac
+            if echo "$line" | grep -iqE '\bfix(es|ed)?\b|\bbug\b|\bhotfix\b|\bresolve[sd]?\b'; then
+              FIXES="${FIXES}- ${line}"$'\n'
+            else
+              CHANGES="${CHANGES}- ${line}"$'\n'
+            fi
+          done < <(git log --pretty='%s' "$RANGE")
+
+          BODY=""
+          if [ -n "$CHANGES" ]; then
+            BODY="## Changes"$'\n\n'"${CHANGES}"$'\n'
+          fi
+          if [ -n "$FIXES" ]; then
+            BODY="${BODY}## Fixes"$'\n\n'"${FIXES}"
+          fi
+          if [ -z "$BODY" ]; then
+            BODY="## Changes"$'\n\n'"- ${TAG} release"$'\n'
+          fi
+
+          DELIM="EOF_$(openssl rand -hex 8)"
+          {
+            echo "body<<${DELIM}"
+            printf '%s' "$BODY"
+            echo
+            echo "${DELIM}"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "----- generated body -----"
+          printf '%s' "$BODY"
+          echo "--------------------------"
+
   build:
+    needs: prepare
     strategy:
       fail-fast: false
       matrix:
@@ -63,14 +124,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: VGC Reporter ${{ github.ref_name }}
-          releaseBody: |
-            ## Changes
-
-            <!-- List new features and improvements -->
-
-            ## Fixes
-
-            <!-- List bug fixes -->
+          releaseBody: ${{ needs.prepare.outputs.body }}
           releaseDraft: true
           prerelease: false
           includeUpdaterJson: true

@@ -86,9 +86,18 @@ Todo el fetching pasa por `HttpClient::get_cached` (SQLite TTL). No añadir `req
 
 ## Releases
 
-Al crear un release, actualizar la versión en todos los sitios correspondientes (ver tabla abajo), hacer tag con el formato `vX.Y.Z.YYYYMMDD-beta` y push. El workflow CI genera un draft con todos los artefactos. Antes de publicar el draft, **reemplazar el body con cambios reales** siguiendo el formato exacto:
+Al crear un release, actualizar la versión en todos los sitios correspondientes (ver tabla abajo), hacer tag con el formato `vX.Y.Z.YYYYMMDD-beta` y push.
 
-### Formato obligatorio del body
+El workflow `release.yml` **auto-genera el body del release a partir de los commits entre el tag anterior y el nuevo**:
+- Lee `git log <prev_tag>..<new_tag> --pretty=%s` y descarta los commits con scope `[release]` y `[ci]`.
+- Si el subject contiene `fix`/`bug`/`hotfix`/`resolve` (case-insensitive) → va a **Fixes**. Cualquier otro commit → **Changes**.
+- El body resultante se usa tanto como cuerpo del GitHub Release como en el campo `notes` de `latest.json` (lo que ve el usuario en el modal de actualización).
+
+Si quieres editar el body a mano antes de publicar (o después), `sync-release-notes.yml` se dispara automáticamente en `release: published` y `release: edited`, y vuelve a copiar el body actual del release al `notes` de `latest.json`. También se puede disparar manualmente desde **Actions → Sync Release Notes to latest.json → Run workflow** (sin tag = usa el último release).
+
+Para que la auto-generación produzca un body limpio, los mensajes de commit deben seguir la convención `[scope] verbo en infinitivo descripción`. Idealmente:
+
+### Formato del body (auto-generado o manual)
 
 ```markdown
 ## Changes
@@ -123,10 +132,6 @@ Reglas:
 - Fix tag versioning
 - Improve version labels and release notes for better user experience when reviewing changes
 ```
-
-### Sincronización con el auto-updater
-
-`latest.json` (consumido por `tauri-plugin-updater`) se genera con el body del draft, que es el placeholder. Tras editar el body manualmente y publicar el release, el workflow `sync-release-notes.yml` se dispara automáticamente (`release: published` / `edited`) y actualiza el campo `notes` de `latest.json` con el body real. Si el auto-trigger falla, se puede re-disparar manualmente desde **Actions → Sync Release Notes to latest.json → Run workflow** indicando el tag.
 
 ### Dónde actualizar la versión
 

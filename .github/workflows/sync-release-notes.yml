@@ -6,8 +6,12 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag (e.g. v0.1.8.20260425-beta)'
-        required: true
+        description: 'Release tag (leave empty to use the latest release)'
+        required: false
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/sync-release-notes.yml'
 
 permissions:
   contents: write
@@ -15,16 +19,25 @@ permissions:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || github.event.release.draft == false
+    if: github.event_name != 'release' || github.event.release.draft == false
     steps:
       - name: Resolve tag
         id: rel
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          EVENT_TAG: ${{ github.event.release.tag_name }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          if [ -n "$EVENT_TAG" ]; then
+            TAG="$EVENT_TAG"
+          elif [ -n "$INPUT_TAG" ]; then
+            TAG="$INPUT_TAG"
           else
-            echo "tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+            TAG=$(gh release list --repo "$REPO" --limit 1 --json tagName -q '.[0].tagName')
           fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Resolved tag: $TAG"
 
       - name: Fetch release body and update latest.json
         env:
@@ -36,3 +49,4 @@ jobs:
           gh release download "$TAG" --repo "$REPO" --pattern "latest.json" --output latest.json
           python3 -c "import json; d=json.load(open('latest.json')); d['notes']=open('release_body.txt').read(); json.dump(d,open('latest.json','w'),indent=2)"
           gh release upload "$TAG" latest.json --repo "$REPO" --clobber
+          echo "Synced latest.json notes for $TAG"
