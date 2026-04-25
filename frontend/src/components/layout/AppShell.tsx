@@ -127,7 +127,10 @@ export function AppShell() {
             "flex items-center gap-3 border-b px-3 py-4",
             collapsed && "justify-center px-2",
           )}
-          style={{ borderColor: "var(--border)" }}
+          style={{
+            borderColor: "var(--border)",
+            paddingTop: isMobile ? "max(env(safe-area-inset-top, 0px), 1rem)" : undefined,
+          }}
         >
           <img
             src="/logo.png"
@@ -183,6 +186,7 @@ export function AppShell() {
           style={{
             borderColor: "var(--border)",
             color: "var(--text-muted)",
+            paddingBottom: isMobile ? "env(safe-area-inset-bottom, 0px)" : undefined,
           }}
         >
           {collapsed ? (
@@ -216,7 +220,7 @@ export function AppShell() {
           />
         )}
       </aside>
-      <main id="app-main" className="flex-1 overflow-y-auto">
+      <main id="app-main" className="flex-1 overflow-y-auto" style={{ paddingBottom: isMobile ? "env(safe-area-inset-bottom, 0px)" : undefined }}>
         <div className="mx-auto max-w-7xl px-3 py-4 md:px-6 md:py-6">
           <Outlet />
         </div>

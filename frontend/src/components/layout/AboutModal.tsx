@@ -22,6 +22,7 @@ const REPO_URL = "https://github.com/felipesuarez-dev/VGC-Reporter";
 
 export function AboutModal({ open, onClose }: Props) {
   const { t } = useTranslation();
+  const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
   const isChecking = useUpdaterStore((s) => s.isChecking);
   const lastCheckedAt = useUpdaterStore((s) => s.lastCheckedAt);
   const error = useUpdaterStore((s) => s.error);
@@ -153,33 +154,35 @@ export function AboutModal({ open, onClose }: Props) {
         <p className="mt-3 text-xs" style={{ color: "var(--text-muted)" }}>
           {t("about.description")}
         </p>
-        <div
-          className="mt-4 rounded-md border p-3"
-          style={{ borderColor: "var(--border)" }}
-        >
-          <div className="flex items-center justify-between gap-2">
-            <span
-              className="text-xs font-semibold uppercase tracking-wide"
-              style={{ color: "var(--text-muted)" }}
-            >
-              {t("about.updates")}
-            </span>
-            <button
-              type="button"
-              onClick={() => void handleCheck()}
-              disabled={isChecking}
-              className="btn-ghost flex items-center gap-1 text-xs"
-            >
-              {isChecking ? (
-                <Loader2 size={12} className="animate-spin" />
-              ) : (
-                <RefreshCw size={12} />
-              )}
-              {t("about.check_for_updates")}
-            </button>
+        {!isMobile && (
+          <div
+            className="mt-4 rounded-md border p-3"
+            style={{ borderColor: "var(--border)" }}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span
+                className="text-xs font-semibold uppercase tracking-wide"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {t("about.updates")}
+              </span>
+              <button
+                type="button"
+                onClick={() => void handleCheck()}
+                disabled={isChecking}
+                className="btn-ghost flex items-center gap-1 text-xs"
+              >
+                {isChecking ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : (
+                  <RefreshCw size={12} />
+                )}
+                {t("about.check_for_updates")}
+              </button>
+            </div>
+            <div className="mt-2 text-[11px]">{statusBlock}</div>
           </div>
-          <div className="mt-2 text-[11px]">{statusBlock}</div>
-        </div>
+        )}
         <button
           type="button"
           onClick={openRepo}
