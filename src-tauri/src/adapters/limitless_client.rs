@@ -40,7 +40,7 @@ impl LimitlessClient {
         tournament_id: &str,
     ) -> Result<Vec<LimitlessStanding>, AppError> {
         let url = format!(
-            "{}/tournaments/{}/standings",
+            "{}/tournaments/{}/standings?limit=500",
             config::LIMITLESS_API,
             tournament_id
         );
