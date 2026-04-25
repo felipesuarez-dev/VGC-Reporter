@@ -19,6 +19,9 @@ import { formatDateTime } from "../lib/formatDate";
 import { formatLabel } from "../lib/labels";
 import { useUiStore } from "../stores/uiStore";
 import { useLongLoadingHint } from "../hooks/useLoadingHint";
+import { useIsMobile } from "../hooks/useIsMobile";
+import { usePullToRefresh } from "../hooks/usePullToRefresh";
+import { PullToRefreshIndicator } from "../components/layout/PullToRefreshIndicator";
 
 const FORMAT: Format = "regulation-m-a";
 const RECENT_INITIAL = 5;
@@ -139,6 +142,8 @@ export function TopTeams() {
       queryKey: queryKeys.championsReport(FORMAT, RECENT_EXPANDED),
     });
   };
+  const isMobile = useIsMobile();
+  const ptrState = usePullToRefresh(refresh, isMobile);
 
   const applyAll = (total: number) => {
     startDisplayTransition(() => {
@@ -184,6 +189,7 @@ export function TopTeams() {
 
   return (
     <div className="space-y-4">
+      {isMobile && <PullToRefreshIndicator state={ptrState} />}
       <header className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold">{t("top_teams.title")}</h1>
@@ -249,15 +255,17 @@ export function TopTeams() {
               {isExporting ? t("top_teams.exporting") : t("top_teams.export_md")}
             </button>
           </div>
-          <button
-            type="button"
-            onClick={refresh}
-            className="btn-ghost flex items-center gap-1 text-xs"
-            disabled={isFetching}
-          >
-            <RefreshCw size={14} className={isFetching ? "animate-spin" : ""} />
-            {t("dashboard.refresh")}
-          </button>
+          {!isMobile && (
+            <button
+              type="button"
+              onClick={refresh}
+              className="btn-ghost flex items-center gap-1 text-xs"
+              disabled={isFetching}
+            >
+              <RefreshCw size={14} className={isFetching ? "animate-spin" : ""} />
+              {t("dashboard.refresh")}
+            </button>
+          )}
         </div>
       </header>
 

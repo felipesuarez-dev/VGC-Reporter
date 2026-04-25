@@ -30,6 +30,9 @@ import { SearchTextInput } from "../components/filters/SearchTextInput";
 import { useDashboardStore } from "../stores/dashboardStore";
 import { usePokedexStore } from "../stores/pokedexStore";
 import { useLongLoadingHint } from "../hooks/useLoadingHint";
+import { useIsMobile } from "../hooks/useIsMobile";
+import { usePullToRefresh } from "../hooks/usePullToRefresh";
+import { PullToRefreshIndicator } from "../components/layout/PullToRefreshIndicator";
 
 function canonicalSpeciesId(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -131,8 +134,16 @@ export function Dashboard() {
   const topMoves = data?.top_moves ?? [];
   const topAbilities = data?.top_abilities ?? [];
 
+  const isMobile = useIsMobile();
+  const refreshAll = () => {
+    qc.invalidateQueries({ queryKey: queryKeys.meta(format) });
+    qc.invalidateQueries({ queryKey: queryKeys.championsReport(format, tournamentLimit) });
+  };
+  const ptrState = usePullToRefresh(refreshAll, isMobile);
+
   return (
     <div className="space-y-6">
+      {isMobile && <PullToRefreshIndicator state={ptrState} />}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{t("dashboard.title")}</h1>
         <div className="flex items-center gap-2">
@@ -143,32 +154,34 @@ export function Dashboard() {
             onFavoriteChange={setFavoriteFormat}
             className="w-72"
           />
-          <button
-            className="btn-ghost"
-            disabled={isFetching}
-            onClick={() =>
-              qc.invalidateQueries({
-                queryKey: queryKeys.meta(format),
-              })
-            }
-          >
-            {isFetching ? (
-              <Loader2 size={14} className="mr-1 animate-spin" />
-            ) : justRefreshed ? (
-              <Check
-                size={14}
-                className="mr-1"
-                style={{ color: "var(--accent)" }}
-              />
-            ) : (
-              <RefreshCw size={14} className="mr-1" />
-            )}
-            {isFetching
-              ? t("dashboard.refreshing")
-              : justRefreshed
-                ? t("dashboard.refreshed")
-                : t("dashboard.refresh")}
-          </button>
+          {!isMobile && (
+            <button
+              className="btn-ghost"
+              disabled={isFetching}
+              onClick={() =>
+                qc.invalidateQueries({
+                  queryKey: queryKeys.meta(format),
+                })
+              }
+            >
+              {isFetching ? (
+                <Loader2 size={14} className="mr-1 animate-spin" />
+              ) : justRefreshed ? (
+                <Check
+                  size={14}
+                  className="mr-1"
+                  style={{ color: "var(--accent)" }}
+                />
+              ) : (
+                <RefreshCw size={14} className="mr-1" />
+              )}
+              {isFetching
+                ? t("dashboard.refreshing")
+                : justRefreshed
+                  ? t("dashboard.refreshed")
+                  : t("dashboard.refresh")}
+            </button>
+          )}
         </div>
       </header>
       {data && (

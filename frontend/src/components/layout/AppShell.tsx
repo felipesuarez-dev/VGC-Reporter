@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useIsMobile } from "../../hooks/useIsMobile";
 import { NavLink, Outlet } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -30,9 +31,7 @@ const SIDEBAR_COLLAPSED_WIDTH = 64;
 
 export function AppShell() {
   const { t } = useTranslation();
-  const [isMobile, setIsMobile] = useState(
-    () => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches,
-  );
+  const isMobile = useIsMobile();
   useNavHistorySync();
   useAutoUpdate(true);
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
@@ -43,15 +42,8 @@ export function AppShell() {
   const asideRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    const handler = (e: MediaQueryListEvent) => {
-      setIsMobile(e.matches);
-      if (e.matches) useUiStore.getState().setSidebarCollapsed(true);
-    };
-    mq.addEventListener("change", handler);
-    if (mq.matches) useUiStore.getState().setSidebarCollapsed(true);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
+    if (isMobile) useUiStore.getState().setSidebarCollapsed(true);
+  }, [isMobile]);
 
   useEffect(() => {
     if (!isResizing) return;

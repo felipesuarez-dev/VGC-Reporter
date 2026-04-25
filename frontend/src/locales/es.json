@@ -384,6 +384,10 @@
     "theme_tyranitar": "Tyranitar",
     "theme_sneasler": "Hisuian Sneasler"
   },
+  "ptr": {
+    "pull": "Desliza para actualizar",
+    "release": "Suelta para actualizar"
+  },
   "titlebar": {
     "back": "Atrás",
     "forward": "Adelante",
