@@ -1,4 +1,6 @@
-use crate::adapters::sprite_resolver::{fallback_sprite_url, primary_sprite_url};
+use crate::adapters::sprite_resolver::{
+    canonical_display_name, fallback_sprite_url, primary_sprite_url,
+};
 use crate::adapters::{
     LimitlessClient, LimitlessDecklistEntry, LimitlessStanding, LimitlessTournamentSummary,
 };
@@ -89,6 +91,7 @@ impl ChampionsReportService {
             .iter()
             .filter_map(|s| s.decklist.as_ref())
             .flat_map(|deck| deck.iter().filter_map(decklist_display_name))
+            .map(|raw| canonical_display_name(&raw))
             .collect();
         names.sort();
         names.dedup();
@@ -167,7 +170,8 @@ fn into_decklist_pokemon(
     e: LimitlessDecklistEntry,
     sprites: &SpriteMap,
 ) -> Option<DecklistPokemon> {
-    let display = decklist_display_name(&e)?;
+    let raw = decklist_display_name(&e)?;
+    let display = canonical_display_name(&raw);
     let (sprite_url, sprite_fallback_url, home_sprite_url) =
         sprites.get(&display).cloned().unwrap_or_else(|| {
             (
