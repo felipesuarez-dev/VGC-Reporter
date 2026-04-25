@@ -4,7 +4,7 @@
 
 # VGC Reporter
 
-**Pokémon Champions competitive stats & team builder, as a native desktop app.**  
+**Pokémon Champions competitive stats & team builder, as a native app for desktop and Android.**  
 
 **Public beta — first release! Built with pure, hardcore vibe-code. Expect rough edges; please report any issue you hit so we can iterate fast.**
 
@@ -71,16 +71,17 @@ VGC Reporter is the tool I wanted while team-building for Regulation M-A: one wi
 
 ## Download
 
-Pre-built installers for the **`v0.1.5.20260424-beta`** release:
+Pre-built installers for the **`v0.1.7.20260425-beta`** release:
 
 | Platform | Installer | Notes |
 |---|---|---|
-| Windows 10/11 | `VGC.Reporter_0.1.5_x64_en-US.msi` | MSI installer (recommended) |
-| Windows 10/11 | `VGC.Reporter_0.1.5_x64-setup.exe` | NSIS installer (portable-friendly) |
-| macOS 12+ (Apple Silicon) | `VGC.Reporter_0.1.5_aarch64.dmg` | Unsigned — right-click → Open the first time |
-| macOS 12+ (Intel) | `VGC.Reporter_0.1.5_x64.dmg` | Unsigned — right-click → Open the first time |
-| Linux (Debian/Ubuntu) | `vgc-reporter_0.1.5_amd64.deb` | Requires `webkit2gtk-4.1` |
-| Linux (any distro) | `vgc-reporter_0.1.5_amd64.AppImage` | `chmod +x` then run |
+| Windows 10/11 | `VGC.Reporter_0.1.7_x64_en-US.msi` | MSI installer (recommended) |
+| Windows 10/11 | `VGC.Reporter_0.1.7_x64-setup.exe` | NSIS installer (portable-friendly) |
+| macOS 12+ (Apple Silicon) | `VGC.Reporter_0.1.7_aarch64.dmg` | Unsigned — right-click → Open the first time |
+| macOS 12+ (Intel) | `VGC.Reporter_0.1.7_x64.dmg` | Unsigned — right-click → Open the first time |
+| Linux (Debian/Ubuntu) | `vgc-reporter_0.1.7_amd64.deb` | Requires `webkit2gtk-4.1` |
+| Linux (any distro) | `vgc-reporter_0.1.7_amd64.AppImage` | `chmod +x` then run |
+| Android 7+ (arm64) | `VGC.Reporter_0.1.7_aarch64.apk` | Sideload: enable "Unknown sources" first |
 
 **[→ Download from the latest GitHub Release](https://github.com/felipesuarez-dev/vgc-reporter/releases/latest)**
 
@@ -114,9 +115,10 @@ First launch downloads and caches Pokédex, moves, items, abilities and usage st
 - **Top Teams "Show all"** can render 4000+ team cards in a single page. Performance is acceptable but expect 5–15s render on first display; the app shows progressive hints while loading.
 - **macOS bundles are unsigned**. Gatekeeper will block the first launch — right-click the app → Open → Open Anyway. Code signing is on the post-beta roadmap.
 - **Linux**: requires `webkit2gtk-4.1` (Ubuntu 22.04+ / Fedora 38+ ship it). Older distros need to install it manually.
+- **Android APK is unsigned** (sideload only). Play Store distribution is on the roadmap.
+- **Auto-updater desktop only**: the in-app update check is hidden on Android. Download new APKs manually from the [Releases page](https://github.com/felipesuarez-dev/vgc-reporter/releases).
 - **First-run cache**: first launch needs internet. If a data source is down (Labmaus, Limitless), partial data is still rendered with a warning banner.
 - **Pikalytics breakdown** depends on Pikalytics being up; falls back to Showdown chaos data when unavailable.
-- **No auto-updater yet**: download new beta builds manually from the [Releases page](https://github.com/felipesuarez-dev/vgc-reporter/releases).
 
 Found something else? [Open an issue](https://github.com/felipesuarez-dev/vgc-reporter/issues/new) — beta feedback is gold.
 
@@ -182,6 +184,12 @@ npm run tauri:dev
 # Production bundle → src-tauri/target/release/bundle/msi/
 npm run tauri:build
 
+# Android — hot reload in emulator or USB device
+npx tauri android dev
+
+# Android — build APK
+npx tauri android build --apk
+
 # Rust tests + ts-rs bindings regeneration
 cd src-tauri && cargo test
 
@@ -224,7 +232,8 @@ VGC-Reporter/
 
 - Node.js 20+
 - Rust 1.80+ (stable)
-- Windows 10/11, macOS 12+, or Linux with `webkit2gtk-4.1`
+- **Desktop**: Windows 10/11, macOS 12+, or Linux with `webkit2gtk-4.1`
+- **Android**: Android Studio + SDK API 24+, NDK r25c, JDK 17–24, `ANDROID_HOME` / `NDK_HOME` set; run `rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android` first
 - First run needs internet access to populate the cache
 
 ## Author
@@ -242,7 +251,7 @@ VGC-Reporter/
 MIT © 2026 PumaSoft — see [LICENSE](LICENSE).
 
 <!-- Reference-style definitions -->
-[version-badge]: https://img.shields.io/badge/version-0.1.5.20260424--beta-2b86ff?style=flat-square&labelColor=0a0e14
+[version-badge]: https://img.shields.io/badge/version-0.1.7.20260425--beta-2b86ff?style=flat-square&labelColor=0a0e14
 [version-link]: #download
 [beta-badge]: https://img.shields.io/badge/release-beta-ff6b6b?style=flat-square&labelColor=0a0e14
 [tauri-badge]: https://img.shields.io/badge/Tauri-2.4-24c8db?style=flat-square&labelColor=0a0e14&logo=tauri

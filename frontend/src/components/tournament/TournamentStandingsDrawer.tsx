@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useModalBack } from "../../hooks/useModalBack";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
@@ -76,6 +77,8 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
   const setPendingImportMissing = useTeamBuilder(
     (s) => s.setPendingImportMissing,
   );
+
+  useModalBack(Boolean(tournament), onClose);
 
   useEffect(() => {
     if (!tournament) return;

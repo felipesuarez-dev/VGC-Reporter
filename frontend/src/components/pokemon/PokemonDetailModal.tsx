@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Calculator, X } from "lucide-react";
+import { useModalBack } from "../../hooks/useModalBack";
 import { ipc } from "../../lib/ipc";
 import { queryKeys } from "../../lib/queryKeys";
 import {
@@ -34,6 +35,8 @@ export function PokemonDetailModal() {
   const close = usePokedexStore((s) => s.closeDetail);
   const format = useDashboardStore((s) => s.format);
   const [calcMenuOpen, setCalcMenuOpen] = useState(false);
+
+  useModalBack(Boolean(id), close);
 
   useEffect(() => {
     if (!id) setCalcMenuOpen(false);

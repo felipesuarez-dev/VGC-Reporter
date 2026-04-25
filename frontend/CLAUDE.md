@@ -8,6 +8,8 @@ From repo root:
 
 - `npm run tauri:dev` — dev mode with hot reload (webview + vite)
 - `npm run tauri:build` — production bundle (MSI on Windows)
+- `npx tauri android dev` — Android dev mode (requires Android Studio + NDK r25c + env vars set)
+- `npx tauri android build --apk` — Android APK
 - `npm run lint` (workspace) — `tsc --noEmit` type-check
 
 ## Layout
@@ -82,9 +84,22 @@ Species/item/move comboboxes in the Team Builder (`pages/TeamBuilder.tsx`) filte
 
 Confirmation/validation dialogs (`ValidationModal`, `LoadAllTeamsConfirmModal`, `ImportCompletionModal`) share one shape: fixed overlay with `bg-black/60`, `bg-elev` inner card, ESC-to-close handler in a `useEffect`, click-outside via `onClick`/`stopPropagation`. Reuse this layout when adding new dialogs instead of pulling in a third-party modal lib.
 
+## Mobile (Android)
+
+The app targets both desktop and Android via the same codebase. Key conventions:
+
+- **`isMobile`** — detected via `window.matchMedia("(max-width: 767px)")` in `AppShell.tsx`. Passed around or re-evaluated locally where needed.
+- **`MobileTopbar`** — replaces `Titlebar` on mobile. Contains hamburger, logo, search, theme/language toggles.
+- **Sidebar** — `fixed inset-y-0 left-0 z-40` on mobile (overlay drawer). Collapsed by default; toggled by the hamburger. `translateX(-100%)` when collapsed.
+- **Safe-area insets** — use `env(safe-area-inset-top)` / `env(safe-area-inset-bottom)` in inline styles on elements that touch the screen edges (sidebar header, sidebar footer, main content bottom). Never in Tailwind classes because `viewport-fit=cover` only works with inline style on Android WebView.
+- **`useAutoUpdate`** — skipped on mobile (`useAutoUpdate(!isMobile)`) because `tauri-plugin-updater` is desktop-only.
+- **`useModalBack`** (`hooks/useModalBack.ts`) — push a dummy history entry on modal open so the Android back button closes the modal instead of navigating behind it. Apply to every modal/dialog.
+- **Desktop-only UI** — `UpdaterModal`, `UpdaterErrorBanner`, and the check-for-updates block in `AboutModal` are all guarded with `!isMobile`.
+
 ## Gotchas
 
 - `@tauri-apps/api/core` exports `invoke`, not the old v1 path.
 - External links must go through `tauri-plugin-opener` (`openUrl`), not `window.open` — plain `open` is blocked by Tauri's webview.
 - Recharts needs `ResponsiveContainer` with an explicit `height` or it collapses to 0.
 - `@smogon/calc` uses `Generations.get(9)` for Gen 9. Import `Pokemon as CalcPokemon` to avoid clashing with our domain `Pokemon`.
+- **Tooltip viewport clamping** — `Tooltip.tsx` uses a two-phase `useLayoutEffect` to measure and clamp the rendered tooltip within the viewport. Critical on narrow mobile screens where left-edge chips would otherwise clip off-screen.

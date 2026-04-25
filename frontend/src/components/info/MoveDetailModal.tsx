@@ -7,6 +7,7 @@ import { useDescribe } from "../../hooks/useEntityDescriptions";
 import { useMoveSummary } from "../../hooks/useMoveCatalog";
 import { TypeBadge } from "../pokemon/TypeBadge";
 import { MoveCategoryIcon } from "../pokemon/MoveCategoryIcon";
+import { useModalBack } from "../../hooks/useModalBack";
 
 export function MoveDetailModal() {
   const { t } = useTranslation();
@@ -15,6 +16,8 @@ export function MoveDetailModal() {
   const localize = useLocalize();
   const describe = useDescribe();
   const moveSummary = useMoveSummary();
+
+  useModalBack(Boolean(name), close);
 
   useEffect(() => {
     if (!name) return;

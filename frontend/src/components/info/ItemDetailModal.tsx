@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { useItemDetailStore } from "../../stores/entityDetailStore";
 import { useLocalize } from "../../hooks/useTranslations";
 import { useDescribe } from "../../hooks/useEntityDescriptions";
+import { useModalBack } from "../../hooks/useModalBack";
 
 export function ItemDetailModal() {
   const { t } = useTranslation();
@@ -11,6 +12,8 @@ export function ItemDetailModal() {
   const close = useItemDetailStore((s) => s.close);
   const localize = useLocalize();
   const describe = useDescribe();
+
+  useModalBack(Boolean(name), close);
 
   useEffect(() => {
     if (!name) return;

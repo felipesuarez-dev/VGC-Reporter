@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useModalBack } from "../../hooks/useModalBack";
 import {
   AlertTriangle,
   Check,
@@ -22,6 +23,7 @@ const REPO_URL = "https://github.com/felipesuarez-dev/VGC-Reporter";
 
 export function AboutModal({ open, onClose }: Props) {
   const { t } = useTranslation();
+  useModalBack(open, onClose);
   const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
   const isChecking = useUpdaterStore((s) => s.isChecking);
   const lastCheckedAt = useUpdaterStore((s) => s.lastCheckedAt);
