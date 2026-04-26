@@ -10,3 +10,4 @@ pub mod top_teams_export;
 pub mod translations;
 pub mod trending;
 pub mod upcoming;
+pub mod updater;

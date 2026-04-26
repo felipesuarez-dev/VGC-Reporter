@@ -6,6 +6,7 @@ use crate::error::AppError;
 use crate::services::{
     ChampionsReportService, MetaService, PikalyticsService, PokedexService, SetsService,
     TeamService, TopTeamsService, TranslationsService, TrendingService, UpcomingTournamentsService,
+    UpdaterService,
 };
 use crate::storage::{init_pool, CacheRepo, DbPool, SettingsRepo, TeamRepo};
 use std::path::Path;
@@ -23,6 +24,7 @@ pub struct AppState {
     pub translations: TranslationsService,
     pub pikalytics: PikalyticsService,
     pub trending: TrendingService,
+    pub updater: UpdaterService,
     pub settings: Arc<SettingsRepo>,
 }
 
@@ -71,6 +73,7 @@ impl AppState {
         let translations = TranslationsService::new(pokeapi);
         let pikalytics = PikalyticsService::new(pikalytics_client, cache.clone(), pokedex.clone());
         let trending = TrendingService::new(labmaus.clone(), cache.clone(), settings.clone());
+        let updater = UpdaterService::new(http.clone());
 
         Ok(Self {
             db: pool,
@@ -84,6 +87,7 @@ impl AppState {
             translations,
             pikalytics,
             trending,
+            updater,
             settings,
         })
     }

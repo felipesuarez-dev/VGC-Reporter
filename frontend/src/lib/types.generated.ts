@@ -139,6 +139,8 @@ export type TrendingReport = { rising: Array<TrendingPokemon>, falling: Array<Tr
 
 export type UpcomingTournament = { id: string, name: string, date: string, url: string, region: string | null, players: number | null, source: string, };
 
+export type UpdateInfo = { version: string, current_version: string, notes: string, android_url: string | null, };
+
 export type UsageEntry = { name: string, usage_percent: number, count: number, };
 
 export type Violation = { "kind": "team_incomplete", filled: number, } | { "kind": "species_not_allowed", species: string, } | { "kind": "item_banned", species: string, item: string, } | { "kind": "move_banned", species: string, mv: string, } | { "kind": "too_many_restricted", allowed: number, found: number, } | { "kind": "restricted_not_in_season", species: string, season: string, } | { "kind": "duplicate_species", species: string, } | { "kind": "duplicate_item", item: string, } | { "kind": "missing_item", slot: number, species: string, } | { "kind": "missing_ability", slot: number, species: string, } | { "kind": "missing_nature", slot: number, species: string, } | { "kind": "missing_moves", slot: number, species: string, have: number, need: number, } | { "kind": "evs_not_assigned", slot: number, species: string, } | { "kind": "item_not_allowed", slot: number, species: string, item: string, } | { "kind": "move_not_allowed", slot: number, species: string, mv: string, };

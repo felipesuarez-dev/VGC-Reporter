@@ -12,6 +12,7 @@ pub mod top_teams_service;
 pub mod translations_service;
 pub mod trending_service;
 pub mod upcoming_tournaments_service;
+pub mod updater_service;
 pub mod usage_aggregator;
 
 pub use champions_report_service::ChampionsReportService;
@@ -24,3 +25,4 @@ pub use top_teams_service::{TopTeam, TopTeamsMeta, TopTeamsReport, TopTeamsServi
 pub use translations_service::TranslationsService;
 pub use trending_service::TrendingService;
 pub use upcoming_tournaments_service::UpcomingTournamentsService;
+pub use updater_service::UpdaterService;

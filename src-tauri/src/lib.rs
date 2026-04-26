@@ -76,6 +76,7 @@ pub fn run() {
             commands::upcoming::list_upcoming_tournaments,
             commands::pikalytics::get_pikalytics_entry,
             commands::trending::get_trending,
+            commands::updater::check_for_app_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running VGC-Reporter");

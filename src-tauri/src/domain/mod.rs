@@ -12,6 +12,7 @@ pub mod team;
 pub mod tera_type;
 pub mod trending;
 pub mod upcoming;
+pub mod updater;
 pub mod usage_stats;
 
 pub use ability::Ability;
