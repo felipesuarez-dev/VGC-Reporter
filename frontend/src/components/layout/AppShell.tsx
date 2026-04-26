@@ -96,7 +96,7 @@ export function AppShell() {
       style={{ backgroundColor: "var(--bg)", color: "var(--text)" }}
     >
       {isMobile ? <MobileTopbar /> : <Titlebar />}
-      {!isMobile && <UpdaterErrorBanner />}
+      <UpdaterErrorBanner />
       <div className="flex min-h-0 flex-1">
       {isMobile && !collapsed && (
         <div
