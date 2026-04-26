@@ -26,6 +26,7 @@ export function UpdaterModal() {
   const dismiss = useUpdaterStore((s) => s.dismiss);
   const [isInstalling, setIsInstalling] = useState(false);
   const [installError, setInstallError] = useState<string | null>(null);
+  const isMobile = useIsMobile();
 
   if (!available || dismissed) return null;
 
@@ -68,7 +69,6 @@ export function UpdaterModal() {
   };
 
   const mac = isMacOS();
-  const isMobile = useIsMobile();
 
   return (
     <div
