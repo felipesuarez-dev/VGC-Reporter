@@ -1,12 +1,7 @@
 import { useEffect } from "react";
 import { check } from "@tauri-apps/plugin-updater";
 import { useUpdaterStore } from "../stores/updaterStore";
-import { APP_VERSION } from "../lib/version";
-import {
-  fetchLatestJson,
-  isNewerVersion,
-  pickAndroidUrl,
-} from "../lib/manualUpdater";
+import { ipc } from "../lib/ipc";
 
 export type CheckOutcome = "available" | "up_to_date" | "error";
 
@@ -19,17 +14,16 @@ function isMobileEnv(): boolean {
 
 async function runMobileCheck(): Promise<CheckOutcome> {
   const store = useUpdaterStore.getState();
-  const latest = await fetchLatestJson();
+  const info = await ipc.checkForAppUpdate();
   store.recordCheck();
-  const localShort = APP_VERSION.split(".").slice(0, 3).join(".");
-  if (!isNewerVersion(latest.version, localShort)) {
+  if (!info) {
     store.setAvailable(null);
     return "up_to_date";
   }
   store.setAvailable({
-    version: latest.version,
-    notes: latest.notes ?? null,
-    downloadUrl: pickAndroidUrl(latest),
+    version: info.version,
+    notes: info.notes.length > 0 ? info.notes : null,
+    downloadUrl: info.android_url,
   });
   return "available";
 }

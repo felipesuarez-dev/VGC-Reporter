@@ -49,6 +49,7 @@ export type {
   TrendingPokemon,
   TrendingReport,
   UpcomingTournament,
+  UpdateInfo,
   UsageEntry,
   Violation,
   EvStatSpread,

@@ -15,6 +15,7 @@ import type {
   TranslationTable,
   TrendingReport,
   UpcomingTournament,
+  UpdateInfo,
   Violation,
 } from "./types";
 
@@ -97,4 +98,6 @@ export const ipc = {
   getTranslationTable: () => call<TranslationTable>("get_translation_table"),
   getTrending: (format: Format) =>
     call<TrendingReport>("get_trending", { format }),
+  checkForAppUpdate: () =>
+    call<UpdateInfo | null>("check_for_app_update"),
 };
