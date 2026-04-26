@@ -156,16 +156,18 @@ fn apply_alias(species: &str) -> String {
         }
     }
 
+    // Floette: in VGC Regulation M-A only AZ's Floette-Eternal is competitively
+    // legal, so any string Limitless emits that contains "floette" (e.g.
+    // "Floette", "Floette-Mega", "floetteeternal", "Eternal Flower Floette",
+    // "AZ's Floette") collapses to the canonical "Floette-Eternal".
+    if lower.contains("floette") {
+        return "Floette-Eternal".to_string();
+    }
+
     match lower.as_str() {
         "greninja-bond" | "ash-greninja" | "greninjabond" | "ashgreninja" => {
             "Greninja-Ash".to_string()
         }
-        "floette"
-        | "floette-mega"
-        | "floettemega"
-        | "floetteeternal"
-        | "floette-eternal"
-        | "floette eternal" => "Floette-Eternal".to_string(),
         _ => trimmed.to_string(),
     }
 }
@@ -332,6 +334,26 @@ mod tests {
         assert_eq!(canonical_display_name("floettemega"), "Floette-Eternal");
         assert!(primary_sprite_url("floetteeternal").ends_with("/floette-eternal.png"));
         assert!(primary_sprite_url("Floette Eternal").ends_with("/floette-eternal.png"));
+    }
+
+    #[test]
+    fn floette_descriptive_variants_normalize() {
+        // Limitless can also emit "Eternal Flower Floette" (the official forme
+        // descriptor) and other variations. Any string containing "floette"
+        // must collapse to "Floette-Eternal" — the only legal Floette in
+        // Regulation M-A is AZ's Floette-Eternal.
+        assert_eq!(
+            canonical_display_name("Eternal Flower Floette"),
+            "Floette-Eternal"
+        );
+        assert_eq!(canonical_display_name("AZ's Floette"), "Floette-Eternal");
+        assert_eq!(canonical_display_name("Floette (Eternal)"), "Floette-Eternal");
+        assert_eq!(canonical_display_name("FLOETTE"), "Floette-Eternal");
+        assert!(
+            primary_sprite_url("Eternal Flower Floette").ends_with("/floette-eternal.png")
+        );
+        assert!(primary_sprite_url("AZ's Floette").ends_with("/floette-eternal.png"));
+        assert_eq!(canonical_id("Eternal Flower Floette"), "floetteeternal");
     }
 
     #[test]
