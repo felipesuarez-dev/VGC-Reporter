@@ -46,21 +46,32 @@ fn apply_description_supplement(
 
 fn merge_lang(
     en: HashMap<String, String>,
-    es_map: &HashMap<String, LocalizedDescription>,
+    locale_map: &HashMap<String, LocalizedDescription>,
 ) -> HashMap<String, LocalizedDescription> {
+    // For each Showdown EN description, pull whatever per-locale strings
+    // PokéAPI emitted; fall back to the EN string when a locale is missing.
     let mut out: HashMap<String, LocalizedDescription> = HashMap::with_capacity(en.len());
     for (key, en_text) in en {
-        let es_text = es_map
-            .get(&key)
-            .map(|d| d.es.as_str())
-            .filter(|s| !s.is_empty())
-            .map(|s| s.to_string())
-            .unwrap_or_else(|| en_text.clone());
+        let upstream = locale_map.get(&key);
+        let pick = |getter: fn(&LocalizedDescription) -> &str| -> String {
+            upstream
+                .map(getter)
+                .filter(|s| !s.is_empty())
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| en_text.clone())
+        };
+        let es = pick(|d| d.es.as_str());
+        let pt = pick(|d| d.pt.as_str());
+        let it = pick(|d| d.it.as_str());
+        let fr = pick(|d| d.fr.as_str());
         out.insert(
             key,
             LocalizedDescription {
                 en: en_text,
-                es: es_text,
+                es,
+                pt,
+                it,
+                fr,
             },
         );
     }

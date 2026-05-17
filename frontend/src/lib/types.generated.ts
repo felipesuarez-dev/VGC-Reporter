@@ -27,9 +27,9 @@ export type Item = { id: string, name: string, description: string, };
 
 export type IvSpread = { hp: number, atk: number, def: number, spa: number, spd: number, spe: number, };
 
-export type LocalizedDescription = { en: string, es: string, };
+export type LocalizedDescription = { en: string, es: string, pt: string, it: string, fr: string, };
 
-export type LocalizedName = { en: string, es: string, };
+export type LocalizedName = { en: string, es: string, pt: string, it: string, fr: string, };
 
 export type MetaSnapshot = { format: Format, generated_at: string, source: string, tournaments_used: number, total_entries: number, battles_analyzed: number, pokemon: Array<PokemonUsage>, top_items: Array<UsageEntry>, top_moves: Array<UsageEntry>, top_abilities: Array<UsageEntry>, top_tera: Array<UsageEntry>, from_date: string | null, to_date: string | null, };
 

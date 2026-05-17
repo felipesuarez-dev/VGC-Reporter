@@ -12,11 +12,19 @@ use crate::adapters::pokeapi_client::{normalize_key, LocalizedDescription, Local
 /// signal that PokéAPI fell back to English because the Spanish row was
 /// missing. Real Spanish translations from PokéAPI are left untouched.
 fn entry(en: &str, es: &str) -> (String, LocalizedName) {
+    // The supplement only curates EN and ES manually — pt/it/fr are left as
+    // empty strings (sentinel "supplement does not cover this locale").
+    // `translations_service::apply_name_supplement` reads that sentinel and
+    // skips per-field merge for the empty locales, letting whatever PokéAPI
+    // produced (or the EN fallback) stand.
     (
         normalize_key(en),
         LocalizedName {
             en: en.to_string(),
             es: es.to_string(),
+            pt: String::new(),
+            it: String::new(),
+            fr: String::new(),
         },
     )
 }
@@ -25,6 +33,9 @@ fn desc(en: &str, es: &str) -> LocalizedDescription {
     LocalizedDescription {
         en: en.to_string(),
         es: es.to_string(),
+        pt: String::new(),
+        it: String::new(),
+        fr: String::new(),
     }
 }
 
