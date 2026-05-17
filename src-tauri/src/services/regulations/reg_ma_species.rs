@@ -33,7 +33,7 @@ pub const ALLOWED_SPECIES_MA: &[&str] = &[
     "Avalugg",
     "Azumarill",
     "Banette",
-    "Basculegion-M",
+    "Basculegion",
     "Basculegion-F",
     "Bastiodon",
     "Beartic",

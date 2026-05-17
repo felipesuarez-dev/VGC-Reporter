@@ -376,8 +376,11 @@ mod tests {
 
     #[test]
     fn basculegion_gendered_forms_allowed() {
+        // Showdown emits the male as bare "Basculegion" (default forme, no
+        // suffix) and the female as "Basculegion-F". The allow-list matches
+        // both literal strings.
         let rules = RegMaRules::new(MaSeason::M2);
-        assert!(rules.matches(&rules.allowed_species, "Basculegion-M"));
+        assert!(rules.matches(&rules.allowed_species, "Basculegion"));
         assert!(rules.matches(&rules.allowed_species, "Basculegion-F"));
     }
 

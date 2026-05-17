@@ -1,0 +1,14 @@
+-- Migration 006 — revert migration 004's Basculegion-M mapping.
+--
+-- Migration 004 mapped existing 'Basculegion' rows to 'Basculegion-M' under
+-- the assumption that Showdown emitted both forms with a gender suffix. That
+-- was wrong: Showdown's pokedex.json keeps the male as the bare 'basculegion'
+-- entry (default forme, no suffix) and only the female gets 'basculegionf'.
+-- The Showdown sprite CDN follows the same convention — only
+-- gen5/basculegion.png and gen5/basculegion-f.png exist.
+--
+-- Revert any team_members.species rows that 004 wrote back to the bare name
+-- so they match the corrected allow-list and resolve to a valid sprite URL.
+-- 'UPDATE ... WHERE' is idempotent — repeated runs on subsequent boots are
+-- no-ops, no Rust-level guard needed (Regla 2 del CLAUDE.md raíz).
+UPDATE team_members SET species = 'Basculegion' WHERE species = 'Basculegion-M';

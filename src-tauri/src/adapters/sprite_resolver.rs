@@ -178,19 +178,21 @@ fn apply_alias(species: &str) -> String {
     }
 
     // Basculegion has two gendered forms with distinct stats (M: Atk 112;
-    // F: SpA 112). Showdown keys them as `basculegionm` / `basculegionf`.
-    // Limitless / Labmaus may emit "Basculegion-Male"/"Basculegion-Female",
-    // "Basculegion (M)"/"(F)", or just "Basculegion" — normalize all to
-    // the canonical -M / -F suffix. A bare "Basculegion" defaults to -M
-    // (more common in competitive play).
+    // F: SpA 112). Showdown's CDN only has gen5/basculegion.png (macho, the
+    // default forme — bare name, no suffix) and gen5/basculegion-f.png
+    // (hembra). There is no -m sprite. Limitless / Labmaus may emit
+    // "Basculegion-M", "Basculegion-Male", "Basculegion (M)" or just
+    // "Basculegion" — collapse all male variants to the bare "Basculegion"
+    // so the CDN URL resolves. Only female variants (-F, -Female, (F),
+    // concatenated basculegionf) need the -F suffix.
+    // ends_with('f') captures both the hyphenated "basculegion-f" and the
+    // concatenated "basculegionf" forms; bare "Basculegion" ends in 'n'
+    // so it doesn't collide.
     if lower.starts_with("basculegion") {
-        if lower.contains("female") || lower.ends_with("f") || lower.ends_with("(f)") {
+        if lower.contains("female") || lower.ends_with('f') || lower.ends_with("(f)") {
             return "Basculegion-F".to_string();
         }
-        if lower.contains("male") || lower.ends_with("m") || lower.ends_with("(m)") {
-            return "Basculegion-M".to_string();
-        }
-        return "Basculegion-M".to_string();
+        return "Basculegion".to_string();
     }
 
     match lower.as_str() {
@@ -419,17 +421,27 @@ mod tests {
     }
 
     #[test]
-    fn basculegion_aliases_normalize_to_canonical_gendered_slug() {
-        // Limitless/Labmaus emit a variety of gendered display strings.
-        // All variants must collapse to Showdown's canonical -M / -F slugs.
-        // Bare "Basculegion" defaults to -M (more common in competitive).
-        assert_eq!(canonical_display_name("Basculegion-M"), "Basculegion-M");
+    fn basculegion_aliases_normalize_to_bare_male_and_suffixed_female() {
+        // Showdown's gen5 CDN has /basculegion.png (macho) and
+        // /basculegion-f.png (hembra). No -m. Every male-leaning variant
+        // collapses to bare "Basculegion"; only female variants get the
+        // -F suffix.
+        assert_eq!(canonical_display_name("Basculegion"), "Basculegion");
+        assert_eq!(canonical_display_name("Basculegion-M"), "Basculegion");
+        assert_eq!(canonical_display_name("Basculegion-Male"), "Basculegion");
+        assert_eq!(canonical_display_name("Basculegion (M)"), "Basculegion");
         assert_eq!(canonical_display_name("Basculegion-F"), "Basculegion-F");
-        assert_eq!(canonical_display_name("Basculegion-Male"), "Basculegion-M");
         assert_eq!(canonical_display_name("Basculegion-Female"), "Basculegion-F");
-        assert_eq!(canonical_display_name("Basculegion"), "Basculegion-M");
+        assert_eq!(canonical_display_name("Basculegion (F)"), "Basculegion-F");
+        assert_eq!(canonical_display_name("basculegionf"), "Basculegion-F");
+        // Canonical ids hit the Showdown pokedex.json keys.
+        assert_eq!(canonical_id("Basculegion"), "basculegion");
         assert_eq!(canonical_id("Basculegion-F"), "basculegionf");
-        assert_eq!(canonical_id("Basculegion-M"), "basculegionm");
+        // Sprite URLs land on CDN paths that actually exist.
+        assert!(primary_sprite_url("Basculegion").ends_with("/basculegion.png"));
+        assert!(primary_sprite_url("Basculegion-F").ends_with("/basculegion-f.png"));
+        // Stray "-M" inputs no longer produce a broken /basculegion-m.png URL.
+        assert!(primary_sprite_url("Basculegion-M").ends_with("/basculegion.png"));
     }
 
     #[test]

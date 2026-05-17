@@ -10,6 +10,7 @@ const MIGRATION_002: &str = include_str!("migrations/002_clear_pikalytics_cache.
 const MIGRATION_003: &str = include_str!("migrations/003_invalidate_meta_and_labmaus_cache.sql");
 const MIGRATION_004: &str = include_str!("migrations/004_basculegion_data_migration.sql");
 const MIGRATION_005: &str = include_str!("migrations/005_team_member_competitive_fields.sql");
+const MIGRATION_006: &str = include_str!("migrations/006_basculegion_revert_to_bare.sql");
 
 pub fn init_pool(db_path: &Path) -> Result<DbPool, AppError> {
     if let Some(parent) = db_path.parent() {
@@ -41,6 +42,10 @@ pub fn init_pool(db_path: &Path) -> Result<DbPool, AppError> {
     if !column_exists(&conn, "team_members", "level")? {
         conn.execute_batch(MIGRATION_005)?;
     }
+
+    // Migration 006 reverts the Basculegion-M mapping that 004 introduced;
+    // it's UPDATE ... WHERE so naturally idempotent (Regla 2 del CLAUDE.md).
+    conn.execute_batch(MIGRATION_006)?;
 
     Ok(pool)
 }
