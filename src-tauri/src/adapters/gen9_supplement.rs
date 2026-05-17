@@ -79,6 +79,8 @@ pub fn gen9_move_names() -> HashMap<String, LocalizedName> {
         entry("Silk Trap", "Telatrampa"),
         entry("Pounce", "Abalanzarse"),
         entry("Trick-or-Treat", "Halloween"),
+        entry("Wave Crash", "Surfataque"),
+        entry("Matcha Gotcha", "Ceremoniatcha"),
     ]
     .into_iter()
     .collect()
@@ -231,6 +233,20 @@ pub fn gen9_move_descriptions() -> HashMap<String, LocalizedDescription> {
             desc(
                 "A blade of psychic energy; 50% stronger on Electric Terrain.",
                 "Hoja de energía psíquica. Su potencia aumenta un 50% en Campo Eléctrico.",
+            ),
+        ),
+        (
+            normalize_key("Wave Crash"),
+            desc(
+                "Has 33% recoil.",
+                "El usuario se cubre de agua y embiste con todo el cuerpo. Recibe un 33% del daño infligido como retroceso.",
+            ),
+        ),
+        (
+            normalize_key("Matcha Gotcha"),
+            desc(
+                "Heals 50% of damage dealt. 20% chance to burn.",
+                "Lanza matcha al objetivo. Restaura un 50% del daño causado y tiene un 20% de probabilidades de quemar.",
             ),
         ),
     ]
