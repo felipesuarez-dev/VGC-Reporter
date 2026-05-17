@@ -152,15 +152,23 @@ jobs:
     needs: [prepare, create-release]
     strategy:
       fail-fast: false
+      # max-parallel: 1 serializes the 4 platform jobs. tauri-action's
+      # latest.json update is read-modify-write: it downloads the existing
+      # JSON, adds its platform key, uploads back. Parallel matrix jobs race
+      # there (last writer wins, earlier platforms drop out — that's how the
+      # v0.2.2 latest.json ended up missing windows-x86_64). Running one at
+      # a time guarantees each platform's key sticks. Cost: ~4x slower total
+      # wall time, ~40min instead of ~12min. Worth it for release reliability.
+      max-parallel: 1
       matrix:
         include:
-          - platform: windows-2025
+          - platform: ubuntu-22.04
             args: ''
           - platform: macos-latest
             args: '--target aarch64-apple-darwin'
           - platform: macos-latest
             args: '--target x86_64-apple-darwin'
-          - platform: ubuntu-22.04
+          - platform: windows-2025
             args: ''
     runs-on: ${{ matrix.platform }}
     steps:
@@ -193,6 +201,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build & upload to draft release with tauri-action
+        id: tauri
         uses: tauri-apps/tauri-action@v0.6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -202,12 +211,48 @@ jobs:
           tauriScript: "bunx tauri"
           projectPath: "."
           # releaseId targets the draft created by the create-release job.
-          # Skips tauri-action's own create-or-find logic which races when
-          # four matrix jobs hit it at once.
+          # Skips tauri-action's own create-or-find logic which raced when
+          # four matrix jobs hit it at once on v0.2.1/v0.2.2.
           releaseId: ${{ needs.create-release.outputs.release_id }}
           includeUpdaterJson: true
           updaterJsonPreferNsis: false
+          retryAttempts: 3
           args: ${{ matrix.args }}
+
+      # Defensive belt-and-suspenders for the Windows MSI / NSIS upload —
+      # tauri-action v0.6 reported success for the v0.2.2 Windows job but the
+      # bundles never appeared on the release (likely a sig-priority matching
+      # quirk or a silently swallowed upload error). Re-upload every bundle
+      # this platform produced with --clobber so the release always ends up
+      # with the expected set even if tauri-action's per-job upload misses
+      # something. paths from src-tauri/target/.../release/bundle/ map to:
+      #   windows: msi/*.msi(.sig), nsis/*-setup.exe(.sig), zips
+      #   macos:   dmg/*.dmg(.sig), macos/*.app.tar.gz(.sig)
+      #   linux:   deb/*.deb(.sig), rpm/*.rpm(.sig), appimage/*.AppImage(.sig)
+      - name: Re-upload platform bundles (defensive)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          set -e
+          BUNDLE_DIRS=$(find src-tauri/target -type d -name bundle | head -5)
+          echo "Bundle dirs found: $BUNDLE_DIRS"
+          for bdir in $BUNDLE_DIRS; do
+            find "$bdir" -type f \( \
+              -name '*.msi' -o -name '*.msi.sig' -o -name '*.msi.zip' -o -name '*.msi.zip.sig' \
+              -o -name '*-setup.exe' -o -name '*-setup.exe.sig' \
+              -o -name '*-setup.nsis.zip' -o -name '*-setup.nsis.zip.sig' \
+              -o -name '*.dmg' -o -name '*.dmg.sig' \
+              -o -name '*.app.tar.gz' -o -name '*.app.tar.gz.sig' \
+              -o -name '*.deb' -o -name '*.deb.sig' \
+              -o -name '*.rpm' -o -name '*.rpm.sig' \
+              -o -name '*.AppImage' -o -name '*.AppImage.sig' \
+            \) -print0 | while IFS= read -r -d '' f; do
+              echo "Uploading: $f"
+              gh release upload "$TAG" "$f" --clobber || echo "  (upload failed, continuing)"
+            done
+          done
 
   android:
     runs-on: ubuntu-latest
