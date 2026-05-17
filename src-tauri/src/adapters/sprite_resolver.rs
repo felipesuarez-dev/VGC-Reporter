@@ -66,7 +66,20 @@ pub fn home_sprite_url(num: u32) -> Option<String> {
 pub fn sprite_slug_parts(base: &str, forme: Option<&str>) -> String {
     match forme {
         Some(f) if !f.is_empty() => primary_slug(&format!("{}-{}", base, f)),
-        _ => to_id(base),
+        _ => {
+            // Most species without a forme stay as a concatenated slug
+            // (Ho-Oh → hooh, Farfetch'd → farfetchd). But when the alias layer
+            // rewrites the bare name into a specific forme (e.g. AZ's
+            // Floette → Floette-Eternal is the only competitively legal
+            // Floette in M-A), the result needs hyphenation so the CDN
+            // serves the right sprite (floette-eternal.png, not floetteeternal.png).
+            let aliased = apply_alias(base);
+            if aliased != base {
+                primary_slug(&aliased)
+            } else {
+                to_id(base)
+            }
+        }
     }
 }
 
@@ -387,6 +400,19 @@ mod tests {
         );
         assert_eq!(sprite_slug_parts("Ho-Oh", None), "hooh");
         assert_eq!(sprite_slug_parts("Incineroar", None), "incineroar");
+    }
+
+    #[test]
+    fn sprite_slug_parts_resolves_floette_base_to_eternal() {
+        // Showdown's pokedex.json emits a "floette" base entry separately from
+        // "floetteeternal". The base entry has forme=None, and without the
+        // alias rewrite below sprite_slug_parts would return "floette" —
+        // producing a /floette.png CDN URL that renders the red-flower (non-
+        // competitive) form. In Regulation M-A only AZ's Floette-Eternal is
+        // legal, so any "Floette" without an explicit forme must collapse to
+        // the Eternal Flower slug.
+        assert_eq!(sprite_slug_parts("Floette", None), "floette-eternal");
+        assert!(primary_sprite_url_parts("Floette", None).ends_with("/floette-eternal.png"));
     }
 
     #[test]
