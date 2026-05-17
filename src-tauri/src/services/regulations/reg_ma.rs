@@ -362,8 +362,18 @@ mod tests {
     }
 
     #[test]
-    fn allowed_species_count_matches_186() {
-        assert_eq!(ALLOWED_SPECIES_MA.len(), 186);
+    fn allowed_species_count_matches_187() {
+        // Bumped from 186 → 187 when Basculegion was split into its gendered
+        // forms (Basculegion-M and Basculegion-F have different stats and
+        // are tracked separately by Showdown).
+        assert_eq!(ALLOWED_SPECIES_MA.len(), 187);
+    }
+
+    #[test]
+    fn basculegion_gendered_forms_allowed() {
+        let rules = RegMaRules::new(MaSeason::M2);
+        assert!(rules.matches(&rules.allowed_species, "Basculegion-M"));
+        assert!(rules.matches(&rules.allowed_species, "Basculegion-F"));
     }
 
     #[test]

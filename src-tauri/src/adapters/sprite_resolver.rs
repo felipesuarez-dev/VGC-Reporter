@@ -177,6 +177,22 @@ fn apply_alias(species: &str) -> String {
         return "Floette-Eternal".to_string();
     }
 
+    // Basculegion has two gendered forms with distinct stats (M: Atk 112;
+    // F: SpA 112). Showdown keys them as `basculegionm` / `basculegionf`.
+    // Limitless / Labmaus may emit "Basculegion-Male"/"Basculegion-Female",
+    // "Basculegion (M)"/"(F)", or just "Basculegion" — normalize all to
+    // the canonical -M / -F suffix. A bare "Basculegion" defaults to -M
+    // (more common in competitive play).
+    if lower.starts_with("basculegion") {
+        if lower.contains("female") || lower.ends_with("f") || lower.ends_with("(f)") {
+            return "Basculegion-F".to_string();
+        }
+        if lower.contains("male") || lower.ends_with("m") || lower.ends_with("(m)") {
+            return "Basculegion-M".to_string();
+        }
+        return "Basculegion-M".to_string();
+    }
+
     match lower.as_str() {
         "greninja-bond" | "ash-greninja" | "greninjabond" | "ashgreninja" => {
             "Greninja-Ash".to_string()
@@ -400,6 +416,20 @@ mod tests {
         );
         assert_eq!(sprite_slug_parts("Ho-Oh", None), "hooh");
         assert_eq!(sprite_slug_parts("Incineroar", None), "incineroar");
+    }
+
+    #[test]
+    fn basculegion_aliases_normalize_to_canonical_gendered_slug() {
+        // Limitless/Labmaus emit a variety of gendered display strings.
+        // All variants must collapse to Showdown's canonical -M / -F slugs.
+        // Bare "Basculegion" defaults to -M (more common in competitive).
+        assert_eq!(canonical_display_name("Basculegion-M"), "Basculegion-M");
+        assert_eq!(canonical_display_name("Basculegion-F"), "Basculegion-F");
+        assert_eq!(canonical_display_name("Basculegion-Male"), "Basculegion-M");
+        assert_eq!(canonical_display_name("Basculegion-Female"), "Basculegion-F");
+        assert_eq!(canonical_display_name("Basculegion"), "Basculegion-M");
+        assert_eq!(canonical_id("Basculegion-F"), "basculegionf");
+        assert_eq!(canonical_id("Basculegion-M"), "basculegionm");
     }
 
     #[test]
