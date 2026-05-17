@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../lib/cn";
 import { ALL_FORMATS, type Format, type FormatOption } from "../../lib/types";
+import { Tooltip } from "./Tooltip";
 
 interface Props {
   value: Format;
@@ -78,6 +79,34 @@ export function FormatSelector({
             {ordered.map((opt, idx) => {
               const selected = !opt.disabled && opt.value === value;
               const isFav = !opt.disabled && opt.value === favorite;
+              const tooltipText =
+                opt.disabled && opt.disabledTooltipKey
+                  ? t(opt.disabledTooltipKey, opt.disabledTooltipParams ?? {})
+                  : null;
+              const optionContent = (
+                <span className="flex w-full items-center justify-between gap-2">
+                  <span className="truncate">{opt.label}</span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    {opt.badgeKey && (
+                      <span
+                        className="rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide"
+                        style={{
+                          borderColor: "var(--border)",
+                          color: "var(--text-muted)",
+                        }}
+                      >
+                        {t(opt.badgeKey)}
+                      </span>
+                    )}
+                    {selected && (
+                      <Check
+                        className="h-4 w-4"
+                        style={{ color: "var(--accent)" }}
+                      />
+                    )}
+                  </span>
+                </span>
+              );
               return (
                 <li
                   key={`${opt.value}-${idx}`}
@@ -107,46 +136,46 @@ export function FormatSelector({
                       )}
                     />
                   </button>
-                  <button
-                    type="button"
-                    role="option"
-                    aria-selected={selected}
-                    aria-disabled={opt.disabled ? "true" : undefined}
-                    disabled={opt.disabled}
-                    onClick={() => {
-                      if (opt.disabled) return;
-                      onChange(opt.value);
-                      setOpen(false);
-                    }}
-                    className={cn(
-                      "flex flex-1 items-center justify-between gap-2 px-2 py-2 text-left text-sm",
-                      opt.disabled
-                        ? "cursor-not-allowed text-[var(--text-dim)]"
-                        : "text-[var(--text)] hover:bg-[var(--bg-elev-strong)]",
-                      selected && "bg-[var(--accent-soft)]",
-                    )}
-                  >
-                    <span className="truncate">{opt.label}</span>
-                    <span className="flex shrink-0 items-center gap-2">
-                      {opt.badgeKey && (
-                        <span
-                          className="rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide"
-                          style={{
-                            borderColor: "var(--border)",
-                            color: "var(--text-muted)",
-                          }}
-                        >
-                          {t(opt.badgeKey)}
-                        </span>
+                  {tooltipText ? (
+                    <Tooltip
+                      content={tooltipText}
+                      placement="bottom"
+                      className="flex-1"
+                    >
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={selected}
+                        aria-disabled="true"
+                        onClick={(e) => e.preventDefault()}
+                        className="flex w-full items-center justify-between gap-2 px-2 py-2 text-left text-sm cursor-not-allowed text-[var(--text-dim)]"
+                      >
+                        {optionContent}
+                      </button>
+                    </Tooltip>
+                  ) : (
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={selected}
+                      aria-disabled={opt.disabled ? "true" : undefined}
+                      disabled={opt.disabled}
+                      onClick={() => {
+                        if (opt.disabled) return;
+                        onChange(opt.value);
+                        setOpen(false);
+                      }}
+                      className={cn(
+                        "flex flex-1 items-center justify-between gap-2 px-2 py-2 text-left text-sm",
+                        opt.disabled
+                          ? "cursor-not-allowed text-[var(--text-dim)]"
+                          : "text-[var(--text)] hover:bg-[var(--bg-elev-strong)]",
+                        selected && "bg-[var(--accent-soft)]",
                       )}
-                      {selected && (
-                        <Check
-                          className="h-4 w-4"
-                          style={{ color: "var(--accent)" }}
-                        />
-                      )}
-                    </span>
-                  </button>
+                    >
+                      {optionContent}
+                    </button>
+                  )}
                 </li>
               );
             })}

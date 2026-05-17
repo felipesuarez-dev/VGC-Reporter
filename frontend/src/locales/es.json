@@ -34,7 +34,8 @@
   "regulations": {
     "coming_soon": "Próximamente",
     "reg_ma_s1": "M-1",
-    "reg_ma_s2": "M-2"
+    "reg_ma_s2": "M-2",
+    "m_b_start_date": "Comienza el {{date}}"
   },
   "common": {
     "loading": "Cargando...",

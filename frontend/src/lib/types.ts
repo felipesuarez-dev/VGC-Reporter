@@ -64,15 +64,22 @@ export interface FormatOption {
   disabled?: boolean;
   /** Optional i18n key for a "coming soon" style badge shown beside the label. */
   badgeKey?: string;
+  /** Optional i18n key for a tooltip shown when the option is disabled
+   *  (e.g. start date of the upcoming season). Supports interpolation. */
+  disabledTooltipKey?: string;
+  /** Optional interpolation params for `disabledTooltipKey`. */
+  disabledTooltipParams?: Record<string, string>;
 }
 
 export const ALL_FORMATS: FormatOption[] = [
-  { value: "regulation-m-a", label: "Regulation M-A (M-1)" },
+  { value: "regulation-m-a", label: "Regulation M-A (M-2)" },
   {
     value: "regulation-m-a",
-    label: "Regulation M-A (M-2)",
+    label: "Regulation M-B (M-3)",
     disabled: true,
     badgeKey: "regulations.coming_soon",
+    disabledTooltipKey: "regulations.m_b_start_date",
+    disabledTooltipParams: { date: "2026-06-18" },
   },
 ];
 

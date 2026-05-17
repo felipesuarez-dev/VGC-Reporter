@@ -205,7 +205,7 @@ export function TeamBuilder() {
             disabled
             title={t("team_builder.regulation_hint")}
           >
-            <option value="regulation-m-a">Regulation M-A (M-1)</option>
+            <option value="regulation-m-a">Regulation M-A (M-2)</option>
           </select>
           <p className="mt-1 text-[10px]" style={{ color: "var(--text-dim)" }}>
             {t("team_builder.regulation_hint")}
