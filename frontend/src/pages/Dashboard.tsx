@@ -25,6 +25,7 @@ import { TrendingCard } from "../components/charts/TrendingCard";
 import { FormatSelector } from "../components/ui/FormatSelector";
 import { XCard } from "../components/dashboard/XCard";
 import { TournamentStandingsDrawer } from "../components/tournament/TournamentStandingsDrawer";
+import { ChampionsSearchHits } from "../components/tournament/ChampionsSearchHits";
 import { SourcesChip } from "../components/layout/SourcesChip";
 import { SearchTextInput } from "../components/filters/SearchTextInput";
 import { useDashboardStore } from "../stores/dashboardStore";
@@ -78,6 +79,18 @@ export function Dashboard() {
   const TOURNAMENT_PAGE = 10;
   const [tournamentVisible, setTournamentVisible] = useState(TOURNAMENT_INITIAL);
   const [tournamentSearch, setTournamentSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const handle = setTimeout(() => setDebouncedSearch(tournamentSearch.trim()), 250);
+    return () => clearTimeout(handle);
+  }, [tournamentSearch]);
+  const searchQuery = debouncedSearch.length >= 3 ? debouncedSearch : "";
+  const { data: searchHits, isFetching: searchFetching } = useQuery({
+    queryKey: queryKeys.championsSearch(format, searchQuery),
+    queryFn: () => ipc.searchChampions(searchQuery, format, 40),
+    enabled: searchQuery.length >= 3,
+    staleTime: 60_000,
+  });
   const tournamentLimit = tournamentVisible;
   const POKE_INITIAL = 10;
   const POKE_PAGE = 10;
@@ -394,6 +407,13 @@ export function Dashboard() {
               </li>
             ))}
           </ul>
+        )}
+        {searchQuery.length >= 3 && (
+          <ChampionsSearchHits
+            hits={searchHits ?? []}
+            isFetching={searchFetching}
+            onOpenTournament={setSelectedTournament}
+          />
         )}
         {championsReport && championsReport.tournaments.length > 0 && (
           <div className="mt-2 flex justify-center gap-2">

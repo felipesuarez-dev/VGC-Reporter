@@ -22,6 +22,8 @@ export const queryKeys = {
   sets: (species: string) => ["sets", species] as const,
   championsReport: (format: Format, limit: number) =>
     ["champions-report", format, limit] as const,
+  championsSearch: (format: Format, query: string) =>
+    ["champions-search", format, query] as const,
   tournamentStandings: (id: string) => ["tournament-standings", id] as const,
   upcomingTournaments: () => ["upcoming-tournaments"] as const,
   settings: ["settings"] as const,

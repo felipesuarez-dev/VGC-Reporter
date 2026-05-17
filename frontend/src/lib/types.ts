@@ -9,9 +9,11 @@
 export type {
   Ability,
   ChampionsReport,
+  ChampionsSearchHit,
   ChampionsTournament,
   DecklistPokemon,
   EntityDescriptions,
+  SearchHitKind,
   EvSpread,
   Format,
   Item,

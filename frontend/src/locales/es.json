@@ -37,6 +37,15 @@
     "reg_ma_s2": "M-2",
     "m_b_start_date": "Comienza el {{date}}"
   },
+  "search": {
+    "more_results": "Más resultados",
+    "indexing": "Indexando torneos… intenta de nuevo en unos segundos.",
+    "kind_tournament": "Torneo",
+    "kind_champion": "Campeón",
+    "kind_player": "Jugador",
+    "kind_pokemon": "Pokémon",
+    "match_pokemon": "{{player}} usó {{pokemon}}"
+  },
   "common": {
     "loading": "Cargando...",
     "error": "Error",

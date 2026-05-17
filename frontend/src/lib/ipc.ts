@@ -1,6 +1,7 @@
 import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 import type {
   ChampionsReport,
+  ChampionsSearchHit,
   EntityDescriptions,
   Format,
   MetaSnapshot,
@@ -90,6 +91,8 @@ export const ipc = {
     call<ChampionsReport>("list_champions_tournaments", { format, limit }),
   getTournamentStandings: (id: string) =>
     call<TournamentStanding[]>("get_tournament_standings", { id }),
+  searchChampions: (query: string, format?: Format, limit?: number) =>
+    call<ChampionsSearchHit[]>("search_champions", { query, format, limit }),
   listUpcomingTournaments: () =>
     call<UpcomingTournament[]>("list_upcoming_tournaments"),
   getSettings: () => call<Record<string, string>>("get_settings"),

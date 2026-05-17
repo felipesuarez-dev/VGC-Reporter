@@ -1,4 +1,4 @@
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Download, Loader2, RefreshCw } from "lucide-react";
@@ -11,6 +11,7 @@ import { TopTeamDetailModal } from "../components/team/TopTeamDetailModal";
 import { LoadAllTeamsConfirmModal } from "../components/team/LoadAllTeamsConfirmModal";
 import { ExportLargeMdConfirmModal } from "../components/team/ExportLargeMdConfirmModal";
 import { TournamentStandingsDrawer } from "../components/tournament/TournamentStandingsDrawer";
+import { ChampionsSearchHits } from "../components/tournament/ChampionsSearchHits";
 import { PokemonMultiSelect } from "../components/filters/PokemonMultiSelect";
 import { SearchTextInput } from "../components/filters/SearchTextInput";
 import { CountryFilter } from "../components/filters/CountryFilter";
@@ -60,6 +61,18 @@ export function TopTeams() {
   const [selectedTeam, setSelectedTeam] = useState<TopTeam | null>(null);
   const [recentExpanded, setRecentExpanded] = useState(false);
   const [recentSearch, setRecentSearch] = useState("");
+  const [debouncedRecent, setDebouncedRecent] = useState("");
+  useEffect(() => {
+    const handle = setTimeout(() => setDebouncedRecent(recentSearch.trim()), 250);
+    return () => clearTimeout(handle);
+  }, [recentSearch]);
+  const recentSearchQuery = debouncedRecent.length >= 3 ? debouncedRecent : "";
+  const { data: searchHits, isFetching: searchFetching } = useQuery({
+    queryKey: queryKeys.championsSearch(FORMAT, recentSearchQuery),
+    queryFn: () => ipc.searchChampions(recentSearchQuery, FORMAT, 40),
+    enabled: recentSearchQuery.length >= 3,
+    staleTime: 60_000,
+  });
   const [speciesFilter, setSpeciesFilter] = useState<string[]>([]);
   const [teamSearch, setTeamSearch] = useState("");
   const [countryFilter, setCountryFilter] = useState<string[]>([]);
@@ -531,6 +544,13 @@ export function TopTeams() {
               </li>
             ))}
           </ul>
+        )}
+        {recentSearchQuery.length >= 3 && (
+          <ChampionsSearchHits
+            hits={searchHits ?? []}
+            isFetching={searchFetching}
+            onOpenTournament={setSelectedTournament}
+          />
         )}
         {hasMoreRecent && (
           <div className="mt-2 flex justify-center">
