@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useUiStore } from "../../stores/uiStore";
 import { useSearchStore } from "../../stores/searchStore";
 import { ThemeSelect } from "./ThemeSelect";
-import { LanguageToggle } from "./LanguageToggle";
+import { LanguageCombobox } from "./LanguageCombobox";
 
 export function MobileTopbar() {
   const { t } = useTranslation();
@@ -55,7 +55,7 @@ export function MobileTopbar() {
           <ThemeSelect variant="titlebar" />
         </div>
         <div className="flex h-11 shrink-0 items-center px-1">
-          <LanguageToggle variant="titlebar" />
+          <LanguageCombobox variant="titlebar" />
         </div>
       </div>
     </div>

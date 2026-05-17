@@ -15,7 +15,7 @@ import {
 import { useNavHistoryStore } from "../../stores/navHistoryStore";
 import { useSearchStore } from "../../stores/searchStore";
 import { useUiStore } from "../../stores/uiStore";
-import { LanguageToggle } from "./LanguageToggle";
+import { LanguageCombobox } from "./LanguageCombobox";
 import { ThemeSelect } from "./ThemeSelect";
 
 const TITLE = "VGC Reporter";
@@ -193,7 +193,7 @@ export function Titlebar() {
           <ThemeSelect variant="titlebar" />
         </div>
         <div className="flex items-center px-2">
-          <LanguageToggle variant="titlebar" />
+          <LanguageCombobox variant="titlebar" />
         </div>
         <div className="hidden md:contents">
           <button
