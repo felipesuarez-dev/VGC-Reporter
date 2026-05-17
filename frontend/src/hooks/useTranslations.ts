@@ -35,10 +35,23 @@ export function useTranslationTable() {
   });
 }
 
+const SUPPORTED_LOCALES = ["es", "en", "pt", "it", "fr"] as const;
+type LocLang = (typeof SUPPORTED_LOCALES)[number];
+
+/** Map an i18next language tag (`es`, `pt-BR`, `fr-FR`, …) to the LocalizedName
+ *  field whose value should be displayed. Anything we don't recognize falls
+ *  back to English. */
+function resolveLocale(raw: string): LocLang {
+  const head = raw.slice(0, 2).toLowerCase();
+  return (SUPPORTED_LOCALES as readonly string[]).includes(head)
+    ? (head as LocLang)
+    : "en";
+}
+
 export function useLocalize() {
   const { data } = useTranslationTable();
   const { i18n } = useTranslation();
-  const lang = i18n.language;
+  const lang = resolveLocale(i18n.language);
   return useCallback(
     (kind: LocalizeKind, name: string | null | undefined): string => {
       if (!name) return "";
@@ -46,8 +59,11 @@ export function useLocalize() {
       if (!table) return name;
       const entry = table[normalizeKey(name)];
       if (!entry) return name;
-      if (lang === "es") return entry.es || entry.en || name;
-      return entry.en || name;
+      // Per-locale lookup with EN fallback at every step. The backend builds
+      // these structs with the EN value already populated in the per-locale
+      // field when the upstream lacked a translation, so this fallback
+      // chain is defensive — but cheap.
+      return entry[lang] || entry.en || name;
     },
     [data, lang],
   );

@@ -34,10 +34,20 @@ export function useEntityDescriptions() {
   });
 }
 
+const SUPPORTED_LOCALES = ["es", "en", "pt", "it", "fr"] as const;
+type LocLang = (typeof SUPPORTED_LOCALES)[number];
+
+function resolveLocale(raw: string): LocLang {
+  const head = raw.slice(0, 2).toLowerCase();
+  return (SUPPORTED_LOCALES as readonly string[]).includes(head)
+    ? (head as LocLang)
+    : "en";
+}
+
 export function useDescribe() {
   const { data } = useEntityDescriptions();
   const { i18n } = useTranslation();
-  const lang = i18n.language.startsWith("es") ? "es" : "en";
+  const lang = resolveLocale(i18n.language);
   return useCallback(
     (kind: LocalizeKind, name: string | null | undefined): string | null => {
       if (!name) return null;
@@ -45,7 +55,7 @@ export function useDescribe() {
       if (!table) return null;
       const entry = table[normalizeKey(name)];
       if (!entry) return null;
-      return (lang === "es" ? entry.es : entry.en) || entry.en || null;
+      return entry[lang] || entry.en || null;
     },
     [data, lang],
   );
