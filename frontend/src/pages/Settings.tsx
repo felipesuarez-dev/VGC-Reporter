@@ -4,6 +4,7 @@ import { ExternalLink, Info } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { FormatSelector } from "../components/ui/FormatSelector";
 import { AboutModal } from "../components/layout/AboutModal";
+import { LanguageCombobox } from "../components/layout/LanguageCombobox";
 import { useDashboardStore } from "../stores/dashboardStore";
 import {
   FONT_SIZE_DEFAULT,
@@ -25,7 +26,7 @@ const EXTERNAL_LINKS: { key: string; url: string }[] = [
 ];
 
 export function Settings() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const format = useDashboardStore((s) => s.favoriteFormat);
   const setFavoriteFormat = useDashboardStore((s) => s.setFavoriteFormat);
   const setFormat = useDashboardStore((s) => s.setFormat);
@@ -53,20 +54,7 @@ export function Settings() {
 
       <section className="card space-y-3">
         <div className="label">{t("settings.language")}</div>
-        <div className="flex gap-2">
-          <button
-            className={i18n.language === "es" ? "btn-primary" : "btn-ghost"}
-            onClick={() => i18n.changeLanguage("es")}
-          >
-            {t("settings.spanish")}
-          </button>
-          <button
-            className={i18n.language === "en" ? "btn-primary" : "btn-ghost"}
-            onClick={() => i18n.changeLanguage("en")}
-          >
-            {t("settings.english")}
-          </button>
-        </div>
+        <LanguageCombobox variant="default" />
       </section>
 
       <section className="card space-y-3">
