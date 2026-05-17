@@ -4,9 +4,9 @@
   "version": "0.2.0",
   "identifier": "com.pumasoft.vgcreporter",
   "build": {
-    "beforeDevCommand": "bun run --cwd ../frontend dev",
+    "beforeDevCommand": "bun run --cwd frontend dev",
     "devUrl": "http://localhost:5173",
-    "beforeBuildCommand": "bun run --cwd ../frontend build",
+    "beforeBuildCommand": "bun run --cwd frontend build",
     "frontendDist": "../frontend/dist"
   },
   "app": {
