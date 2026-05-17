@@ -4,7 +4,7 @@ El Panel es la pantalla principal y muestra el "estado del meta" de Regulation M
 
 ## Qué verás
 
-- **Top Pokémon**: gráfico de barras con los Pokémon más usados. Cada barra incluye el sprite a la izquierda y el porcentaje de uso. Por defecto se muestran 10; el botón "Ver más" amplía el listado.
+- **Top Pokémon**: tres visualizaciones intercambiables con los Pokémon más usados — barras horizontales (sprite + porcentaje), grid de iconos, y un treemap de "meta share" donde cada rectángulo es proporcional al uso y está coloreado por el tipo primario. Por defecto se muestran 10; el botón "Ver más" amplía el listado.
 - **Top items, movimientos, abilities y Tera**: rankings agrupados con el porcentaje de equipos que usan cada uno.
 - **Trending**: Pokémon que más están subiendo o bajando en uso comparando los últimos 7 días contra los 7 anteriores.
 - **Próximos torneos**: torneos VGC programados para los próximos 14 días (Limitless).

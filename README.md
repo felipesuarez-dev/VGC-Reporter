@@ -100,15 +100,17 @@ First launch downloads and caches Pokédex, moves, items, abilities and usage st
 
 | Area | What it does |
 |---|---|
-| **Dashboard** | Format selector with favorite star, top Pokémon hero chart, Top Items / Moves / Abilities / Tera lists with click-through drill-down, recent Champions tournaments with **inline decklists**, Twitter cards for `@VGCdata` / `@VGChampStats` |
-| **Pokédex** | Sortable by generation / alphabetical / meta usage; click any Pokémon for a large modal with curated competitive sets (Doubles & Singles tabs), live meta usage and **type matchups** (weak/strong against) |
-| **Team Builder** | 6 slots with searchable comboboxes for Pokémon / item / ability / nature / Tera / moves, EV sliders. Pickers are filtered live by the active regulation (only legal species, items and moves shown), and Save runs full validation (completeness, EVs assigned, allow-list checks) surfacing issues in a modal |
-| **My Teams** | Local SQLite persistence with rename / duplicate / delete |
-| **Top Teams** | Tournament-winning teams from Limitless rendered as mini-grids |
+| **Dashboard** | Format selector with favorite star, top Pokémon with three switchable visualizations (bar chart, grid, **meta-share treemap**), Top Items / Moves / Abilities / Tera lists with click-through drill-down, recent Champions tournaments with **inline decklists** and search-by-player or by-Pokémon (backend-indexed), Twitter cards for `@VGCdata` / `@VGChampStats` |
+| **Pokédex** | Sortable by generation / alphabetical / meta usage; click any Pokémon for a large modal with curated competitive sets (Doubles & Singles tabs), live meta usage and **type matchups** (weak/strong against). Includes the **two Basculegion gendered forms** (distinct stats) and **AZ's Floette-Eternal** sprite as the canonical Floette |
+| **Team Builder** | 6 slots with searchable comboboxes for Pokémon / item / ability / nature / Tera / moves, EV sliders + **per-stat IV sliders**, level / gender / shiny / nickname fields. Pickers are filtered live by the active regulation (only legal species, items and moves shown), and Save runs full validation (completeness, EVs assigned, allow-list checks) surfacing issues in a modal |
+| **My Teams** | Local SQLite persistence with rename / duplicate / delete. **Multi-team Showdown paste** import and export — pick which teams to bundle, copy to clipboard or download as `.txt` |
+| **Top Teams** | Tournament-winning teams from Limitless rendered as mini-grids; same backend-indexed search-by-player/by-Pokémon as the Dashboard |
+| **Search palette** | Global Ctrl+K palette with filter chips per kind (Pokémon / moves / items / abilities) — multi-select with a Clear button, also filters the recent-searches list |
 | **Damage Calc** | `@smogon/calc` Gen 9 with searchable inputs for every field, real items & moves loaded from Showdown |
 | **External sources** | Quick-launch panel for Pikalytics / Pokebase / Pokemon-Zone / Champions Lab / Munchstats (no scraping — just links) |
-| **Localized tooltips** | Item / move / ability descriptions served in ES (PokéAPI flavor text) with automatic EN fallback when Spanish is missing |
-| **UX polish** | Window opens maximized, splash screen visible from the first frame, full ES/EN toggle persisted locally |
+| **Localized data** | **5 languages** (ES / EN / PT / IT / FR) covering both the UI strings *and* ability / move / item names and descriptions from PokéAPI, with automatic fallback to English when an upstream string is missing |
+| **Themes** | Light / Dark + custom Sneasler accent palette |
+| **UX polish** | Window opens maximized, splash screen visible from the first frame, language and font size persisted locally, auto-update on desktop & Android |
 
 ## Known Issues (beta)
 
@@ -133,30 +135,37 @@ Found something else? [Open an issue](https://github.com/felipesuarez-dev/vgc-re
 | [pkmn/smogon data](https://data.pkmn.cc/) | Curated competitive sets | Doubles + Singles slugs per format |
 | [Pikalytics](https://www.pikalytics.com/) | Per-species doubles breakdown (items, abilities, moves, Tera, teammates, EV spreads) | Surfaced inside the Pokémon detail modal |
 | [Pokepaste](https://pokepast.es) | Importable team pastes | Pastes are immutable — cached 30 days |
-| [PokéAPI CSV](https://github.com/PokeAPI/pokeapi/tree/master/data/v2/csv) | Localized names & flavor text | Bilingual (EN/ES) for abilities, moves, items — joined with Showdown data |
+| [PokéAPI CSV](https://github.com/PokeAPI/pokeapi/tree/master/data/v2/csv) | Localized names & flavor text | **5 languages** (EN / ES / PT / IT / FR) for abilities, moves, items — joined with Showdown data; missing per-locale rows fall back to English |
 | [Showdown dex sprites](https://play.pokemonshowdown.com/sprites/dex/) | Sprite fallback | Variant-aware HD render for Mega/Regional forms |
 
 **Not integrated** (no public API): Pokemon-Zone, Porygon Labs, Champions Lab, Pokebase, Munchstats. Exposed as one-click external links — no scraping.
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                 React 19 + TS + Vite (webview)              │
-│     pages/  components/  stores/  hooks/  i18n  shadcn      │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ Tauri invoke() (typed via ts-rs)
-┌──────────────────────────▼──────────────────────────────────┐
-│                  commands/   (thin IPC layer)               │
-├─────────────────────────────────────────────────────────────┤
-│                  services/   (use cases)                    │
-│  MetaService · PokedexService · TeamService · TopTeams…     │
-├──────────────────────┬─────────────────┬────────────────────┤
-│      adapters/       │    storage/     │      domain/       │
-│  Limitless / Smogon  │  rusqlite +     │  pure entities     │
-│  Showdown / Sprites  │  r2d2 + migs    │  (no I/O, no deps) │
-│  HttpClient + cache  │  CacheRepo etc. │                    │
-└──────────────────────┴─────────────────┴────────────────────┘
+```mermaid
+flowchart TD
+    subgraph FE["React 19 · TS · Vite (webview)"]
+        Pages[pages] --> Hooks[hooks]
+        Hooks --> Stores[Zustand stores]
+        Hooks --> IPC["ipc.ts (typed via ts-rs)"]
+        I18n["i18next · 5 languages"] -.-> Pages
+    end
+
+    IPC -->|"invoke() · typed JSON"| CMD
+
+    subgraph BE["Rust backend · clean architecture"]
+        CMD["commands/  (thin IPC layer)"]
+        CMD --> SVC["services/  (use cases)"]
+        SVC --> DOM["domain/  (pure entities)"]
+        SVC --> ADP["adapters/  (HTTP clients)"]
+        SVC --> STO["storage/  (rusqlite + r2d2)"]
+        ADP --> HTTP["HttpClient + SQLite cache"]
+    end
+
+    HTTP -.-> EXT["External APIs<br/>Labmaus · Limitless · Showdown<br/>PokéAPI · Pikalytics · Smogon · Pokepaste"]
+
+    classDef ext fill:#1a1f2e,stroke:#2b86ff,color:#cdd6f4;
+    class EXT ext;
 ```
 
 Rule: dependencies always point inward. `domain/` knows nothing about I/O, Tauri or SQLite. All network calls flow through `adapters/http_client.rs` which writes to the SQLite cache so the frontend never needs to handle rate limits or CORS.
@@ -171,7 +180,7 @@ Rule: dependencies always point inward. `domain/` knows nothing about I/O, Tauri
 | TanStack Query v5 | rusqlite + r2d2 | `bun run tauri:build` |
 | Zustand | serde / thiserror | ImageMagick (icons) |
 | React Router v7 | ts-rs | MSI installer (Windows) |
-| i18next | chrono / tracing | |
+| i18next (5-language UI) | chrono / tracing | |
 | Recharts | | |
 | `@smogon/calc` | | |
 
