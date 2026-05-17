@@ -69,6 +69,18 @@ Cualquier incidente nuevo que descubramos juntos (Felipe + IA) y que pudo preven
 
 Esto es metadata viva del repo, no decoración. Si releo este archivo en una sesión futura, debo encontrar **todo** lo que aprendimos sufriendo.
 
+### Regla 4 — `tauri-action` en matrix DEBE usar `releaseId` (no `releaseDraft`)
+
+Nunca correr `tauri-apps/tauri-action` con `releaseDraft: true` + `tagName` desde un job matrix con varias plataformas en paralelo. **Race condition garantizada**: los N jobs concurrentes intentan crear el MISMO draft via `POST /repos/{owner}/{repo}/releases`; el primero gana, los siguientes reciben 422 `already_exists` y la acción puede **colgarse sin imprimir el error** (queda el log frenado en "Looking for a draft release with tag …").
+
+**Patrón correcto** (implementado en `.github/workflows/release.yml`):
+
+1. Un job single-runner `create-release` corre ANTES del matrix, hace `gh release view` para reusar draft existente o `gh release create --draft` si no existe, y expone `release_id` como output.
+2. Los jobs matrix dependen de él (`needs: [prepare, create-release]`) y pasan `releaseId: ${{ needs.create-release.outputs.release_id }}` a `tauri-action`. Esto bypassea la lógica create-or-find de `tauri-action` por completo — solo uploadea assets al draft existente.
+3. Para soporte de re-trigger sin retag: `workflow_dispatch` lleva un input `tag: required: true`; un step `resolve` en `prepare` produce `outputs.tag` desde el input o desde `github.ref_name`; todo consumidor downstream (filename del APK, `gh release upload`, signer, etc.) usa `needs.prepare.outputs.tag` en vez de `github.ref_name` directo.
+
+**Incidente origen:** release v0.2.2.20260517-beta. El job Windows quedó frenado en "Looking for a draft release with tag v0.2.2.20260517-beta..." sin imprimir error y sin completar. Los otros 3 jobs del matrix (macOS x2, Linux) terminaron tareas variables. Felipe reportó "falló pero no sale error". Fix: commit `1b96ac3`.
+
 ## Documentación por capa
 
 - **Backend (Rust):** `src-tauri/CLAUDE.md` — clean architecture, cómo añadir un command, errores, migraciones.
