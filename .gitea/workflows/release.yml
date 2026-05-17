@@ -1,0 +1,237 @@
+name: Release Build (Gitea)
+
+# Equivalente Gitea Actions del .github/workflows/release.yml de GitHub.
+#
+# Limitaciones del mirror Gitea (vs. GitHub):
+#  - SIN matrix multi-plataforma: el runner local es Linux, no hay forma de
+#    construir el .msi de Windows, el .dmg de macOS ni el .apk de Android
+#    desde aquí. Esos artefactos siguen viviendo SOLO en el release de GitHub
+#    (donde tauri-action levanta runners nativos).
+#  - SIN job android: misma razón.
+#  - Este workflow genera un tarball del código fuente y crea un draft release
+#    en Gitea con las notas de cambio + el tarball como asset. Sirve para
+#    mirror histórico y para que el repo Gitea no quede "ciego" cuando se
+#    publica una versión.
+#  - El job release usa la API REST de Gitea directamente (curl) en lugar
+#    de softprops/action-gh-release, que es específico de GitHub.
+#  - Cuando este archivo existe, Gitea ignora .github/workflows/ y usa solo
+#    los workflows de aquí; eso evita correr accidentalmente el workflow
+#    de GitHub en el runner local.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag a publicar (ej: v0.2.0.20260517-beta). Si se deja vacío, usa el ref actual.'
+        required: false
+
+env:
+  BUN_VERSION: 1.3.10
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      body: ${{ steps.notes.outputs.body }}
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve tag and version
+        id: version
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          if [ -n "$INPUT_TAG" ]; then
+            TAG="$INPUT_TAG"
+          else
+            TAG="$REF_NAME"
+          fi
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Resolved tag: $TAG / version: $VERSION"
+
+      - name: Generate release body from git log
+        id: notes
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          PREV_TAG=$(git for-each-ref --sort=-creatordate --format='%(refname:short)' refs/tags \
+            | grep -E '^v[0-9]' | grep -v "^${TAG}$" | head -1 || true)
+          if [ -n "$PREV_TAG" ]; then
+            RANGE="${PREV_TAG}..${TAG}"
+          else
+            RANGE="$TAG"
+          fi
+
+          clean_subject() {
+            local s="$1"
+            s=$(echo "$s" | sed -E 's/^\[[^]]+\][[:space:]]*//')
+            local first rest
+            first=$(printf '%s' "${s:0:1}" | tr '[:lower:]' '[:upper:]')
+            rest="${s:1}"
+            printf '%s%s' "$first" "$rest"
+          }
+
+          CHANGES=""
+          FIXES=""
+          while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            case "$line" in
+              \[release\]*|\[ci\]*) continue ;;
+            esac
+            is_fix=0
+            if echo "$line" | grep -iqE '\bfix(es|ed)?\b|\bbug\b|\bhotfix\b|\bresolve[sd]?\b'; then
+              is_fix=1
+            fi
+            cleaned=$(clean_subject "$line")
+            if [ "$is_fix" -eq 1 ]; then
+              FIXES="${FIXES}- ${cleaned}"$'\n'
+            else
+              CHANGES="${CHANGES}- ${cleaned}"$'\n'
+            fi
+          done < <(git log --pretty='%s' "$RANGE" 2>/dev/null || git log --pretty='%s')
+
+          BODY=""
+          [ -n "$CHANGES" ] && BODY="${BODY}## Changes"$'\n\n'"${CHANGES}"$'\n'
+          [ -n "$FIXES" ]   && BODY="${BODY}## Fixes"$'\n\n'"${FIXES}"$'\n'
+          [ -z "$BODY" ]    && BODY="## Changes"$'\n\n'"- ${TAG} release"$'\n'
+
+          BODY="${BODY}"$'\n'"## Note about platform installers"$'\n\n'"Windows MSI, macOS DMG and Android APK builds live only on the [GitHub release](https://github.com/felipesuarez-dev/VGC-Reporter/releases/tag/${TAG}) — this Gitea mirror hosts the source tarball for archival purposes only."$'\n'
+
+          DELIM="EOF_$(openssl rand -hex 8)"
+          {
+            echo "body<<${DELIM}"
+            printf '%s' "$BODY"
+            echo
+            echo "${DELIM}"
+          } >> "$GITHUB_OUTPUT"
+
+  bundle:
+    runs-on: ubuntu-latest
+    needs: prepare
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun ${{ env.BUN_VERSION }}
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Create source tarball
+        run: |
+          # Excluir artefactos generados, deps, lockfile binario, caches de Tauri
+          # y secrets/local-only files. El tarball debe ser self-contained y
+          # reproducible: con Rust + Bun, un usuario puede correr
+          #   bun install && bun run tauri:build
+          # a partir de él.
+          tar -czf "vgc-reporter-source-${{ needs.prepare.outputs.version }}.tar.gz" \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.gitea' \
+            --exclude='node_modules' \
+            --exclude='target' \
+            --exclude='dist' \
+            --exclude='build' \
+            --exclude='.claude' \
+            --exclude='*.tar.gz' \
+            --exclude='*.zip' \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            --exclude='Cargo.lock' \
+            frontend src-tauri docs assets \
+            package.json bun.lock bunfig.toml \
+            README.md CLAUDE.md LICENSE \
+            .gitignore .gitattributes
+          ls -lh "vgc-reporter-source-${{ needs.prepare.outputs.version }}.tar.gz"
+
+      # Gitea Actions sólo soporta upload/download-artifact hasta v3 (v4+
+      # requiere GitHub Enterprise Server o github.com nativos).
+      - name: Upload source artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: source-bundle
+          path: vgc-reporter-source-${{ needs.prepare.outputs.version }}.tar.gz
+          retention-days: 7
+          if-no-files-found: error
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [prepare, bundle]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download source artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: source-bundle
+          path: ./release-assets
+
+      - name: List assets
+        run: ls -lh ./release-assets/
+
+      # Crea el release vía API de Gitea (no hay equivalente nativo de
+      # softprops/action-gh-release que funcione en Gitea sin tocar github.com).
+      # GITHUB_TOKEN es el token efímero que Gitea inyecta para el repo actual
+      # con scope suficiente para crear releases y subir assets.
+      - name: Create release in Gitea
+        env:
+          GITEA_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          BODY: ${{ needs.prepare.outputs.body }}
+          INSTANCE: ${{ github.server_url }}
+          OWNER_REPO: ${{ github.repository }}
+        run: |
+          set -e
+          # ¿Ya existe un release con este tag? Si sí, lo borramos y
+          # recreamos como draft (idempotente para re-runs).
+          EXISTING=$(curl -fsS -H "Authorization: token $GITEA_TOKEN" \
+            "$INSTANCE/api/v1/repos/$OWNER_REPO/releases/tags/$TAG" 2>/dev/null || true)
+          if [ -n "$EXISTING" ] && echo "$EXISTING" | grep -q '"id"'; then
+            EX_ID=$(echo "$EXISTING" | grep -oE '"id":[ ]*[0-9]+' | head -1 | grep -oE '[0-9]+')
+            echo "Release existente id=$EX_ID — borrando para recrear como draft"
+            curl -fsS -X DELETE -H "Authorization: token $GITEA_TOKEN" \
+              "$INSTANCE/api/v1/repos/$OWNER_REPO/releases/$EX_ID"
+          fi
+
+          # Cuerpo JSON. Usamos python para escapar correctamente el body.
+          python3 -c "
+          import json, os, sys
+          payload = {
+              'tag_name': os.environ['TAG'],
+              'name': f'VGC Reporter {os.environ[\"TAG\"]}',
+              'body': os.environ.get('BODY', ''),
+              'draft': True,
+              'prerelease': False,
+          }
+          json.dump(payload, sys.stdout)
+          " > /tmp/release-payload.json
+
+          REL_ID=$(curl -fsS -X POST \
+            -H "Authorization: token $GITEA_TOKEN" \
+            -H "Content-Type: application/json" \
+            "$INSTANCE/api/v1/repos/$OWNER_REPO/releases" \
+            --data @/tmp/release-payload.json | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
+          echo "Release creado id=$REL_ID"
+
+          # Sube los assets.
+          for asset in release-assets/*; do
+            name=$(basename "$asset")
+            echo "Subiendo $name..."
+            curl -fsS -X POST \
+              -H "Authorization: token $GITEA_TOKEN" \
+              -F "attachment=@$asset" \
+              "$INSTANCE/api/v1/repos/$OWNER_REPO/releases/$REL_ID/assets?name=$name" \
+              >/dev/null
+          done
+
+          echo "✓ Draft release listo: $INSTANCE/$OWNER_REPO/releases/tag/$TAG"
