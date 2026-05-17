@@ -1,4 +1,4 @@
-use crate::domain::champions::{ChampionsReport, TournamentStanding};
+use crate::domain::champions::{ChampionsReport, ChampionsSearchHit, TournamentStanding};
 use crate::domain::format::Format;
 use crate::error::AppError;
 use crate::state::AppState;
@@ -21,4 +21,16 @@ pub async fn get_tournament_standings(
     id: String,
 ) -> Result<Vec<TournamentStanding>, AppError> {
     state.champions.get_standings(&id).await
+}
+
+#[tauri::command]
+pub async fn search_champions(
+    state: State<'_, AppState>,
+    query: String,
+    format: Option<Format>,
+    limit: Option<usize>,
+) -> Result<Vec<ChampionsSearchHit>, AppError> {
+    let format = format.unwrap_or(Format::RegulationMA);
+    let limit = limit.unwrap_or(40).clamp(1, 200);
+    state.champions.search(format, &query, limit).await
 }

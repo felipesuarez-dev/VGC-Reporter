@@ -49,3 +49,26 @@ pub struct DecklistPokemon {
     #[serde(default)]
     pub home_sprite_url: Option<String>,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
+#[serde(rename_all = "lowercase")]
+pub enum SearchHitKind {
+    Tournament,
+    Champion,
+    Player,
+    Pokemon,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
+pub struct ChampionsSearchHit {
+    pub tournament_id: String,
+    pub tournament_name: String,
+    pub tournament_date: Option<String>,
+    pub kind: SearchHitKind,
+    pub matched_text: String,
+    pub player_name: Option<String>,
+    pub player_placing: Option<u32>,
+    pub player_pokemon: Vec<String>,
+}

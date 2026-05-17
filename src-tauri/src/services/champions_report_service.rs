@@ -5,7 +5,8 @@ use crate::adapters::{
     LimitlessClient, LimitlessDecklistEntry, LimitlessStanding, LimitlessTournamentSummary,
 };
 use crate::domain::champions::{
-    ChampionsReport, ChampionsTournament, DecklistPokemon, TournamentStanding,
+    ChampionsReport, ChampionsSearchHit, ChampionsTournament, DecklistPokemon, SearchHitKind,
+    TournamentStanding,
 };
 use crate::domain::format::Format;
 use crate::error::AppError;
@@ -80,6 +81,136 @@ impl ChampionsReportService {
             .into_iter()
             .map(|s| into_standing(s, &sprites))
             .collect())
+    }
+
+    /// Search recent Champions tournaments for matches against tournament
+    /// names, champion names, player names, and pokémon used in decklists.
+    /// Returns up to `limit` hits ordered by tournament recency.
+    ///
+    /// The first call after a cold cache walks the standings of the most
+    /// recent ~`scan` tournaments (default 25) via the cached Limitless
+    /// client. Subsequent calls within the cache TTL are local-only.
+    ///
+    /// Queries shorter than 2 characters return an empty vec — the frontend
+    /// is expected to fall back to its local filter for short queries.
+    pub async fn search(
+        &self,
+        format: Format,
+        query: &str,
+        limit: usize,
+    ) -> Result<Vec<ChampionsSearchHit>, AppError> {
+        let q = query.trim().to_lowercase();
+        if q.len() < 2 {
+            return Ok(Vec::new());
+        }
+
+        let scan: usize = 25;
+        let tournaments = self
+            .limitless
+            .list_tournaments_by_format(format, scan)
+            .await?;
+
+        let fetches = tournaments
+            .iter()
+            .map(|t| self.limitless.get_standings(&t.id))
+            .collect::<Vec<_>>();
+        let results = join_all(fetches).await;
+
+        let mut hits: Vec<ChampionsSearchHit> = Vec::new();
+        for (t, res) in tournaments.into_iter().zip(results) {
+            let standings = match res {
+                Ok(s) => s,
+                Err(_) => continue,
+            };
+            let tour_name_lower = t.name.to_lowercase();
+            let tour_id = t.id.clone();
+            let tour_name = t.name.clone();
+            let tour_date = t.date.clone();
+
+            if tour_name_lower.contains(&q) {
+                hits.push(ChampionsSearchHit {
+                    tournament_id: tour_id.clone(),
+                    tournament_name: tour_name.clone(),
+                    tournament_date: tour_date.clone(),
+                    kind: SearchHitKind::Tournament,
+                    matched_text: t.name.clone(),
+                    player_name: None,
+                    player_placing: None,
+                    player_pokemon: Vec::new(),
+                });
+            }
+
+            for s in &standings {
+                let player_name = s.name.clone().unwrap_or_default();
+                let player_lower = player_name.to_lowercase();
+                let placing = s.placing;
+                let is_champion = placing == Some(1);
+                let pokes: Vec<String> = s
+                    .decklist
+                    .as_ref()
+                    .map(|d| {
+                        d.iter()
+                            .filter_map(decklist_display_name)
+                            .map(|n| canonical_display_name(&n))
+                            .collect()
+                    })
+                    .unwrap_or_default();
+
+                if is_champion && !player_name.is_empty() && player_lower.contains(&q) {
+                    hits.push(ChampionsSearchHit {
+                        tournament_id: tour_id.clone(),
+                        tournament_name: tour_name.clone(),
+                        tournament_date: tour_date.clone(),
+                        kind: SearchHitKind::Champion,
+                        matched_text: player_name.clone(),
+                        player_name: Some(player_name.clone()),
+                        player_placing: placing,
+                        player_pokemon: pokes.clone(),
+                    });
+                } else if !player_name.is_empty() && player_lower.contains(&q) {
+                    hits.push(ChampionsSearchHit {
+                        tournament_id: tour_id.clone(),
+                        tournament_name: tour_name.clone(),
+                        tournament_date: tour_date.clone(),
+                        kind: SearchHitKind::Player,
+                        matched_text: player_name.clone(),
+                        player_name: Some(player_name.clone()),
+                        player_placing: placing,
+                        player_pokemon: pokes.clone(),
+                    });
+                }
+
+                for poke in &pokes {
+                    if poke.to_lowercase().contains(&q) {
+                        hits.push(ChampionsSearchHit {
+                            tournament_id: tour_id.clone(),
+                            tournament_name: tour_name.clone(),
+                            tournament_date: tour_date.clone(),
+                            kind: SearchHitKind::Pokemon,
+                            matched_text: poke.clone(),
+                            player_name: if player_name.is_empty() {
+                                None
+                            } else {
+                                Some(player_name.clone())
+                            },
+                            player_placing: placing,
+                            player_pokemon: pokes.clone(),
+                        });
+                        break;
+                    }
+                }
+
+                if hits.len() >= limit {
+                    break;
+                }
+            }
+            if hits.len() >= limit {
+                break;
+            }
+        }
+
+        hits.truncate(limit);
+        Ok(hits)
     }
 
     /// Batch sprite resolution: every unique decklist display name across the

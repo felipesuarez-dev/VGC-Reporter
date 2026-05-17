@@ -4,6 +4,8 @@ export type Ability = { id: string, name: string, description: string, };
 
 export type ChampionsReport = { tournaments: Array<ChampionsTournament>, fetched_at: string, };
 
+export type ChampionsSearchHit = { tournament_id: string, tournament_name: string, tournament_date: string | null, kind: SearchHitKind, matched_text: string, player_name: string | null, player_placing: number | null, player_pokemon: Array<string>, };
+
 export type ChampionsTournament = { id: string, name: string, date: string | null, players: number | null, format: string | null, organizer_id: string | null, champion_name: string | null, };
 
 export type DecklistPokemon = { id: string | null, name: string, item: string | null, ability: string | null, tera_type: string | null, moves: Array<string>, sprite_url: string, sprite_fallback_url: string | null, home_sprite_url: string | null, };
@@ -95,6 +97,8 @@ moves: Array<string>, };
 export type PokemonType = "Normal" | "Fire" | "Water" | "Electric" | "Grass" | "Ice" | "Fighting" | "Poison" | "Ground" | "Flying" | "Psychic" | "Bug" | "Rock" | "Ghost" | "Dragon" | "Dark" | "Steel" | "Fairy" | "Stellar";
 
 export type PokemonUsage = { species: string, usage_percent: number, count: number, top_items: Array<UsageEntry>, top_moves: Array<UsageEntry>, top_abilities: Array<UsageEntry>, top_tera: Array<UsageEntry>, top_teammates: Array<TeammateUsage>, top_natures: Array<UsageEntry>, common_movesets: Array<MovesetUsage>, sprite_url: string, sprite_fallback_url: string | null, home_sprite_url: string | null, };
+
+export type SearchHitKind = "tournament" | "champion" | "player" | "pokemon";
 
 /**
  * Bundle of curated doubles sets for a Pokémon.

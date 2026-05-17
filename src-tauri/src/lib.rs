@@ -72,6 +72,7 @@ pub fn run() {
             commands::settings::set_setting,
             commands::champions::list_champions_tournaments,
             commands::champions::get_tournament_standings,
+            commands::champions::search_champions,
             commands::translations::get_translation_table,
             commands::upcoming::list_upcoming_tournaments,
             commands::pikalytics::get_pikalytics_entry,
