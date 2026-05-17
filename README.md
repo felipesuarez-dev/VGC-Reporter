@@ -90,8 +90,8 @@ First launch downloads ~10 MB of Pokédex / moves / items / abilities and caches
 ## Quick Start
 
 ```bash
-npm install
-npm run tauri:dev
+bun install
+bun run tauri:dev
 ```
 
 First launch downloads and caches Pokédex, moves, items, abilities and usage stats. Subsequent launches are offline-capable until caches expire.
@@ -168,7 +168,7 @@ Rule: dependencies always point inward. `domain/` knows nothing about I/O, Tauri
 | React 19 | Rust 2021 | Tauri 2.4 |
 | TypeScript | tokio | Vite |
 | TailwindCSS | reqwest + rustls | `cargo` workspace |
-| TanStack Query v5 | rusqlite + r2d2 | `npm run tauri:build` |
+| TanStack Query v5 | rusqlite + r2d2 | `bun run tauri:build` |
 | Zustand | serde / thiserror | ImageMagick (icons) |
 | React Router v7 | ts-rs | MSI installer (Windows) |
 | i18next | chrono / tracing | |
@@ -179,16 +179,16 @@ Rule: dependencies always point inward. `domain/` knows nothing about I/O, Tauri
 
 ```bash
 # Dev mode (Vite HMR + Tauri window)
-npm run tauri:dev
+bun run tauri:dev
 
 # Production bundle → src-tauri/target/release/bundle/msi/
-npm run tauri:build
+bun run tauri:build
 
 # Android — hot reload in emulator or USB device
-npx tauri android dev
+bun run tauri android dev
 
 # Android — build APK
-npx tauri android build --apk
+bun run tauri android build --apk
 
 # Rust tests + ts-rs bindings regeneration
 cd src-tauri && cargo test
@@ -197,8 +197,10 @@ cd src-tauri && cargo test
 cd src-tauri && cargo fmt && cargo clippy -- -D warnings
 
 # Frontend type-check
-cd frontend && npx tsc --noEmit
+bun run --cwd frontend build
 ```
+
+> **Package manager**: this project uses **Bun** exclusively. Do not use `npm`/`npx`/`package-lock.json`. See `CLAUDE.md` § Package manager for the npm→Bun mapping.
 
 ## Project Structure
 

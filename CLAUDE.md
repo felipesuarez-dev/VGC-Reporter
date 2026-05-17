@@ -6,6 +6,28 @@
 
 Aplicación Tauri 2 + Rust + React para estadísticas competitivas de Pokémon Champions (VGC 2026, Regulation M-A) y construcción de equipos propios.
 
+## ⚠️ Package manager: SOLO Bun
+
+**NUNCA usar `npm`, `npx`, `npm install`, `npm run`, `npm ci`, ni `package-lock.json`.**
+El proyecto migró a Bun por motivos de seguridad (incidentes en la cadena de suministro npm). Todos los comandos, scripts en `package.json`, workflows CI y docs deben usar Bun:
+
+| npm | Bun |
+|-----|-----|
+| `npm install` | `bun install` |
+| `npm ci` | `bun install --frozen-lockfile` |
+| `npm run <script>` | `bun run <script>` |
+| `npm run <script> --workspace X` | `bun run --cwd X <script>` |
+| `npx <bin>` | `bunx <bin>` o `bun x <bin>` |
+| `npm test` | `bun test` |
+| `npm audit` | `bun audit` |
+| `npm outdated` | `bun outdated` |
+| `npm publish` | `bun publish` |
+| `package-lock.json` | `bun.lock` (texto en Bun 1.3+) |
+
+Si encuentras un comando npm en cualquier archivo del repo, repórtalo y reemplázalo.
+
+**GitHub Actions**: nunca usar `actions/setup-node`, `cache: 'npm'`, `npm ci` ni `npx` en workflows. Usar siempre `oven-sh/setup-bun@v2`, `bun install --frozen-lockfile`, `bun run`, `bunx`. Cualquier nuevo workflow debe usar Bun desde el día 1.
+
 ## Documentación por capa
 
 - **Backend (Rust):** `src-tauri/CLAUDE.md` — clean architecture, cómo añadir un command, errores, migraciones.
@@ -23,10 +45,10 @@ Aplicación Tauri 2 + Rust + React para estadísticas competitivas de Pokémon C
 
 ```bash
 # Dev (arranca frontend Vite + ventana Tauri)
-npm run tauri:dev
+bun run tauri:dev
 
 # Build de producción (MSI en src-tauri/target/release/bundle/msi/)
-npm run tauri:build
+bun run tauri:build
 
 # Tests backend
 cd src-tauri && cargo test
@@ -38,7 +60,7 @@ cd src-tauri && cargo test export_bindings
 cd src-tauri && cargo fmt && cargo clippy -- -D warnings
 
 # Frontend dev sin Tauri
-cd frontend && npm run dev
+bun run --cwd frontend dev
 ```
 
 ## Estructura

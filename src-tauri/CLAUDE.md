@@ -74,3 +74,7 @@ Ver `config.rs`. Todo fetching pasa por `HttpClient::get_cached` (SQLite TTL). N
 - `tracing::debug!`/`warn!` para observabilidad, no `println!`.
 - `serde(default)` en campos remotos opcionales para tolerar cambios de API.
 - Nada de comentarios explicando el "qué"; solo el "por qué" si no es obvio.
+
+## Package manager
+
+Bun únicamente. Ver `../CLAUDE.md` § Package manager. NO usar `npm`/`npx` en ningún script o doc.

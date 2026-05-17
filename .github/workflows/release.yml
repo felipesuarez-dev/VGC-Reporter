@@ -102,10 +102,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: 20
-          cache: 'npm'
+          bun-version: 1.3.10
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -124,10 +123,10 @@ jobs:
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev librsvg2-dev patchelf libayatana-appindicator3-dev xdg-utils
 
-      - name: Install npm dependencies
-        run: npm ci
+      - name: Install dependencies (Bun)
+        run: bun install --frozen-lockfile
 
       - name: Build & release with tauri-action
         uses: tauri-apps/tauri-action@v0.6
@@ -136,6 +135,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
+          tauriScript: "bun run tauri --"
+          projectPath: "."
           tagName: ${{ github.ref_name }}
           releaseName: VGC Reporter ${{ github.ref_name }}
           releaseBody: ${{ needs.prepare.outputs.body }}
@@ -179,16 +180,15 @@ jobs:
             src-tauri/target
           key: android-cargo-${{ hashFiles('src-tauri/Cargo.toml') }}
 
-      - uses: actions/setup-node@v4
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: 20
-          cache: 'npm'
+          bun-version: 1.3.10
 
-      - name: Install npm dependencies
-        run: npm ci
+      - name: Install dependencies (Bun)
+        run: bun install --frozen-lockfile
 
       - name: Build Android APK
-        run: npx tauri android build --apk
+        run: bun run tauri android build --apk
 
       - name: Sign APK
         run: |
@@ -221,7 +221,7 @@ jobs:
           PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           SIGNED_APK="VGC.Reporter_${{ github.ref_name }}_android.apk"
-          npx tauri signer sign -k "$PRIVATE_KEY" -p "$PRIVATE_KEY_PASSWORD" "$SIGNED_APK"
+          bunx tauri signer sign -k "$PRIVATE_KEY" -p "$PRIVATE_KEY_PASSWORD" "$SIGNED_APK"
 
       - name: Inject Android platform into latest.json
         env:

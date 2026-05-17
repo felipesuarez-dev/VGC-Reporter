@@ -2,15 +2,17 @@
 
 React 19 + TypeScript + Vite + TailwindCSS. Talks to the Rust backend via Tauri `invoke()` through a typed wrapper in `src/lib/ipc.ts`. Never makes HTTP calls directly — all network I/O lives on the Rust side (CORS, caching, rate limiting).
 
+**ZERO npm**: ver `../CLAUDE.md` § Package manager. Todos los comandos usan Bun.
+
 ## Commands
 
 From repo root:
 
-- `npm run tauri:dev` — dev mode with hot reload (webview + vite)
-- `npm run tauri:build` — production bundle (MSI on Windows)
-- `npx tauri android dev` — Android dev mode (requires Android Studio + NDK r25c + env vars set)
-- `npx tauri android build --apk` — Android APK
-- `npm run lint` (workspace) — `tsc --noEmit` type-check
+- `bun run tauri:dev` — dev mode with hot reload (webview + vite)
+- `bun run tauri:build` — production bundle (MSI on Windows)
+- `bun run tauri android dev` — Android dev mode (requires Android Studio + NDK r25c + env vars set)
+- `bun run tauri android build --apk` — Android APK
+- `bun run --cwd frontend build` — type-check + Vite build (`tsc --noEmit && vite build`)
 
 ## Layout
 

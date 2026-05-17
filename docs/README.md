@@ -15,5 +15,5 @@ Esta carpeta tiene dos secciones:
 - **Cache**: SQLite con TTL por endpoint.
 - **Tipos compartidos**: generados con `ts-rs` desde Rust hacia `frontend/src/lib/types.generated.ts`.
 
-Para empezar a contribuir en desktop: `npm run tauri:dev`.  
+Para empezar a contribuir en desktop: `bun run tauri:dev` (este proyecto usa **Bun** exclusivamente — nada de `npm`/`npx`; ver [CLAUDE.md raíz § Package manager](../CLAUDE.md)).  
 Para Android: ver [`technical_docs/frontend/architecture.md`](./technical_docs/frontend/architecture.md#mobile-android).

@@ -5,9 +5,11 @@
   "author": "PumaSoft",
   "license": "MIT",
   "private": true,
+  "packageManager": "bun@1.3.10",
+  "trustedDependencies": ["@tauri-apps/cli"],
   "scripts": {
-    "dev": "npm run dev --workspace frontend",
-    "build": "npm run build --workspace frontend",
+    "dev": "bun run --cwd frontend dev",
+    "build": "bun run --cwd frontend build",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build"

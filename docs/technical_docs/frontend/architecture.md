@@ -78,8 +78,10 @@ Proteger con `!isMobile` o con `#[cfg(desktop)]` en Rust:
 
 ## Comandos
 
-- `npm run tauri:dev` — dev hot reload desktop.
-- `npm run tauri:build` — bundle de producción desktop.
-- `npx tauri android dev` — dev hot reload en emulador/dispositivo Android (requiere Android Studio + NDK r25c + `ANDROID_HOME` / `NDK_HOME`).
-- `npx tauri android build --apk` — APK de producción.
-- `cd frontend && npx tsc --noEmit` — type-check.
+- `bun run tauri:dev` — dev hot reload desktop.
+- `bun run tauri:build` — bundle de producción desktop.
+- `bun run tauri android dev` — dev hot reload en emulador/dispositivo Android (requiere Android Studio + NDK r25c + `ANDROID_HOME` / `NDK_HOME`).
+- `bun run tauri android build --apk` — APK de producción.
+- `bun run --cwd frontend build` — type-check + build (`tsc --noEmit && vite build`).
+
+> Este proyecto usa **Bun** exclusivamente. Nada de `npm`/`npx`. Ver [CLAUDE.md raíz § Package manager](../../../CLAUDE.md).
