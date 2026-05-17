@@ -5,8 +5,8 @@ import {
   BarChart3,
   Check,
   ExternalLink,
+  Grid2x2,
   LayoutGrid,
-  ListOrdered,
   Loader2,
   RefreshCw,
 } from "lucide-react";
@@ -18,7 +18,7 @@ import { formatLabel } from "../lib/labels";
 import { type ChampionsTournament } from "../lib/types";
 import { UsageBarChart, type UsageBarItem } from "../components/charts/UsageBarChart";
 import { UsageGridView } from "../components/charts/UsageGridView";
-import { UsageRankingList } from "../components/charts/UsageRankingList";
+import { UsageTreemap } from "../components/charts/UsageTreemap";
 import { cn } from "../lib/cn";
 import { TopList } from "../components/charts/TopList";
 import { TrendingCard } from "../components/charts/TrendingCard";
@@ -245,7 +245,7 @@ export function Dashboard() {
                   [
                     { id: "bar", Icon: BarChart3, label: t("dashboard.chart_view_bar") },
                     { id: "grid", Icon: LayoutGrid, label: t("dashboard.chart_view_grid") },
-                    { id: "list", Icon: ListOrdered, label: t("dashboard.chart_view_list") },
+                    { id: "treemap", Icon: Grid2x2, label: t("dashboard.chart_view_treemap") },
                   ] as const
                 ).map(({ id, Icon, label }) => (
                   <button
@@ -280,9 +280,10 @@ export function Dashboard() {
                 onItemClick={handleBarClick}
               />
             )}
-            {topPokemonView === "list" && (
-              <UsageRankingList
+            {topPokemonView === "treemap" && (
+              <UsageTreemap
                 data={chartPokemon}
+                height={Math.max(360, Math.min(560, topPokemon.length * 28))}
                 onItemClick={handleBarClick}
               />
             )}
