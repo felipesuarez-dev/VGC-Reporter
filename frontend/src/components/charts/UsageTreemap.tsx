@@ -36,29 +36,58 @@ const TYPE_HEX: Record<PokemonType, string> = {
   Stellar: "#a855f7",
 };
 
-interface CellDatum {
+interface TreemapEntry {
   name: string;
   size: number;
   color: string;
-  payload: UsageBarItem;
+  item: UsageBarItem;
 }
 
+// Recharts spreads each datum's fields onto the cell content's props AND
+// also forwards the original datum under `payload`. We accept both shapes
+// and read fields defensively. The synthetic root node (depth === 0) does
+// NOT carry our data, so we must short-circuit it; otherwise accessing
+// `props.item` or `props.payload.item` throws "cannot read properties of
+// undefined" — which is exactly the v0.2.0 crash.
 type CellProps = {
   x?: number;
   y?: number;
   width?: number;
   height?: number;
-  payload?: CellDatum;
+  depth?: number;
+  name?: string;
+  color?: string;
+  item?: UsageBarItem;
+  payload?: TreemapEntry;
   onClick?: (item: UsageBarItem) => void;
 };
 
+function readEntry(props: CellProps): TreemapEntry | null {
+  if (props.item && props.name && props.color) {
+    return {
+      name: props.name,
+      size: 0,
+      color: props.color,
+      item: props.item,
+    };
+  }
+  if (props.payload && props.payload.item) {
+    return props.payload;
+  }
+  return null;
+}
+
 function TreemapCell(props: CellProps) {
-  const { x = 0, y = 0, width = 0, height = 0, payload, onClick } = props;
-  if (!payload || width <= 0 || height <= 0) return null;
+  const { x = 0, y = 0, width = 0, height = 0, depth, onClick } = props;
+  // Skip the synthetic root and any cell without our data.
+  if (depth === 0 || width <= 0 || height <= 0) return null;
+  const entry = readEntry(props);
+  if (!entry) return null;
+  const usagePercent = entry.item?.usage_percent ?? 0;
   const showLabel = width > 60 && height > 28;
   return (
     <g
-      onClick={() => onClick?.(payload.payload)}
+      onClick={() => onClick?.(entry.item)}
       style={{ cursor: onClick ? "pointer" : "default" }}
     >
       <rect
@@ -66,7 +95,7 @@ function TreemapCell(props: CellProps) {
         y={y}
         width={width}
         height={height}
-        fill={payload.color}
+        fill={entry.color}
         fillOpacity={0.78}
         stroke="var(--bg-elev)"
         strokeWidth={1}
@@ -81,9 +110,7 @@ function TreemapCell(props: CellProps) {
             fontWeight={600}
             style={{ pointerEvents: "none" }}
           >
-            {payload.name.length > 18
-              ? payload.name.slice(0, 17) + "…"
-              : payload.name}
+            {entry.name.length > 18 ? entry.name.slice(0, 17) + "…" : entry.name}
           </text>
           <text
             x={x + 6}
@@ -92,7 +119,7 @@ function TreemapCell(props: CellProps) {
             fontSize={10}
             style={{ pointerEvents: "none" }}
           >
-            {payload.payload.usage_percent.toFixed(1)}%
+            {usagePercent.toFixed(1)}%
           </text>
         </>
       )}
@@ -101,8 +128,10 @@ function TreemapCell(props: CellProps) {
 }
 
 interface TooltipPayload {
-  payload?: CellDatum;
+  payload?: TreemapEntry;
+  name?: string;
 }
+
 function TooltipContent({
   active,
   payload,
@@ -112,7 +141,9 @@ function TooltipContent({
 }) {
   if (!active || !payload || payload.length === 0) return null;
   const datum = payload[0]?.payload;
-  if (!datum) return null;
+  // Tooltip can also be invoked for the synthetic root — bail if our fields
+  // aren't present.
+  if (!datum || !datum.item) return null;
   return (
     <div
       className="rounded-md border px-2 py-1 text-xs shadow-md"
@@ -124,7 +155,7 @@ function TooltipContent({
     >
       <div className="font-semibold">{datum.name}</div>
       <div style={{ color: "var(--text-muted)" }}>
-        {datum.payload.usage_percent.toFixed(2)}%
+        {(datum.item.usage_percent ?? 0).toFixed(2)}%
       </div>
     </div>
   );
@@ -145,16 +176,16 @@ export function UsageTreemap({ data, height = 400, onItemClick }: Props) {
     return map;
   }, [pokedex]);
 
-  const treemapData: CellDatum[] = useMemo(() => {
+  const treemapData: TreemapEntry[] = useMemo(() => {
     return data
-      .filter((d) => d.usage_percent > 0)
+      .filter((d) => d != null && typeof d.usage_percent === "number" && d.usage_percent > 0)
       .map((d) => {
         const ttype = typeBySpecies.get(canonicalSpeciesId(d.name)) ?? "Normal";
         return {
           name: d.name,
           size: Math.max(0.1, d.usage_percent),
           color: TYPE_HEX[ttype],
-          payload: d,
+          item: d,
         };
       });
   }, [data, typeBySpecies]);
