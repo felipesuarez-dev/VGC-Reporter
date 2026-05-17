@@ -39,7 +39,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -119,7 +119,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: prepare
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Bun ${{ env.BUN_VERSION }}
         uses: oven-sh/setup-bun@v2
@@ -167,7 +167,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [prepare, bundle]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Download source artifact
         uses: actions/download-artifact@v3
