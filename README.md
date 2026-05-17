@@ -71,17 +71,17 @@ VGC Reporter is the tool I wanted while team-building for Regulation M-A: one wi
 
 ## Download
 
-Pre-built installers for the **`v0.1.12.20260425-beta`** release:
+Pre-built installers for the **`v0.2.0.20260517-beta`** release:
 
 | Platform | Installer | Notes |
 |---|---|---|
-| Windows 10/11 | `VGC.Reporter_0.1.12_x64_en-US.msi` | MSI installer (recommended) |
-| Windows 10/11 | `VGC.Reporter_0.1.12_x64-setup.exe` | NSIS installer (portable-friendly) |
-| macOS 12+ (Apple Silicon) | `VGC.Reporter_0.1.12_aarch64.dmg` | Unsigned — right-click → Open the first time |
-| macOS 12+ (Intel) | `VGC.Reporter_0.1.12_x64.dmg` | Unsigned — right-click → Open the first time |
-| Linux (Debian/Ubuntu) | `vgc-reporter_0.1.12_amd64.deb` | Requires `webkit2gtk-4.1` |
-| Linux (any distro) | `vgc-reporter_0.1.12_amd64.AppImage` | `chmod +x` then run |
-| Android 7+ (arm64) | `VGC.Reporter_v0.1.12.20260425-beta_android.apk` | Sideload: enable "Unknown sources" first |
+| Windows 10/11 | `VGC.Reporter_0.2.0_x64_en-US.msi` | MSI installer (recommended) |
+| Windows 10/11 | `VGC.Reporter_0.2.0_x64-setup.exe` | NSIS installer (portable-friendly) |
+| macOS 12+ (Apple Silicon) | `VGC.Reporter_0.2.0_aarch64.dmg` | Unsigned — right-click → Open the first time |
+| macOS 12+ (Intel) | `VGC.Reporter_0.2.0_x64.dmg` | Unsigned — right-click → Open the first time |
+| Linux (Debian/Ubuntu) | `vgc-reporter_0.2.0_amd64.deb` | Requires `webkit2gtk-4.1` |
+| Linux (any distro) | `vgc-reporter_0.2.0_amd64.AppImage` | `chmod +x` then run |
+| Android 7+ (arm64) | `VGC.Reporter_v0.2.0.20260517-beta_android.apk` | Sideload: enable "Unknown sources" first |
 
 **[→ Download from the latest GitHub Release](https://github.com/felipesuarez-dev/vgc-reporter/releases/latest)**
 
@@ -253,7 +253,7 @@ VGC-Reporter/
 MIT © 2026 PumaSoft — see [LICENSE](LICENSE).
 
 <!-- Reference-style definitions -->
-[version-badge]: https://img.shields.io/badge/version-0.1.12.20260425--beta-2b86ff?style=flat-square&labelColor=0a0e14
+[version-badge]: https://img.shields.io/badge/version-0.2.0.20260517--beta-2b86ff?style=flat-square&labelColor=0a0e14
 [version-link]: #download
 [beta-badge]: https://img.shields.io/badge/release-beta-ff6b6b?style=flat-square&labelColor=0a0e14
 [tauri-badge]: https://img.shields.io/badge/Tauri-2.4-24c8db?style=flat-square&labelColor=0a0e14&logo=tauri
