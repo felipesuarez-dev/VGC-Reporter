@@ -1,8 +1,11 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Command } from "cmdk";
 import { Clock, X } from "lucide-react";
+
+type SearchKind = "pokemon" | "move" | "item" | "ability";
+const ALL_KINDS: SearchKind[] = ["pokemon", "move", "item", "ability"];
 import { ipc } from "../../lib/ipc";
 import { queryKeys } from "../../lib/queryKeys";
 import { canonicalSpeciesId, type Pokemon } from "../../lib/types";
@@ -57,6 +60,18 @@ export function GlobalSearchPalette() {
   const recents = useRecentSearchesStore((s) => s.recents);
   const addRecent = useRecentSearchesStore((s) => s.addRecent);
   const clearRecents = useRecentSearchesStore((s) => s.clearRecents);
+
+  const [activeKinds, setActiveKinds] = useState<Set<SearchKind>>(new Set());
+  const toggleKind = (k: SearchKind) => {
+    setActiveKinds((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next;
+    });
+  };
+  const clearKinds = () => setActiveKinds(new Set());
+  const kindActive = (k: SearchKind) => activeKinds.size === 0 || activeKinds.has(k);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -195,6 +210,44 @@ export function GlobalSearchPalette() {
             className="w-full border-b bg-transparent px-4 py-3 text-sm outline-none"
             style={{ borderColor: "var(--border)", color: "var(--text)" }}
           />
+          <div
+            className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap border-b px-3 py-2"
+            style={{ borderColor: "var(--border)" }}
+          >
+            {ALL_KINDS.map((k) => {
+              const active = activeKinds.has(k);
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  tabIndex={-1}
+                  aria-pressed={active}
+                  onClick={() => toggleKind(k)}
+                  className="rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide transition"
+                  style={{
+                    borderColor: active ? "var(--accent)" : "var(--border)",
+                    backgroundColor: active
+                      ? "var(--accent-soft)"
+                      : "transparent",
+                    color: active ? "var(--accent)" : "var(--text-muted)",
+                  }}
+                >
+                  {t(`search.filter_${k}`)}
+                </button>
+              );
+            })}
+            {activeKinds.size > 0 && (
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={clearKinds}
+                className="ml-auto shrink-0 text-[10px] underline decoration-dotted"
+                style={{ color: "var(--text-dim)" }}
+              >
+                {t("search.filter_clear")}
+              </button>
+            )}
+          </div>
           <Command.List className="max-h-[65vh] overflow-y-auto p-2">
             {!hasQuery && recents.length === 0 && !anyLoading && (
               <div
@@ -204,37 +257,41 @@ export function GlobalSearchPalette() {
                 {t("search.placeholder")}
               </div>
             )}
-            {!hasQuery && recents.length > 0 && (
-              <Command.Group
-                heading={
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
-                      <Clock size={11} />
-                      {t("search.recent")}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={clearRecents}
-                      className="text-[10px] underline decoration-dotted hover:text-[var(--text)]"
-                      style={{ color: "var(--text-dim)" }}
-                    >
-                      {t("search.clear_recent")}
-                    </button>
-                  </div>
-                }
-              >
-                {recents.map((r) => (
-                  <RecentItem
-                    key={`recent:${r.kind}:${r.name}`}
-                    recent={r}
-                    pokemonByKey={pokemonByKey}
-                    localize={localize}
-                    moveSummary={moveSummary}
-                    onSelect={() => choose(r.kind, r.name)}
-                  />
-                ))}
-              </Command.Group>
-            )}
+            {!hasQuery &&
+              recents.length > 0 &&
+              recents.filter((r) => kindActive(r.kind as SearchKind)).length > 0 && (
+                <Command.Group
+                  heading={
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Clock size={11} />
+                        {t("search.recent")}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={clearRecents}
+                        className="text-[10px] underline decoration-dotted hover:text-[var(--text)]"
+                        style={{ color: "var(--text-dim)" }}
+                      >
+                        {t("search.clear_recent")}
+                      </button>
+                    </div>
+                  }
+                >
+                  {recents
+                    .filter((r) => kindActive(r.kind as SearchKind))
+                    .map((r) => (
+                      <RecentItem
+                        key={`recent:${r.kind}:${r.name}`}
+                        recent={r}
+                        pokemonByKey={pokemonByKey}
+                        localize={localize}
+                        moveSummary={moveSummary}
+                        onSelect={() => choose(r.kind, r.name)}
+                      />
+                    ))}
+                </Command.Group>
+              )}
             {hasQuery && anyLoading && (
               <div
                 className="px-3 py-4 text-center text-xs"
@@ -251,7 +308,7 @@ export function GlobalSearchPalette() {
                 {t("search.no_results")}
               </div>
             )}
-            {hasQuery && pokemonMatchesList.length > 0 && (
+            {hasQuery && kindActive("pokemon") && pokemonMatchesList.length > 0 && (
               <Command.Group heading={t("search.section_pokemon")}>
                 {pokemonMatchesList.map((p) => (
                   <Command.Item
@@ -283,7 +340,7 @@ export function GlobalSearchPalette() {
                 ))}
               </Command.Group>
             )}
-            {hasQuery && movesMatchesList.length > 0 && (
+            {hasQuery && kindActive("move") && movesMatchesList.length > 0 && (
               <Command.Group heading={t("search.section_moves")}>
                 {movesMatchesList.map((m) => {
                   const summary = moveSummary(m);
@@ -322,7 +379,7 @@ export function GlobalSearchPalette() {
                 })}
               </Command.Group>
             )}
-            {hasQuery && itemsMatchesList.length > 0 && (
+            {hasQuery && kindActive("item") && itemsMatchesList.length > 0 && (
               <Command.Group heading={t("search.section_items")}>
                 {itemsMatchesList.map((i) => (
                   <Command.Item
@@ -337,7 +394,7 @@ export function GlobalSearchPalette() {
                 ))}
               </Command.Group>
             )}
-            {hasQuery && abilitiesMatchesList.length > 0 && (
+            {hasQuery && kindActive("ability") && abilitiesMatchesList.length > 0 && (
               <Command.Group heading={t("search.section_abilities")}>
                 {abilitiesMatchesList.map((a) => (
                   <Command.Item

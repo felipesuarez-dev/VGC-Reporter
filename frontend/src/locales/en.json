@@ -44,7 +44,12 @@
     "kind_champion": "Champion",
     "kind_player": "Player",
     "kind_pokemon": "Pokémon",
-    "match_pokemon": "{{player}} used {{pokemon}}"
+    "match_pokemon": "{{player}} used {{pokemon}}",
+    "filter_pokemon": "Pokémon",
+    "filter_move": "Moves",
+    "filter_item": "Items",
+    "filter_ability": "Abilities",
+    "filter_clear": "Clear"
   },
   "common": {
     "loading": "Loading...",
