@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Pencil, Trash2, Plus } from "lucide-react";
+import { Download, Pencil, Trash2, Plus, Upload } from "lucide-react";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
 import { MiniTeam, type MiniTeamMember } from "../components/pokemon/MiniTeam";
+import { ExportTeamsModal } from "../components/team/ExportTeamsModal";
+import { ImportTeamModal } from "../components/team/ImportTeamModal";
 
 export function MyTeams() {
   const { t } = useTranslation();
@@ -13,6 +16,8 @@ export function MyTeams() {
     queryKey: queryKeys.teams.list,
     queryFn: () => ipc.listTeams(),
   });
+  const [exportOpen, setExportOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const remove = async (id: number) => {
     await ipc.deleteTeam(id);
@@ -21,13 +26,38 @@ export function MyTeams() {
 
   return (
     <div className="space-y-4">
-      <header className="flex items-center justify-between">
+      <header className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">{t("my_teams.title")}</h1>
-        <Link to="/team-builder" className="btn-primary">
-          <Plus size={14} className="mr-1" />
-          {t("common.new")}
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setImportOpen(true)}
+            className="btn-ghost text-xs"
+            title={t("my_teams.import_title")}
+          >
+            <Upload size={14} className="mr-1 inline" />
+            {t("my_teams.import")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setExportOpen(true)}
+            disabled={!data || data.length === 0}
+            className="btn-ghost text-xs disabled:cursor-not-allowed disabled:opacity-50"
+            title={t("my_teams.export_title")}
+          >
+            <Download size={14} className="mr-1 inline" />
+            {t("my_teams.export")}
+          </button>
+          <Link to="/team-builder" className="btn-primary">
+            <Plus size={14} className="mr-1" />
+            {t("common.new")}
+          </Link>
+        </div>
       </header>
+      {exportOpen && data && (
+        <ExportTeamsModal teams={data} onClose={() => setExportOpen(false)} />
+      )}
+      {importOpen && <ImportTeamModal onClose={() => setImportOpen(false)} />}
 
       {isLoading && (
         <div className="card" style={{ color: "var(--text-muted)" }}>
@@ -132,6 +162,6 @@ function spriteFor(species: string): string {
 }
 
 function regulationBadge(format: string, t: (k: string) => string): string {
-  if (format === "regulation-m-a") return t("regulations.reg_ma_s1");
+  if (format === "regulation-m-a") return t("regulations.reg_ma_s2");
   return format;
 }
