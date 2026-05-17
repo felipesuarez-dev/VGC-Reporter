@@ -326,6 +326,11 @@ mod tests {
                 spe: 4,
                 ..Default::default()
             },
+            level: 50,
+            gender: None,
+            shiny: false,
+            nickname: None,
+            ivs: Default::default(),
         }
     }
 

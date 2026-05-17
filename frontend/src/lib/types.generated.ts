@@ -21,7 +21,11 @@ export type EvStatSpread = { hp: number, atk: number, def: number, spa: number, 
  */
 export type Format = "regulation-m-a" | "regulation-i";
 
+export type Gender = "male" | "female" | "genderless";
+
 export type Item = { id: string, name: string, description: string, };
+
+export type IvSpread = { hp: number, atk: number, def: number, spa: number, spd: number, spe: number, };
 
 export type LocalizedDescription = { en: string, es: string, };
 
@@ -111,7 +115,7 @@ export type Stats = { hp: number, atk: number, def: number, spa: number, spd: nu
 
 export type Team = { id: number | null, name: string, format: Format, notes: string | null, members: Array<TeamMember>, created_at: string | null, updated_at: string | null, };
 
-export type TeamMember = { species: string, item: string | null, ability: string | null, nature: Nature | null, tera_type: PokemonType | null, moves: Array<string>, evs: EvSpread, };
+export type TeamMember = { species: string, item: string | null, ability: string | null, nature: Nature | null, tera_type: PokemonType | null, moves: Array<string>, evs: EvSpread, level: number, gender: Gender | null, shiny: boolean, nickname: string | null, ivs: IvSpread, };
 
 export type TeamValidationError = { "WrongSize": number } | { "InvalidEvs": number } | { "InvalidMoves": number } | { "EmptySpecies": number } | "EmptyName";
 

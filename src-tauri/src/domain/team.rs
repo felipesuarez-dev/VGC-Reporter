@@ -1,5 +1,6 @@
 use crate::domain::evs::EvSpread;
 use crate::domain::format::Format;
+use crate::domain::ivs::IvSpread;
 use crate::domain::nature::Nature;
 use crate::domain::pokemon::PokemonType;
 use chrono::{DateTime, Utc};
@@ -8,6 +9,16 @@ use ts_rs::TS;
 
 pub const TEAM_SIZE: usize = 6;
 pub const MOVES_PER_MEMBER: usize = 4;
+pub const DEFAULT_LEVEL: u8 = 50;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
+#[serde(rename_all = "lowercase")]
+pub enum Gender {
+    Male,
+    Female,
+    Genderless,
+}
 
 #[derive(Debug, thiserror::Error, Serialize, TS)]
 #[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
@@ -34,6 +45,20 @@ pub struct TeamMember {
     pub tera_type: Option<PokemonType>,
     pub moves: Vec<String>,
     pub evs: EvSpread,
+    #[serde(default = "default_level")]
+    pub level: u8,
+    #[serde(default)]
+    pub gender: Option<Gender>,
+    #[serde(default)]
+    pub shiny: bool,
+    #[serde(default)]
+    pub nickname: Option<String>,
+    #[serde(default)]
+    pub ivs: IvSpread,
+}
+
+fn default_level() -> u8 {
+    DEFAULT_LEVEL
 }
 
 impl TeamMember {
@@ -46,6 +71,11 @@ impl TeamMember {
             tera_type: None,
             moves: Vec::new(),
             evs: EvSpread::default(),
+            level: DEFAULT_LEVEL,
+            gender: None,
+            shiny: false,
+            nickname: None,
+            ivs: IvSpread::default(),
         }
     }
 }

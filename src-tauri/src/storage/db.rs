@@ -8,6 +8,7 @@ const MIGRATION_001: &str = include_str!("migrations/001_init.sql");
 const MIGRATION_002: &str = include_str!("migrations/002_clear_pikalytics_cache.sql");
 const MIGRATION_003: &str = include_str!("migrations/003_invalidate_meta_and_labmaus_cache.sql");
 const MIGRATION_004: &str = include_str!("migrations/004_basculegion_data_migration.sql");
+const MIGRATION_005: &str = include_str!("migrations/005_team_member_competitive_fields.sql");
 
 pub fn init_pool(db_path: &Path) -> Result<DbPool, AppError> {
     if let Some(parent) = db_path.parent() {
@@ -28,5 +29,6 @@ pub fn init_pool(db_path: &Path) -> Result<DbPool, AppError> {
     conn.execute_batch(MIGRATION_002)?;
     conn.execute_batch(MIGRATION_003)?;
     conn.execute_batch(MIGRATION_004)?;
+    conn.execute_batch(MIGRATION_005)?;
     Ok(pool)
 }

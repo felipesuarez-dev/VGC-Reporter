@@ -1,8 +1,9 @@
 use crate::domain::evs::EvSpread;
 use crate::domain::format::Format;
+use crate::domain::ivs::IvSpread;
 use crate::domain::nature::Nature;
 use crate::domain::pokemon::PokemonType;
-use crate::domain::team::{Team, TeamMember};
+use crate::domain::team::{Gender, Team, TeamMember, DEFAULT_LEVEL};
 use crate::error::AppError;
 use chrono::Utc;
 
@@ -59,17 +60,24 @@ fn split_member_blocks(text: &str) -> Vec<Vec<String>> {
 
 fn parse_member(lines: Vec<String>) -> TeamMember {
     let mut species = String::new();
+    let mut nickname: Option<String> = None;
+    let mut gender: Option<Gender> = None;
     let mut item: Option<String> = None;
     let mut ability: Option<String> = None;
     let mut nature: Option<Nature> = None;
     let mut tera_type: Option<PokemonType> = None;
     let mut moves: Vec<String> = Vec::new();
     let mut evs = EvSpread::default();
+    let mut ivs = IvSpread::default();
+    let mut level: u8 = DEFAULT_LEVEL;
+    let mut shiny = false;
 
     let mut iter = lines.into_iter();
     if let Some(header) = iter.next() {
-        let (sp, it) = parse_header(&header);
+        let (sp, nk, gd, it) = parse_header(&header);
         species = sp;
+        nickname = nk;
+        gender = gd;
         item = it;
     }
     for raw in iter {
@@ -83,6 +91,15 @@ fn parse_member(lines: Vec<String>) -> TeamMember {
             tera_type = PokemonType::parse(rest.trim());
         } else if let Some(rest) = line.strip_prefix("EVs:") {
             evs = parse_evs(rest.trim());
+        } else if let Some(rest) = line.strip_prefix("IVs:") {
+            ivs = parse_ivs(rest.trim());
+        } else if let Some(rest) = line.strip_prefix("Level:") {
+            level = rest.trim().parse().unwrap_or(DEFAULT_LEVEL).clamp(1, 100);
+        } else if let Some(rest) = line.strip_prefix("Shiny:") {
+            let v = rest.trim().to_ascii_lowercase();
+            shiny = matches!(v.as_str(), "yes" | "true" | "1");
+        } else if let Some(rest) = line.strip_prefix("Gender:") {
+            gender = parse_gender_word(rest.trim()).or(gender);
         } else if line.ends_with(" Nature") {
             let name = line.trim_end_matches(" Nature").trim();
             nature = parse_nature(name);
@@ -99,14 +116,10 @@ fn parse_member(lines: Vec<String>) -> TeamMember {
                     moves.push(mv);
                 }
             }
-        } else if line.starts_with("IVs:")
-            || line.starts_with("Level:")
-            || line.starts_with("Shiny:")
-            || line.starts_with("Happiness:")
+        } else if line.starts_with("Happiness:")
             || line.starts_with("Gigantamax:")
             || line.starts_with("Dynamax Level:")
             || line.starts_with("Hidden Power:")
-            || line.starts_with("Gender:")
         {
             continue;
         }
@@ -120,29 +133,76 @@ fn parse_member(lines: Vec<String>) -> TeamMember {
         tera_type,
         moves,
         evs,
+        level,
+        gender,
+        shiny,
+        nickname,
+        ivs,
     }
 }
 
-fn parse_header(line: &str) -> (String, Option<String>) {
+/// Parse a Showdown header line into (species, nickname, gender, item).
+/// Accepted shapes:
+///   `Species @ Item`
+///   `Species (M) @ Item`
+///   `Nickname (Species) @ Item`
+///   `Nickname (Species) (F) @ Item`
+fn parse_header(line: &str) -> (String, Option<String>, Option<Gender>, Option<String>) {
     let (left, item) = match line.rsplit_once(" @ ") {
         Some((left, it)) => (left.trim().to_string(), Some(it.trim().to_string())),
         None => (line.trim().to_string(), None),
     };
-    let species = match left.split_once(" (") {
-        Some((name, rest)) => {
-            if let Some(inner) = rest.strip_suffix(')') {
-                if inner.chars().all(|c| c == 'M' || c == 'F') && !inner.is_empty() {
-                    name.trim().to_string()
-                } else {
-                    inner.trim().to_string()
-                }
-            } else {
-                name.trim().to_string()
+
+    let mut working = left.as_str();
+    let mut gender: Option<Gender> = None;
+    // Trailing gender token in parentheses (the only one Showdown writes after the species)
+    if let Some(idx) = working.rfind(" (") {
+        let candidate = &working[idx + 2..];
+        if let Some(inner) = candidate.strip_suffix(')') {
+            if let Some(g) = parse_gender_token(inner) {
+                gender = Some(g);
+                working = working[..idx].trim_end();
             }
         }
-        None => left,
+    }
+
+    // Optional nickname wrapping: `Nickname (Species)`.
+    let (species, nickname) = match working.rfind(" (") {
+        Some(idx) => {
+            let head = &working[..idx];
+            let tail = &working[idx + 2..];
+            if let Some(inner) = tail.strip_suffix(')') {
+                if !inner.is_empty() && !head.is_empty() {
+                    (inner.trim().to_string(), Some(head.trim().to_string()))
+                } else {
+                    (working.to_string(), None)
+                }
+            } else {
+                (working.to_string(), None)
+            }
+        }
+        None => (working.to_string(), None),
     };
-    (species, item)
+
+    (species, nickname, gender, item)
+}
+
+fn parse_gender_token(s: &str) -> Option<Gender> {
+    match s.trim() {
+        "M" => Some(Gender::Male),
+        "F" => Some(Gender::Female),
+        "N" => Some(Gender::Genderless),
+        _ => None,
+    }
+}
+
+fn parse_gender_word(s: &str) -> Option<Gender> {
+    match s.trim().to_ascii_lowercase().as_str() {
+        "m" | "male" => Some(Gender::Male),
+        "f" | "female" => Some(Gender::Female),
+        "n" | "genderless" | "none" => Some(Gender::Genderless),
+        _ => None,
+    }
 }
 
 fn parse_evs(s: &str) -> EvSpread {
@@ -154,6 +214,29 @@ fn parse_evs(s: &str) -> EvSpread {
             None => continue,
         };
         let n: u16 = amount.parse().unwrap_or(0);
+        match stat.trim() {
+            "HP" => out.hp = n,
+            "Atk" => out.atk = n,
+            "Def" => out.def = n,
+            "SpA" => out.spa = n,
+            "SpD" => out.spd = n,
+            "Spe" => out.spe = n,
+            _ => {}
+        }
+    }
+    out
+}
+
+fn parse_ivs(s: &str) -> IvSpread {
+    // Showdown only writes IVs that differ from 31, so start at default 31.
+    let mut out = IvSpread::default();
+    for part in s.split('/') {
+        let part = part.trim();
+        let (amount, stat) = match part.split_once(' ') {
+            Some(p) => p,
+            None => continue,
+        };
+        let n: u8 = amount.parse().unwrap_or(31).min(31);
         match stat.trim() {
             "HP" => out.hp = n,
             "Atk" => out.atk = n,
@@ -201,18 +284,34 @@ fn parse_nature(name: &str) -> Option<Nature> {
 
 fn format_member(m: &TeamMember) -> String {
     let mut out = String::new();
+    let gender_suffix = match m.gender {
+        Some(Gender::Male) => " (M)",
+        Some(Gender::Female) => " (F)",
+        _ => "",
+    };
+    let head_left = match (&m.nickname, m.species.as_str()) {
+        (Some(n), sp) if !n.is_empty() && n != sp => format!("{} ({})", n, sp),
+        _ => m.species.clone(),
+    };
+    let head = format!("{}{}", head_left, gender_suffix);
     match &m.item {
         Some(it) if !it.is_empty() => {
-            out.push_str(&format!("{} @ {}\n", m.species, it));
+            out.push_str(&format!("{} @ {}\n", head, it));
         }
         _ => {
-            out.push_str(&format!("{}\n", m.species));
+            out.push_str(&format!("{}\n", head));
         }
     }
     if let Some(ab) = &m.ability {
         if !ab.is_empty() {
             out.push_str(&format!("Ability: {}\n", ab));
         }
+    }
+    if m.level != DEFAULT_LEVEL {
+        out.push_str(&format!("Level: {}\n", m.level));
+    }
+    if m.shiny {
+        out.push_str("Shiny: Yes\n");
     }
     if let Some(tera) = &m.tera_type {
         out.push_str(&format!("Tera Type: {:?}\n", tera));
@@ -223,6 +322,10 @@ fn format_member(m: &TeamMember) -> String {
     }
     if let Some(nat) = &m.nature {
         out.push_str(&format!("{:?} Nature\n", nat));
+    }
+    let ivs_line = format_ivs(&m.ivs);
+    if !ivs_line.is_empty() {
+        out.push_str(&format!("IVs: {}\n", ivs_line));
     }
     for mv in &m.moves {
         if !mv.is_empty() {
@@ -255,6 +358,30 @@ fn format_evs(e: &EvSpread) -> String {
     parts.join(" / ")
 }
 
+fn format_ivs(i: &IvSpread) -> String {
+    // Showdown only writes IVs that differ from 31.
+    let mut parts: Vec<String> = Vec::new();
+    if i.hp != 31 {
+        parts.push(format!("{} HP", i.hp));
+    }
+    if i.atk != 31 {
+        parts.push(format!("{} Atk", i.atk));
+    }
+    if i.def != 31 {
+        parts.push(format!("{} Def", i.def));
+    }
+    if i.spa != 31 {
+        parts.push(format!("{} SpA", i.spa));
+    }
+    if i.spd != 31 {
+        parts.push(format!("{} SpD", i.spd));
+    }
+    if i.spe != 31 {
+        parts.push(format!("{} Spe", i.spe));
+    }
+    parts.join(" / ")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -273,6 +400,11 @@ mod tests {
         assert_eq!(m.evs.hp, 244);
         assert_eq!(m.evs.spd, 180);
         assert_eq!(m.evs.spe, 76);
+        assert_eq!(m.level, 50);
+        assert!(!m.shiny);
+        assert!(m.ivs.is_default());
+        assert!(m.nickname.is_none());
+        assert!(m.gender.is_none());
         assert_eq!(
             m.moves,
             vec!["Fake Out", "Parting Shot", "Knock Off", "Will-O-Wisp"]
@@ -281,16 +413,30 @@ mod tests {
 
     #[test]
     fn parse_header_with_nickname() {
-        let (sp, it) = parse_header("Nicky (Incineroar) @ Safety Goggles");
+        let (sp, nk, gd, it) = parse_header("Nicky (Incineroar) @ Safety Goggles");
         assert_eq!(sp, "Incineroar");
+        assert_eq!(nk.as_deref(), Some("Nicky"));
+        assert!(gd.is_none());
         assert_eq!(it.as_deref(), Some("Safety Goggles"));
     }
 
     #[test]
     fn parse_header_with_gender() {
-        let (sp, it) = parse_header("Incineroar (M) @ Choice Band");
+        let (sp, nk, gd, it) = parse_header("Incineroar (M) @ Choice Band");
         assert_eq!(sp, "Incineroar");
+        assert!(nk.is_none());
+        assert_eq!(gd, Some(Gender::Male));
         assert_eq!(it.as_deref(), Some("Choice Band"));
+    }
+
+    #[test]
+    fn parse_header_with_nickname_and_gender() {
+        let (sp, nk, gd, it) =
+            parse_header("Nicky (Incineroar) (F) @ Safety Goggles");
+        assert_eq!(sp, "Incineroar");
+        assert_eq!(nk.as_deref(), Some("Nicky"));
+        assert_eq!(gd, Some(Gender::Female));
+        assert_eq!(it.as_deref(), Some("Safety Goggles"));
     }
 
     #[test]
@@ -352,5 +498,36 @@ mod tests {
         let t = parse_team(text).unwrap();
         assert_eq!(t.members[0].species, "Incineroar");
         assert_eq!(t.members[0].moves, vec!["Fake Out"]);
+    }
+
+    #[test]
+    fn round_trip_with_competitive_metadata() {
+        let paste = "Nicky (Iron Hands) (M) @ Assault Vest\nAbility: Quark Drive\nLevel: 50\nShiny: Yes\nTera Type: Water\nEVs: 252 HP / 4 Atk / 252 SpD\nIVs: 0 Spe\nSassy Nature\n- Fake Out\n- Drain Punch\n- Thunder Punch\n- Wild Charge";
+        let t = parse_team(paste).unwrap();
+        let m = &t.members[0];
+        assert_eq!(m.species, "Iron Hands");
+        assert_eq!(m.nickname.as_deref(), Some("Nicky"));
+        assert_eq!(m.gender, Some(Gender::Male));
+        assert!(m.shiny);
+        assert_eq!(m.level, 50);
+        assert_eq!(m.ivs.spe, 0);
+        assert_eq!(m.ivs.hp, 31);
+        let out = format_team(&t);
+        assert!(out.contains("Nicky (Iron Hands) (M) @ Assault Vest"));
+        assert!(out.contains("Shiny: Yes"));
+        assert!(out.contains("IVs: 0 Spe"));
+        // Round-trip back: reparse should yield identical metadata.
+        let t2 = parse_team(&out).unwrap();
+        assert_eq!(t2.members[0].nickname.as_deref(), Some("Nicky"));
+        assert_eq!(t2.members[0].gender, Some(Gender::Male));
+        assert!(t2.members[0].shiny);
+        assert_eq!(t2.members[0].ivs.spe, 0);
+    }
+
+    #[test]
+    fn parse_level_non_default() {
+        let paste = "Pikachu\nLevel: 80\n- Thunderbolt";
+        let t = parse_team(paste).unwrap();
+        assert_eq!(t.members[0].level, 80);
     }
 }
