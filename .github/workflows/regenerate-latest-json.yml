@@ -66,7 +66,7 @@ jobs:
           export PUB_DATE=$(date -u +%Y-%m-%dT%H:%M:%S.000Z)
 
           python3 << 'PY'
-          import os, base64, json, glob, re, urllib.parse
+          import os, json, glob, re, urllib.parse
 
           tag = os.environ['TAG']
           version = os.environ['SEMVER_VERSION'] or os.environ['VERSION']
@@ -74,11 +74,19 @@ jobs:
           repo_url = os.environ['REPO_URL']
           pub_date = os.environ['PUB_DATE']
 
-          def sig_b64(path: str) -> str:
-              # The .sig files on disk are plain text (a minisign block). The
-              # Tauri updater expects the field to be base64 of that text.
-              with open(path, 'rb') as f:
-                  return base64.b64encode(f.read()).decode('ascii')
+          def sig_text(path: str) -> str:
+              # Tauri 2.x's `tauri signer sign` writes .sig files whose entire
+              # content is the base64-encoded minisign block (single token, no
+              # newlines around it). The Tauri updater expects the JSON
+              # `signature` field to be exactly that base64 string and will
+              # base64-decode it ONCE to get the minisign text it verifies
+              # against the binary. So we must NOT re-encode — the file
+              # content is already in the right shape. Earlier version of
+              # this script re-base64'd it, producing double-encoded
+              # signatures and the "Invalid encoding in minisign data"
+              # runtime error in the updater.
+              with open(path, 'r', encoding='utf-8') as f:
+                  return f.read().strip()
 
           def url_for(asset_name: str) -> str:
               # GitHub serves asset names with spaces replaced by dots; our
@@ -95,7 +103,7 @@ jobs:
           if msi_sigs:
               sig_path = msi_sigs[0]
               binary = os.path.basename(sig_path)[:-4]
-              entry = {'signature': sig_b64(sig_path), 'url': url_for(binary)}
+              entry = {'signature': sig_text(sig_path), 'url': url_for(binary)}
               platforms['windows-x86_64'] = entry
               platforms['windows-x86_64-msi'] = entry
 
@@ -104,21 +112,44 @@ jobs:
               sig_path = nsis_sigs[0]
               binary = os.path.basename(sig_path)[:-4]
               platforms['windows-x86_64-nsis'] = {
-                  'signature': sig_b64(sig_path),
+                  'signature': sig_text(sig_path),
                   'url': url_for(binary),
               }
 
-          # macOS — one .app.tar.gz.sig per arch. Filenames look like
-          # VGC.Reporter_aarch64.app.tar.gz.sig or _x64.app.tar.gz.sig.
-          for sig_path in sorted(glob.glob('/tmp/sigs/*.app.tar.gz.sig')):
+          # macOS — Tauri's bundle naming is unpredictable on the matrix:
+          #   * the per-arch path produces VGC Reporter_aarch64.app.tar.gz
+          #     (or _x64) on the runner, but tauri-action may upload it
+          #     stripped to VGC.Reporter.app.tar.gz with no arch suffix
+          #     (observed on v0.2.3 — the second matrix job overwrote the
+          #     first since both ended up with the same final asset name).
+          # Strategy: enumerate every *.app.tar.gz.sig found in the release.
+          # If the filename has an arch hint, key it under that arch. If
+          # there's only one arch-less .sig left (the second job overwrote
+          # the first), reuse it for both darwin-aarch64 and darwin-x86_64
+          # so updates still resolve. The user knows the bundle on disk is
+          # whichever arch the LAST matrix job built; running it on the
+          # other arch falls back to Rosetta (macOS) which is acceptable
+          # for a hotfix.
+          mac_sigs = sorted(glob.glob('/tmp/sigs/*.app.tar.gz.sig'))
+          mac_arch_seen: set[str] = set()
+          for sig_path in mac_sigs:
               binary = os.path.basename(sig_path)[:-4]
               m = re.search(r'_(aarch64|x64)\.app', binary)
-              if not m:
-                  continue
-              arch = 'aarch64' if m.group(1) == 'aarch64' else 'x86_64'
-              entry = {'signature': sig_b64(sig_path), 'url': url_for(binary)}
-              platforms[f'darwin-{arch}'] = entry
-              platforms[f'darwin-{arch}-app'] = entry
+              if m:
+                  arch = 'aarch64' if m.group(1) == 'aarch64' else 'x86_64'
+                  entry = {'signature': sig_text(sig_path), 'url': url_for(binary)}
+                  platforms[f'darwin-{arch}'] = entry
+                  platforms[f'darwin-{arch}-app'] = entry
+                  mac_arch_seen.add(arch)
+          # Fallback: if NO arch-tagged sig exists but a generic
+          # VGC.Reporter.app.tar.gz.sig is present, use it for both archs.
+          if not mac_arch_seen and mac_sigs:
+              sig_path = mac_sigs[0]
+              binary = os.path.basename(sig_path)[:-4]
+              entry = {'signature': sig_text(sig_path), 'url': url_for(binary)}
+              for arch in ('aarch64', 'x86_64'):
+                  platforms[f'darwin-{arch}'] = entry
+                  platforms[f'darwin-{arch}-app'] = entry
 
           # Linux — AppImage is the default. Add per-format variants too so
           # users on .deb / .rpm distros can opt in.
@@ -126,7 +157,7 @@ jobs:
           if appimage_sigs:
               sig_path = appimage_sigs[0]
               binary = os.path.basename(sig_path)[:-4]
-              entry = {'signature': sig_b64(sig_path), 'url': url_for(binary)}
+              entry = {'signature': sig_text(sig_path), 'url': url_for(binary)}
               platforms['linux-x86_64'] = entry
               platforms['linux-x86_64-appimage'] = entry
 
@@ -135,7 +166,7 @@ jobs:
               sig_path = deb_sigs[0]
               binary = os.path.basename(sig_path)[:-4]
               platforms['linux-x86_64-deb'] = {
-                  'signature': sig_b64(sig_path),
+                  'signature': sig_text(sig_path),
                   'url': url_for(binary),
               }
 
@@ -144,7 +175,7 @@ jobs:
               sig_path = rpm_sigs[0]
               binary = os.path.basename(sig_path)[:-4]
               platforms['linux-x86_64-rpm'] = {
-                  'signature': sig_b64(sig_path),
+                  'signature': sig_text(sig_path),
                   'url': url_for(binary),
               }
 
@@ -156,7 +187,7 @@ jobs:
               sig_path = apk_sigs[0]
               binary = os.path.basename(sig_path)[:-4]
               platforms['android'] = {
-                  'signature': sig_b64(sig_path),
+                  'signature': sig_text(sig_path),
                   'url': url_for(binary),
               }
 
