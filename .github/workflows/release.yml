@@ -334,9 +334,17 @@ jobs:
         env:
           PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.prepare.outputs.tag }}
         run: |
-          SIGNED_APK="VGC.Reporter_${{ needs.prepare.outputs.tag }}_android.apk"
+          SIGNED_APK="VGC.Reporter_${TAG}_android.apk"
           bunx tauri signer sign -k "$PRIVATE_KEY" -p "$PRIVATE_KEY_PASSWORD" "$SIGNED_APK"
+          # Upload the minisign .sig to the release alongside the apk so the
+          # regenerate-latest-json recovery workflow can rebuild platforms.android
+          # without re-running this job. (Without this, the .sig dies with the
+          # runner and the only way to put android in latest.json is to inject
+          # it inline in the step below.)
+          gh release upload "$TAG" "${SIGNED_APK}.sig" --clobber
 
       - name: Inject Android platform into latest.json
         env:
@@ -345,6 +353,12 @@ jobs:
           TAG="${{ needs.prepare.outputs.tag }}"
           SIGNED_APK="VGC.Reporter_${TAG}_android.apk"
           APK_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/${SIGNED_APK}"
+          # Try to fetch the latest.json that tauri-action's build matrix
+          # *should* have uploaded. If it's missing (observed on v0.2.3 when
+          # tauri-action v0.6 silently skipped updater JSON upload across all
+          # 4 matrix jobs), generate a minimal android-only one — the
+          # regenerate-latest-json workflow can be triggered afterwards to
+          # add the desktop platform keys.
           for i in 1 2 3 4 5; do
             if gh release download "$TAG" --pattern "latest.json" --output latest.json 2>/dev/null; then
               echo "latest.json downloaded"
@@ -353,5 +367,11 @@ jobs:
             echo "Retry $i/5 in 30s..."
             sleep 30
           done
+          if [ ! -f latest.json ]; then
+            echo "latest.json not present on release; bootstrapping a fresh one"
+            VERSION="${TAG#v}"
+            SEMVER=$(echo "$VERSION" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+')
+            python3 -c "import json; json.dump({'version': '${SEMVER}', 'notes': '', 'pub_date': __import__('datetime').datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'), 'platforms': {}}, open('latest.json','w'), indent=2)"
+          fi
           python3 -c "import json,sys; d=json.load(open('latest.json')); d['platforms']['android']={'signature':open(sys.argv[1]+'.sig').read().strip(),'url':sys.argv[2]}; json.dump(d,open('latest.json','w'),indent=2)" "$SIGNED_APK" "$APK_URL"
           gh release upload "$TAG" latest.json --clobber
