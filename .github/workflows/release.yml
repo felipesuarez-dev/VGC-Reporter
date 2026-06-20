@@ -200,6 +200,38 @@ jobs:
       - name: Install dependencies (Bun)
         run: bun install --frozen-lockfile
 
+      # Windows Authenticode signing MUST happen IN-BUILD (not after
+      # tauri-action), because createUpdaterArtifacts generates the minisign
+      # .sig over the final bytes — signing the binary afterwards would
+      # invalidate every updater signature. We feed Tauri a `--config` overlay
+      # with the imported cert thumbprint so the bundler signs the MSI/NSIS and
+      # THEN computes the .sig. If the cert secret is absent the build proceeds
+      # UNSIGNED (no failure) — self-signed today, swap the secret for a real
+      # CA cert later with no workflow change. signtool ships with the Windows
+      # SDK on the runner (no node/npx → Bun-only stays intact).
+      - name: Prepare Windows code signing
+        id: winsign
+        if: matrix.platform == 'windows-2025'
+        shell: pwsh
+        env:
+          WINDOWS_CERT_PFX_BASE64: ${{ secrets.WINDOWS_CERT_PFX_BASE64 }}
+          WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
+        run: |
+          if (-not $env:WINDOWS_CERT_PFX_BASE64) {
+            Write-Host "::warning::WINDOWS_CERT_PFX_BASE64 not set — building UNSIGNED Windows bundles."
+            "config_arg=" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            exit 0
+          }
+          $pfx = Join-Path $env:RUNNER_TEMP "codesign.pfx"
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_CERT_PFX_BASE64))
+          $sec = ConvertTo-SecureString $env:WINDOWS_CERT_PASSWORD -AsPlainText -Force
+          $cert = Import-PfxCertificate -FilePath $pfx -CertStoreLocation Cert:\CurrentUser\My -Password $sec
+          Write-Host "Imported signing cert, thumbprint $($cert.Thumbprint)"
+          $cfg = @{ bundle = @{ windows = @{ certificateThumbprint = $cert.Thumbprint; digestAlgorithm = "sha256"; timestampUrl = "http://timestamp.digicert.com" } } } | ConvertTo-Json -Depth 6 -Compress
+          $cfgPath = Join-Path $env:RUNNER_TEMP "winsign.conf.json"
+          [IO.File]::WriteAllText($cfgPath, $cfg)
+          "config_arg=--config $cfgPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
       - name: Build & upload to draft release with tauri-action
         id: tauri
         uses: tauri-apps/tauri-action@v0.6
@@ -217,7 +249,7 @@ jobs:
           includeUpdaterJson: true
           updaterJsonPreferNsis: false
           retryAttempts: 3
-          args: ${{ matrix.args }}
+          args: ${{ matrix.args }} ${{ steps.winsign.outputs.config_arg }}
 
       # Defensive belt-and-suspenders for the Windows MSI / NSIS upload —
       # tauri-action v0.6 reported success for the v0.2.2 Windows job but the
