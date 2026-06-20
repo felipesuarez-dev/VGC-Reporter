@@ -129,8 +129,8 @@ impl ShowdownClient {
         let raw: HashMap<String, RawNamed> =
             self.http.get_json(&url, config::TTL_SHOWDOWN_DATA).await?;
         let mut names: Vec<String> = raw
-            .into_iter()
-            .filter_map(|(_, e)| e.name.filter(|n| !n.is_empty()))
+            .into_values()
+            .filter_map(|e| e.name.filter(|n| !n.is_empty()))
             .collect();
         names.sort();
         names.dedup();

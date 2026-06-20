@@ -200,7 +200,7 @@ fn accumulate(entry: &LimitlessDecklistEntry, acc: &mut PokemonAccumulator) {
 fn top_n_by_teams(map: &HashMap<String, u32>, total_teams: u32, n: usize) -> Vec<UsageEntry> {
     let total = total_teams.max(1) as f32;
     let mut items: Vec<(String, u32)> = map.iter().map(|(k, v)| (k.clone(), *v)).collect();
-    items.sort_by(|a, b| b.1.cmp(&a.1));
+    items.sort_by_key(|b| std::cmp::Reverse(b.1));
     items
         .into_iter()
         .take(n)
@@ -216,7 +216,7 @@ fn top_n(map: &HashMap<String, u32>, n: usize) -> Vec<UsageEntry> {
     let total: u32 = map.values().sum();
     let total = total.max(1) as f32;
     let mut items: Vec<(String, u32)> = map.iter().map(|(k, v)| (k.clone(), *v)).collect();
-    items.sort_by(|a, b| b.1.cmp(&a.1));
+    items.sort_by_key(|b| std::cmp::Reverse(b.1));
     items
         .into_iter()
         .take(n)
@@ -311,7 +311,7 @@ fn top_teammates(map: &HashMap<String, TeammateAcc>, n: usize) -> Vec<TeammateUs
     let total: u32 = map.values().map(|t| t.count).sum();
     let total = total.max(1) as f32;
     let mut items: Vec<&TeammateAcc> = map.values().collect();
-    items.sort_by(|a, b| b.count.cmp(&a.count));
+    items.sort_by_key(|b| std::cmp::Reverse(b.count));
     items
         .into_iter()
         .take(n)

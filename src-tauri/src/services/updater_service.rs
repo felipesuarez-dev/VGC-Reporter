@@ -60,7 +60,7 @@ impl UpdaterService {
 
 fn parse_semver(v: &str) -> (u32, u32, u32) {
     let trimmed = v.trim().trim_start_matches('v');
-    let mut iter = trimmed.split(|c: char| c == '.' || c == '-');
+    let mut iter = trimmed.split(['.', '-']);
     let major = iter.next().and_then(|s| s.parse().ok()).unwrap_or(0);
     let minor = iter.next().and_then(|s| s.parse().ok()).unwrap_or(0);
     let patch = iter.next().and_then(|s| s.parse().ok()).unwrap_or(0);
