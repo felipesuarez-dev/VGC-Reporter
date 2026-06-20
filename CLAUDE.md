@@ -1,7 +1,7 @@
 # VGC-Reporter — Guía raíz
 
 **Producto:** VGC-Reporter
-**Versión:** 0.2.3.20260517-beta
+**Versión:** 0.3.0.20260620-beta
 **Autor:** PumaSoft
 
 Aplicación Tauri 2 + Rust + React para estadísticas competitivas de Pokémon Champions (VGC 2026, Regulation M-A — season M-2 activa) y construcción de equipos propios.
@@ -80,6 +80,49 @@ Nunca correr `tauri-apps/tauri-action` con `releaseDraft: true` + `tagName` desd
 3. Para soporte de re-trigger sin retag: `workflow_dispatch` lleva un input `tag: required: true`; un step `resolve` en `prepare` produce `outputs.tag` desde el input o desde `github.ref_name`; todo consumidor downstream (filename del APK, `gh release upload`, signer, etc.) usa `needs.prepare.outputs.tag` en vez de `github.ref_name` directo.
 
 **Incidente origen:** release v0.2.2.20260517-beta. El job Windows quedó frenado en "Looking for a draft release with tag v0.2.2.20260517-beta..." sin imprimir error y sin completar. Los otros 3 jobs del matrix (macOS x2, Linux) terminaron tareas variables. Felipe reportó "falló pero no sale error". Fix: commit `1b96ac3`.
+
+### Regla 5 — Firma Authenticode de Windows DEBE ser in-build (nunca post-build)
+
+El instalador de Windows se firma **dentro** del build de `tauri-action`, vía
+`bundle.windows.certificateThumbprint` inyectado con `--config` (el step `Prepare Windows code
+signing` en `release.yml` importa el `.pfx` desde `secrets.WINDOWS_CERT_PFX_BASE64` y arma el
+overlay). **Jamás firmar el MSI/EXE en un step posterior a `tauri-action`**: `createUpdaterArtifacts`
+genera la firma minisign (`.sig`) sobre los bytes finales del bundle; si firmas Authenticode
+después, mutas el binario y la `.sig` deja de cuadrar → **el auto-update falla en runtime para
+todos los usuarios de Windows** con error de firma. Orden correcto garantizado: Tauri firma
+Authenticode → luego computa la `.sig`.
+
+- Si faltan los secrets el build sale **sin firmar** (no falla) — self-signed hoy, cert CA mañana
+  cambiando solo el secret, sin tocar el workflow.
+- El cert self-signed se genera **local y manualmente** (`New-SelfSignedCertificate -Type
+  CodeSigningCert ...`, `Export-PfxCertificate`, base64 → Secret `WINDOWS_CERT_PFX_BASE64` +
+  `WINDOWS_CERT_PASSWORD`). Caduca; `timestampUrl` es obligatorio para que la firma sobreviva a la
+  expiración del cert. Self-signed muestra "PumaSoft" como publisher pero **no** limpia SmartScreen
+  para descargadores hasta tener un cert de una CA.
+- Authenticode (instalador) y minisign (updater) son **independientes**.
+
+**Incidente origen:** Windows bloqueaba la instalación (publisher no reconocido) porque los bundles
+salían sin firmar. Iteración v0.3.0.20260620-beta.
+
+### Regla 6 — `rustls` no hace AIA-fetch: bundlear intermediates de servidores mal configurados
+
+`reqwest` usa `rustls-tls` (no native-tls, por compatibilidad con Android). **rustls NO descarga
+intermediates faltantes vía AIA** como sí hacen los navegadores y curl (schannel en Windows). Si un
+host del que dependemos sirve su cert SIN enviar el intermediate, rustls falla con
+`InvalidCertificate(UnknownIssuer)` y **toda** request a ese host revienta — silenciosamente, porque
+el `HttpClient` cae a fuentes de fallback y la feature aparece "sin datos".
+
+Patrón de fix (implementado en `adapters/http_client.rs`): bundlear el cert intermediate en
+`src-tauri/certs/*.pem` y registrarlo como trust anchor con
+`Client::builder().add_root_certificate(...)` + `include_bytes!`. Funciona en todas las plataformas
+(no depende del store del SO ni de AIA). Diagnóstico: `openssl s_client -connect host:443` → si dice
+`Verify return code: 21 (unable to verify the first certificate)`, el server no manda el intermediate;
+saca la URL del AIA con `openssl x509 -text | grep "CA Issuers"`, descárgalo y bundléalo.
+
+**Incidente origen:** v0.3.0. `labmaus.net` (cert Sectigo DV) dejó de enviar su intermediate
+"Sectigo Public Server Authentication CA DV R36". rustls rechazaba la conexión → trending, top-teams
+y meta snapshot caían a fallbacks delgados y mostraban "sin datos" (Felipe: "M-B no trae NADA").
+curl funcionaba (schannel hace AIA-fetch), enmascarando el bug. Fix: bundlear el intermediate.
 
 ## Documentación por capa
 

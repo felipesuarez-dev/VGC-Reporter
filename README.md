@@ -71,17 +71,17 @@ VGC Reporter is the tool I wanted while team-building for Regulation M-A: one wi
 
 ## Download
 
-Pre-built installers for the **`v0.2.3.20260517-beta`** release:
+Pre-built installers for the **`v0.3.0.20260620-beta`** release:
 
 | Platform | Installer | Notes |
 |---|---|---|
-| Windows 10/11 | `VGC.Reporter_0.2.3_x64_en-US.msi` | MSI installer (recommended) |
-| Windows 10/11 | `VGC.Reporter_0.2.3_x64-setup.exe` | NSIS installer (portable-friendly) |
-| macOS 12+ (Apple Silicon) | `VGC.Reporter_0.2.3_aarch64.dmg` | Unsigned — right-click → Open the first time |
-| macOS 12+ (Intel) | `VGC.Reporter_0.2.3_x64.dmg` | Unsigned — right-click → Open the first time |
-| Linux (Debian/Ubuntu) | `vgc-reporter_0.2.3_amd64.deb` | Requires `webkit2gtk-4.1` |
-| Linux (any distro) | `vgc-reporter_0.2.3_amd64.AppImage` | `chmod +x` then run |
-| Android 7+ (arm64) | `VGC.Reporter_v0.2.3.20260517-beta_android.apk` | Sideload: enable "Unknown sources" first |
+| Windows 10/11 | `VGC.Reporter_0.3.0_x64_en-US.msi` | MSI installer (recommended) |
+| Windows 10/11 | `VGC.Reporter_0.3.0_x64-setup.exe` | NSIS installer — self-signed (publisher "PumaSoft", not CA-verified yet) |
+| macOS 12+ (Apple Silicon) | `VGC.Reporter_0.3.0_aarch64.dmg` | Unsigned — right-click → Open the first time |
+| macOS 12+ (Intel) | `VGC.Reporter_0.3.0_x64.dmg` | Unsigned — right-click → Open the first time |
+| Linux (Debian/Ubuntu) | `vgc-reporter_0.3.0_amd64.deb` | Requires `webkit2gtk-4.1` |
+| Linux (any distro) | `vgc-reporter_0.3.0_amd64.AppImage` | `chmod +x` then run |
+| Android 7+ (arm64) | `VGC.Reporter_v0.3.0.20260620-beta_android.apk` | Sideload: enable "Unknown sources" first |
 
 **[→ Download from the latest GitHub Release](https://github.com/felipesuarez-dev/vgc-reporter/releases/latest)**
 
@@ -128,7 +128,7 @@ Found something else? [Open an issue](https://github.com/felipesuarez-dev/vgc-re
 
 | Source | Use | Notes |
 |---|---|---|
-| [Labmaus](https://labmaus.net) | Top teams, meta snapshot, trending, upcoming tournaments | **Primary** for Regulation M-A — requires Origin/Referer pinning, injected server-side so no CORS leaks |
+| [Labmaus](https://labmaus.net) | Top teams, meta snapshot, trending, upcoming tournaments | **Primary** for the Champions sets (M-A / M-B) — requires Origin/Referer pinning, injected server-side so no CORS leaks |
 | [Limitless VGC API](https://play.limitlesstcg.com/api/) | Tournaments, standings, decklists | Authoritative for Champions standings — decklists rendered inline |
 | [Pokémon Showdown](https://play.pokemonshowdown.com/data/) | Pokédex, moves, items, abilities, sprites | Fetched on first run, cached 7 days |
 | [Smogon chaos JSON](https://www.smogon.com/stats/) | Ladder usage fallback | Slug auto-discovery + rating ladder rewind |
@@ -137,6 +137,7 @@ Found something else? [Open an issue](https://github.com/felipesuarez-dev/vgc-re
 | [Pokepaste](https://pokepast.es) | Importable team pastes | Pastes are immutable — cached 30 days |
 | [PokéAPI CSV](https://github.com/PokeAPI/pokeapi/tree/master/data/v2/csv) | Localized names & flavor text | **5 languages** (EN / ES / PT / IT / FR) for abilities, moves, items — joined with Showdown data; missing per-locale rows fall back to English |
 | [Showdown dex sprites](https://play.pokemonshowdown.com/sprites/dex/) | Sprite fallback | Variant-aware HD render for Mega/Regional forms |
+| [pokebase.app](https://pokebase.app/pokemon-champions) | Sprites for Champions-invented Megas | Artwork for the 12 Regulation M-B Megas (e.g. Mega Raichu X/Y) that Showdown's CDN lacks |
 
 **Not integrated** (no public API): Pokemon-Zone, Porygon Labs, Champions Lab, Pokebase, Munchstats. Exposed as one-click external links — no scraping.
 
@@ -262,7 +263,7 @@ VGC-Reporter/
 MIT © 2026 PumaSoft — see [LICENSE](LICENSE).
 
 <!-- Reference-style definitions -->
-[version-badge]: https://img.shields.io/badge/version-0.2.3.20260517--beta-2b86ff?style=flat-square&labelColor=0a0e14
+[version-badge]: https://img.shields.io/badge/version-0.3.0.20260620--beta-2b86ff?style=flat-square&labelColor=0a0e14
 [version-link]: #download
 [beta-badge]: https://img.shields.io/badge/release-beta-ff6b6b?style=flat-square&labelColor=0a0e14
 [tauri-badge]: https://img.shields.io/badge/Tauri-2.4-24c8db?style=flat-square&labelColor=0a0e14&logo=tauri
