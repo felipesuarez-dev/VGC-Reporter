@@ -40,6 +40,7 @@
     "coming_soon": "Bientôt",
     "reg_ma_s1": "M-1",
     "reg_ma_s2": "M-2",
+    "reg_mb_s1": "M-3",
     "m_b_start_date": "Commence le {{date}}"
   },
   "search": {

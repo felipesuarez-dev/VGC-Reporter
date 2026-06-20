@@ -74,15 +74,8 @@ export interface FormatOption {
 }
 
 export const ALL_FORMATS: FormatOption[] = [
+  { value: "regulation-m-b", label: "Regulation M-B (M-3)" },
   { value: "regulation-m-a", label: "Regulation M-A (M-2)" },
-  {
-    value: "regulation-m-a",
-    label: "Regulation M-B (M-3)",
-    disabled: true,
-    badgeKey: "regulations.coming_soon",
-    disabledTooltipKey: "regulations.m_b_start_date",
-    disabledTooltipParams: { date: "2026-06-18" },
-  },
 ];
 
 /**
@@ -177,7 +170,7 @@ export function emptyTeamMember(species = ""): TeamMember {
   };
 }
 
-export function emptyTeam(format: Format = "regulation-m-a"): Team {
+export function emptyTeam(format: Format = "regulation-m-b"): Team {
   return {
     id: null,
     name: "",

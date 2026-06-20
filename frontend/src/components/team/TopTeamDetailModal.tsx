@@ -94,7 +94,7 @@ function toDraftTeam(top: TopTeam): Team {
   return {
     id: null,
     name,
-    format: "regulation-m-a",
+    format: "regulation-m-b",
     notes: null,
     members,
     created_at: null,

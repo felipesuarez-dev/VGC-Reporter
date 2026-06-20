@@ -339,9 +339,9 @@ export function Dashboard() {
 
       <section className="card">
         <h2 className="mb-1 text-sm font-semibold" style={{ color: "var(--text)" }}>
-          {format === "regulation-m-a"
-            ? t("dashboard.champions_report")
-            : t("dashboard.recent_tournaments")}
+          {format === "regulation-i"
+            ? t("dashboard.recent_tournaments")
+            : t("dashboard.champions_report")}
         </h2>
         <p className="mb-3 text-[11px]" style={{ color: "var(--text-dim)" }}>
           {t("dashboard.tournaments_for_format", {

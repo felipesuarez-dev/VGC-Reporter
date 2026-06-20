@@ -35,9 +35,21 @@
     "coming_soon": "Coming soon",
     "reg_ma_s1": "M-1",
     "reg_ma_s2": "M-2",
+    "reg_mb_s1": "M-3",
     "m_b_start_date": "Starts on {{date}}"
   },
   "search": {
+    "open": "Search",
+    "placeholder": "Search Pokémon, moves, items, abilities...",
+    "section_pokemon": "Pokémon",
+    "section_moves": "Moves",
+    "section_items": "Items",
+    "section_abilities": "Abilities",
+    "loading": "Loading...",
+    "no_results": "No results",
+    "recent": "Recent",
+    "clear_recent": "Clear",
+    "close": "Close",
     "more_results": "More results",
     "indexing": "Indexing tournaments… try again in a few seconds.",
     "kind_tournament": "Tournament",
@@ -435,19 +447,6 @@
     "later": "Later",
     "downloading": "Downloading {{pct}}%",
     "check_failed": "Couldn't check for updates"
-  },
-  "search": {
-    "open": "Search",
-    "placeholder": "Search Pokémon, moves, items, abilities...",
-    "section_pokemon": "Pokémon",
-    "section_moves": "Moves",
-    "section_items": "Items",
-    "section_abilities": "Abilities",
-    "loading": "Loading...",
-    "no_results": "No results",
-    "recent": "Recent",
-    "clear_recent": "Clear",
-    "close": "Close"
   },
   "validation": {
     "title": "Team validation",

@@ -35,9 +35,21 @@
     "coming_soon": "Próximamente",
     "reg_ma_s1": "M-1",
     "reg_ma_s2": "M-2",
+    "reg_mb_s1": "M-3",
     "m_b_start_date": "Comienza el {{date}}"
   },
   "search": {
+    "open": "Buscar",
+    "placeholder": "Busca Pokémon, movimientos, objetos, habilidades...",
+    "section_pokemon": "Pokémon",
+    "section_moves": "Movimientos",
+    "section_items": "Objetos",
+    "section_abilities": "Habilidades",
+    "loading": "Cargando...",
+    "no_results": "Sin resultados",
+    "recent": "Recientes",
+    "clear_recent": "Limpiar",
+    "close": "Cerrar",
     "more_results": "Más resultados",
     "indexing": "Indexando torneos… intenta de nuevo en unos segundos.",
     "kind_tournament": "Torneo",
@@ -435,19 +447,6 @@
     "later": "Más tarde",
     "downloading": "Descargando {{pct}}%",
     "check_failed": "No se pudo buscar actualizaciones"
-  },
-  "search": {
-    "open": "Buscar",
-    "placeholder": "Busca Pokémon, movimientos, objetos, habilidades...",
-    "section_pokemon": "Pokémon",
-    "section_moves": "Movimientos",
-    "section_items": "Objetos",
-    "section_abilities": "Habilidades",
-    "loading": "Cargando...",
-    "no_results": "Sin resultados",
-    "recent": "Recientes",
-    "clear_recent": "Limpiar",
-    "close": "Cerrar"
   },
   "validation": {
     "title": "Validación del equipo",

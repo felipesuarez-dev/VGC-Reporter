@@ -19,7 +19,7 @@ export type EvStatSpread = { hp: number, atk: number, def: number, spa: number, 
 /**
  * Competitive format. Multi-variant: frontend can switch freely.
  */
-export type Format = "regulation-m-a" | "regulation-i";
+export type Format = "regulation-m-b" | "regulation-m-a" | "regulation-i";
 
 export type Gender = "male" | "female" | "genderless";
 

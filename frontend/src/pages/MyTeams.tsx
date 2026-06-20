@@ -162,6 +162,7 @@ function spriteFor(species: string): string {
 }
 
 function regulationBadge(format: string, t: (k: string) => string): string {
+  if (format === "regulation-m-b") return t("regulations.reg_mb_s1");
   if (format === "regulation-m-a") return t("regulations.reg_ma_s2");
   return format;
 }

@@ -67,7 +67,7 @@ function standingToDraftTeam(
   return {
     id: null,
     name: `${player} — ${tournamentName}`,
-    format: "regulation-m-a",
+    format: "regulation-m-b",
     notes: null,
     members,
     created_at: null,

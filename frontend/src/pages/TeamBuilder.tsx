@@ -201,11 +201,11 @@ export function TeamBuilder() {
           <label className="label">{t("team_builder.regulation")}</label>
           <select
             className="input mt-1 cursor-not-allowed opacity-70"
-            value="regulation-m-a"
+            value="regulation-m-b"
             disabled
             title={t("team_builder.regulation_hint")}
           >
-            <option value="regulation-m-a">Regulation M-A (M-2)</option>
+            <option value="regulation-m-b">Regulation M-B (M-3)</option>
           </select>
           <p className="mt-1 text-[10px]" style={{ color: "var(--text-dim)" }}>
             {t("team_builder.regulation_hint")}

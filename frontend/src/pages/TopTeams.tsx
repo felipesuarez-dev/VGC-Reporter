@@ -24,7 +24,7 @@ import { useIsMobile } from "../hooks/useIsMobile";
 import { usePullToRefresh } from "../hooks/usePullToRefresh";
 import { PullToRefreshIndicator } from "../components/layout/PullToRefreshIndicator";
 
-const FORMAT: Format = "regulation-m-a";
+const FORMAT: Format = "regulation-m-b";
 const RECENT_INITIAL = 5;
 const RECENT_EXPANDED = 20;
 const TOP_TEAMS_DEFAULT_FETCH = 100;
@@ -176,7 +176,7 @@ export function TopTeams() {
       const filenameSuffix =
         displayLimit === ALL_SENTINEL ? "all" : String(displayLimit);
       const path = await save({
-        defaultPath: `top-${filenameSuffix}-teams-regulation-m-a.md`,
+        defaultPath: `top-${filenameSuffix}-teams-${FORMAT}.md`,
         filters: [{ name: "Markdown", extensions: ["md"] }],
         title: t("top_teams.export_save_title"),
       });

@@ -25,8 +25,8 @@ function normalizeView(raw: unknown): TopPokemonView {
 export const useDashboardStore = create<DashboardState>()(
   persist(
     (set) => ({
-      format: "regulation-m-a",
-      favoriteFormat: "regulation-m-a",
+      format: "regulation-m-b",
+      favoriteFormat: "regulation-m-b",
       topPokemonView: "bar",
       setFormat: (format) => set({ format }),
       setFavoriteFormat: (favoriteFormat) => set({ favoriteFormat }),
@@ -34,24 +34,26 @@ export const useDashboardStore = create<DashboardState>()(
     }),
     {
       name: "vgc-dashboard",
-      version: 7,
+      version: 9,
       migrate: (persisted: unknown, version: number) => {
-        if (version < 2) {
-          const prior = (persisted ?? {}) as { format?: Format };
-          const fallback: Format = prior.format ?? "regulation-m-a";
-          return {
-            format: fallback,
-            favoriteFormat: fallback,
-            topPokemonView: "bar",
-          } as DashboardState;
-        }
         const prior = (persisted ?? {}) as Partial<DashboardState> & {
           tournamentCount?: number;
         };
         const rawView = (prior as Record<string, unknown>).topPokemonView;
+        // Regulation M-A's season ended 2026-06-17; M-B is the active set, so
+        // every pre-v9 client is moved onto M-B as the default selection.
+        // `!(version >= 9)` (not `version < 9`) also catches legacy blobs with
+        // no/undefined version, which would otherwise slip through to M-A.
+        if (!(version >= 9)) {
+          return {
+            format: "regulation-m-b",
+            favoriteFormat: "regulation-m-b",
+            topPokemonView: normalizeView(rawView),
+          } as DashboardState;
+        }
         return {
-          format: prior.format ?? "regulation-m-a",
-          favoriteFormat: prior.favoriteFormat ?? prior.format ?? "regulation-m-a",
+          format: prior.format ?? "regulation-m-b",
+          favoriteFormat: prior.favoriteFormat ?? prior.format ?? "regulation-m-b",
           topPokemonView: normalizeView(rawView),
         } as DashboardState;
       },
