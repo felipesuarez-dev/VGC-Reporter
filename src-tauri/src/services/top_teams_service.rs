@@ -4,7 +4,7 @@ use crate::adapters::{LabmausClient, LimitlessClient, PokepasteClient, ShowdownE
 use crate::config;
 use crate::domain::format::Format;
 use crate::error::AppError;
-use crate::services::date_window::default_window;
+use crate::services::date_window::window_for;
 use crate::services::pokedex_service::PokedexService;
 use crate::services::usage_aggregator::prettify_public;
 use crate::storage::CacheRepo;
@@ -127,15 +127,16 @@ impl TopTeamsService {
         format: Format,
         limit: usize,
     ) -> Result<TopTeamsReport, AppError> {
-        let key = format!("top-teams::v8::{}::{}", format.cache_id(), limit);
+        let key = format!("top-teams::v12::{}::{}", format.cache_id(), limit);
         if let Some(bytes) = self.cache.get(&key)? {
             if let Ok(report) = serde_json::from_slice::<TopTeamsReport>(&bytes) {
                 return Ok(report);
             }
         }
 
-        // PRIMARY: labmaus discover_teams + pokepast.es (Regulation M-A only).
-        if format == Format::RegulationMA {
+        // PRIMARY: labmaus discover_teams + pokepast.es (any format with a
+        // labmaus regulation name, i.e. the Champions sets M-A / M-B).
+        if format.default_labmaus_name().is_some() {
             match self.build_from_labmaus(format, limit).await {
                 Ok(report) if !report.teams.is_empty() => {
                     tracing::info!(
@@ -155,20 +156,27 @@ impl TopTeamsService {
         }
 
         let report = self.build_from_limitless(format, limit).await?;
-        let bytes = serde_json::to_vec(&report)?;
-        self.cache.put(&key, &bytes, config::TTL_META_SNAPSHOT)?;
+        // Don't cache an empty report — a transient miss would otherwise stick
+        // for the full TTL and keep the page blank after the source recovers.
+        if !report.teams.is_empty() {
+            let bytes = serde_json::to_vec(&report)?;
+            self.cache.put(&key, &bytes, config::TTL_META_SNAPSHOT)?;
+        }
         Ok(report)
     }
 
     async fn build_from_labmaus(
         &self,
-        _format: Format,
+        format: Format,
         limit: usize,
     ) -> Result<TopTeamsReport, AppError> {
-        let (from, to) = default_window();
+        let (from, to) = window_for(format);
+        let regulation = format
+            .default_labmaus_name()
+            .unwrap_or(config::REGULATION_MA_LABMAUS);
         let teams = self
             .labmaus
-            .get_discover_teams(&from, &to, config::REGULATION_MA_LABMAUS)
+            .get_discover_teams(&from, &to, regulation)
             .await?;
         let total = teams.len() as u32;
         let selected: Vec<LabmausDiscoverTeam> = teams.into_iter().take(limit).collect();
@@ -187,7 +195,7 @@ impl TopTeamsService {
             .await;
 
         let mut out = Vec::with_capacity(selected.len());
-        for (team, paste) in selected.into_iter().zip(pastes.into_iter()) {
+        for (team, paste) in selected.into_iter().zip(pastes) {
             if let Some(built) = self.build_top_team(&team, &paste).await {
                 out.push(built);
             }

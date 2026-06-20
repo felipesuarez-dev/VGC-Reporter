@@ -9,7 +9,7 @@ use crate::config;
 use crate::domain::format::Format;
 use crate::domain::usage_stats::{MetaSnapshot, PokemonUsage, TeammateUsage, UsageEntry};
 use crate::error::AppError;
-use crate::services::date_window::default_window;
+use crate::services::date_window::window_for;
 use crate::services::pokedex_service::PokedexService;
 use crate::services::usage_aggregator::{self, top_n_normalized};
 use crate::storage::{CacheRepo, SettingsRepo};
@@ -89,15 +89,16 @@ impl MetaService {
         tournament_count: Option<usize>,
     ) -> Result<MetaSnapshot, AppError> {
         let count = tournament_count.unwrap_or(config::TOURNAMENTS_PER_SNAPSHOT);
-        let cache_key = format!("meta-snapshot-v8::{}::{}", format.cache_id(), count);
+        let cache_key = format!("meta-snapshot-v12::{}::{}", format.cache_id(), count);
         if let Some(bytes) = self.cache.get(&cache_key)? {
             if let Ok(snap) = serde_json::from_slice::<MetaSnapshot>(&bytes) {
                 return Ok(snap);
             }
         }
 
-        // PRIMARY: labmaus discover_teams + pokepast.es (Regulation M-A only).
-        if format == Format::RegulationMA {
+        // PRIMARY: labmaus discover_teams + pokepast.es (any format with a
+        // labmaus regulation name, i.e. the Champions sets M-A / M-B).
+        if format.default_labmaus_name().is_some() {
             match self.build_from_labmaus(format).await {
                 Ok(Some(snap)) if snap.total_entries >= MIN_LIMITLESS_ENTRIES => {
                     tracing::info!(
@@ -195,17 +196,26 @@ impl MetaService {
             }
         };
 
-        let bytes = serde_json::to_vec(&final_snap)?;
-        self.cache
-            .put(&cache_key, &bytes, config::TTL_META_SNAPSHOT)?;
+        // Never cache an empty snapshot: a transient upstream failure (or a
+        // regulation labmaus hasn't populated yet) would otherwise stick for
+        // the full TTL and keep showing "no data" even after the source
+        // recovers. Same guard trending_service uses.
+        if final_snap.total_entries > 0 {
+            let bytes = serde_json::to_vec(&final_snap)?;
+            self.cache
+                .put(&cache_key, &bytes, config::TTL_META_SNAPSHOT)?;
+        }
         Ok(final_snap)
     }
 
     async fn build_from_labmaus(&self, format: Format) -> Result<Option<MetaSnapshot>, AppError> {
-        let (from, to) = default_window();
+        let (from, to) = window_for(format);
+        let regulation = format
+            .default_labmaus_name()
+            .unwrap_or(config::REGULATION_MA_LABMAUS);
         let teams = self
             .labmaus
-            .get_discover_teams(&from, &to, config::REGULATION_MA_LABMAUS)
+            .get_discover_teams(&from, &to, regulation)
             .await?;
         if teams.is_empty() {
             return Ok(None);

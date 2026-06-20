@@ -14,12 +14,28 @@ pub struct HttpClient {
 
 impl HttpClient {
     pub fn new(cache: Arc<CacheRepo>) -> Result<Self, AppError> {
-        let inner = Client::builder()
+        let mut builder = Client::builder()
             .user_agent(config::APP_USER_AGENT)
             .timeout(Duration::from_secs(config::HTTP_TIMEOUT_SECS))
-            .gzip(true)
-            .build()
-            .map_err(AppError::from)?;
+            .gzip(true);
+
+        // labmaus.net serves a Sectigo DV cert but its server does NOT send the
+        // issuing intermediate ("Sectigo Public Server Authentication CA DV
+        // R36"). Browsers and curl (Windows schannel) silently AIA-fetch the
+        // missing intermediate, but rustls does not — so every labmaus request
+        // failed with `InvalidCertificate(UnknownIssuer)`, which is why
+        // trending / top-teams / meta silently fell back to thin sources and
+        // showed "no data". We bundle the intermediate and register it as a
+        // trust anchor so the chain validates on every platform (incl. Android,
+        // where switching to native-tls/openssl is not viable). Redundant once
+        // labmaus fixes its chain; the bundled cert is valid until 2036.
+        if let Ok(cert) =
+            reqwest::Certificate::from_pem(include_bytes!("../../certs/sectigo-r36.pem"))
+        {
+            builder = builder.add_root_certificate(cert);
+        }
+
+        let inner = builder.build().map_err(AppError::from)?;
         Ok(Self { inner, cache })
     }
 

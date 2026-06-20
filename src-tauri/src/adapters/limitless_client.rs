@@ -62,11 +62,24 @@ impl LimitlessClient {
         format: Format,
         limit: usize,
     ) -> Result<Vec<LimitlessTournamentSummary>, AppError> {
-        let all = self.list_tournaments(format, 100).await?;
-        let all = exclude_non_vgc(all);
         let filtered = match format {
-            Format::RegulationMA => filter_champions(all, limit),
-            _ => all.into_iter().take(limit).collect(),
+            // Champions sets (M-A / M-B): limitless still tags EVERY Champions
+            // tournament — including the M-B ones — with `format=M-A`, so a
+            // server-side `&format=M-B` filter returns nothing (verified: 0
+            // results). Fetch a wide unfiltered VGC slice (limit 300 reaches
+            // ~6 weeks back), keep only tournaments inside the regulation's own
+            // date window, then rescue the Champions tournaments by name/format.
+            // The date filter is what makes the recent list match the selected
+            // regulation: M-A shows its closing fortnight, M-B shows 06-17 on.
+            Format::RegulationMA | Format::RegulationMB => {
+                let all = self.list_all_vgc(300).await?;
+                let in_window = filter_by_window(all, format);
+                filter_champions(in_window, limit)
+            }
+            _ => {
+                let all = exclude_non_vgc(self.list_tournaments(format, 100).await?);
+                all.into_iter().take(limit).collect()
+            }
         };
         Ok(filtered)
     }
@@ -102,6 +115,39 @@ fn exclude_non_vgc(list: Vec<LimitlessTournamentSummary>) -> Vec<LimitlessTourna
             !fmt.to_uppercase().contains("TCG")
         })
         .collect()
+}
+
+/// Keep only tournaments whose date falls inside the regulation's own window
+/// (`Format::data_window`, open end clamped to today). Tournaments without a
+/// parseable date are dropped — they can't be placed in a regulation. Formats
+/// with no fixed window (`data_window() == None`) pass through unchanged.
+fn filter_by_window(
+    list: Vec<LimitlessTournamentSummary>,
+    format: Format,
+) -> Vec<LimitlessTournamentSummary> {
+    let Some((start, end)) = format.data_window() else {
+        return list;
+    };
+    let today = chrono::Utc::now().date_naive();
+    let end = end.unwrap_or(today).min(today);
+    list.into_iter()
+        .filter(|t| {
+            t.date
+                .as_deref()
+                .and_then(parse_tournament_date)
+                .map(|d| d >= start && d <= end)
+                .unwrap_or(false)
+        })
+        .collect()
+}
+
+/// Parse a Limitless tournament date. They arrive as RFC3339 timestamps
+/// (`2026-06-20T17:00:00.000Z`); fall back to the leading `YYYY-MM-DD`.
+fn parse_tournament_date(raw: &str) -> Option<chrono::NaiveDate> {
+    if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(raw) {
+        return Some(dt.date_naive());
+    }
+    chrono::NaiveDate::parse_from_str(raw.get(..10).unwrap_or(raw), "%Y-%m-%d").ok()
 }
 
 fn filter_champions(
@@ -395,5 +441,40 @@ mod tests {
         let kept = filter_champions(list, 10);
         let ids: Vec<&str> = kept.iter().map(|t| t.id.as_str()).collect();
         assert_eq!(ids, vec!["valid"]);
+    }
+
+    #[test]
+    fn parse_tournament_date_handles_rfc3339_and_plain() {
+        assert_eq!(
+            parse_tournament_date("2026-06-20T17:00:00.000Z"),
+            chrono::NaiveDate::from_ymd_opt(2026, 6, 20)
+        );
+        assert_eq!(
+            parse_tournament_date("2026-06-03"),
+            chrono::NaiveDate::from_ymd_opt(2026, 6, 3)
+        );
+        assert_eq!(parse_tournament_date("nope"), None);
+    }
+
+    #[test]
+    fn filter_by_window_keeps_only_m_a_fortnight() {
+        let mk = |id: &str, date: &str| LimitlessTournamentSummary {
+            id: id.into(),
+            name: "Champions".into(),
+            date: Some(date.into()),
+            players: Some(50),
+            format: Some("M-A".into()),
+            organizer_id: None,
+            game: None,
+        };
+        let list = vec![
+            mk("before", "2026-06-02T10:00:00.000Z"), // before M-A window
+            mk("in_a", "2026-06-10T10:00:00.000Z"),   // inside M-A (Jun 3-16)
+            mk("edge", "2026-06-16T23:00:00.000Z"),   // M-A last day
+            mk("m_b", "2026-06-18T10:00:00.000Z"),    // M-B era, excluded for M-A
+        ];
+        let kept = filter_by_window(list, Format::RegulationMA);
+        let ids: Vec<&str> = kept.iter().map(|t| t.id.as_str()).collect();
+        assert_eq!(ids, vec!["in_a", "edge"]);
     }
 }

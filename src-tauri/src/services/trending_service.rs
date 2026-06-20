@@ -44,7 +44,7 @@ impl TrendingService {
     /// the network, so a new regulation can be onboarded by seeding one
     /// settings row before its static default is known.
     pub async fn get_trending(&self, format: Format) -> Result<TrendingReport, AppError> {
-        let key = format!("trending::v6::{}", format.cache_id());
+        let key = format!("trending::v10::{}", format.cache_id());
         if let Some(bytes) = self.cache.get(&key)? {
             if let Ok(report) = serde_json::from_slice::<TrendingReport>(&bytes) {
                 return Ok(report);
@@ -71,6 +71,7 @@ impl TrendingService {
 
         let (report, weighted_total) = self
             .build_report_for(
+                format,
                 &regulation_name,
                 &catalog,
                 config::LABMAUS_TRENDING_WINDOW_DAYS,
@@ -91,6 +92,7 @@ impl TrendingService {
             );
             let (wide, _) = self
                 .build_report_for(
+                    format,
                     &regulation_name,
                     &catalog,
                     2 * config::LABMAUS_TRENDING_WINDOW_DAYS,
@@ -127,16 +129,35 @@ impl TrendingService {
     /// prev/curr by its tournament's real date.
     async fn build_report_for(
         &self,
+        format: Format,
         regulation: &str,
         catalog: &HashMap<String, String>,
         half_window_days: i64,
     ) -> (TrendingReport, f32) {
         let today = chrono::Utc::now().date_naive();
         let total_days = 2 * half_window_days;
-        let from_date = today - chrono::Duration::days(total_days);
-        let midpoint = today - chrono::Duration::days(half_window_days);
+        let mut from_date = today - chrono::Duration::days(total_days);
+        let mut to_date = today;
+
+        // Bound the trending window to the regulation's own calendar so M-B
+        // momentum never bleeds in M-A teams from before its launch, and a
+        // closed regulation (M-A) trends within its own dates instead of past
+        // its end. midpoint is recomputed as the middle of the clamped span.
+        if let Some((start, end)) = format.data_window() {
+            let end = end.unwrap_or(today).min(today);
+            to_date = to_date.min(end);
+            if from_date < start {
+                from_date = start;
+            }
+            if from_date > to_date {
+                from_date = (to_date - chrono::Duration::days(total_days)).max(start);
+            }
+        }
+
+        let span = (to_date - from_date).num_days().max(0);
+        let midpoint = from_date + chrono::Duration::days(span / 2);
         let from = from_date.format("%Y-%m-%d").to_string();
-        let to = today.format("%Y-%m-%d").to_string();
+        let to = to_date.format("%Y-%m-%d").to_string();
         let mid_str = midpoint.format("%Y-%m-%d").to_string();
 
         let teams = match self
@@ -208,7 +229,7 @@ impl TrendingService {
             &mid_str,
             &to,
             catalog,
-            total_days.max(0) as u32,
+            span as u32,
         );
         debug!(
             regulation,
