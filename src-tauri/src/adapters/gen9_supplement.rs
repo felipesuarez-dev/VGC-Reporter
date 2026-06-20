@@ -29,6 +29,23 @@ fn entry(en: &str, es: &str) -> (String, LocalizedName) {
     )
 }
 
+/// Full-locale entry for supplements that curate more than EN/ES (used by the
+/// Mega Stone item names, which have official translations in pt/it/fr too).
+/// An empty string in any locale stays a sentinel — `apply_name_supplement`
+/// skips it and lets PokéAPI's own value (or the EN fallback) stand.
+fn entry5(en: &str, es: &str, pt: &str, it: &str, fr: &str) -> (String, LocalizedName) {
+    (
+        normalize_key(en),
+        LocalizedName {
+            en: en.to_string(),
+            es: es.to_string(),
+            pt: pt.to_string(),
+            it: it.to_string(),
+            fr: fr.to_string(),
+        },
+    )
+}
+
 fn desc(en: &str, es: &str) -> LocalizedDescription {
     LocalizedDescription {
         en: en.to_string(),
@@ -134,6 +151,37 @@ pub fn gen9_ability_names() -> HashMap<String, LocalizedName> {
         entry("Anger Shell", "Coraza Ira"),
         entry("Armor Tail", "Cola Armadura"),
         entry("Hospitality", "Hospitalidad"),
+    ]
+    .into_iter()
+    .collect()
+}
+
+/// Mega Stone item names that PokéAPI lacks because the Megas were invented for
+/// Pokémon Champions (Regulation M-B) and never existed in the mainline games.
+/// Without this, the Top Teams team detail shows the raw English string (e.g.
+/// the user-reported "Dragoninite" for Mega Dragonite) under a Spanish UI.
+///
+/// The classic mainline stones (Charizardite, Sceptilite, …) already carry
+/// PokéAPI translations and are intentionally omitted — `apply_name_supplement`
+/// only patches a locale that fell back to English anyway, so listing them would
+/// be a no-op.
+pub fn gen9_item_names() -> HashMap<String, LocalizedName> {
+    [
+        // X/Y dual stones have confirmed multi-locale names.
+        entry5("Raichunite X", "Raichunita X", "Raichunite X", "Raichuite X", "Raichuïte X"),
+        entry5("Raichunite Y", "Raichunita Y", "Raichunite Y", "Raichuite Y", "Raichuïte Y"),
+        // EN/ES confirmed; pt/it/fr left as sentinels (EN fallback) — no
+        // verified official translations for these Champions-only stones.
+        entry("Dragoninite", "Dragoninita"),
+        entry("Staraptite", "Staraptorita"),
+        entry("Scolipite", "Scolipedita"),
+        entry("Scraftinite", "Scraftita"),
+        entry("Barbaracite", "Barbaraclita"),
+        entry("Eelektrossite", "Eelektrossita"),
+        entry("Pyroarite", "Pyroarita"),
+        entry("Malamarite", "Malamarita"),
+        entry("Dragalgite", "Dragalgita"),
+        entry("Falinksite", "Falinksita"),
     ]
     .into_iter()
     .collect()

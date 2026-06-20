@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use tokio::sync::{Mutex, OnceCell};
 
-use crate::adapters::gen9_supplement::{gen9_ability_names, gen9_move_names};
+use crate::adapters::gen9_supplement::{gen9_ability_names, gen9_item_names, gen9_move_names};
 use crate::adapters::{LocalizedName, PokeApiClient, TranslationTable};
 use crate::error::AppError;
 
@@ -34,6 +34,7 @@ impl TranslationsService {
         let mut table = self.client.fetch_translation_table().await?;
         apply_name_supplement(&mut table.moves, gen9_move_names());
         apply_name_supplement(&mut table.abilities, gen9_ability_names());
+        apply_name_supplement(&mut table.items, gen9_item_names());
         let _ = self.cache.set(table.clone());
         Ok(table)
     }
@@ -59,22 +60,33 @@ fn apply_name_supplement(
     for (key, supp) in supplement {
         match into.get_mut(&key) {
             Some(existing) => {
-                if existing.es == existing.en && !supp.es.is_empty() {
+                // Patch each locale only where PokéAPI fell back to English
+                // (sentinel: field == en) AND the supplement supplies a value.
+                // Empty supplement locales (the moves/abilities case) are left
+                // untouched so PokéAPI's own translations stand.
+                if !supp.es.is_empty() && existing.es == existing.en {
                     existing.es = supp.es;
                 }
-                // pt/it/fr in the supplement are sentinels — never touch the
-                // upstream's translations for those locales.
+                if !supp.pt.is_empty() && existing.pt == existing.en {
+                    existing.pt = supp.pt;
+                }
+                if !supp.it.is_empty() && existing.it == existing.en {
+                    existing.it = supp.it;
+                }
+                if !supp.fr.is_empty() && existing.fr == existing.en {
+                    existing.fr = supp.fr;
+                }
             }
             None => {
                 let en = supp.en.clone();
                 into.insert(
                     key,
                     LocalizedName {
-                        en: supp.en,
                         es: if supp.es.is_empty() { en.clone() } else { supp.es },
-                        pt: en.clone(),
-                        it: en.clone(),
-                        fr: en,
+                        pt: if supp.pt.is_empty() { en.clone() } else { supp.pt },
+                        it: if supp.it.is_empty() { en.clone() } else { supp.it },
+                        fr: if supp.fr.is_empty() { en.clone() } else { supp.fr },
+                        en: supp.en,
                     },
                 );
             }
