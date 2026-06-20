@@ -3,12 +3,17 @@ pub mod reg_ma;
 mod reg_ma_items;
 mod reg_ma_moves;
 mod reg_ma_species;
+pub mod reg_mb;
+mod reg_mb_items;
+mod reg_mb_moves;
+mod reg_mb_species;
 
 use crate::domain::team::Team;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 pub use reg_ma::{current_ma_season, MaSeason, RegMaRules};
+pub use reg_mb::RegMbRules;
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS, PartialEq, Eq)]
 #[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
@@ -86,6 +91,7 @@ pub trait RegulationRules: Send + Sync {
 
 pub fn rules_for_code(code: &str) -> Option<Box<dyn RegulationRules>> {
     match code {
+        "regulation-m-b" | "reg-m-b" | "RegulationMB" => Some(Box::new(RegMbRules::current())),
         "regulation-m-a" | "reg-m-a" | "RegulationMA" => Some(Box::new(RegMaRules::current())),
         _ => None,
     }

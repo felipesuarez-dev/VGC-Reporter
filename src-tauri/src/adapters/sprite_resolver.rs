@@ -10,13 +10,51 @@ use crate::config;
 /// variants, Greninja-Bond, Floette-Mega) are normalized first so the CDN
 /// actually resolves.
 pub fn primary_sprite_url(species: &str) -> String {
+    if let Some(url) = mega_sprite_override(species) {
+        return url.to_string();
+    }
     format!("{}/{}.png", config::SHOWDOWN_SPRITES, primary_slug(species))
+}
+
+/// Regulation M-B re-introduced Mega Evolutions, including 12 forms invented for
+/// Pokémon Champions that have no sprite on Showdown's CDN (every other M-B Mega
+/// is a classic Gen 6/7 form Showdown already hosts). For those 12 we serve the
+/// pokebase.app artwork instead, so the Pokédex / Top Teams / Trending views
+/// don't render a broken image. Keyed by the canonical id so `Raichu-Mega-X`
+/// and `Raichu-Mega-Y` resolve to their two distinct sprites.
+///
+/// URLs verified HTTP 200 (pokebase official artwork). Re-verify before a
+/// release: pokebase serves opaque content-hash filenames that change on
+/// re-upload.
+fn mega_sprite_override(species: &str) -> Option<&'static str> {
+    const OVERRIDES: &[(&str, &str)] = &[
+        ("barbaraclemega", "https://i.pokebase.app/main/TI4unauRtF7TP2a-8H_Wy.png"),
+        ("dragalgemega", "https://i.pokebase.app/main/RhuKCEYYtKtbzMBDSI7A1.png"),
+        ("eelektrossmega", "https://i.pokebase.app/main/5GHRGs9McUiX4BjoYqd38.png"),
+        ("falinksmega", "https://i.pokebase.app/main/HdKE8iHmf-J7uQ0RaXO5j.png"),
+        ("malamarmega", "https://i.pokebase.app/main/L9rgKcYfAR2j4nHf_1wwm.png"),
+        ("meowsticmega", "https://i.pokebase.app/main/7v6A9qAhbML5vyolx229v.png"),
+        ("pyroarmega", "https://i.pokebase.app/main/myJFOQyFJsZpOyZ_14Yf6.png"),
+        ("raichumegax", "https://i.pokebase.app/main/a20e-d4V73qef-lNZUpNy.png"),
+        ("raichumegay", "https://i.pokebase.app/main/wNBBtV4H9CQXdypC1dpoq.png"),
+        ("scolipedemega", "https://i.pokebase.app/main/C0TigXat2PT7aCBMoEoJC.png"),
+        ("scraftymega", "https://i.pokebase.app/main/1InVRTWUPUyXhq2qIn143.png"),
+        ("staraptormega", "https://i.pokebase.app/main/hr7vpPNCIpHcRTsgjaqeQ.png"),
+    ];
+    let id = canonical_id(species);
+    OVERRIDES
+        .iter()
+        .find(|(k, _)| *k == id)
+        .map(|(_, url)| *url)
 }
 
 /// HD render fallback on the `sprites/dex` host, built from the concatenated
 /// slug so that species with embedded hyphens (Ho-Oh → `hooh`) still resolve.
 /// Returns `None` only for empty inputs.
 pub fn fallback_sprite_url(species: &str) -> Option<String> {
+    if let Some(url) = mega_sprite_override(species) {
+        return Some(url.to_string());
+    }
     let slug = fallback_slug(species);
     if slug.is_empty() {
         return None;
@@ -628,5 +666,25 @@ mod tests {
         assert_eq!(canonical_id("mega scizor"), "scizormega");
         assert_eq!(canonical_id("MEGA SCIZOR"), "scizormega");
         assert_eq!(canonical_id("GiGaNtAmAx Charizard"), "charizardgmax");
+    }
+
+    #[test]
+    fn invented_megas_use_pokebase_override() {
+        // Raichu Mega X and Y are Champions-invented forms absent from
+        // Showdown's CDN — they must resolve to two DISTINCT pokebase URLs.
+        let x = primary_sprite_url("Raichu-Mega-X");
+        let y = primary_sprite_url("Raichu-Mega-Y");
+        assert!(x.starts_with("https://i.pokebase.app/"));
+        assert!(y.starts_with("https://i.pokebase.app/"));
+        assert_ne!(x, y);
+        // Fallback resolves to the same override so the frontend chain holds.
+        assert_eq!(fallback_sprite_url("Raichu-Mega-X").unwrap(), x);
+    }
+
+    #[test]
+    fn classic_megas_keep_showdown_cdn() {
+        // A classic Gen6 mega Showdown already hosts must NOT be overridden.
+        assert!(primary_sprite_url("Charizard-Mega-X").ends_with("/charizard-megax.png"));
+        assert!(primary_sprite_url("Gengar-Mega").ends_with("/gengar-mega.png"));
     }
 }

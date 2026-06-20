@@ -147,8 +147,10 @@ impl TeamRepo {
 
 fn parse_format(s: &str) -> Format {
     match s {
+        "regulation-m-b" => Format::RegulationMB,
         "regulation-m-a" => Format::RegulationMA,
-        _ => Format::RegulationMA,
+        "regulation-i" => Format::RegulationI,
+        _ => Format::default(),
     }
 }
 
@@ -207,7 +209,7 @@ fn load_members(conn: &Connection, team_id: i64) -> Result<Vec<TeamMember>, AppE
             tera_type: tera_s.and_then(parse_type),
             moves,
             evs,
-            level: (level as u8).max(1).min(100),
+            level: (level as u8).clamp(1, 100),
             gender: gender_s.and_then(parse_gender),
             shiny: shiny != 0,
             nickname,

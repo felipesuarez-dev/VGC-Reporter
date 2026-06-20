@@ -10,7 +10,7 @@ pub async fn list_champions_tournaments(
     format: Option<Format>,
     limit: Option<usize>,
 ) -> Result<ChampionsReport, AppError> {
-    let format = format.unwrap_or(Format::RegulationMA);
+    let format = format.unwrap_or_default();
     let limit = limit.unwrap_or(10).clamp(1, 50);
     state.champions.list_recent(format, limit).await
 }
@@ -30,7 +30,7 @@ pub async fn search_champions(
     format: Option<Format>,
     limit: Option<usize>,
 ) -> Result<Vec<ChampionsSearchHit>, AppError> {
-    let format = format.unwrap_or(Format::RegulationMA);
+    let format = format.unwrap_or_default();
     let limit = limit.unwrap_or(40).clamp(1, 200);
     state.champions.search(format, &query, limit).await
 }
