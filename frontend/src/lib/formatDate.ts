@@ -16,7 +16,18 @@ const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function parseDate(value: string | null | undefined): Date | null {
   if (!value) return null;
-  const d = new Date(value);
+  const trimmed = value.trim();
+  // Date-only strings (YYYY-MM-DD) must be parsed as LOCAL time. `new
+  // Date("2026-06-17")` is interpreted as UTC midnight, which then renders as
+  // the PREVIOUS calendar day in negative-offset timezones (e.g. Chile UTC-4
+  // showed a 2026-06-17 window as "Jun 16"). Build the date from components so
+  // the calendar day is preserved regardless of the user's timezone.
+  if (DATE_ONLY_RE.test(trimmed)) {
+    const [y, m, d] = trimmed.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    return Number.isNaN(dt.getTime()) ? null : dt;
+  }
+  const d = new Date(trimmed);
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
