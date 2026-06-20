@@ -378,32 +378,37 @@ jobs:
           # it inline in the step below.)
           gh release upload "$TAG" "${SIGNED_APK}.sig" --clobber
 
-      - name: Inject Android platform into latest.json
+  # Rebuild latest.json from EVERY .sig now on the release (desktop bundles
+  # from the matrix + the apk.sig from the android job). tauri-action's per-job
+  # updater-JSON upload is unreliable in releaseId mode (v0.2.3 and v0.3.0 both
+  # ended up with an android-only latest.json), so we no longer trust it: this
+  # job is the single source of truth for latest.json. Reuses the proven
+  # regenerate-latest-json workflow. Gated on build success so a half-failed
+  # matrix never publishes a desktop-incomplete latest.json.
+  finalize-latest-json:
+    needs: [prepare, build, android]
+    if: ${{ always() && needs.prepare.result == 'success' && needs.build.result == 'success' }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/regenerate-latest-json.yml
+    with:
+      tag: ${{ needs.prepare.outputs.tag }}
+    secrets: inherit
+
+  # Publish the draft ONLY after latest.json is correct. Ordering
+  # finalize → publish → (sync-release-notes on `published`) guarantees the
+  # release the updater sees (`releases/latest`) always has a complete
+  # latest.json, and sync only ever reads the good one. `--latest` makes this
+  # the latest release even with a `-beta` tag; no `--prerelease`.
+  publish-release:
+    needs: [prepare, finalize-latest-json]
+    if: ${{ always() && needs.finalize-latest-json.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Publish release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG="${{ needs.prepare.outputs.tag }}"
-          SIGNED_APK="VGC.Reporter_${TAG}_android.apk"
-          APK_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/${SIGNED_APK}"
-          # Try to fetch the latest.json that tauri-action's build matrix
-          # *should* have uploaded. If it's missing (observed on v0.2.3 when
-          # tauri-action v0.6 silently skipped updater JSON upload across all
-          # 4 matrix jobs), generate a minimal android-only one — the
-          # regenerate-latest-json workflow can be triggered afterwards to
-          # add the desktop platform keys.
-          for i in 1 2 3 4 5; do
-            if gh release download "$TAG" --pattern "latest.json" --output latest.json 2>/dev/null; then
-              echo "latest.json downloaded"
-              break
-            fi
-            echo "Retry $i/5 in 30s..."
-            sleep 30
-          done
-          if [ ! -f latest.json ]; then
-            echo "latest.json not present on release; bootstrapping a fresh one"
-            VERSION="${TAG#v}"
-            SEMVER=$(echo "$VERSION" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+')
-            python3 -c "import json; json.dump({'version': '${SEMVER}', 'notes': '', 'pub_date': __import__('datetime').datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z'), 'platforms': {}}, open('latest.json','w'), indent=2)"
-          fi
-          python3 -c "import json,sys; d=json.load(open('latest.json')); d['platforms']['android']={'signature':open(sys.argv[1]+'.sig').read().strip(),'url':sys.argv[2]}; json.dump(d,open('latest.json','w'),indent=2)" "$SIGNED_APK" "$APK_URL"
-          gh release upload "$TAG" latest.json --clobber
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: gh release edit "$TAG" --draft=false --latest
