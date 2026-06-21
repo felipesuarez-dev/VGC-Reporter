@@ -411,4 +411,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ needs.prepare.outputs.tag }}
-        run: gh release edit "$TAG" --draft=false --latest
+          REPO: ${{ github.repository }}
+        # --repo is required: this job has no checkout, so gh would otherwise
+        # try to infer the repo from a local git dir and fail with
+        # "fatal: not a git repository".
+        run: gh release edit "$TAG" --repo "$REPO" --draft=false --latest
