@@ -82,10 +82,26 @@ fn apply_name_supplement(
                 into.insert(
                     key,
                     LocalizedName {
-                        es: if supp.es.is_empty() { en.clone() } else { supp.es },
-                        pt: if supp.pt.is_empty() { en.clone() } else { supp.pt },
-                        it: if supp.it.is_empty() { en.clone() } else { supp.it },
-                        fr: if supp.fr.is_empty() { en.clone() } else { supp.fr },
+                        es: if supp.es.is_empty() {
+                            en.clone()
+                        } else {
+                            supp.es
+                        },
+                        pt: if supp.pt.is_empty() {
+                            en.clone()
+                        } else {
+                            supp.pt
+                        },
+                        it: if supp.it.is_empty() {
+                            en.clone()
+                        } else {
+                            supp.it
+                        },
+                        fr: if supp.fr.is_empty() {
+                            en.clone()
+                        } else {
+                            supp.fr
+                        },
                         en: supp.en,
                     },
                 );
@@ -138,7 +154,13 @@ mod tests {
         // Sentinel: PokéAPI had no ES row → es field equals en (the fallback).
         into.insert(
             "wave_crash".into(),
-            name("Wave Crash", "Wave Crash", "Wave Crash", "Wave Crash", "Wave Crash"),
+            name(
+                "Wave Crash",
+                "Wave Crash",
+                "Wave Crash",
+                "Wave Crash",
+                "Wave Crash",
+            ),
         );
         let mut supp: HashMap<String, LocalizedName> = HashMap::new();
         supp.insert(

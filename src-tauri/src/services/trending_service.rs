@@ -223,14 +223,7 @@ impl TrendingService {
 
         let prev_total: f32 = prev.iter().map(team_weight).sum();
         let curr_total: f32 = curr.iter().map(team_weight).sum();
-        let report = build_trending_report(
-            &prev,
-            &curr,
-            &mid_str,
-            &to,
-            catalog,
-            span as u32,
-        );
+        let report = build_trending_report(&prev, &curr, &mid_str, &to, catalog, span as u32);
         debug!(
             regulation,
             half_window_days,

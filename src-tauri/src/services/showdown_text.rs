@@ -431,8 +431,7 @@ mod tests {
 
     #[test]
     fn parse_header_with_nickname_and_gender() {
-        let (sp, nk, gd, it) =
-            parse_header("Nicky (Incineroar) (F) @ Safety Goggles");
+        let (sp, nk, gd, it) = parse_header("Nicky (Incineroar) (F) @ Safety Goggles");
         assert_eq!(sp, "Incineroar");
         assert_eq!(nk.as_deref(), Some("Nicky"));
         assert_eq!(gd, Some(Gender::Female));

@@ -168,8 +168,20 @@ pub fn gen9_ability_names() -> HashMap<String, LocalizedName> {
 pub fn gen9_item_names() -> HashMap<String, LocalizedName> {
     [
         // X/Y dual stones have confirmed multi-locale names.
-        entry5("Raichunite X", "Raichunita X", "Raichunite X", "Raichuite X", "Raichuïte X"),
-        entry5("Raichunite Y", "Raichunita Y", "Raichunite Y", "Raichuite Y", "Raichuïte Y"),
+        entry5(
+            "Raichunite X",
+            "Raichunita X",
+            "Raichunite X",
+            "Raichuite X",
+            "Raichuïte X",
+        ),
+        entry5(
+            "Raichunite Y",
+            "Raichunita Y",
+            "Raichunite Y",
+            "Raichuite Y",
+            "Raichuïte Y",
+        ),
         // EN/ES confirmed; pt/it/fr left as sentinels (EN fallback) — no
         // verified official translations for these Champions-only stones.
         entry("Dragoninite", "Dragoninita"),

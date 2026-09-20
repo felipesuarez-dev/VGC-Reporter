@@ -27,7 +27,10 @@ pub struct RegMbRules {
 
 /// Union a base list with an M-B delta into one canonical lookup set.
 fn union_set(base: &[&'static str], delta: &[&'static str]) -> HashSet<String> {
-    base.iter().chain(delta.iter()).map(|s| canonical(s)).collect()
+    base.iter()
+        .chain(delta.iter())
+        .map(|s| canonical(s))
+        .collect()
 }
 
 impl RegMbRules {

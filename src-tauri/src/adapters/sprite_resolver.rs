@@ -28,18 +28,54 @@ pub fn primary_sprite_url(species: &str) -> String {
 /// re-upload.
 fn mega_sprite_override(species: &str) -> Option<&'static str> {
     const OVERRIDES: &[(&str, &str)] = &[
-        ("barbaraclemega", "https://i.pokebase.app/main/TI4unauRtF7TP2a-8H_Wy.png"),
-        ("dragalgemega", "https://i.pokebase.app/main/RhuKCEYYtKtbzMBDSI7A1.png"),
-        ("eelektrossmega", "https://i.pokebase.app/main/5GHRGs9McUiX4BjoYqd38.png"),
-        ("falinksmega", "https://i.pokebase.app/main/HdKE8iHmf-J7uQ0RaXO5j.png"),
-        ("malamarmega", "https://i.pokebase.app/main/L9rgKcYfAR2j4nHf_1wwm.png"),
-        ("meowsticmega", "https://i.pokebase.app/main/7v6A9qAhbML5vyolx229v.png"),
-        ("pyroarmega", "https://i.pokebase.app/main/myJFOQyFJsZpOyZ_14Yf6.png"),
-        ("raichumegax", "https://i.pokebase.app/main/a20e-d4V73qef-lNZUpNy.png"),
-        ("raichumegay", "https://i.pokebase.app/main/wNBBtV4H9CQXdypC1dpoq.png"),
-        ("scolipedemega", "https://i.pokebase.app/main/C0TigXat2PT7aCBMoEoJC.png"),
-        ("scraftymega", "https://i.pokebase.app/main/1InVRTWUPUyXhq2qIn143.png"),
-        ("staraptormega", "https://i.pokebase.app/main/hr7vpPNCIpHcRTsgjaqeQ.png"),
+        (
+            "barbaraclemega",
+            "https://i.pokebase.app/main/TI4unauRtF7TP2a-8H_Wy.png",
+        ),
+        (
+            "dragalgemega",
+            "https://i.pokebase.app/main/RhuKCEYYtKtbzMBDSI7A1.png",
+        ),
+        (
+            "eelektrossmega",
+            "https://i.pokebase.app/main/5GHRGs9McUiX4BjoYqd38.png",
+        ),
+        (
+            "falinksmega",
+            "https://i.pokebase.app/main/HdKE8iHmf-J7uQ0RaXO5j.png",
+        ),
+        (
+            "malamarmega",
+            "https://i.pokebase.app/main/L9rgKcYfAR2j4nHf_1wwm.png",
+        ),
+        (
+            "meowsticmega",
+            "https://i.pokebase.app/main/7v6A9qAhbML5vyolx229v.png",
+        ),
+        (
+            "pyroarmega",
+            "https://i.pokebase.app/main/myJFOQyFJsZpOyZ_14Yf6.png",
+        ),
+        (
+            "raichumegax",
+            "https://i.pokebase.app/main/a20e-d4V73qef-lNZUpNy.png",
+        ),
+        (
+            "raichumegay",
+            "https://i.pokebase.app/main/wNBBtV4H9CQXdypC1dpoq.png",
+        ),
+        (
+            "scolipedemega",
+            "https://i.pokebase.app/main/C0TigXat2PT7aCBMoEoJC.png",
+        ),
+        (
+            "scraftymega",
+            "https://i.pokebase.app/main/1InVRTWUPUyXhq2qIn143.png",
+        ),
+        (
+            "staraptormega",
+            "https://i.pokebase.app/main/hr7vpPNCIpHcRTsgjaqeQ.png",
+        ),
     ];
     let id = canonical_id(species);
     OVERRIDES
@@ -416,11 +452,12 @@ mod tests {
             "Floette-Eternal"
         );
         assert_eq!(canonical_display_name("AZ's Floette"), "Floette-Eternal");
-        assert_eq!(canonical_display_name("Floette (Eternal)"), "Floette-Eternal");
-        assert_eq!(canonical_display_name("FLOETTE"), "Floette-Eternal");
-        assert!(
-            primary_sprite_url("Eternal Flower Floette").ends_with("/floette-eternal.png")
+        assert_eq!(
+            canonical_display_name("Floette (Eternal)"),
+            "Floette-Eternal"
         );
+        assert_eq!(canonical_display_name("FLOETTE"), "Floette-Eternal");
+        assert!(primary_sprite_url("Eternal Flower Floette").ends_with("/floette-eternal.png"));
         assert!(primary_sprite_url("AZ's Floette").ends_with("/floette-eternal.png"));
         assert_eq!(canonical_id("Eternal Flower Floette"), "floetteeternal");
     }
@@ -469,7 +506,10 @@ mod tests {
         assert_eq!(canonical_display_name("Basculegion-Male"), "Basculegion");
         assert_eq!(canonical_display_name("Basculegion (M)"), "Basculegion");
         assert_eq!(canonical_display_name("Basculegion-F"), "Basculegion-F");
-        assert_eq!(canonical_display_name("Basculegion-Female"), "Basculegion-F");
+        assert_eq!(
+            canonical_display_name("Basculegion-Female"),
+            "Basculegion-F"
+        );
         assert_eq!(canonical_display_name("Basculegion (F)"), "Basculegion-F");
         assert_eq!(canonical_display_name("basculegionf"), "Basculegion-F");
         // Canonical ids hit the Showdown pokedex.json keys.
