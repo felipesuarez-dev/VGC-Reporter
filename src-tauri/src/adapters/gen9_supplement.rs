@@ -194,6 +194,43 @@ pub fn gen9_item_names() -> HashMap<String, LocalizedName> {
         entry("Malamarite", "Malamarita"),
         entry("Dragalgite", "Dragalgita"),
         entry("Falinksite", "Falinksita"),
+        // --- Regulation M-C ---
+        // The three Z stones: locales come from their BASE stone in PokeAPI
+        // plus the " Z" suffix, so they inherit the official (and surprising)
+        // renames instead of a guess - French calls Garchompite
+        // "Carchacrokite" and Spanish calls Lucarionite "Lucarita". pt-BR is a
+        // sentinel because PokeAPI carries no pt-BR name for any Mega Stone.
+        entry5("Absolite Z", "Absolita Z", "", "Absolite Z", "Absolite Z"),
+        entry5(
+            "Garchompite Z",
+            "Garchompita Z",
+            "",
+            "Garchompite Z",
+            "Carchacrokite Z",
+        ),
+        entry5(
+            "Lucarionite Z",
+            "Lucarita Z",
+            "",
+            "Lucarite Z",
+            "Lucarite Z",
+        ),
+        // Fully invented stones with no mainline counterpart, so nothing to
+        // look up. ES/IT follow the established stone morphology on a species
+        // name those locales leave unchanged. FR is DERIVED from the official
+        // French species name (Baxcalibur = Glaivodo, Golisopod = Sarmurai),
+        // not an official item name - but "Baxcalibrite" beside "Glaivodo"
+        // would read as a bug, so the derivation is the lesser error.
+        entry5(
+            "Baxcalibrite",
+            "Baxcalibrita",
+            "",
+            "Baxcalibrite",
+            "Glaivodite",
+        ),
+        entry5("Golisopite", "Golisopita", "", "Golisopite", "Sarmuraite"),
+        // Salamencite is a mainline Gen 6 stone, so PokeAPI already ships every
+        // locale for it - listing it here would be a no-op (see doc comment).
     ]
     .into_iter()
     .collect()

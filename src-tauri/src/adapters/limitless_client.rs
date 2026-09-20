@@ -63,16 +63,19 @@ impl LimitlessClient {
         limit: usize,
     ) -> Result<Vec<LimitlessTournamentSummary>, AppError> {
         let filtered = match format {
-            // Champions sets (M-A / M-B): limitless still tags EVERY Champions
-            // tournament — including the M-B ones — with `format=M-A`, so a
-            // server-side `&format=M-B` filter returns nothing (verified: 0
-            // results). Fetch a wide unfiltered VGC slice (limit 300 reaches
-            // ~6 weeks back), keep only tournaments inside the regulation's own
-            // date window, then rescue the Champions tournaments by name/format.
-            // The date filter is what makes the recent list match the selected
-            // regulation: M-A shows its closing fortnight, M-B shows 06-17 on.
-            Format::RegulationMA | Format::RegulationMB => {
-                let all = self.list_all_vgc(300).await?;
+            // Champions sets (M-A / M-B / M-C): limitless tags EVERY Champions
+            // tournament with `format=M-A`, so a server-side `&format=M-B` or
+            // `&format=M-C` filter returns nothing (verified: 0 results). Fetch
+            // a wide unfiltered VGC slice, keep only tournaments inside the
+            // regulation's own date window, then rescue the Champions ones by
+            // name/format. The date filter is what makes the recent list match
+            // the selected regulation: M-A shows its closing fortnight, M-B its
+            // 06-17→09-08 season, M-C from 09-09 on.
+            //
+            // The limit is 400, not 300: 300 only reached ~6 weeks back, which
+            // stopped covering a full season once M-B closed and M-C opened.
+            Format::RegulationMA | Format::RegulationMB | Format::RegulationMC => {
+                let all = self.list_all_vgc(400).await?;
                 let in_window = filter_by_window(all, format);
                 filter_champions(in_window, limit)
             }

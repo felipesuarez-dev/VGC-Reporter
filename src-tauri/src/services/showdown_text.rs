@@ -22,7 +22,7 @@ pub fn parse_team(text: &str) -> Result<Team, AppError> {
     Ok(Team {
         id: None,
         name: "Imported team".to_string(),
-        format: Format::RegulationMA,
+        format: Format::default(),
         notes: None,
         members,
         created_at: Some(Utc::now()),

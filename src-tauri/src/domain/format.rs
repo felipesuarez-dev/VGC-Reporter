@@ -6,6 +6,8 @@ use ts_rs::TS;
 #[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
 pub enum Format {
     #[default]
+    #[serde(rename = "regulation-m-c")]
+    RegulationMC,
     #[serde(rename = "regulation-m-b")]
     RegulationMB,
     #[serde(rename = "regulation-m-a")]
@@ -19,6 +21,7 @@ impl Format {
     /// upstream Limitless/Smogon naming.
     pub fn cache_id(&self) -> &'static str {
         match self {
+            Format::RegulationMC => "reg-m-c",
             Format::RegulationMB => "reg-m-b",
             Format::RegulationMA => "reg-m-a",
             Format::RegulationI => "reg-i",
@@ -29,65 +32,66 @@ impl Format {
     /// SV Reg I format reports as `SVI` — not `M2A` / `I` like older guesses.
     pub fn limitless_code(&self) -> Option<&'static str> {
         match self {
+            Format::RegulationMC => Some("M-C"),
             Format::RegulationMB => Some("M-B"),
             Format::RegulationMA => Some("M-A"),
             Format::RegulationI => Some("SVI"),
         }
     }
 
-    /// Default Smogon slug. For Reg M-A this is a guess that can be replaced
-    /// dynamically via SettingsRepo (`smogon_slug::<cache_id>`) once discovery
-    /// finds the real slug.
+    /// Smogon publishes the Champions ladders under a `gen9champions…` prefix,
+    /// NOT the `gen9vgc…` one used by the mainline VGC ladders. Verified by
+    /// listing `smogon.com/stats/2026-08/chaos/`, which contains
+    /// `gen9championsvgc2026regmb` (and its `bo3` sibling) and no
+    /// `gen9vgc2026regmb` at all. The previous value 404'd on every request,
+    /// which is why the Smogon fallback never produced data for any Champions
+    /// set. Runtime override: `smogon_slug::<cache_id>` in SettingsRepo.
     pub fn default_smogon_slug(&self) -> &'static str {
         match self {
-            Format::RegulationMB => "gen9vgc2026regmb",
-            Format::RegulationMA => "gen9vgc2026regma",
+            Format::RegulationMC => "gen9championsvgc2026regmc",
+            Format::RegulationMB => "gen9championsvgc2026regmb",
+            Format::RegulationMA => "gen9championsvgc2026regma",
             Format::RegulationI => "gen9vgc2026regi",
         }
     }
 
     /// Labmaus regulation string used in the `?regulation=` query param of
     /// `/api/discover_teams`. Runtime override lives at
-    /// `labmaus_name::<cache_id>` in SettingsRepo (same pattern as
-    /// `smogon_slug`), so a new regulation can be onboarded by seeding one
-    /// settings row before its static default is known.
+    /// `labmaus_name::<cache_id>` in SettingsRepo, so a new regulation can be
+    /// onboarded by seeding one settings row before its static default ships.
     ///
-    /// NOTE (2026-06): labmaus has NOT created a dedicated "Regulation Set M-B"
-    /// regulation yet — it still serves the active-season (M-B era) teams under
-    /// the `Regulation Set M-A` label (verified: that label returns hundreds of
-    /// post-2026-06-17 teams, while every M-B string returns 0). Since M-B is
-    /// the active season, it must query the label that actually holds the live
-    /// data. When labmaus adds a real M-B regulation, flip this back to
-    /// `"Regulation Set M-B"` (or set the `labmaus_name::reg-m-b` settings
-    /// override) — no other code changes needed.
+    /// The live catalogue is discoverable at `/api/completed_tournaments`,
+    /// where every row carries a `regulation` field — see
+    /// `LabmausClient::discover_regulations`. Never guess these strings: M-B
+    /// spent a season borrowing M-A's label as a workaround, and kept doing so
+    /// after labmaus published the real one.
     pub fn default_labmaus_name(&self) -> Option<&'static str> {
         match self {
-            Format::RegulationMB => Some("Regulation Set M-A"),
+            Format::RegulationMC => Some("Regulation Set M-C"),
+            Format::RegulationMB => Some("Regulation Set M-B"),
             Format::RegulationMA => Some("Regulation Set M-A"),
-            _ => None,
+            Format::RegulationI => None,
         }
     }
 
     /// Inclusive date range of competitive data that belongs to this
-    /// regulation, used to bound the labmaus queries. This is what actually
-    /// separates M-A from M-B data: labmaus serves both under the same
-    /// `Regulation Set M-A` label, so only the DATE distinguishes them.
+    /// regulation, used to bound the labmaus queries.
     ///
     /// Returns `(start, end)` where `end == None` means "ongoing" (the caller
     /// clamps it to today). `None` overall means "no fixed range — use a
-    /// rolling window". The two Champions windows are disjoint (M-A ends the
-    /// 16th, M-B starts the 17th) so a tournament is never counted under both.
+    /// rolling window". The Champions windows are disjoint, so a tournament is
+    /// never counted under two regulations.
     ///
-    /// M-A (the closed M-2 season) is capped to its final two weeks
-    /// (2026-06-03 → 2026-06-16): labmaus `discover_teams` times out
-    /// server-side (~30s) for windows wider than ~3 weeks, so the full M-2
-    /// season can't be fetched in one request. The last fortnight is the
-    /// reliable, most representative slice of the closing meta. M-B is the
-    /// active season, fetched from its launch (2026-06-17) up to today.
+    /// M-A is capped to its final fortnight: labmaus `discover_teams` times
+    /// out server-side for windows wider than ~3 weeks, and the closing two
+    /// weeks are the most representative slice of a dead meta. M-B and M-C
+    /// carry their real calendars; anything wider than 21 days is split by
+    /// [`crate::services::date_window::chunk_window`].
     pub fn data_window(&self) -> Option<(chrono::NaiveDate, Option<chrono::NaiveDate>)> {
         let d = |y, m, day| chrono::NaiveDate::from_ymd_opt(y, m, day).expect("valid date");
         match self {
-            Format::RegulationMB => Some((d(2026, 6, 17), None)),
+            Format::RegulationMC => Some((d(2026, 9, 9), None)),
+            Format::RegulationMB => Some((d(2026, 6, 17), Some(d(2026, 9, 8)))),
             Format::RegulationMA => Some((d(2026, 6, 3), Some(d(2026, 6, 16)))),
             Format::RegulationI => None,
         }
@@ -106,6 +110,7 @@ impl Format {
 
     pub fn label(&self) -> &'static str {
         match self {
+            Format::RegulationMC => "Regulation M-C (M-4)",
             Format::RegulationMB => "Regulation M-B (M-3)",
             Format::RegulationMA => "Regulation M-A (M-2)",
             Format::RegulationI => "Regulation I",
@@ -114,6 +119,7 @@ impl Format {
 
     pub fn all_active() -> Vec<Format> {
         vec![
+            Format::RegulationMC,
             Format::RegulationMB,
             Format::RegulationMA,
             Format::RegulationI,
@@ -144,6 +150,7 @@ mod tests {
         assert_eq!(
             active,
             vec![
+                Format::RegulationMC,
                 Format::RegulationMB,
                 Format::RegulationMA,
                 Format::RegulationI,
@@ -162,5 +169,55 @@ mod tests {
                 assert!(w[0] >= w[1], "ladder not descending for {:?}", f);
             }
         }
+    }
+
+    #[test]
+    fn default_is_the_active_regulation() {
+        assert_eq!(Format::default(), Format::RegulationMC);
+    }
+
+    /// Guards the bug that kept the Smogon fallback dead for every Champions
+    /// set: those ladders live under `gen9champions…`, never `gen9vgc2026reg…`.
+    #[test]
+    fn champions_smogon_slugs_use_the_champions_prefix() {
+        for f in [
+            Format::RegulationMC,
+            Format::RegulationMB,
+            Format::RegulationMA,
+        ] {
+            assert!(
+                f.default_smogon_slug().starts_with("gen9champions"),
+                "{:?} must use the gen9champions prefix, got {}",
+                f,
+                f.default_smogon_slug()
+            );
+        }
+    }
+
+    /// Each Champions regulation must query its OWN labmaus label. M-B used to
+    /// borrow M-A's; labmaus has since published real M-B and M-C labels and
+    /// dropped M-A from its live catalogue.
+    #[test]
+    fn champions_labmaus_names_are_distinct() {
+        let names: HashSet<&str> = [
+            Format::RegulationMC,
+            Format::RegulationMB,
+            Format::RegulationMA,
+        ]
+        .iter()
+        .filter_map(|f| f.default_labmaus_name())
+        .collect();
+        assert_eq!(names.len(), 3, "labmaus labels must not be shared");
+    }
+
+    #[test]
+    fn champions_windows_are_disjoint_and_ordered() {
+        let (_, mb_end) = Format::RegulationMB.data_window().unwrap();
+        let (mc_start, mc_end) = Format::RegulationMC.data_window().unwrap();
+        assert!(mc_end.is_none(), "M-C is the ongoing regulation");
+        assert!(
+            mb_end.expect("M-B is closed") < mc_start,
+            "M-B must close before M-C opens"
+        );
     }
 }

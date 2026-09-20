@@ -60,15 +60,14 @@ impl SmogonClient {
             candidates.push(s);
         }
         candidates.push(format.default_smogon_slug().to_string());
-        if matches!(format, Format::RegulationMA) {
-            for extra in [
-                "gen9vgc2026regm",
-                "gen9vgc2026regulationma",
-                "gen9vgc2026regulationm",
-                "gen9vgc2026ma",
-            ] {
-                candidates.push(extra.to_string());
-            }
+        // Smogon publishes the Champions ladders as `gen9championsvgc2026reg<x>`
+        // plus a `bo3` sibling, and splits best-of-three into its own ladder.
+        // Probe both, and keep the legacy `gen9vgc…` spellings last as a pure
+        // safety net — every one of them 404s today, which is exactly why the
+        // fallback silently produced nothing before the prefix was fixed.
+        if let Some(suffix) = champions_suffix(format) {
+            candidates.push(format!("gen9championsvgc2026reg{suffix}bo3"));
+            candidates.push(format!("gen9vgc2026reg{suffix}"));
         }
         candidates.dedup();
 
@@ -158,4 +157,15 @@ pub struct ChaosEntry {
         alias = "TeraTypes"
     )]
     pub tera_types: BTreeMap<String, f64>,
+}
+
+/// Lowercase regulation suffix used by Smogon's Champions ladder slugs
+/// (`gen9championsvgc2026reg<suffix>`). `None` for non-Champions formats.
+fn champions_suffix(format: Format) -> Option<&'static str> {
+    match format {
+        Format::RegulationMC => Some("mc"),
+        Format::RegulationMB => Some("mb"),
+        Format::RegulationMA => Some("ma"),
+        Format::RegulationI => None,
+    }
 }

@@ -147,6 +147,7 @@ impl TeamRepo {
 
 fn parse_format(s: &str) -> Format {
     match s {
+        "regulation-m-c" => Format::RegulationMC,
         "regulation-m-b" => Format::RegulationMB,
         "regulation-m-a" => Format::RegulationMA,
         "regulation-i" => Format::RegulationI,

@@ -1,3 +1,5 @@
+use super::Violation;
+use crate::domain::team::{Team, TEAM_SIZE};
 use std::collections::HashSet;
 
 /// Canonical form used for name comparisons across regulation rules:
@@ -39,6 +41,143 @@ pub fn has_forbidden_form_token(name: &str) -> bool {
     }
     tail.iter()
         .any(|seg| FORBIDDEN_FORM_TOKENS.iter().any(|t| *t == seg))
+}
+
+/// Canonical allow-lists for a regulation with no restricted-legendary rules.
+pub struct OpenRoster {
+    pub species: HashSet<String>,
+    pub items: HashSet<String>,
+    pub moves: HashSet<String>,
+}
+
+impl OpenRoster {
+    /// Union a base list with a delta into one canonical lookup set.
+    pub fn union(base: &[&'static str], delta: &[&'static str]) -> HashSet<String> {
+        base.iter()
+            .chain(delta.iter())
+            .map(|s| canonical(s))
+            .collect()
+    }
+
+    /// `true` when `name` matches an entry in `set`, accounting for dashed
+    /// Showdown form suffixes (`Calyrex-Shadow`, `Indeedee-F`) collapsing to
+    /// the base entry. Mega forms that a regulation legalises are present as
+    /// explicit entries, so they hit the direct match before the
+    /// forbidden-form guard; off-list Mega/Gmax/Primal/Eternamax forms never
+    /// collapse to their base.
+    pub fn matches(set: &HashSet<String>, name: &str) -> bool {
+        let c = canonical(name);
+        if set.contains(&c) {
+            return true;
+        }
+        if has_forbidden_form_token(name) {
+            return false;
+        }
+        match name.split('-').next() {
+            Some(base) => set.contains(&canonical(base)),
+            None => false,
+        }
+    }
+
+    /// Team legality for a regulation whose only rules are "every name must be
+    /// on the allow-list" plus the universal completeness checks. Shared by
+    /// M-B and M-C, which differ only in their lists; M-A keeps its own
+    /// validator because it enforces restricted-legendary caps per season.
+    pub fn validate(&self, team: &Team) -> Vec<Violation> {
+        let mut out: Vec<Violation> = Vec::new();
+
+        let filled: u8 = team
+            .members
+            .iter()
+            .filter(|m| !m.species.trim().is_empty())
+            .count() as u8;
+        if (filled as usize) < TEAM_SIZE {
+            out.push(Violation::TeamIncomplete { filled });
+        }
+
+        let mut seen_species: HashSet<String> = HashSet::new();
+
+        for (idx, m) in team.members.iter().enumerate() {
+            let raw = m.species.trim();
+            if raw.is_empty() {
+                continue;
+            }
+            let slot = (idx + 1) as u8;
+
+            if !seen_species.insert(canonical(raw)) {
+                out.push(Violation::DuplicateSpecies {
+                    species: raw.to_string(),
+                });
+            }
+
+            if !Self::matches(&self.species, raw) {
+                out.push(Violation::SpeciesNotAllowed {
+                    species: raw.to_string(),
+                });
+                continue;
+            }
+
+            match &m.item {
+                Some(item) if !item.trim().is_empty() => {
+                    let item_str = item.trim();
+                    if !Self::matches(&self.items, item_str) {
+                        out.push(Violation::ItemNotAllowed {
+                            slot,
+                            species: raw.to_string(),
+                            item: item_str.to_string(),
+                        });
+                    }
+                }
+                _ => out.push(Violation::MissingItem {
+                    slot,
+                    species: raw.to_string(),
+                }),
+            }
+
+            if m.ability.as_deref().unwrap_or("").trim().is_empty() {
+                out.push(Violation::MissingAbility {
+                    slot,
+                    species: raw.to_string(),
+                });
+            }
+
+            if m.nature.is_none() {
+                out.push(Violation::MissingNature {
+                    slot,
+                    species: raw.to_string(),
+                });
+            }
+
+            let valid_moves: Vec<&String> =
+                m.moves.iter().filter(|s| !s.trim().is_empty()).collect();
+            if valid_moves.len() < 4 {
+                out.push(Violation::MissingMoves {
+                    slot,
+                    species: raw.to_string(),
+                    have: valid_moves.len() as u8,
+                    need: 4,
+                });
+            }
+            for mv in &valid_moves {
+                if !Self::matches(&self.moves, mv) {
+                    out.push(Violation::MoveNotAllowed {
+                        slot,
+                        species: raw.to_string(),
+                        mv: mv.to_string(),
+                    });
+                }
+            }
+
+            if m.evs.total() == 0 {
+                out.push(Violation::EvsNotAssigned {
+                    slot,
+                    species: raw.to_string(),
+                });
+            }
+        }
+
+        out
+    }
 }
 
 #[cfg(test)]

@@ -42,8 +42,9 @@ jobs:
       - name: Clippy
         run: cd src-tauri && cargo clippy --all-targets -- -D warnings
 
-      # ts-rs exporta los bindings vía `#[ts(export)]` durante CUALQUIER test run;
-      # no existe un test llamado `export_bindings`.
+      # ts-rs genera un test `export_bindings_<tipo>` por cada `#[ts(export)]`
+      # (50 hoy), y escribe el .ts como efecto del test. Correr la suite entera
+      # los regenera de paso.
       - name: Tests (regenera bindings ts-rs)
         run: cd src-tauri && cargo test
 
