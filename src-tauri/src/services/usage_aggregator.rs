@@ -143,6 +143,11 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
             sprite_url: primary_sprite_url(&acc.canonical),
             sprite_fallback_url: fallback_sprite_url(&acc.canonical),
             home_sprite_url: None,
+            win_rate: None,
+            top_cut_rate: None,
+            meta_score: None,
+            tier: None,
+            sources_covering: 0,
         })
         .collect();
     pokemon.sort_by(|a, b| b.usage_percent.partial_cmp(&a.usage_percent).unwrap());
@@ -165,6 +170,7 @@ pub fn aggregate(format: Format, standings: Vec<Vec<LimitlessStanding>>) -> Meta
         top_tera: Vec::new(),
         from_date: None,
         to_date: None,
+        sources: Vec::new(),
     }
 }
 

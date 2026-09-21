@@ -1,3 +1,4 @@
+pub mod aggregation;
 pub mod champions_report_service;
 pub mod date_window;
 pub mod meta_service;

@@ -418,6 +418,11 @@ pub(crate) fn snapshot_from_smogon(
                 sprite_url: primary,
                 sprite_fallback_url: fallback,
                 home_sprite_url: home,
+                win_rate: None,
+                top_cut_rate: None,
+                meta_score: None,
+                tier: None,
+                sources_covering: 0,
             }
         })
         .collect();
@@ -441,6 +446,7 @@ pub(crate) fn snapshot_from_smogon(
         top_tera: Vec::new(),
         from_date: None,
         to_date: None,
+        sources: Vec::new(),
     }
 }
 

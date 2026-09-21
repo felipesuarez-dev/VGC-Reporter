@@ -31,7 +31,12 @@ export type LocalizedDescription = { en: string, es: string, pt: string, it: str
 
 export type LocalizedName = { en: string, es: string, pt: string, it: string, fr: string, };
 
-export type MetaSnapshot = { format: Format, generated_at: string, source: string, tournaments_used: number, total_entries: number, battles_analyzed: number, pokemon: Array<PokemonUsage>, top_items: Array<UsageEntry>, top_moves: Array<UsageEntry>, top_abilities: Array<UsageEntry>, top_tera: Array<UsageEntry>, from_date: string | null, to_date: string | null, };
+export type MetaSnapshot = { format: Format, generated_at: string, source: string, tournaments_used: number, total_entries: number, battles_analyzed: number, pokemon: Array<PokemonUsage>, top_items: Array<UsageEntry>, top_moves: Array<UsageEntry>, top_abilities: Array<UsageEntry>, top_tera: Array<UsageEntry>, from_date: string | null, to_date: string | null, 
+/**
+ * One entry per source that contributed, with the regulation each one
+ * claims it is describing and its share of the merged result.
+ */
+sources: Array<SourceProvenance>, };
 
 export type Move = { id: string, name: string, type_: PokemonType, category: MoveCategory, base_power: number, accuracy: number, pp: number, description: string, };
 
@@ -100,7 +105,26 @@ moves: Array<string>, };
 
 export type PokemonType = "Normal" | "Fire" | "Water" | "Electric" | "Grass" | "Ice" | "Fighting" | "Poison" | "Ground" | "Flying" | "Psychic" | "Bug" | "Rock" | "Ghost" | "Dragon" | "Dark" | "Steel" | "Fairy" | "Stellar";
 
-export type PokemonUsage = { species: string, usage_percent: number, count: number, top_items: Array<UsageEntry>, top_moves: Array<UsageEntry>, top_abilities: Array<UsageEntry>, top_tera: Array<UsageEntry>, top_teammates: Array<TeammateUsage>, top_natures: Array<UsageEntry>, common_movesets: Array<MovesetUsage>, sprite_url: string, sprite_fallback_url: string | null, home_sprite_url: string | null, };
+export type PokemonUsage = { species: string, usage_percent: number, count: number, top_items: Array<UsageEntry>, top_moves: Array<UsageEntry>, top_abilities: Array<UsageEntry>, top_tera: Array<UsageEntry>, top_teammates: Array<TeammateUsage>, top_natures: Array<UsageEntry>, common_movesets: Array<MovesetUsage>, sprite_url: string, sprite_fallback_url: string | null, home_sprite_url: string | null, 
+/**
+ * Win rate across every team that ran this species, 0..100. `None` when
+ * no contributing source published match records.
+ */
+win_rate: number | null, 
+/**
+ * Share of this species' teams that reached top cut, 0..100.
+ */
+top_cut_rate: number | null, 
+/**
+ * Our composite ranking score. Not a 0-100 rating: it is normalised
+ * against the strongest values in the same snapshot.
+ */
+meta_score: number | null, tier: Tier | null, 
+/**
+ * How many sources reported this species at all. Low values mean the
+ * numbers rest on a single upstream opinion.
+ */
+sources_covering: number, };
 
 export type SearchHitKind = "tournament" | "champion" | "player" | "pokemon";
 
@@ -110,6 +134,33 @@ export type SearchHitKind = "tournament" | "champion" | "player" | "pokemon";
  * (so the UI can disclose where the data came from).
  */
 export type SetsBundle = { species: string, doubles: Array<PokemonSet>, doubles_source: string | null, };
+
+/**
+ * An upstream data provider.
+ */
+export type SourceId = "labmaus" | "limitless" | "champteams" | "smogon";
+
+/**
+ * What one source contributed to a snapshot, and how far it should be
+ * trusted for the format that was actually requested.
+ */
+export type SourceProvenance = { source: SourceId, 
+/**
+ * The regulation the source itself claims this data describes, parsed out
+ * of its payload — never inferred from the request. `None` when the
+ * payload says nothing, which is treated as "cannot vouch for it".
+ */
+declared_regulation: string | null, 
+/**
+ * Whether `declared_regulation` matches the requested format. Drives the
+ * recency weight and lets the UI flag a source as out-of-period.
+ */
+matches_active_format: boolean, teams: number, tournaments: number, from_date: string | null, to_date: string | null, 
+/**
+ * Share of the merged result attributable to this source, 0..1.
+ * Filled in after the merge, so it is 0 until then.
+ */
+weight: number, };
 
 export type Stats = { hp: number, atk: number, def: number, spa: number, spd: number, spe: number, };
 
@@ -128,6 +179,8 @@ export type TeammateUsage = { name: string, usage_percent: number, count: number
 export type TeraType = PokemonType;
 
 export type TeraUsage = { tera_type: string, usage_percent: number, };
+
+export type Tier = "S" | "A" | "B" | "C" | "D";
 
 export type TopTeam = { tournament: string, placing: number | null, player: string | null, country: string | null, record: string | null, members: Array<TopTeamMember>, };
 
