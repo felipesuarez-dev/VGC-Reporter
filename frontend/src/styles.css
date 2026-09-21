@@ -28,6 +28,21 @@
     --tier-bronze-bg: rgba(146, 64, 14, 0.25);
     --tier-bronze-foreground: #fcd34d;
     --tier-bronze-border: rgba(146, 64, 14, 0.5);
+    --tier-s-bg: var(--tier-gold-bg);
+    --tier-s-foreground: var(--tier-gold-foreground);
+    --tier-s-border: var(--tier-gold-border);
+    --tier-a-bg: var(--accent-soft);
+    --tier-a-foreground: var(--accent);
+    --tier-a-border: var(--accent);
+    --tier-b-bg: var(--tier-silver-bg);
+    --tier-b-foreground: var(--tier-silver-foreground);
+    --tier-b-border: var(--tier-silver-border);
+    --tier-c-bg: var(--tier-bronze-bg);
+    --tier-c-foreground: var(--tier-bronze-foreground);
+    --tier-c-border: var(--tier-bronze-border);
+    --tier-d-bg: var(--bg-elev-strong);
+    --tier-d-foreground: var(--text-dim);
+    --tier-d-border: var(--border);
   }
 
   :root.theme-clefable {
@@ -55,6 +70,21 @@
     --tier-bronze-bg: rgba(180, 83, 9, 0.22);
     --tier-bronze-foreground: #78350f;
     --tier-bronze-border: rgba(120, 53, 15, 0.55);
+    --tier-s-bg: var(--tier-gold-bg);
+    --tier-s-foreground: var(--tier-gold-foreground);
+    --tier-s-border: var(--tier-gold-border);
+    --tier-a-bg: var(--accent-soft);
+    --tier-a-foreground: var(--accent);
+    --tier-a-border: var(--accent);
+    --tier-b-bg: var(--tier-silver-bg);
+    --tier-b-foreground: var(--tier-silver-foreground);
+    --tier-b-border: var(--tier-silver-border);
+    --tier-c-bg: var(--tier-bronze-bg);
+    --tier-c-foreground: var(--tier-bronze-foreground);
+    --tier-c-border: var(--tier-bronze-border);
+    --tier-d-bg: var(--bg-elev-strong);
+    --tier-d-foreground: var(--text-dim);
+    --tier-d-border: var(--border);
   }
 
   :root.theme-incineroar {
@@ -82,6 +112,21 @@
     --tier-bronze-bg: rgba(146, 64, 14, 0.25);
     --tier-bronze-foreground: #fdba74;
     --tier-bronze-border: rgba(146, 64, 14, 0.5);
+    --tier-s-bg: var(--tier-gold-bg);
+    --tier-s-foreground: var(--tier-gold-foreground);
+    --tier-s-border: var(--tier-gold-border);
+    --tier-a-bg: var(--accent-soft);
+    --tier-a-foreground: var(--accent);
+    --tier-a-border: var(--accent);
+    --tier-b-bg: var(--tier-silver-bg);
+    --tier-b-foreground: var(--tier-silver-foreground);
+    --tier-b-border: var(--tier-silver-border);
+    --tier-c-bg: var(--tier-bronze-bg);
+    --tier-c-foreground: var(--tier-bronze-foreground);
+    --tier-c-border: var(--tier-bronze-border);
+    --tier-d-bg: var(--bg-elev-strong);
+    --tier-d-foreground: var(--text-dim);
+    --tier-d-border: var(--border);
   }
 
   :root.theme-milotic {
@@ -109,6 +154,21 @@
     --tier-bronze-bg: rgba(190, 75, 55, 0.2);
     --tier-bronze-foreground: #7c2d12;
     --tier-bronze-border: rgba(153, 58, 43, 0.55);
+    --tier-s-bg: var(--tier-gold-bg);
+    --tier-s-foreground: var(--tier-gold-foreground);
+    --tier-s-border: var(--tier-gold-border);
+    --tier-a-bg: var(--accent-soft);
+    --tier-a-foreground: var(--accent);
+    --tier-a-border: var(--accent);
+    --tier-b-bg: var(--tier-silver-bg);
+    --tier-b-foreground: var(--tier-silver-foreground);
+    --tier-b-border: var(--tier-silver-border);
+    --tier-c-bg: var(--tier-bronze-bg);
+    --tier-c-foreground: var(--tier-bronze-foreground);
+    --tier-c-border: var(--tier-bronze-border);
+    --tier-d-bg: var(--bg-elev-strong);
+    --tier-d-foreground: var(--text-dim);
+    --tier-d-border: var(--border);
   }
 
   :root.theme-tyranitar {
@@ -136,6 +196,21 @@
     --tier-bronze-bg: rgba(120, 113, 108, 0.2);
     --tier-bronze-foreground: #d6d3d1;
     --tier-bronze-border: rgba(87, 83, 78, 0.55);
+    --tier-s-bg: var(--tier-gold-bg);
+    --tier-s-foreground: var(--tier-gold-foreground);
+    --tier-s-border: var(--tier-gold-border);
+    --tier-a-bg: var(--accent-soft);
+    --tier-a-foreground: var(--accent);
+    --tier-a-border: var(--accent);
+    --tier-b-bg: var(--tier-silver-bg);
+    --tier-b-foreground: var(--tier-silver-foreground);
+    --tier-b-border: var(--tier-silver-border);
+    --tier-c-bg: var(--tier-bronze-bg);
+    --tier-c-foreground: var(--tier-bronze-foreground);
+    --tier-c-border: var(--tier-bronze-border);
+    --tier-d-bg: var(--bg-elev-strong);
+    --tier-d-foreground: var(--text-dim);
+    --tier-d-border: var(--border);
   }
 
   :root.theme-sneasler {
@@ -163,6 +238,21 @@
     --tier-bronze-bg: rgba(214, 53, 122, 0.22);
     --tier-bronze-foreground: #7a1c45;
     --tier-bronze-border: rgba(165, 36, 96, 0.55);
+    --tier-s-bg: var(--tier-gold-bg);
+    --tier-s-foreground: var(--tier-gold-foreground);
+    --tier-s-border: var(--tier-gold-border);
+    --tier-a-bg: var(--accent-soft);
+    --tier-a-foreground: var(--accent);
+    --tier-a-border: var(--accent);
+    --tier-b-bg: var(--tier-silver-bg);
+    --tier-b-foreground: var(--tier-silver-foreground);
+    --tier-b-border: var(--tier-silver-border);
+    --tier-c-bg: var(--tier-bronze-bg);
+    --tier-c-foreground: var(--tier-bronze-foreground);
+    --tier-c-border: var(--tier-bronze-border);
+    --tier-d-bg: var(--bg-elev-strong);
+    --tier-d-foreground: var(--text-dim);
+    --tier-d-border: var(--border);
   }
 
   html,

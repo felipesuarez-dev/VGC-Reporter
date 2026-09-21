@@ -138,7 +138,18 @@
     "trending_rising": "Em alta",
     "trending_falling": "Em queda",
     "trending_empty": "Sem dados de tendência disponíveis.",
-    "sources_label": "Fontes"
+    "sources_label": "Fontes",
+    "chart_view_tier": "Tiers",
+    "tier_explain": "Tier calculado pelo VGC-Reporter a partir do uso, taxa de vitórias (ajustada pelo tamanho da amostra) e conversão em top cut.",
+    "tier_s": "Tier S — domina o meta",
+    "tier_a": "Tier A — muito forte",
+    "tier_b": "Tier B — sólido",
+    "tier_c": "Tier C — situacional",
+    "tier_d": "Tier D — pouco jogado",
+    "tier_unranked": "Dados insuficientes para atribuir um tier",
+    "win_rate": "Vitórias",
+    "meta_score": "Pontuação",
+    "thin_data": "Regulação nova: os dados ainda são limitados ({{tournaments}} torneios, {{teams}} equipes analisadas). Os números vão melhorar conforme mais torneios forem jogados."
   },
   "tournament": {
     "standings": "Classificações",
@@ -477,5 +488,19 @@
     "evs_not_assigned": "Slot {{slot}} ({{species}}): EVs não atribuídos.",
     "item_not_allowed": "Slot {{slot}} ({{species}}): item \"{{item}}\" não é legal nesta regulação.",
     "move_not_allowed": "Slot {{slot}} ({{species}}): movimento \"{{mv}}\" não é legal nesta regulação."
+  },
+  "sources": {
+    "label": "Fonte de dados",
+    "all": "Todas as fontes (unificado)",
+    "name_labmaus": "Labmaus",
+    "name_limitless": "Limitless",
+    "name_champteams": "ChampTeams",
+    "name_smogon": "Smogon",
+    "no_data_yet": "sem dados para este formato",
+    "tournaments": "{{count}} torneios",
+    "teams": "{{count}} equipes",
+    "other_regulation": "dados de outra regulação",
+    "unknown_regulation": "regulação não declarada",
+    "filtered_hint": "Mostrando apenas {{source}}. Mude para “Todas as fontes” para o total unificado."
   }
 }

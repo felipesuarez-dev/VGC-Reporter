@@ -9,11 +9,16 @@ import {
   YAxis,
 } from "recharts";
 import { useTranslation } from "react-i18next";
+import type { Tier } from "../../lib/types";
 import { PokemonSprite } from "../pokemon/PokemonSprite";
 
 export interface UsageBarItem {
   name: string;
   usage_percent: number;
+  /** Computed in Rust and carried through; the frontend never derives it. */
+  tier?: Tier | null;
+  meta_score?: number | null;
+  win_rate?: number | null;
   count?: number;
   sprite_url?: string;
   sprite_fallback_url?: string | null;

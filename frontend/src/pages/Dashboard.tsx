@@ -6,6 +6,7 @@ import {
   Check,
   ExternalLink,
   Grid2x2,
+  Trophy,
   LayoutGrid,
   Loader2,
   RefreshCw,
@@ -19,6 +20,11 @@ import { type ChampionsTournament } from "../lib/types";
 import { UsageBarChart, type UsageBarItem } from "../components/charts/UsageBarChart";
 import { UsageGridView } from "../components/charts/UsageGridView";
 import { UsageTreemap } from "../components/charts/UsageTreemap";
+import { UsageTierList } from "../components/charts/UsageTierList";
+import {
+  SourceSelector,
+  SourceProvenanceChips,
+} from "../components/ui/SourceSelector";
 import { cn } from "../lib/cn";
 import { TopList } from "../components/charts/TopList";
 import { TrendingCard } from "../components/charts/TrendingCard";
@@ -64,6 +70,8 @@ export function Dashboard() {
   const setFormat = useDashboardStore((s) => s.setFormat);
   const setFavoriteFormat = useDashboardStore((s) => s.setFavoriteFormat);
   const topPokemonView = useDashboardStore((s) => s.topPokemonView);
+  const sourceFilter = useDashboardStore((s) => s.sourceFilter);
+  const setSourceFilter = useDashboardStore((s) => s.setSourceFilter);
   const setTopPokemonView = useDashboardStore((s) => s.setTopPokemonView);
   const initRef = useRef(false);
   useEffect(() => {
@@ -92,12 +100,14 @@ export function Dashboard() {
     staleTime: 60_000,
   });
   const tournamentLimit = tournamentVisible;
-  const POKE_INITIAL = 10;
+  /** Below this many analysed teams the Panel warns that the meta is young. */
+const THIN_DATA_TEAMS = 200;
+const POKE_INITIAL = 10;
   const POKE_PAGE = 10;
   const [pokeVisible, setPokeVisible] = useState(POKE_INITIAL);
   const { data, isLoading, isFetching, isError, error } = useQuery({
-    queryKey: queryKeys.meta(format),
-    queryFn: () => ipc.getMetaStats(format),
+    queryKey: queryKeys.meta(format, undefined, sourceFilter),
+    queryFn: () => ipc.getMetaStats(format, undefined, sourceFilter),
   });
   const { data: championsReportRaw, isFetching: championsFetching } = useQuery({
     queryKey: queryKeys.championsReport(format, tournamentLimit),
@@ -124,6 +134,23 @@ export function Dashboard() {
     sprite_url: p.sprite_url,
     sprite_fallback_url: p.sprite_fallback_url,
     home_sprite_url: p.home_sprite_url,
+    tier: p.tier,
+    meta_score: p.meta_score,
+    win_rate: p.win_rate,
+    id: p.species,
+  }));
+  // The tier view needs the whole meta: tiering the visible ten would put
+  // three of them in S and say nothing.
+  const tierPokemon: UsageBarItem[] = allPokemon.map((p) => ({
+    name: p.species,
+    usage_percent: p.usage_percent,
+    count: p.count,
+    sprite_url: p.sprite_url,
+    sprite_fallback_url: p.sprite_fallback_url,
+    home_sprite_url: p.home_sprite_url,
+    tier: p.tier,
+    meta_score: p.meta_score,
+    win_rate: p.win_rate,
     id: p.species,
   }));
   const handleBarClick = (item: UsageBarItem) => {
@@ -143,13 +170,19 @@ export function Dashboard() {
     }
     wasFetchingRef.current = isFetching;
   }, [isFetching]);
+  // A brand-new regulation legitimately has very little data. Saying so beats
+  // rendering a near-empty Panel and letting the user conclude it is broken.
+  const isThinData =
+    data !== undefined && data.total_entries > 0 && data.total_entries < THIN_DATA_TEAMS;
   const topItems = data?.top_items ?? [];
   const topMoves = data?.top_moves ?? [];
   const topAbilities = data?.top_abilities ?? [];
 
   const isMobile = useIsMobile();
   const refreshAll = () => {
-    qc.invalidateQueries({ queryKey: queryKeys.meta(format) });
+    qc.invalidateQueries({
+      queryKey: queryKeys.meta(format, undefined, sourceFilter),
+    });
     qc.invalidateQueries({ queryKey: queryKeys.championsReport(format, tournamentLimit) });
   };
   const ptrState = usePullToRefresh(refreshAll, isMobile);
@@ -168,13 +201,18 @@ export function Dashboard() {
             onFavoriteChange={setFavoriteFormat}
             className="w-72"
           />
+          <SourceSelector
+            value={sourceFilter}
+            onChange={setSourceFilter}
+            sources={data?.sources ?? []}
+          />
           {!isMobile && (
             <button
               className="btn-ghost"
               disabled={isFetching}
               onClick={() =>
                 qc.invalidateQueries({
-                  queryKey: queryKeys.meta(format),
+                  queryKey: queryKeys.meta(format, undefined, sourceFilter),
                 })
               }
             >
@@ -231,6 +269,26 @@ export function Dashboard() {
       {data && data.pokemon.length > 0 && (
         <>
           <section className="card">
+            {(data?.sources?.length ?? 0) > 0 && (
+              <div className="mb-2">
+                <SourceProvenanceChips sources={data?.sources ?? []} />
+              </div>
+            )}
+            {isThinData && (
+              <div
+                className="mb-2 rounded-md border px-3 py-2 text-[11px]"
+                style={{
+                  borderColor: "var(--warning)",
+                  color: "var(--warning)",
+                  backgroundColor: "var(--bg-elev-strong)",
+                }}
+              >
+                {t("dashboard.thin_data", {
+                  tournaments: data?.tournaments_used ?? 0,
+                  teams: data?.total_entries ?? 0,
+                })}
+              </div>
+            )}
             <div className="mb-2 flex items-center justify-between gap-2">
               <h2 className="text-sm font-semibold" style={{ color: "var(--text)" }}>
                 {t("dashboard.top_pokemon")}
@@ -246,6 +304,7 @@ export function Dashboard() {
                     { id: "bar", Icon: BarChart3, label: t("dashboard.chart_view_bar") },
                     { id: "grid", Icon: LayoutGrid, label: t("dashboard.chart_view_grid") },
                     { id: "treemap", Icon: Grid2x2, label: t("dashboard.chart_view_treemap") },
+                    { id: "tier", Icon: Trophy, label: t("dashboard.chart_view_tier") },
                   ] as const
                 ).map(({ id, Icon, label }) => (
                   <button
@@ -279,6 +338,9 @@ export function Dashboard() {
                 data={chartPokemon}
                 onItemClick={handleBarClick}
               />
+            )}
+            {topPokemonView === "tier" && (
+              <UsageTierList data={tierPokemon} onItemClick={handleBarClick} />
             )}
             {topPokemonView === "treemap" && (
               <UsageTreemap

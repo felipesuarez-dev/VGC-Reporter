@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Format } from "../lib/types";
+import type { Format, SourceId } from "../lib/types";
 
 export type TopPokemonView = "bar" | "grid" | "treemap" | "tier";
 
@@ -10,9 +10,20 @@ interface DashboardState {
   format: Format;
   favoriteFormat: Format;
   topPokemonView: TopPokemonView;
+  /** `null` merges every source; a value pins the view to one provider. */
+  sourceFilter: SourceId | null;
   setFormat: (format: Format) => void;
   setFavoriteFormat: (format: Format) => void;
   setTopPokemonView: (view: TopPokemonView) => void;
+  setSourceFilter: (source: SourceId | null) => void;
+}
+
+const SOURCES: readonly SourceId[] = ["labmaus", "limitless", "champteams", "smogon"];
+
+/** Same gate as normalizeView: an unknown persisted value falls back to the
+ *  merged view rather than pinning the user to a source that no longer exists. */
+function normalizeSource(raw: unknown): SourceId | null {
+  return SOURCES.includes(raw as SourceId) ? (raw as SourceId) : null;
 }
 
 /**
@@ -37,9 +48,11 @@ export const useDashboardStore = create<DashboardState>()(
       format: ACTIVE_FORMAT,
       favoriteFormat: ACTIVE_FORMAT,
       topPokemonView: "bar",
+      sourceFilter: null,
       setFormat: (format) => set({ format }),
       setFavoriteFormat: (favoriteFormat) => set({ favoriteFormat }),
       setTopPokemonView: (topPokemonView) => set({ topPokemonView }),
+      setSourceFilter: (sourceFilter) => set({ sourceFilter }),
     }),
     {
       name: "vgc-dashboard",
@@ -59,12 +72,16 @@ export const useDashboardStore = create<DashboardState>()(
             format: ACTIVE_FORMAT,
             favoriteFormat: ACTIVE_FORMAT,
             topPokemonView: normalizeView(rawView),
+            sourceFilter: null,
           } as DashboardState;
         }
         return {
           format: prior.format ?? ACTIVE_FORMAT,
           favoriteFormat: prior.favoriteFormat ?? prior.format ?? ACTIVE_FORMAT,
           topPokemonView: normalizeView(rawView),
+          sourceFilter: normalizeSource(
+            (prior as Record<string, unknown>).sourceFilter,
+          ),
         } as DashboardState;
       },
     },
