@@ -1,7 +1,7 @@
 # VGC-Reporter — Guía raíz
 
 **Producto:** VGC-Reporter
-**Versión:** 0.4.0.20260920-beta
+**Versión:** 0.4.1.20260921-beta
 **Autor:** PumaSoft
 
 Aplicación Tauri 2 + Rust + React para estadísticas competitivas de Pokémon Champions (VGC 2026, **Regulation M-C — season M-6 activa**, 2026-09-09 → 2026-12-02) y construcción de equipos propios.

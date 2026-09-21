@@ -46,7 +46,16 @@ jobs:
           TAG: ${{ steps.rel.outputs.tag }}
         run: |
           gh release view "$TAG" --repo "$REPO" --json body -q .body > release_body.txt
-          gh release download "$TAG" --repo "$REPO" --pattern "latest.json" --output latest.json
+          # latest.json is uploaded by finalize-latest-json at the END of the
+          # release run. This workflow fires on `release: published`, which can
+          # happen earlier - including when a human publishes the draft by hand
+          # while the matrix is still building. Missing file is "too early",
+          # not "broken": skip instead of failing, and let the `edited` event
+          # or a manual dispatch sync it once the asset exists.
+          if ! gh release download "$TAG" --repo "$REPO" --pattern "latest.json" --output latest.json 2>/dev/null; then
+            echo "::notice::latest.json not on $TAG yet - nothing to sync. Re-run this workflow once the release build has finished."
+            exit 0
+          fi
           python3 -c "import json; d=json.load(open('latest.json')); d['notes']=open('release_body.txt').read(); json.dump(d,open('latest.json','w'),indent=2)"
           gh release upload "$TAG" latest.json --repo "$REPO" --clobber
           echo "Synced latest.json notes for $TAG"

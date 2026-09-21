@@ -44,9 +44,19 @@ export function Tooltip({
   // Phase 2: after tooltip renders, clamp its left edge within the viewport.
   // The tooltip is centered on `left` via -translate-x-1/2, so we measure the
   // actual rendered rect and shift the center point to keep it on-screen.
+  //
+  // This effect writes the state it depends on, so it re-runs after every
+  // correction and only settles once the measurement stops moving. When the
+  // measurement never converges — a zero-sized rect, which happens in a
+  // collapsed or hidden container and in any DOM without layout — the naive
+  // version loops until React throws "Maximum update depth exceeded" and the
+  // whole page dies. Two guards prevent that: bail out on a degenerate rect,
+  // and ignore sub-pixel corrections instead of chasing float noise.
   useLayoutEffect(() => {
     if (!open || !coords || !tooltipRef.current) return;
     const box = tooltipRef.current.getBoundingClientRect();
+    if (box.width === 0 && box.height === 0) return;
+
     const margin = 8;
     let newLeft = coords.left;
     if (box.left < margin) {
@@ -54,7 +64,7 @@ export function Tooltip({
     } else if (box.right > window.innerWidth - margin) {
       newLeft = coords.left - (box.right - (window.innerWidth - margin));
     }
-    if (newLeft !== coords.left) {
+    if (Math.abs(newLeft - coords.left) >= 1) {
       setCoords((prev) => (prev ? { ...prev, left: newLeft } : null));
     }
   }, [open, coords]);

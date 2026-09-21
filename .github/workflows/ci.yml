@@ -71,6 +71,12 @@ jobs:
       - name: Type-check + build
         run: bun run --cwd frontend build
 
+      # Component tests, not just a type-check: `tsc && vite build` proved
+      # nothing about render behaviour, which is how a crash shipped in v0.2.0
+      # and only showed up after users auto-updated (Regla 1).
+      - name: Component tests
+        run: bun run --cwd frontend test
+
       - name: Locale key parity
         run: bun scripts/check-locales.ts
 
