@@ -138,7 +138,7 @@ function TierEntry({
 }) {
   const { t } = useTranslation();
   const detail = [
-    `${item.usage_percent.toFixed(1)}%`,
+    `${(item.usage_percent ?? 0).toFixed(1)}%`,
     item.win_rate != null ? `${t("dashboard.win_rate")} ${item.win_rate.toFixed(1)}%` : null,
     item.meta_score != null ? `${t("dashboard.meta_score")} ${item.meta_score.toFixed(0)}` : null,
   ]

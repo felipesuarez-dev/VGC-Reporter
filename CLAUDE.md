@@ -1,7 +1,7 @@
 # VGC-Reporter — Guía raíz
 
 **Producto:** VGC-Reporter
-**Versión:** 0.4.1.20260921-beta
+**Versión:** 0.4.2.20260921-beta
 **Autor:** PumaSoft
 
 Aplicación Tauri 2 + Rust + React para estadísticas competitivas de Pokémon Champions (VGC 2026, **Regulation M-C — season M-6 activa**, 2026-09-09 → 2026-12-02) y construcción de equipos propios.
@@ -150,6 +150,14 @@ script carga `src-tauri/certs/sectigo-r36.pem` igual que hace `HttpClient`. Si e
 probe lo dice antes de que el usuario vea "sin datos".
 
 **Incidente origen:** v0.4.0, 2026-09-20. Descubierto al añadir Regulation M-C.
+
+### Regla 8 — Las migraciones nombran tablas y columnas reales, y un test lo demuestra
+
+Toda migración SQL debe referenciar **tablas y columnas que existen en el esquema** (`001_init.sql` + migraciones previas), no nombres recordados de memoria. El comentario "idempotente por construcción" no vale como verificación: solo un test que aplique 001→00N dos veces seguidas sobre una DB temporal demuestra idempotencia real.
+
+**Obligatorio antes de cada release:** `cargo test` incluye `storage::db::tests::migrations_apply_twice_on_a_fresh_db`, que botea `init_pool` dos veces sobre una DB temporal. Si falla, el release no sale.
+
+**Incidente origen:** v0.4.0/v0.4.1, 2026-09-20/21. La migración 007 traía `DELETE FROM cache WHERE key ...` cuando la tabla real es `api_cache(url, ...)` — el nombre `cache(key)` no existía en ningún archivo del repo. `init_pool` retornaba Err en el 100% de los arranques (instalación limpia incluida), el `setup` hacía `expect` → panic con `panic = "abort"` → app abre y cierra sin mensaje en Windows y Android. El GH Action pasó en verde porque ningún gate ejecutaba las migraciones. Fix: v0.4.2.
 
 ## Documentación por capa
 

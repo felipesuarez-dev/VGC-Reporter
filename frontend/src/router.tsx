@@ -1,5 +1,6 @@
 import { createHashRouter, Navigate } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
+import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 import { Dashboard } from "./pages/Dashboard";
 import { Pokedex } from "./pages/Pokedex";
 import { TeamBuilder } from "./pages/TeamBuilder";
@@ -11,10 +12,21 @@ import { Settings } from "./pages/Settings";
 export const router = createHashRouter([
   {
     path: "/",
-    element: <AppShell />,
+    element: (
+      <ErrorBoundary>
+        <AppShell />
+      </ErrorBoundary>
+    ),
     children: [
       { index: true, element: <Navigate to="/dashboard" replace /> },
-      { path: "dashboard", element: <Dashboard /> },
+      {
+        path: "dashboard",
+        element: (
+          <ErrorBoundary>
+            <Dashboard />
+          </ErrorBoundary>
+        ),
+      },
       { path: "pokedex", element: <Pokedex /> },
       { path: "team-builder", element: <TeamBuilder /> },
       { path: "team-builder/:id", element: <TeamBuilder /> },

@@ -70,3 +70,23 @@ fn column_exists(conn: &Connection, table: &str, column: &str) -> Result<bool, A
     }
     Ok(false)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn migrations_apply_twice_on_a_fresh_db() {
+        // Every migration runs on every boot with no version tracker (Regla 2),
+        // so each one must survive re-execution. v0.4.0 shipped a DELETE
+        // against a `cache` table that never existed and bricked startup on
+        // every platform, including fresh installs.
+        let path =
+            std::env::temp_dir().join(format!("vgc-migration-test-{}.sqlite", std::process::id()));
+        let _ = std::fs::remove_file(&path);
+        let pool = init_pool(&path).expect("first boot migrates a fresh db");
+        drop(pool);
+        init_pool(&path).expect("second boot re-runs every migration");
+        let _ = std::fs::remove_file(&path);
+    }
+}

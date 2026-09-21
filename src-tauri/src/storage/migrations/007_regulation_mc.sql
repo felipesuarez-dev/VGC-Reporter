@@ -26,6 +26,6 @@ DELETE FROM settings
 -- The meta/top-teams/trending payload shape changes in this release; drop the
 -- cached blobs so the first launch refetches instead of deserialising a stale
 -- snapshot into mostly-empty new fields.
-DELETE FROM cache WHERE key LIKE 'meta-snapshot-%'
-                     OR key LIKE 'top-teams::%'
-                     OR key LIKE 'trending::%';
+DELETE FROM api_cache WHERE url LIKE 'meta-snapshot-%'
+                      OR url LIKE 'top-teams::%'
+                      OR url LIKE 'trending::%';

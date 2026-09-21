@@ -117,7 +117,7 @@ export function UsageBarChart({ data, height = 320, onBarClick }: Props) {
               className="tabular-nums"
               style={{ color: "var(--accent)" }}
             >
-              {item.usage_percent.toFixed(1)}%
+              {(item.usage_percent ?? 0).toFixed(1)}%
             </span>
           </div>
           {item.count != null && (
@@ -168,7 +168,7 @@ export function UsageBarChart({ data, height = 320, onBarClick }: Props) {
           <LabelList
             dataKey="usage_percent"
             position="insideRight"
-            formatter={(value: number) => `${value.toFixed(1)}%`}
+            formatter={(value: number) => `${(value ?? 0).toFixed(1)}%`}
             fill="#ffffff"
             fontSize={12}
             fontWeight={600}

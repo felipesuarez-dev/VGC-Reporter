@@ -67,12 +67,14 @@ export function PokemonDetailModal() {
   const meta = useQuery({
     queryKey: queryKeys.meta(format),
     queryFn: () => ipc.getMetaStats(format),
+    enabled: Boolean(id),
   });
 
   const topTeams = useQuery({
     queryKey: queryKeys.topTeams(format, 100),
     queryFn: () => ipc.getTopTeams(format, 100),
     staleTime: 30 * 60 * 1000,
+    enabled: Boolean(id),
   });
 
   if (!id) return null;
@@ -256,7 +258,7 @@ function ModalBody({
                 }}
                 title={t("dashboard.top_pokemon")}
               >
-                {myUsage.usage_percent.toFixed(1)}%
+                {(myUsage.usage_percent ?? 0).toFixed(1)}%
               </span>
             )}
           </h2>
@@ -452,7 +454,7 @@ function NaturesList({
               className="shrink-0 tabular-nums"
               style={{ color: "var(--accent)" }}
             >
-              {e.usage_percent.toFixed(1)}%
+              {(e.usage_percent ?? 0).toFixed(1)}%
             </span>
           </li>
         ))}
@@ -501,7 +503,7 @@ function UsageList({
                 className="shrink-0 tabular-nums"
                 style={{ color: "var(--accent)" }}
               >
-                {e.usage_percent.toFixed(1)}%
+                {(e.usage_percent ?? 0).toFixed(1)}%
               </span>
             </li>
           ))}
@@ -559,7 +561,7 @@ function TeammatesList({
                   className="shrink-0 tabular-nums"
                   style={{ color: "var(--accent)" }}
                 >
-                  {e.usage_percent.toFixed(1)}%
+                  {(e.usage_percent ?? 0).toFixed(1)}%
                 </span>
               </button>
             </li>

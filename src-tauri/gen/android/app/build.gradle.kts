@@ -37,7 +37,10 @@ android {
             }
         }
         getByName("release") {
-            isMinifyEnabled = true
+            // R8 minification stays off: proguard-rules.pro ships zero -keep
+            // rules, so shrinking the release build risks stripping the Tauri
+            // JNI bridge and plugins and crashing on launch only on Android.
+            isMinifyEnabled = false
             proguardFiles(
                 *fileTree(".") { include("**/*.pro") }
                     .plus(getDefaultProguardFile("proguard-android-optimize.txt"))

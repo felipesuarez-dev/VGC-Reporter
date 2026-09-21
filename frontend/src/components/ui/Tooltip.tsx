@@ -20,6 +20,9 @@ export function Tooltip({
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
   const [effectivePlacement, setEffectivePlacement] = useState<"top" | "bottom">(placement);
+  // Bounds the phase-2 corrections below: a measurement that never settles
+  // (rounding oscillation between translate and clamp) must stop chasing.
+  const clampsRef = useRef(0);
 
   // Phase 1: compute position from trigger bounds
   useLayoutEffect(() => {
@@ -31,6 +34,7 @@ export function Tooltip({
     const left = rect.left + rect.width / 2;
     setEffectivePlacement(eff);
     setCoords({ top, left });
+    clampsRef.current = 0;
 
     const close = () => setOpen(false);
     window.addEventListener("scroll", close, true);
@@ -47,15 +51,17 @@ export function Tooltip({
   //
   // This effect writes the state it depends on, so it re-runs after every
   // correction and only settles once the measurement stops moving. When the
-  // measurement never converges — a zero-sized rect, which happens in a
-  // collapsed or hidden container and in any DOM without layout — the naive
-  // version loops until React throws "Maximum update depth exceeded" and the
-  // whole page dies. Two guards prevent that: bail out on a degenerate rect,
-  // and ignore sub-pixel corrections instead of chasing float noise.
+  // measurement never converges the naive version loops until React throws
+  // "Maximum update depth exceeded" and the whole page dies. Three guards
+  // prevent that: bail out on a degenerate rect (either axis collapsed, e.g.
+  // an empty row or a font-less WebView), bail out before layout geometry
+  // exists, and cap the corrections so an oscillation stops chasing.
   useLayoutEffect(() => {
     if (!open || !coords || !tooltipRef.current) return;
+    if (clampsRef.current >= 3) return;
     const box = tooltipRef.current.getBoundingClientRect();
-    if (box.width === 0 && box.height === 0) return;
+    if (box.width === 0 || box.height === 0) return;
+    if (window.innerWidth <= 0) return;
 
     const margin = 8;
     let newLeft = coords.left;
@@ -65,6 +71,7 @@ export function Tooltip({
       newLeft = coords.left - (box.right - (window.innerWidth - margin));
     }
     if (Math.abs(newLeft - coords.left) >= 1) {
+      clampsRef.current += 1;
       setCoords((prev) => (prev ? { ...prev, left: newLeft } : null));
     }
   }, [open, coords]);

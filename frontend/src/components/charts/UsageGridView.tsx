@@ -39,7 +39,7 @@ export function UsageGridView({ data, onItemClick }: Props) {
               className="text-xs font-semibold tabular-nums"
               style={{ color: "var(--accent)" }}
             >
-              {item.usage_percent.toFixed(1)}%
+              {(item.usage_percent ?? 0).toFixed(1)}%
             </span>
           </>
         );

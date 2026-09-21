@@ -167,7 +167,7 @@ function TrendingColumn({
                 className="shrink-0 text-[11px] font-semibold tabular-nums"
                 style={{ color: accentColor }}
               >
-                {direction === "up" ? "▲" : "▼"} {Math.abs(e.change_percentage).toFixed(1)}%
+                {direction === "up" ? "▲" : "▼"} {Math.abs(e.change_percentage ?? 0).toFixed(1)}%
               </span>
             </button>
           </li>

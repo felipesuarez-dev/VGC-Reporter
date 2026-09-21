@@ -354,6 +354,7 @@ jobs:
             --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
             --out VGC.Reporter_${{ needs.prepare.outputs.tag }}_android.apk \
             src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
+          $BUILD_TOOLS/apksigner verify --print-certs VGC.Reporter_${{ needs.prepare.outputs.tag }}_android.apk
 
       - name: Upload APK to GitHub release
         run: |

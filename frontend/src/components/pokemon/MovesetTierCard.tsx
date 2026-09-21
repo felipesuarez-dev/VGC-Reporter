@@ -65,7 +65,7 @@ export function MovesetTierCard({ moveset, rank }: Props) {
             tier?.accent ?? "text-[var(--accent)]",
           )}
         >
-          {moveset.usage_percent.toFixed(1)}%
+          {(moveset.usage_percent ?? 0).toFixed(1)}%
         </span>
       </div>
       <ul className="grid grid-cols-1 gap-x-3 gap-y-1 text-xs sm:grid-cols-2">

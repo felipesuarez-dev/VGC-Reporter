@@ -77,7 +77,7 @@ export function UsageDonutChart({ data, height = 440, onSliceClick }: Props) {
               {t("dashboard.usage_percent_label")}
             </span>
             <span className="tabular-nums" style={{ color: "var(--accent)" }}>
-              {item.usage_percent.toFixed(1)}%
+              {(item.usage_percent ?? 0).toFixed(1)}%
             </span>
           </div>
           {item.count != null && (

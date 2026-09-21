@@ -20,6 +20,20 @@ interface DashboardState {
 
 const SOURCES: readonly SourceId[] = ["labmaus", "limitless", "champteams", "smogon"];
 
+const FORMATS: readonly Format[] = [
+  "regulation-m-c",
+  "regulation-m-b",
+  "regulation-m-a",
+  "regulation-i",
+];
+
+/** Same gate as normalizeView: an unknown persisted format falls back to the
+ *  active regulation instead of querying the backend with a string it may
+ *  no longer recognise. */
+function normalizeFormat(raw: unknown): Format {
+  return FORMATS.includes(raw as Format) ? (raw as Format) : ACTIVE_FORMAT;
+}
+
 /** Same gate as normalizeView: an unknown persisted value falls back to the
  *  merged view rather than pinning the user to a source that no longer exists. */
 function normalizeSource(raw: unknown): SourceId | null {
@@ -76,8 +90,8 @@ export const useDashboardStore = create<DashboardState>()(
           } as DashboardState;
         }
         return {
-          format: prior.format ?? ACTIVE_FORMAT,
-          favoriteFormat: prior.favoriteFormat ?? prior.format ?? ACTIVE_FORMAT,
+          format: normalizeFormat(prior.format),
+          favoriteFormat: normalizeFormat(prior.favoriteFormat ?? prior.format),
           topPokemonView: normalizeView(rawView),
           sourceFilter: normalizeSource(
             (prior as Record<string, unknown>).sourceFilter,

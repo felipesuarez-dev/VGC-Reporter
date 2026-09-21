@@ -67,12 +67,22 @@ pub fn run() {
             #[cfg(desktop)]
             app.handle().plugin(tauri_plugin_process::init())?;
 
-            let app_data = app
-                .path()
-                .app_data_dir()
-                .expect("app_data_dir")
-                .join("vgc-reporter.sqlite");
-            let state = AppState::bootstrap(&app_data).expect("AppState bootstrap");
+            let app_data = match app.path().app_data_dir() {
+                Ok(dir) => dir.join("vgc-reporter.sqlite"),
+                Err(e) => {
+                    tracing::error!("startup: app_data_dir failed: {e}");
+                    eprintln!("VGC-Reporter startup failed: app_data_dir: {e}");
+                    return Err(e.into());
+                }
+            };
+            let state = match AppState::bootstrap(&app_data) {
+                Ok(state) => state,
+                Err(e) => {
+                    tracing::error!("startup: bootstrap failed: {e}");
+                    eprintln!("VGC-Reporter startup failed: {e}");
+                    return Err(e.into());
+                }
+            };
             app.manage(state);
             Ok(())
         })

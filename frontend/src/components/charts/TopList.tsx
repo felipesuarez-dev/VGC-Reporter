@@ -33,11 +33,11 @@ export function TopList({
       </div>
     );
   }
-  const max = Math.max(...items.map((i) => i.usage_percent), 1);
+  const max = Math.max(...items.map((i) => i.usage_percent ?? 0), 1);
   return (
     <ul className="space-y-1.5">
       {items.map((item) => {
-        const width = Math.max((item.usage_percent / max) * 100, 2);
+        const width = Math.max(((item.usage_percent ?? 0) / max) * 100, 2);
         return (
           <li key={item.name} className="text-xs">
             <div className="flex items-baseline justify-between gap-2">
@@ -52,7 +52,7 @@ export function TopList({
                 className="shrink-0 tabular-nums"
                 style={{ color: "var(--accent)" }}
               >
-                {item.usage_percent.toFixed(1)}%
+                {(item.usage_percent ?? 0).toFixed(1)}%
               </span>
             </div>
             <div
