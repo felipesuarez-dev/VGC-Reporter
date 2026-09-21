@@ -111,7 +111,7 @@ export function MyTeams() {
                         color: "var(--text-muted)",
                       }}
                     >
-                      2026
+                      {new Date().getFullYear()}
                     </span>
                   </div>
                   {team.notes && team.notes.trim() !== "" ? (
@@ -156,8 +156,22 @@ export function MyTeams() {
   );
 }
 
+/**
+ * Showdown gen5 sprite URL for a saved team member.
+ *
+ * The previous version stripped every hyphen, so `Calyrex-Ice-Rider` became
+ * `calyrexicerider.png` and 404'd for every hyphenated forme. The CDN keeps
+ * ONE hyphen between the base species and the forme id
+ * (`calyrex-icerider`, `rotom-wash`, `indeedee-f`), which is the same rule
+ * `sprite_resolver::primary_slug` applies on the Rust side.
+ *
+ * `PokemonSprite` still owns the fallback chain, so a miss degrades to the HD
+ * render and then to the placeholder rather than to a broken image.
+ */
 function spriteFor(species: string): string {
-  const slug = species.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  const id = (part: string) => part.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  const [base, ...forme] = species.split("-");
+  const slug = forme.length > 0 ? `${id(base)}-${id(forme.join(""))}` : id(base);
   return `https://play.pokemonshowdown.com/sprites/gen5/${slug}.png`;
 }
 

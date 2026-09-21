@@ -11,7 +11,7 @@ use super::reg_mc_species::ALLOWED_SPECIES_MC_NEW;
 use super::{RegulationRules, Violation};
 use crate::domain::team::Team;
 
-/// Pokémon Champions Regulation M-C (season M-4, 2026-09-09 → 2026-12-02).
+/// Pokémon Champions Regulation M-C (season M-6, 2026-09-09 → 2026-12-02).
 ///
 /// Purely additive over M-B: every M-B species, item and move stays legal and
 /// M-C layers 24 new species, 6 new Mega Evolutions (including the first three

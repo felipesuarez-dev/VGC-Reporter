@@ -77,7 +77,7 @@ export interface FormatOption {
 }
 
 export const ALL_FORMATS: FormatOption[] = [
-  { value: "regulation-m-c", label: "Regulation M-C (M-4)" },
+  { value: "regulation-m-c", label: "Regulation M-C (M-6)" },
   { value: "regulation-m-b", label: "Regulation M-B (M-3)" },
   { value: "regulation-m-a", label: "Regulation M-A (M-2)" },
 ];

@@ -1,10 +1,10 @@
 # VGC-Reporter — Guía raíz
 
 **Producto:** VGC-Reporter
-**Versión:** 0.3.1.20260620-beta
+**Versión:** 0.4.0.20260920-beta
 **Autor:** PumaSoft
 
-Aplicación Tauri 2 + Rust + React para estadísticas competitivas de Pokémon Champions (VGC 2026, Regulation M-A — season M-2 activa) y construcción de equipos propios.
+Aplicación Tauri 2 + Rust + React para estadísticas competitivas de Pokémon Champions (VGC 2026, **Regulation M-C — season M-6 activa**, 2026-09-09 → 2026-12-02) y construcción de equipos propios.
 
 ## ⚠️ Package manager: SOLO Bun
 
@@ -124,6 +124,33 @@ saca la URL del AIA con `openssl x509 -text | grep "CA Issuers"`, descárgalo y 
 y meta snapshot caían a fallbacks delgados y mostraban "sin datos" (Felipe: "M-B no trae NADA").
 curl funcionaba (schannel hace AIA-fetch), enmascarando el bug. Fix: bundlear el intermediate.
 
+
+### Regla 7 — Los identificadores de fuentes externas se verifican contra el servidor vivo
+
+Nunca deducir ni "razonar" el slug/label con el que una fuente externa publica una regulación.
+Verificarlo contra el servidor y dejar el chequeo automatizado.
+
+Dos identificadores estuvieron **mal durante meses sin que nadie lo notara**, porque cada fallo
+degradaba a un fallback que igual devolvía *algo*:
+
+- `default_smogon_slug()` devolvía `gen9vgc2026regmb`. El real es `gen9championsvgc2026regmb`
+  (prefijo `gen9champions`). **Todas** las requests daban 404 → el fallback de Smogon nunca aportó
+  un solo dato desde que existe.
+- `default_labmaus_name()` mapeaba M-B a la label de M-A, un workaround de junio 2026 porque
+  labmaus aún no había publicado label propia de M-B. Ya la publicó, y además retiró M-A por
+  completo — el workaround sobrevivió a su motivo.
+
+**Obligatorio antes de cada release:** `bun scripts/probe-sources.ts`. Consulta labmaus
+`/api/completed_tournaments`, el índice de Smogon y champteams, y los contrasta contra lo que
+devuelven los `default_*` de `domain/format.rs`. Una línea `FAIL` es una fuente que está a punto
+de quedarse muda en producción.
+
+El probe también valida la Regla 6 de paso: labmaus sigue sin enviar su intermediate, así que el
+script carga `src-tauri/certs/sectigo-r36.pem` igual que hace `HttpClient`. Si ese cert rota, el
+probe lo dice antes de que el usuario vea "sin datos".
+
+**Incidente origen:** v0.4.0, 2026-09-20. Descubierto al añadir Regulation M-C.
+
 ## Documentación por capa
 
 - **Backend (Rust):** `src-tauri/CLAUDE.md` — clean architecture, cómo añadir un command, errores, migraciones.
@@ -135,7 +162,8 @@ curl funcionaba (schannel hace AIA-fetch), enmascarando el bug. Fix: bundlear el
 - **Clean architecture** en Rust: `domain` ← `services` ← `adapters` / `storage` ← `commands`. La dependencia apunta hacia el centro.
 - **Frontend delgado**: todo fetching HTTP vive en Rust. El frontend solo llama `invoke()`.
 - **Tipos sincronizados** automáticamente con `ts-rs` (nunca duplicar manualmente).
-- **Multi-formato extensible, Regulation M-A activo**: el enum `Format` queda preparado, pero solo `RegulationMA` es seleccionable en UI.
+- **Multi-formato, Regulation M-C activo**: `RegulationMC` es el default; M-B y M-A siguen seleccionables como archivo.
+- **Agregación multi-fuente**: el meta se construye fusionando labmaus + Limitless + champteams + Smogon con peso por tamaño de muestra, no eligiendo una ganadora. Cada fuente declara su procedencia y la UI la muestra tal cual.
 
 ## Comandos
 

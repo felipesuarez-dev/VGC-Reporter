@@ -110,7 +110,7 @@ impl Format {
 
     pub fn label(&self) -> &'static str {
         match self {
-            Format::RegulationMC => "Regulation M-C (M-4)",
+            Format::RegulationMC => "Regulation M-C (M-6)",
             Format::RegulationMB => "Regulation M-B (M-3)",
             Format::RegulationMA => "Regulation M-A (M-2)",
             Format::RegulationI => "Regulation I",
