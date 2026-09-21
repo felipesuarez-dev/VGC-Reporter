@@ -347,7 +347,10 @@
     "open_pokemonzone": "Abrir Pokemon Zone",
     "open_porygonlabs": "Abrir Porygon Labs",
     "open_championslab": "Abrir Champions Lab",
-    "open_limitless": "Abrir Limitless VGC"
+    "open_limitless": "Abrir Limitless VGC",
+    "diagnostics": "Diagnóstico",
+    "open_logs": "Abrir pasta de registos",
+    "logs_hint": "Os registos são gravados na pasta de dados e rodam diariamente. Abra-os se precisar de reportar um problema."
   },
   "about": {
     "title": "Sobre",

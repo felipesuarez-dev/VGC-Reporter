@@ -4,6 +4,7 @@ use crate::state::AppState;
 use tauri::State;
 
 #[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
 pub async fn list_upcoming_tournaments(
     state: State<'_, AppState>,
 ) -> Result<Vec<UpcomingTournament>, AppError> {

@@ -13,15 +13,48 @@ pub mod storage;
 use state::AppState;
 use tauri::Manager;
 
+/// Directory holding the rotating log files, inside the app data dir.
+pub const LOG_DIR_NAME: &str = "logs";
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-                tracing_subscriber::EnvFilter::new("info,vgc_reporter_lib=debug")
-            }),
-        )
-        .init();
+    // A release build on Windows is a GUI subsystem binary with no console
+    // attached, so everything written to stdout goes nowhere: in practice the
+    // app has had no logs in production at all. Mirror them to a rotating file
+    // under the app data dir so a user can actually send one, and keep the
+    // stdout layer because that is what `tauri dev` shows.
+    let guard = log_dir().map(|dir| {
+        let appender = tracing_appender::rolling::daily(dir, "vgc-reporter.log");
+        tracing_appender::non_blocking(appender)
+    });
+
+    let filter = || {
+        tracing_subscriber::EnvFilter::try_from_default_env()
+            .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info,vgc_reporter_lib=debug"))
+    };
+
+    // The non-blocking writer stops flushing when its guard drops, so it has
+    // to outlive `run`. Leaking it is the documented way to tie it to process
+    // lifetime, and this runs exactly once.
+    match guard {
+        Some((writer, worker_guard)) => {
+            std::mem::forget(worker_guard);
+            use tracing_subscriber::layer::SubscriberExt;
+            use tracing_subscriber::util::SubscriberInitExt;
+            tracing_subscriber::registry()
+                .with(filter())
+                .with(tracing_subscriber::fmt::layer())
+                .with(
+                    tracing_subscriber::fmt::layer()
+                        .with_writer(writer)
+                        .with_ansi(false),
+                )
+                .init();
+        }
+        None => {
+            tracing_subscriber::fmt().with_env_filter(filter()).init();
+        }
+    }
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -70,6 +103,7 @@ pub fn run() {
             commands::top_teams_export::save_top_teams_markdown,
             commands::settings::get_settings,
             commands::settings::set_setting,
+            commands::settings::open_logs_folder,
             commands::champions::list_champions_tournaments,
             commands::champions::get_tournament_standings,
             commands::champions::search_champions,
@@ -81,4 +115,41 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running VGC-Reporter");
+}
+
+/// Resolve (and create) the log directory. Returns `None` when the platform
+/// will not give us a data dir, in which case logging stays stdout-only
+/// rather than failing startup over something cosmetic.
+fn log_dir() -> Option<std::path::PathBuf> {
+    let base = dirs_data_dir()?
+        .join("com.pumasoft.vgcreporter")
+        .join(LOG_DIR_NAME);
+    std::fs::create_dir_all(&base).ok()?;
+    Some(base)
+}
+
+/// The OS data directory, resolved without pulling in another dependency.
+/// Tauri exposes this through its path API, but the subscriber has to be up
+/// before the app handle exists.
+fn dirs_data_dir() -> Option<std::path::PathBuf> {
+    #[cfg(target_os = "windows")]
+    {
+        std::env::var_os("APPDATA").map(std::path::PathBuf::from)
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::env::var_os("HOME")
+            .map(std::path::PathBuf::from)
+            .map(|h| h.join("Library").join("Application Support"))
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    {
+        std::env::var_os("XDG_DATA_HOME")
+            .map(std::path::PathBuf::from)
+            .or_else(|| {
+                std::env::var_os("HOME")
+                    .map(std::path::PathBuf::from)
+                    .map(|h| h.join(".local").join("share"))
+            })
+    }
 }

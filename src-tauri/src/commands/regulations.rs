@@ -11,16 +11,19 @@ fn rules_for_format(
 }
 
 #[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
 pub fn get_allowed_species(format: Format) -> Result<Vec<String>, AppError> {
     Ok(rules_for_format(format)?.allowed_species())
 }
 
 #[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
 pub fn get_allowed_items(format: Format) -> Result<Vec<String>, AppError> {
     Ok(rules_for_format(format)?.allowed_items())
 }
 
 #[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
 pub fn get_allowed_moves(format: Format) -> Result<Vec<String>, AppError> {
     Ok(rules_for_format(format)?.allowed_moves())
 }

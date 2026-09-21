@@ -347,7 +347,10 @@
     "open_pokemonzone": "Ouvrir Pokemon Zone",
     "open_porygonlabs": "Ouvrir Porygon Labs",
     "open_championslab": "Ouvrir Champions Lab",
-    "open_limitless": "Ouvrir Limitless VGC"
+    "open_limitless": "Ouvrir Limitless VGC",
+    "diagnostics": "Diagnostic",
+    "open_logs": "Ouvrir le dossier des journaux",
+    "logs_hint": "Les journaux sont enregistrés dans votre dossier de données et pivotent chaque jour. Ouvrez-les pour signaler un problème."
   },
   "about": {
     "title": "À propos",

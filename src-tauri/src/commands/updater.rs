@@ -4,6 +4,7 @@ use crate::state::AppState;
 use tauri::State;
 
 #[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
 pub async fn check_for_app_update(
     state: State<'_, AppState>,
 ) -> Result<Option<UpdateInfo>, AppError> {

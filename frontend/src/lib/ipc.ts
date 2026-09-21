@@ -59,6 +59,7 @@ export const ipc = {
       // None that means "merge every source".
       source: source ?? null,
     }),
+  openLogsFolder: () => call<void>("open_logs_folder"),
   listPokemon: () => call<Pokemon[]>("list_pokemon"),
   searchPokemon: (query?: string, typeFilter?: PokemonType) =>
     call<Pokemon[]>("search_pokemon", { query, typeFilter }),

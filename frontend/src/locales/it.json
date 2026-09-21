@@ -347,7 +347,10 @@
     "open_pokemonzone": "Apri Pokemon Zone",
     "open_porygonlabs": "Apri Porygon Labs",
     "open_championslab": "Apri Champions Lab",
-    "open_limitless": "Apri Limitless VGC"
+    "open_limitless": "Apri Limitless VGC",
+    "diagnostics": "Diagnostica",
+    "open_logs": "Apri la cartella dei log",
+    "logs_hint": "I log vengono salvati nella cartella dati e ruotano ogni giorno. Aprili se devi segnalare un problema."
   },
   "about": {
     "title": "Info",

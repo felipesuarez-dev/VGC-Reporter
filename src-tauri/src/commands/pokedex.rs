@@ -8,11 +8,13 @@ use std::collections::HashMap;
 use tauri::State;
 
 #[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
 pub async fn list_pokemon(state: State<'_, AppState>) -> Result<Vec<Pokemon>, AppError> {
     state.pokedex.all().await
 }
 
 #[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
 pub async fn search_pokemon(
     state: State<'_, AppState>,
     query: Option<String>,
@@ -22,6 +24,7 @@ pub async fn search_pokemon(
 }
 
 #[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
 pub async fn get_pokemon(state: State<'_, AppState>, id: String) -> Result<Pokemon, AppError> {
     state
         .pokedex
@@ -31,21 +34,25 @@ pub async fn get_pokemon(state: State<'_, AppState>, id: String) -> Result<Pokem
 }
 
 #[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
 pub async fn list_items(state: State<'_, AppState>) -> Result<Vec<String>, AppError> {
     state.pokedex.list_items().await
 }
 
 #[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
 pub async fn list_moves(state: State<'_, AppState>) -> Result<Vec<String>, AppError> {
     state.pokedex.list_moves().await
 }
 
 #[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
 pub async fn list_abilities(state: State<'_, AppState>) -> Result<Vec<String>, AppError> {
     state.pokedex.list_abilities().await
 }
 
 #[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
 pub async fn list_moves_for_species(
     state: State<'_, AppState>,
     species: String,
@@ -54,6 +61,7 @@ pub async fn list_moves_for_species(
 }
 
 #[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
 pub async fn get_pokemon_sets(
     state: State<'_, AppState>,
     species: String,
@@ -62,6 +70,7 @@ pub async fn get_pokemon_sets(
 }
 
 #[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
 pub async fn get_entity_descriptions(
     state: State<'_, AppState>,
 ) -> Result<EntityDescriptions, AppError> {
@@ -69,6 +78,7 @@ pub async fn get_entity_descriptions(
 }
 
 #[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
 pub async fn get_learnsets_index(
     state: State<'_, AppState>,
 ) -> Result<HashMap<String, Vec<String>>, AppError> {
@@ -76,6 +86,7 @@ pub async fn get_learnsets_index(
 }
 
 #[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
 pub async fn get_move_catalog(
     state: State<'_, AppState>,
 ) -> Result<HashMap<String, MoveSummary>, AppError> {

@@ -4,6 +4,7 @@ use crate::state::AppState;
 use tauri::State;
 
 #[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
 pub async fn get_pikalytics_entry(
     state: State<'_, AppState>,
     species: String,

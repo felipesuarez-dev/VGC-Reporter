@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ExternalLink, Info } from "lucide-react";
+import { ipc } from "../lib/ipc";
+import { ExternalLink, Info, FileText } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { FormatSelector } from "../components/ui/FormatSelector";
 import { AboutModal } from "../components/layout/AboutModal";
@@ -137,6 +138,22 @@ export function Settings() {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section className="card space-y-2">
+        <div className="label">{t("settings.diagnostics")}</div>
+        <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
+          {t("settings.logs_hint")}
+        </p>
+        <button
+          className="btn-ghost flex items-center gap-2 text-sm"
+          onClick={() => {
+            void ipc.openLogsFolder();
+          }}
+        >
+          <FileText size={14} />
+          {t("settings.open_logs")}
+        </button>
       </section>
 
       <section className="card space-y-2">

@@ -342,7 +342,10 @@
     "open_pokemonzone": "Open Pokemon Zone",
     "open_porygonlabs": "Open Porygon Labs",
     "open_championslab": "Open Champions Lab",
-    "open_limitless": "Open Limitless VGC"
+    "open_limitless": "Open Limitless VGC",
+    "diagnostics": "Diagnostics",
+    "open_logs": "Open logs folder",
+    "logs_hint": "Logs are written to your app data folder and rotate daily. Open them if you need to report a problem."
   },
   "about": {
     "title": "About",

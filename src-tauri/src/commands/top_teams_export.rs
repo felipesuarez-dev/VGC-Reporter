@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use tauri::State;
 
 #[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
 pub async fn save_top_teams_markdown(
     state: State<'_, AppState>,
     format: Format,

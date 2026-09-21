@@ -5,6 +5,7 @@ use crate::state::AppState;
 use tauri::State;
 
 #[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
 pub async fn list_champions_tournaments(
     state: State<'_, AppState>,
     format: Option<Format>,
@@ -16,6 +17,7 @@ pub async fn list_champions_tournaments(
 }
 
 #[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
 pub async fn get_tournament_standings(
     state: State<'_, AppState>,
     id: String,
@@ -24,6 +26,7 @@ pub async fn get_tournament_standings(
 }
 
 #[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
 pub async fn search_champions(
     state: State<'_, AppState>,
     query: String,

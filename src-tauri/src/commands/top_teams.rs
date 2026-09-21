@@ -5,6 +5,7 @@ use crate::state::AppState;
 use tauri::State;
 
 #[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
 pub async fn get_top_teams(
     state: State<'_, AppState>,
     format: Format,

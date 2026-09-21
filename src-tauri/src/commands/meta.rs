@@ -7,6 +7,7 @@ use tauri::State;
 
 /// `source` restricts the snapshot to one provider; `None` merges them all.
 #[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
 pub async fn get_meta_stats(
     state: State<'_, AppState>,
     format: Format,
