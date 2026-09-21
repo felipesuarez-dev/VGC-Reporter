@@ -27,6 +27,14 @@ pub const LABMAUS_BASE: &str = "https://labmaus.net";
 pub const LABMAUS_ORIGIN: &str = "https://labmaus.net";
 pub const LABMAUS_REFERER: &str = "https://labmaus.net/";
 pub const POKEPASTE_BASE: &str = "https://pokepast.es";
+
+// champteams.gg publishes derived meta data (tier list, top combos, curated
+// sets). Its robots.txt disallows /api/, so the TTL is deliberately long: one
+// refresh per half day per user, with a User-Agent that names the app rather
+// than pretending to be a browser.
+pub const CHAMPTEAMS_BASE: &str = "https://champteams.gg";
+pub const CHAMPTEAMS_USER_AGENT: &str =
+    "VGC-Reporter/0.4 (+https://github.com/PumaSoft-dev/VGC-Reporter)";
 pub const REGULATION_MA_LABMAUS: &str = "Regulation Set M-A";
 
 pub const POKEAPI_ABILITY_FLAVOR_CSV: &str = "ability_flavor_text.csv";
@@ -46,6 +54,7 @@ pub const TTL_LABMAUS_TOP_TEAMS: i64 = 2 * 60 * 60; // 2h
 pub const TTL_LABMAUS_TRENDING: i64 = 4 * 60 * 60; // 4h
 pub const TTL_LABMAUS_CATALOG: i64 = 24 * 60 * 60; // 24h (id→name map, rarely changes)
 pub const TTL_POKEPASTE: i64 = 30 * 24 * 60 * 60; // 30d (pastes are immutable)
+pub const TTL_CHAMPTEAMS: i64 = 12 * 60 * 60; // 12h (see CHAMPTEAMS_BASE)
 
 // Dataset sizing
 pub const TOURNAMENTS_PER_SNAPSHOT: usize = 25;

@@ -382,6 +382,57 @@ pub fn entry_key(display: &str) -> String {
     canonical_id(display)
 }
 
+/// Adapt a per-source [`MetaSnapshot`] into the normalised merge input.
+///
+/// The existing per-source builders already produce a `MetaSnapshot`, so this
+/// is the whole integration: no builder has to know the merge exists.
+/// `records` supplies win/loss data keyed by `canonical_id` for the sources
+/// that carry it (only labmaus does today); anything missing stays `None`
+/// rather than becoming a zero.
+pub fn from_meta_snapshot(
+    snapshot: crate::domain::usage_stats::MetaSnapshot,
+    provenance: SourceProvenance,
+    records: &HashMap<String, records::RecordTally>,
+) -> SourceSnapshot {
+    let entries = snapshot
+        .pokemon
+        .into_iter()
+        .map(|p| {
+            let key = canonical_id(&p.species);
+            let tally = records.get(&key);
+            SourceEntry {
+                display: p.species.clone(),
+                canonical: p.species,
+                usage_percent: p.usage_percent,
+                count: p.count,
+                win_rate: tally.and_then(|t| t.win_rate()),
+                games: tally.map(|t| t.games()).unwrap_or(0),
+                top_cut_rate: tally.and_then(|t| t.top_cut_rate()),
+                top_items: p.top_items,
+                top_moves: p.top_moves,
+                top_abilities: p.top_abilities,
+                top_tera: p.top_tera,
+                top_natures: p.top_natures,
+                top_teammates: p.top_teammates,
+                common_movesets: p.common_movesets,
+                sprite_url: p.sprite_url,
+                sprite_fallback_url: p.sprite_fallback_url,
+                home_sprite_url: p.home_sprite_url,
+                key,
+            }
+        })
+        .collect();
+
+    SourceSnapshot {
+        provenance,
+        entries,
+        top_items: snapshot.top_items,
+        top_moves: snapshot.top_moves,
+        top_abilities: snapshot.top_abilities,
+        top_tera: snapshot.top_tera,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

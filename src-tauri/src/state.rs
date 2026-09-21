@@ -1,8 +1,10 @@
+use crate::adapters::ChampteamsClient;
 use crate::adapters::{
     HttpClient, LabmausClient, LimitlessClient, PikalyticsClient, PkmnDataClient, PokeApiClient,
     PokepasteClient, ShowdownClient, SmogonClient,
 };
 use crate::error::AppError;
+use crate::services::meta_service::MetaServiceDeps;
 use crate::services::{
     ChampionsReportService, MetaService, PikalyticsService, PokedexService, SetsService,
     TeamService, TopTeamsService, TranslationsService, TrendingService, UpcomingTournamentsService,
@@ -43,6 +45,7 @@ impl AppState {
         let pokeapi = PokeApiClient::new((*http).clone());
         let pikalytics_client = PikalyticsClient::new((*http).clone());
         let labmaus = LabmausClient::new(http.clone());
+        let champteams = ChampteamsClient::new(http.clone());
         let pokepaste = PokepasteClient::new(http.clone());
 
         let pokedex = Arc::new(PokedexService::new(
@@ -50,15 +53,16 @@ impl AppState {
             pokeapi.clone(),
             cache.clone(),
         ));
-        let meta = MetaService::new(
-            labmaus.clone(),
-            pokepaste.clone(),
-            limitless.clone(),
-            smogon.clone(),
-            pokedex.clone(),
-            cache.clone(),
-            settings.clone(),
-        );
+        let meta = MetaService::new(MetaServiceDeps {
+            labmaus: labmaus.clone(),
+            champteams: champteams.clone(),
+            pokepaste: pokepaste.clone(),
+            limitless: limitless.clone(),
+            smogon: smogon.clone(),
+            pokedex: pokedex.clone(),
+            cache: cache.clone(),
+            settings: settings.clone(),
+        });
         let sets = SetsService::new(pkmn.clone(), cache.clone());
         let teams = TeamService::new(team_repo);
         let top_teams = TopTeamsService::new(

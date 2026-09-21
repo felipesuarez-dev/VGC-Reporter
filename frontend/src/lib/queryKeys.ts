@@ -1,8 +1,10 @@
-import type { Format, PokemonType } from "./types";
+import type { Format, PokemonType, SourceId } from "./types";
 
 export const queryKeys = {
-  meta: (format: Format, tournamentCount?: number) =>
-    ["meta", format, tournamentCount ?? 0] as const,
+  // The source filter is part of the key: without it, switching sources would
+  // serve the cached merged snapshot and look like nothing happened.
+  meta: (format: Format, tournamentCount?: number, source?: SourceId | null) =>
+    ["meta", format, tournamentCount ?? 0, source ?? "all"] as const,
   pokedex: {
     all: ["pokedex", "all"] as const,
     search: (q?: string, t?: PokemonType) => ["pokedex", "search", q ?? "", t ?? ""] as const,

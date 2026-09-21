@@ -4,12 +4,17 @@ use crate::adapters::smogon_client::{ChaosStats, SmogonClient};
 use crate::adapters::sprite_resolver::{
     canonical_display_name, canonical_id, fallback_sprite_url, primary_sprite_url,
 };
-use crate::adapters::{LabmausClient, LimitlessClient, PokepasteClient, ShowdownEntry};
+use crate::adapters::{
+    ChampteamsClient, LabmausClient, LimitlessClient, PokepasteClient, ShowdownEntry,
+};
 use crate::config;
 use crate::domain::format::Format;
+use crate::domain::source_stats::{SourceId, SourceProvenance};
 use crate::domain::usage_stats::{MetaSnapshot, PokemonUsage, TeammateUsage, UsageEntry};
 use crate::error::AppError;
-use crate::services::date_window::window_for;
+use crate::services::aggregation::records::RecordTally;
+use crate::services::aggregation::{self, SourceEntry, SourceSnapshot};
+use crate::services::date_window::chunked_window_for;
 use crate::services::pokedex_service::PokedexService;
 use crate::services::usage_aggregator::{self, top_n_normalized};
 use crate::storage::{CacheRepo, SettingsRepo};
@@ -18,8 +23,11 @@ use futures::stream::{self, StreamExt};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-const MIN_LIMITLESS_ENTRIES: u32 = 50;
 const LABMAUS_POKEPASTE_CONCURRENCY: usize = 16;
+/// Window chunks fetched at once. Kept low: the chunks exist because the
+/// upstream times out, so hammering it with all of them at once defeats the
+/// point.
+const LABMAUS_CHUNK_CONCURRENCY: usize = 4;
 
 /// Map from `canonical_id` → `(primary, fallback, home)` sprite URLs, used
 /// to inject pokedex-backed HOME fallbacks into otherwise-sync snapshot
@@ -29,6 +37,7 @@ pub(crate) type SpriteMap = HashMap<String, (String, Option<String>, Option<Stri
 #[derive(Clone)]
 pub struct MetaService {
     labmaus: LabmausClient,
+    champteams: ChampteamsClient,
     pokepaste: PokepasteClient,
     limitless: LimitlessClient,
     smogon: SmogonClient,
@@ -37,24 +46,30 @@ pub struct MetaService {
     settings: Arc<SettingsRepo>,
 }
 
+/// Everything [`MetaService`] needs, grouped so adding a source does not keep
+/// growing a positional argument list nobody can read at the call site.
+pub struct MetaServiceDeps {
+    pub labmaus: LabmausClient,
+    pub champteams: ChampteamsClient,
+    pub pokepaste: PokepasteClient,
+    pub limitless: LimitlessClient,
+    pub smogon: SmogonClient,
+    pub pokedex: Arc<PokedexService>,
+    pub cache: Arc<CacheRepo>,
+    pub settings: Arc<SettingsRepo>,
+}
+
 impl MetaService {
-    pub fn new(
-        labmaus: LabmausClient,
-        pokepaste: PokepasteClient,
-        limitless: LimitlessClient,
-        smogon: SmogonClient,
-        pokedex: Arc<PokedexService>,
-        cache: Arc<CacheRepo>,
-        settings: Arc<SettingsRepo>,
-    ) -> Self {
+    pub fn new(deps: MetaServiceDeps) -> Self {
         Self {
-            labmaus,
-            pokepaste,
-            limitless,
-            smogon,
-            pokedex,
-            cache,
-            settings,
+            labmaus: deps.labmaus,
+            champteams: deps.champteams,
+            pokepaste: deps.pokepaste,
+            limitless: deps.limitless,
+            smogon: deps.smogon,
+            pokedex: deps.pokedex,
+            cache: deps.cache,
+            settings: deps.settings,
         }
     }
 
@@ -83,123 +98,112 @@ impl MetaService {
         out
     }
 
+    /// Build a meta snapshot by merging every available source.
+    ///
+    /// `source` filters the merge to one provider. That is a filter, not a
+    /// separate code path: a single source is the degenerate case of the merge
+    /// and goes through exactly the same arithmetic, so there is no second
+    /// implementation to drift.
+    ///
+    /// No individual source can fail the snapshot. Each one is fetched inside
+    /// its own span and a failure drops that source from the merge and nothing
+    /// else, which is the difference between "one upstream is down" and "the
+    /// Dashboard is empty".
     pub async fn get_meta(
         &self,
         format: Format,
         tournament_count: Option<usize>,
+        source: Option<SourceId>,
     ) -> Result<MetaSnapshot, AppError> {
         let count = tournament_count.unwrap_or(config::TOURNAMENTS_PER_SNAPSHOT);
-        let cache_key = format!("meta-snapshot-v12::{}::{}", format.cache_id(), count);
+        // The filter is part of the key: without it, picking a single source
+        // would serve the cached merged snapshot and look like it did nothing.
+        let cache_key = format!(
+            "meta-snapshot-v13::{}::{}::{}",
+            format.cache_id(),
+            count,
+            source.map(|s| s.as_str()).unwrap_or("all")
+        );
         if let Some(bytes) = self.cache.get(&cache_key)? {
             if let Ok(snap) = serde_json::from_slice::<MetaSnapshot>(&bytes) {
                 return Ok(snap);
             }
         }
 
-        // PRIMARY: labmaus discover_teams + pokepast.es (any format with a
-        // labmaus regulation name, i.e. the Champions sets M-A / M-B).
-        if format.default_labmaus_name().is_some() {
-            match self.build_from_labmaus(format).await {
-                Ok(Some(snap)) if snap.total_entries >= MIN_LIMITLESS_ENTRIES => {
-                    tracing::info!(
-                        source = "labmaus",
-                        total = snap.total_entries,
-                        "meta snapshot"
-                    );
-                    let bytes = serde_json::to_vec(&snap)?;
-                    self.cache
-                        .put(&cache_key, &bytes, config::TTL_META_SNAPSHOT)?;
-                    return Ok(snap);
-                }
-                Ok(other) => tracing::warn!(
+        let wanted = |id: SourceId| source.is_none() || source == Some(id);
+        let mut snapshots: Vec<SourceSnapshot> = Vec::new();
+
+        if wanted(SourceId::Labmaus) {
+            match self.labmaus_source(format).await {
+                Ok(Some(s)) => snapshots.push(s),
+                Ok(None) => tracing::info!(source = "labmaus", "no data for format"),
+                Err(e) => tracing::warn!(
                     source = "labmaus",
-                    entries = other.as_ref().map(|s| s.total_entries).unwrap_or(0),
-                    "labmaus snapshot too thin, falling back to limitless"
+                    error = %e,
+                    "source failed, excluded from merge"
                 ),
-                Err(e) => tracing::warn!(error = ?e, "labmaus meta snapshot failed, falling back"),
+            }
+        }
+        if wanted(SourceId::Limitless) {
+            match self.limitless_source(format, count).await {
+                Ok(Some(s)) => snapshots.push(s),
+                Ok(None) => tracing::info!(source = "limitless", "no data for format"),
+                Err(e) => tracing::warn!(
+                    source = "limitless",
+                    error = %e,
+                    "source failed, excluded from merge"
+                ),
+            }
+        }
+        if wanted(SourceId::Champteams) {
+            match self.champteams_source(format).await {
+                Ok(Some(s)) => snapshots.push(s),
+                Ok(None) => tracing::info!(source = "champteams", "no data for format"),
+                Err(e) => tracing::warn!(
+                    source = "champteams",
+                    error = %e,
+                    "source failed, excluded from merge"
+                ),
+            }
+        }
+        if wanted(SourceId::Smogon) {
+            match self.smogon_source(format).await {
+                Ok(Some(s)) => snapshots.push(s),
+                Ok(None) => tracing::info!(source = "smogon", "no data for format"),
+                Err(e) => tracing::warn!(
+                    source = "smogon",
+                    error = %e,
+                    "source failed, excluded from merge"
+                ),
             }
         }
 
-        // FALLBACK: existing Limitless standings path.
-        let lim_snap = if format.limitless_code().is_some() {
-            let tournaments = self
-                .limitless
-                .list_tournaments_by_format(format, count)
-                .await
-                .unwrap_or_default();
+        for s in &snapshots {
             tracing::info!(
-                source = "limitless",
-                tournaments = tournaments.len(),
-                format = ?format,
-                "meta fallback: aggregating limitless standings"
+                source = %s.provenance.source,
+                teams = s.provenance.teams,
+                tournaments = s.provenance.tournaments,
+                declared = ?s.provenance.declared_regulation,
+                current = s.provenance.matches_active_format,
+                species = s.entries.len(),
+                "source ok"
             );
-            let mut all_standings = Vec::new();
-            for t in &tournaments {
-                match self.limitless.get_standings(&t.id).await {
-                    Ok(s) => all_standings.push(s),
-                    Err(e) => {
-                        tracing::warn!(tournament = %t.id, error = %e, "standings fetch failed")
-                    }
-                }
-            }
-            let mut dates: Vec<String> =
-                tournaments.iter().filter_map(|t| t.date.clone()).collect();
-            dates.sort();
-            let from_date = dates.first().cloned();
-            let to_date = dates.last().cloned();
-            let mut snap = usage_aggregator::aggregate(format, all_standings);
-            snap.from_date = from_date;
-            snap.to_date = to_date;
-            Some(snap)
-        } else {
-            None
-        };
+        }
 
-        let sm_snap = match self
-            .smogon
-            .fetch_chaos_for_format(format, &self.settings)
-            .await
-            .ok()
-            .flatten()
-        {
-            Some((slug, chaos)) => {
-                let sprites = self.resolve_smogon_sprites(&chaos).await;
-                Some(snapshot_from_smogon(format, chaos, &slug, &sprites))
-            }
-            None => None,
-        };
+        let final_snap = self.assemble(format, snapshots);
 
-        let final_snap = match (lim_snap, sm_snap) {
-            (Some(lim), _) if lim.total_entries >= MIN_LIMITLESS_ENTRIES => {
-                tracing::info!(
-                    source = "limitless",
-                    total = lim.total_entries,
-                    "meta snapshot"
-                );
-                lim
-            }
-            (_, Some(sm)) => {
-                tracing::info!(source = "smogon", total = sm.total_entries, "meta snapshot");
-                sm
-            }
-            (Some(lim), None) => {
-                tracing::info!(
-                    source = "limitless-thin",
-                    total = lim.total_entries,
-                    "meta snapshot"
-                );
-                lim
-            }
-            (None, None) => {
-                tracing::warn!("meta snapshot empty: no source produced data");
-                MetaSnapshot::empty(format)
-            }
-        };
+        tracing::info!(
+            format = %format,
+            filter = source.map(|s| s.as_str()).unwrap_or("all"),
+            sources = final_snap.sources.len(),
+            species = final_snap.pokemon.len(),
+            entries = final_snap.total_entries,
+            "meta snapshot"
+        );
 
-        // Never cache an empty snapshot: a transient upstream failure (or a
-        // regulation labmaus hasn't populated yet) would otherwise stick for
-        // the full TTL and keep showing "no data" even after the source
-        // recovers. Same guard trending_service uses.
+        // Never cache an empty snapshot: a transient upstream failure would
+        // otherwise stick for the full TTL and keep showing "no data" long
+        // after the source recovered.
         if final_snap.total_entries > 0 {
             let bytes = serde_json::to_vec(&final_snap)?;
             self.cache
@@ -208,36 +212,346 @@ impl MetaService {
         Ok(final_snap)
     }
 
-    async fn build_from_labmaus(&self, format: Format) -> Result<Option<MetaSnapshot>, AppError> {
-        let (from, to) = window_for(format);
-        let regulation = format
-            .default_labmaus_name()
-            .unwrap_or(config::REGULATION_MA_LABMAUS);
-        let teams = self
-            .labmaus
-            .get_discover_teams(&from, &to, regulation)
-            .await?;
+    /// Turn merged sources into the snapshot the frontend consumes.
+    fn assemble(&self, format: Format, snapshots: Vec<SourceSnapshot>) -> MetaSnapshot {
+        if snapshots.is_empty() {
+            tracing::warn!(format = %format, "meta snapshot empty: no source produced data");
+            return MetaSnapshot::empty(format);
+        }
+
+        // Totals describe the union of what was actually read, so the UI can
+        // say how much evidence is behind the numbers.
+        let tournaments_used = snapshots
+            .iter()
+            .map(|s| s.provenance.tournaments)
+            .max()
+            .unwrap_or(0);
+        let total_entries = snapshots.iter().map(|s| s.provenance.teams).sum();
+        let from_date = snapshots
+            .iter()
+            .filter_map(|s| s.provenance.from_date.clone())
+            .min();
+        let to_date = snapshots
+            .iter()
+            .filter_map(|s| s.provenance.to_date.clone())
+            .max();
+        let label = snapshots
+            .iter()
+            .map(|s| s.provenance.source.as_str())
+            .collect::<Vec<_>>()
+            .join(" + ");
+
+        let merged = aggregation::merge(snapshots);
+
+        MetaSnapshot {
+            format,
+            generated_at: Utc::now(),
+            source: label,
+            tournaments_used,
+            total_entries,
+            battles_analyzed: total_entries,
+            pokemon: merged.pokemon,
+            top_items: merged.top_items,
+            top_moves: merged.top_moves,
+            top_abilities: merged.top_abilities,
+            top_tera: merged.top_tera,
+            from_date,
+            to_date,
+            sources: merged.sources,
+        }
+    }
+
+    /// Labmaus: real tournament teams, and the only source that carries match
+    /// records, so it is where our own win rate comes from.
+    ///
+    /// The window is chunked because labmaus 503s on any span wider than about
+    /// three weeks, and a regulation runs for months. Chunks are fetched
+    /// concurrently and de-duplicated by team URL, since the same paste can
+    /// appear in more than one tournament listing.
+    async fn labmaus_source(&self, format: Format) -> Result<Option<SourceSnapshot>, AppError> {
+        let Some(regulation) = format.default_labmaus_name() else {
+            return Ok(None);
+        };
+        let chunks = chunked_window_for(format);
+        if chunks.is_empty() {
+            return Ok(None);
+        }
+
+        let fetches: Vec<_> = chunks
+            .iter()
+            .map(|(from, to)| {
+                let labmaus = self.labmaus.clone();
+                let (from, to) = (from.clone(), to.clone());
+                async move {
+                    match labmaus.get_discover_teams(&from, &to, regulation).await {
+                        Ok(teams) => teams,
+                        Err(e) => {
+                            // One chunk failing must not lose the others: a
+                            // partial window beats no meta at all.
+                            tracing::warn!(
+                                source = "labmaus",
+                                from = %from,
+                                to = %to,
+                                error = %e,
+                                "window chunk failed, continuing with the rest"
+                            );
+                            Vec::new()
+                        }
+                    }
+                }
+            })
+            .collect();
+
+        let chunked: Vec<Vec<LabmausDiscoverTeam>> = stream::iter(fetches)
+            .buffer_unordered(LABMAUS_CHUNK_CONCURRENCY)
+            .collect()
+            .await;
+
+        let mut seen_urls: HashSet<String> = HashSet::new();
+        let mut teams: Vec<LabmausDiscoverTeam> = Vec::new();
+        for batch in chunked {
+            for team in batch {
+                if seen_urls.insert(team.team_url.clone()) {
+                    teams.push(team);
+                }
+            }
+        }
         if teams.is_empty() {
             return Ok(None);
         }
 
         let resolved = resolve_pokepastes(&self.pokepaste, &teams).await;
+        let records = tally_records(&teams, &resolved);
         let standings = standings_from_labmaus(&teams, &resolved);
-        let mut snap = usage_aggregator::aggregate(format, vec![standings]);
-        let distinct_tournaments = teams
+        let snap = usage_aggregator::aggregate(format, vec![standings]);
+
+        let tournaments = teams
             .iter()
             .filter_map(|t| t.tournament_name.as_deref())
             .filter(|s| !s.is_empty())
             .collect::<HashSet<_>>()
             .len() as u32;
-        if distinct_tournaments > 0 {
-            snap.tournaments_used = distinct_tournaments;
-        }
-        snap.source = format!("labmaus.net ({} teams, {} to {})", teams.len(), from, to);
-        snap.from_date = Some(from);
-        snap.to_date = Some(to);
-        Ok(Some(snap))
+
+        let provenance = SourceProvenance {
+            source: SourceId::Labmaus,
+            // Labmaus is queried BY regulation label, so whatever came back is
+            // by construction the regulation that was asked for.
+            declared_regulation: Some(regulation.to_string()),
+            matches_active_format: true,
+            teams: teams.len() as u32,
+            tournaments,
+            from_date: chunks.first().map(|c| c.0.clone()),
+            to_date: chunks.last().map(|c| c.1.clone()),
+            weight: 0.0,
+        };
+        Ok(Some(aggregation::from_meta_snapshot(
+            snap, provenance, &records,
+        )))
     }
+
+    /// Limitless: tournament standings with inline decklists.
+    async fn limitless_source(
+        &self,
+        format: Format,
+        count: usize,
+    ) -> Result<Option<SourceSnapshot>, AppError> {
+        if format.limitless_code().is_none() {
+            return Ok(None);
+        }
+        let tournaments = self
+            .limitless
+            .list_tournaments_by_format(format, count)
+            .await
+            .unwrap_or_default();
+        if tournaments.is_empty() {
+            return Ok(None);
+        }
+
+        let mut all_standings = Vec::new();
+        for t in &tournaments {
+            match self.limitless.get_standings(&t.id).await {
+                Ok(s) => all_standings.push(s),
+                Err(e) => {
+                    tracing::warn!(tournament = %t.id, error = %e, "standings fetch failed")
+                }
+            }
+        }
+        let teams: u32 = all_standings.iter().map(|s| s.len() as u32).sum();
+        if teams == 0 {
+            return Ok(None);
+        }
+
+        let mut dates: Vec<String> = tournaments.iter().filter_map(|t| t.date.clone()).collect();
+        dates.sort();
+        let snap = usage_aggregator::aggregate(format, all_standings);
+
+        let provenance = SourceProvenance {
+            source: SourceId::Limitless,
+            declared_regulation: format.limitless_code().map(|c| c.to_string()),
+            // The client already filters the tournament list to this
+            // regulation own date window before it gets here.
+            matches_active_format: true,
+            teams,
+            tournaments: tournaments.len() as u32,
+            from_date: dates.first().cloned(),
+            to_date: dates.last().cloned(),
+            weight: 0.0,
+        };
+        Ok(Some(aggregation::from_meta_snapshot(
+            snap,
+            provenance,
+            &HashMap::new(),
+        )))
+    }
+
+    /// Champteams: a derived aggregate that publishes a win rate of its own.
+    ///
+    /// It ignores the format parameter and may be serving a previous
+    /// regulation, so provenance is read back from the payload and the merge
+    /// weights it accordingly. Never assume the request decided it.
+    async fn champteams_source(&self, format: Format) -> Result<Option<SourceSnapshot>, AppError> {
+        let list = self.champteams.get_tier_list().await?;
+        if list.total_pokemon() == 0 {
+            return Ok(None);
+        }
+
+        let declared = list.declared_regulation();
+        let matches = declared
+            .as_deref()
+            .map(|d| format.label().contains(d))
+            .unwrap_or(false);
+        let range = list.data_range.clone();
+
+        let mut entries = Vec::new();
+        for tier in &list.tiers {
+            for mon in &tier.pokemon {
+                let urls = self.pokedex.sprite_urls_for(&mon.name).await;
+                entries.push(SourceEntry {
+                    key: canonical_id(&mon.name),
+                    display: mon.name.clone(),
+                    canonical: canonical_display_name(&mon.name),
+                    usage_percent: mon.tournament_usage.unwrap_or(0.0),
+                    count: 0,
+                    win_rate: mon.win_rate,
+                    // It reports a rate but not how many games back it, so it
+                    // earns no shrinkage credit of its own; the merge still
+                    // weights it by the source overall sample size.
+                    games: 0,
+                    top_cut_rate: None,
+                    top_items: named_percents(&mon.items),
+                    top_moves: named_percents(&mon.moves),
+                    top_abilities: named_percents(&mon.usage_abilities),
+                    top_tera: Vec::new(),
+                    top_natures: Vec::new(),
+                    top_teammates: Vec::new(),
+                    common_movesets: Vec::new(),
+                    sprite_url: urls.0,
+                    sprite_fallback_url: urls.1,
+                    home_sprite_url: urls.2,
+                });
+            }
+        }
+
+        let provenance = SourceProvenance {
+            source: SourceId::Champteams,
+            declared_regulation: declared,
+            matches_active_format: matches,
+            teams: range.as_ref().map(|r| r.team_count).unwrap_or(0),
+            tournaments: range.as_ref().map(|r| r.tournament_count).unwrap_or(0),
+            from_date: range.as_ref().and_then(|r| r.earliest.clone()),
+            to_date: range.as_ref().and_then(|r| r.latest.clone()),
+            weight: 0.0,
+        };
+        Ok(Some(SourceSnapshot {
+            provenance,
+            entries,
+            top_items: Vec::new(),
+            top_moves: Vec::new(),
+            top_abilities: Vec::new(),
+            top_tera: Vec::new(),
+        }))
+    }
+
+    /// Smogon: ladder data, not tournament data. Lowest trust of the four.
+    async fn smogon_source(&self, format: Format) -> Result<Option<SourceSnapshot>, AppError> {
+        let Some((slug, chaos)) = self
+            .smogon
+            .fetch_chaos_for_format(format, &self.settings)
+            .await?
+        else {
+            return Ok(None);
+        };
+        let sprites = self.resolve_smogon_sprites(&chaos).await;
+        // ChaosStats carries no battle count, so the species count stands in
+        // as the sample size. It only feeds the log-damped weight, where the
+        // exact magnitude barely moves the result.
+        let sample = chaos.data.len() as u32;
+        let snap = snapshot_from_smogon(format, chaos, &slug, &sprites);
+        if snap.pokemon.is_empty() {
+            return Ok(None);
+        }
+
+        let provenance = SourceProvenance {
+            source: SourceId::Smogon,
+            declared_regulation: Some(slug),
+            // The slug encodes the regulation, so a hit is by construction the
+            // right one and a miss returns None above rather than wrong data.
+            matches_active_format: true,
+            teams: sample,
+            tournaments: 0,
+            from_date: None,
+            to_date: None,
+            weight: 0.0,
+        };
+        Ok(Some(aggregation::from_meta_snapshot(
+            snap,
+            provenance,
+            &HashMap::new(),
+        )))
+    }
+}
+
+/// Per-species win/loss tally from the labmaus team records.
+///
+/// A team contributes its record to every species on it: the record belongs to
+/// the team, and attributing it to each member is the standard way usage stats
+/// turn team results into per-species rates.
+pub(crate) fn tally_records(
+    teams: &[LabmausDiscoverTeam],
+    resolved: &[Vec<ShowdownEntry>],
+) -> HashMap<String, RecordTally> {
+    let mut out: HashMap<String, RecordTally> = HashMap::new();
+    for (idx, team) in teams.iter().enumerate() {
+        let Some(entries) = resolved.get(idx) else {
+            continue;
+        };
+        // One species can appear twice on a paste through form variants; the
+        // record must still count once for it.
+        let mut seen: HashSet<String> = HashSet::new();
+        for entry in entries {
+            let key = canonical_id(&entry.species);
+            if key.is_empty() || !seen.insert(key.clone()) {
+                continue;
+            }
+            out.entry(key)
+                .or_default()
+                .add_team(team.record.as_deref(), team.placement);
+        }
+    }
+    out
+}
+
+/// Map a champteams name/percent list onto the shared usage shape.
+fn named_percents(
+    src: &[crate::adapters::champteams_client::ChampteamsNamedPercent],
+) -> Vec<UsageEntry> {
+    src.iter()
+        .map(|e| UsageEntry {
+            name: e.name.clone(),
+            usage_percent: e.percent,
+            count: 0,
+        })
+        .collect()
 }
 
 pub(crate) async fn resolve_pokepastes(

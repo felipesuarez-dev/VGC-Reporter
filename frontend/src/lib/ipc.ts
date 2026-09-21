@@ -1,5 +1,6 @@
 import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 import type {
+  SourceId,
   ChampionsReport,
   ChampionsSearchHit,
   EntityDescriptions,
@@ -46,8 +47,18 @@ async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> 
 }
 
 export const ipc = {
-  getMetaStats: (format: Format, tournamentCount?: number) =>
-    call<MetaSnapshot>("get_meta_stats", { format, tournamentCount }),
+  getMetaStats: (
+    format: Format,
+    tournamentCount?: number,
+    source?: SourceId | null,
+  ) =>
+    call<MetaSnapshot>("get_meta_stats", {
+      format,
+      tournamentCount,
+      // undefined would be dropped by the IPC bridge; null reaches Rust as the
+      // None that means "merge every source".
+      source: source ?? null,
+    }),
   listPokemon: () => call<Pokemon[]>("list_pokemon"),
   searchPokemon: (query?: string, typeFilter?: PokemonType) =>
     call<Pokemon[]>("search_pokemon", { query, typeFilter }),
