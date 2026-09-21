@@ -19,12 +19,12 @@ import { SourcesChip } from "../components/layout/SourcesChip";
 import { formatDateTime } from "../lib/formatDate";
 import { formatLabel } from "../lib/labels";
 import { useUiStore } from "../stores/uiStore";
+import { useDashboardStore } from "../stores/dashboardStore";
 import { useLongLoadingHint } from "../hooks/useLoadingHint";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { usePullToRefresh } from "../hooks/usePullToRefresh";
 import { PullToRefreshIndicator } from "../components/layout/PullToRefreshIndicator";
 
-const FORMAT: Format = "regulation-m-b";
 const RECENT_INITIAL = 5;
 const RECENT_EXPANDED = 20;
 const TOP_TEAMS_DEFAULT_FETCH = 100;
@@ -55,6 +55,9 @@ function canonical(name: string): string {
 
 export function TopTeams() {
   const { t, i18n } = useTranslation();
+  // Top Teams used to be pinned to a hardcoded regulation, so it silently
+  // disagreed with the Dashboard selector. It now follows the same store.
+  const FORMAT: Format = useDashboardStore((s) => s.format);
   const qc = useQueryClient();
   const [selectedTournament, setSelectedTournament] =
     useState<ChampionsTournament | null>(null);

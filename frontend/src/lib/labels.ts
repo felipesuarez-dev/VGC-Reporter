@@ -31,12 +31,14 @@ export function terrainLabel(t: TFunction, terrain: Terrain): string {
 }
 
 const FORMAT_NAME: Record<Format, string> = {
+  "regulation-m-c": "Regulation M-C",
   "regulation-m-b": "Regulation M-B",
   "regulation-m-a": "Regulation M-A",
   "regulation-i": "Regulation I",
 };
 
 const FORMAT_SEASON_KEY: Partial<Record<Format, string>> = {
+  "regulation-m-c": "regulations.reg_mc_s1",
   "regulation-m-b": "regulations.reg_mb_s1",
   "regulation-m-a": "regulations.reg_ma_s2",
 };

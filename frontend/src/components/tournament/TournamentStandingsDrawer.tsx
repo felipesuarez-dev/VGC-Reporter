@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useModalBack } from "../../hooks/useModalBack";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useDashboardStore } from "../../stores/dashboardStore";
 import type { TFunction } from "i18next";
 import { useNavigate } from "react-router-dom";
 import { ClipboardCopy, X } from "lucide-react";
@@ -11,7 +12,7 @@ import { formatDateTime } from "../../lib/formatDate";
 import { SearchTextInput } from "../filters/SearchTextInput";
 import { CountryFilter } from "../filters/CountryFilter";
 import { PokemonMultiSelect } from "../filters/PokemonMultiSelect";
-import type { Pokemon } from "../../lib/types";
+import type { Format, Pokemon } from "../../lib/types";
 import type {
   ChampionsTournament,
   DecklistPokemon,
@@ -41,6 +42,7 @@ const flag = (code: string | null | undefined): string => {
 function standingToDraftTeam(
   standing: TournamentStanding,
   tournamentName: string,
+  format: Format,
 ): Team {
   const validMembers = standing.decklist.filter(
     (p) => p && p.name && p.name.length > 0,
@@ -67,7 +69,7 @@ function standingToDraftTeam(
   return {
     id: null,
     name: `${player} — ${tournamentName}`,
-    format: "regulation-m-b",
+    format,
     notes: null,
     members,
     created_at: null,
@@ -76,6 +78,7 @@ function standingToDraftTeam(
 }
 
 export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
+  const activeFormat = useDashboardStore((s) => s.format);
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const setPendingImport = useTeamBuilder((s) => s.setPendingImport);
@@ -152,7 +155,7 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
   if (!tournament) return null;
 
   const copyStandingToBuilder = (standing: TournamentStanding) => {
-    const draft = standingToDraftTeam(standing, tournament.name);
+    const draft = standingToDraftTeam(standing, tournament.name, activeFormat);
     setPendingImport(draft);
     setPendingImportMissing(computeMissingFields(draft, t));
     onClose();

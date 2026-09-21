@@ -10,8 +10,8 @@ import {
 } from "lucide-react";
 import { ipc, AppError } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
-import type { Violation } from "../lib/types";
-import { canonicalSpeciesId, isAllowedName } from "../lib/types";
+import type { Format, Violation } from "../lib/types";
+import { ALL_FORMATS, canonicalSpeciesId, isAllowedName } from "../lib/types";
 import { useTeamBuilder } from "../stores/teamBuilderStore";
 import { TeamMemberForm } from "../components/team/TeamMemberForm";
 import { ImportCompletionModal } from "../components/team/ImportCompletionModal";
@@ -200,12 +200,17 @@ export function TeamBuilder() {
         <div>
           <label className="label">{t("team_builder.regulation")}</label>
           <select
-            className="input mt-1 cursor-not-allowed opacity-70"
-            value="regulation-m-b"
-            disabled
-            title={t("team_builder.regulation_hint")}
+            className="input mt-1"
+            value={team.format}
+            onChange={(e) =>
+              setTeam({ ...team, format: e.target.value as Format })
+            }
           >
-            <option value="regulation-m-b">Regulation M-B (M-3)</option>
+            {ALL_FORMATS.map((f) => (
+              <option key={f.value} value={f.value}>
+                {f.label}
+              </option>
+            ))}
           </select>
           <p className="mt-1 text-[10px]" style={{ color: "var(--text-dim)" }}>
             {t("team_builder.regulation_hint")}

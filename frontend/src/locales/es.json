@@ -36,7 +36,8 @@
     "reg_ma_s1": "M-1",
     "reg_ma_s2": "M-2",
     "reg_mb_s1": "M-3",
-    "m_b_start_date": "Comienza el {{date}}"
+    "reg_mc_s1": "M-4",
+    "regulation_start_date": "Comienza el {{date}}"
   },
   "search": {
     "open": "Buscar",
@@ -216,7 +217,7 @@
     "evs": "EVs",
     "saved": "Equipo guardado",
     "regulation": "Regulación",
-    "regulation_hint": "Las validaciones se aplican según esta regulación. Más regulaciones próximamente.",
+    "regulation_hint": "Las validaciones (especies, objetos y movimientos permitidos) se aplican según la regulación seleccionada.",
     "import_showdown": "Importar Showdown",
     "copy_showdown": "Copiar Showdown",
     "paste_here": "Pega aquí el texto en formato Showdown",

@@ -36,7 +36,8 @@
     "reg_ma_s1": "M-1",
     "reg_ma_s2": "M-2",
     "reg_mb_s1": "M-3",
-    "m_b_start_date": "Starts on {{date}}"
+    "reg_mc_s1": "M-4",
+    "regulation_start_date": "Starts on {{date}}"
   },
   "search": {
     "open": "Search",
@@ -216,7 +217,7 @@
     "evs": "EVs",
     "saved": "Team saved",
     "regulation": "Regulation",
-    "regulation_hint": "Validations apply based on this regulation. More regulations coming soon.",
+    "regulation_hint": "Validations (allowed species, items and moves) follow the selected regulation.",
     "import_showdown": "Import Showdown",
     "copy_showdown": "Copy Showdown",
     "paste_here": "Paste your Showdown-formatted team here",

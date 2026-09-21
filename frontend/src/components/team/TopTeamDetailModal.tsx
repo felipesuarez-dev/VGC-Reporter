@@ -1,9 +1,17 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useDashboardStore } from "../../stores/dashboardStore";
 import type { TFunction } from "i18next";
 import { ClipboardCopy, X } from "lucide-react";
-import type { EvStatSpread, Nature, Team, TeamMember, TopTeam } from "../../lib/types";
+import type {
+  EvStatSpread,
+  Format,
+  Nature,
+  Team,
+  TeamMember,
+  TopTeam,
+} from "../../lib/types";
 import { ALL_NATURES, canonicalSpeciesId, emptyTeamMember } from "../../lib/types";
 import { PokemonSprite } from "../pokemon/PokemonSprite";
 import { EntityChip } from "../info/EntityChip";
@@ -57,7 +65,7 @@ export function computeMissingFields(team: Team, t: TFunction): string[] {
   return missing;
 }
 
-function toDraftTeam(top: TopTeam): Team {
+function toDraftTeam(top: TopTeam, format: Format): Team {
   const validMembers = top.members.filter(
     (m) => m && m.species && m.species.length > 0,
   );
@@ -94,7 +102,7 @@ function toDraftTeam(top: TopTeam): Team {
   return {
     id: null,
     name,
-    format: "regulation-m-b",
+    format,
     notes: null,
     members,
     created_at: null,
@@ -103,6 +111,7 @@ function toDraftTeam(top: TopTeam): Team {
 }
 
 export function TopTeamDetailModal({ team, onClose }: Props) {
+  const activeFormat = useDashboardStore((s) => s.format);
   const { t } = useTranslation();
   const navigate = useNavigate();
   const setPendingImport = useTeamBuilder((s) => s.setPendingImport);
@@ -129,7 +138,7 @@ export function TopTeamDetailModal({ team, onClose }: Props) {
   );
 
   const copyToBuilder = () => {
-    const draft = toDraftTeam(team);
+    const draft = toDraftTeam(team, activeFormat);
     setPendingImport(draft);
     setPendingImportMissing(computeMissingFields(draft, t));
     onClose();
