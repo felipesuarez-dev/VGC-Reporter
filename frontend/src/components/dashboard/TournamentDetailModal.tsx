@@ -19,6 +19,7 @@ import { downloadIcs } from "../../lib/calendar";
 import { formatDate } from "../../lib/formatDate";
 import { openExternal } from "../../lib/openExternal";
 import { sanitizeAddress } from "../../lib/upcoming";
+import { extractAdmission } from "../../lib/admission";
 import { useOfficialEventDetails } from "../../hooks/useOfficialEventDetails";
 import { useModalBack } from "../../hooks/useModalBack";
 import { EventSourceBadge } from "./EventSourceBadge";
@@ -137,7 +138,12 @@ export function TournamentDetailModal({ event, onClose }: Props) {
     official?.tournament_id ??
     event.url.match(/play-pokemon-tournaments\/([^/?#]+)/)?.[1] ??
     null;
-  const admission = event.admission ?? official?.admission ?? null;
+  const admission =
+    event.admission ??
+    official?.admission ??
+    extractAdmission(event.details) ??
+    extractAdmission(official?.details) ??
+    null;
   const registration =
     event.registration_start || event.registration_end
       ? [event.registration_start, event.registration_end]
@@ -360,14 +366,18 @@ export function TournamentDetailModal({ event, onClose }: Props) {
                 )}
               </div>
               <div className="space-y-2">
-                {admission && (
-                  <Detail
-                    icon={<Ticket size={12} />}
-                    label={t("upcoming.admission")}
-                  >
+                <Detail
+                  icon={<Ticket size={12} />}
+                  label={t("upcoming.admission")}
+                >
+                  {admission ? (
                     <span data-testid="event-price">{admission}</span>
-                  </Detail>
-                )}
+                  ) : (
+                    <span style={{ color: "var(--text-dim)" }}>
+                      {t("upcoming.admission_not_published")}
+                    </span>
+                  )}
+                </Detail>
                 {organizer && (
                   <Detail
                     icon={<UserRound size={12} />}

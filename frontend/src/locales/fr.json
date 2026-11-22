@@ -272,7 +272,8 @@
     "limitless_note": "Ces tournois sont en ligne et organisés par la communauté sur Limitless. Ce ne sont pas des événements officiels Play! Pokémon : ils n'ont donc ni pays ni ville.",
     "empty_official": "Aucun événement officiel annoncé pour le moment.",
     "empty_limitless": "Aucun tournoi en ligne Limitless annoncé.",
-    "empty_filtered": "Aucun événement ne correspond au pays, à la ville ou à la recherche."
+    "empty_filtered": "Aucun événement ne correspond au pays, à la ville ou à la recherche.",
+    "admission_not_published": "Non publié"
   },
   "drawer": {
     "top_items": "Objets",
