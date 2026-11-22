@@ -60,9 +60,21 @@ impl PokebaseTeamCard {
             })
     }
     pub fn source(&self) -> Option<String> {
-        self.source_url
+        let value = self
+            .source_url
             .clone()
-            .or_else(|| self.source_url_camel.clone())
+            .or_else(|| self.source_url_camel.clone())?;
+        let trimmed = value.trim();
+        if trimmed.is_empty() {
+            None
+        } else if trimmed.starts_with('/') {
+            // PokéBase sometimes stores the attribution as a local path.
+            Some(format!("https://pokebase.app{trimmed}"))
+        } else if trimmed.starts_with("http://") || trimmed.starts_with("https://") {
+            Some(trimmed.to_string())
+        } else {
+            None
+        }
     }
     pub fn shared_at(&self) -> Option<String> {
         self.date_shared
@@ -244,5 +256,25 @@ mod tests {
     #[test]
     fn rejects_a_page_without_payload() {
         assert!(parse_page("<html>no rsc</html>").is_err());
+    }
+
+    #[test]
+    fn resolves_relative_attribution_paths() {
+        let card = PokebaseTeamCard {
+            id: "abc".into(),
+            top: None,
+            tournament: None,
+            country: None,
+            display_name: None,
+            display_name_camel: None,
+            source_url: Some("/trainer/ash".into()),
+            source_url_camel: None,
+            date_shared: None,
+            date_shared_camel: None,
+        };
+        assert_eq!(
+            card.source().as_deref(),
+            Some("https://pokebase.app/trainer/ash")
+        );
     }
 }

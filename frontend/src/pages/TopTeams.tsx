@@ -1,7 +1,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Download, Loader2, RefreshCw } from "lucide-react";
+import { Download, ExternalLink, Loader2, RefreshCw } from "lucide-react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
@@ -18,6 +18,7 @@ import { CountryFilter } from "../components/filters/CountryFilter";
 import { SourcesChip } from "../components/layout/SourcesChip";
 import { SearchSelect } from "../components/ui/SearchSelect";
 import { formatDateTime } from "../lib/formatDate";
+import { openExternal } from "../lib/openExternal";
 import { defaultRangeFor } from "../lib/regulations";
 import { formatLabel } from "../lib/labels";
 import { useUiStore } from "../stores/uiStore";
@@ -580,6 +581,21 @@ export function TopTeams() {
                       >
                         {t("top_teams.origin_community")}
                       </span>
+                    )}
+                    {tt.source_url && (
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[8px] font-medium underline-offset-2 hover:underline"
+                        style={{
+                          backgroundColor: "var(--bg-elev-strong)",
+                          color: "var(--accent)",
+                        }}
+                        onClick={() => void openExternal(tt.source_url!)}
+                        title={tt.source_url}
+                      >
+                        <ExternalLink size={9} />
+                        {t("top_teams.original_source")}
+                      </button>
                     )}
                   </div>
                 )}

@@ -425,7 +425,8 @@
     "provider_pokebase": "PokéBase",
     "origin_all": "Tous",
     "origin_community": "Communauté",
-    "origin_tournament": "Tournoi"
+    "origin_tournament": "Tournoi",
+    "original_source": "Source d'origine"
   },
   "damage_calc": {
     "title": "Calculateur de dégâts",
