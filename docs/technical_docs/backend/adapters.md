@@ -34,6 +34,14 @@ Host: `https://labmaus.net/api/*`.
 - Parsea los pares `<label>` de la ficha (organizador, teléfono, email, local, dirección, web), el JSON-LD (dirección limpia y `offers.price`) y detecta la página anti-bot para no cachearla.
 - Si el sitio bloquea la petición directa, usa **Jina Reader** (`r.jina.ai`) para obtener el mismo contenido público y parsea sus campos Markdown. El fallback final es el listado de Pokedata.
 
+### `championships_client.rs`
+- Host: `https://championships.pokemon.com`.
+- Lista el calendario oficial con `GET /api/events.json?locale=en-us&status=upcoming|completed` (26 próximos / 55 pasados en la temporada 2027). Filtra `world`, `international`, `regional` y `special`; los eventos online se descartan.
+- Parsea rangos como `Nov. 20–22` u `Oct. 31 - Nov. 1` usando el año del nombre del evento (LAIC 2027 ocurre en noviembre de 2026) y normaliza la sede a ciudad + ISO para banderas/filtros.
+- `details(url)` lee el JSON embebido de la ficha y extrae el monto de **Prizing Information** (`$500,000 USD`, etc.) solo cuando la organización publicó efectivo.
+- `winner(url)` consulta `results.json?game=vg&division=masters` y devuelve el campeón Masters + total de jugadores cuando ya hay resultados.
+- TTL 6h para listas, 12h para ficha/resultados. `enrich()` combina premio y campeón sin bloquear si una de las dos fuentes falla.
+
 ### `pokedata_client.rs`
 - Host: `https://pokedata.ovh/events/apiv2`.
 - Modo país: `/_vg/challenges/cups/_country/{ISO}/_start/{from}/_end/{to}`.

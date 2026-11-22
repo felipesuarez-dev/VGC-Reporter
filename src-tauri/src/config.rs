@@ -62,6 +62,11 @@ pub const TTL_REGULATION_CATALOG: i64 = 6 * 60 * 60; // 6h in-memory refresh
 pub const TTL_OFFICIAL_STREAM: i64 = 2 * 60; // 2 min: a finished broadcast must not linger
 pub const TTL_POKEDATA: i64 = 6 * 60 * 60; // 6h official event locator mirror
 pub const TTL_OFFICIAL_EVENT: i64 = 6 * 60 * 60; // 6h official event page detail
+/// Official Championship Series calendar (Internationals, Regionals, Worlds).
+pub const TTL_OFFICIAL_MAJORS: i64 = 6 * 60 * 60; // 6h
+/// Official major detail page (prizing + results). Kept longer because the
+/// calendar changes rarely and the result endpoint is the expensive one.
+pub const TTL_OFFICIAL_MAJOR_DETAIL: i64 = 12 * 60 * 60; // 12h
 /// PokéBase teams page: public HTML, no API. One rebuild every half day is
 /// enough and keeps the scrape polite.
 pub const TTL_POKEBASE: i64 = 12 * 60 * 60; // 12h

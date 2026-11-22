@@ -201,7 +201,10 @@
     "no_item": "No item",
     "entity_user_share_hint": "{{name}} contributes {{share}}% of all teams; {{percent}}% of its sets carry it",
     "panel_top_entities": "Top items, moves and abilities",
-    "panel_trending": "Meta trends"
+    "panel_trending": "Meta trends",
+    "official_tournaments": "Official championships",
+    "community_tournaments": "Community tournaments",
+    "view_results": "View results"
   },
   "tournament": {
     "standings": "Standings",
@@ -212,12 +215,12 @@
   },
   "upcoming": {
     "title": "Upcoming tournaments",
-    "window": "Tournaments announced within the next 30 days",
+    "window": "Official season events and tournaments for the next 30 days.",
     "empty": "No upcoming tournaments announced.",
     "open": "Open",
     "all_countries": "All countries",
-    "source_official": "Play! Pokémon",
-    "source_limitless": "Limitless",
+    "source_official": "Official",
+    "source_limitless": "Limitless community",
     "favorite_country": "Set as favorite country",
     "filter_country": "Country",
     "filter_city": "City",
@@ -262,13 +265,22 @@
     "registrations": "registered",
     "tab_official": "Official",
     "tab_limitless": "Limitless community",
-    "tab_official_hint": "In-person Play! Pokémon events.",
+    "tab_official_hint": "Play! Pokémon in-person events and official season championships.",
     "tab_limitless_hint": "Community online tournaments; not official events.",
     "limitless_note": "These are community-run online tournaments on Limitless. They are not official Play! Pokémon events, so they have no country or city.",
     "empty_official": "No official events announced right now.",
     "empty_limitless": "No Limitless online tournaments announced.",
     "empty_filtered": "No events match the country, city or search.",
-    "admission_not_published": "Not published"
+    "admission_not_published": "Not published",
+    "tier_world": "Worlds",
+    "tier_international": "International",
+    "tier_regional": "Regional",
+    "tier_special": "Special",
+    "tier_local": "Local",
+    "tier_community": "Community",
+    "majors_title": "Official championships",
+    "locals_title": "Local official events",
+    "prize_pool": "Cash prize"
   },
   "drawer": {
     "top_items": "Items",

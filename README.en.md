@@ -30,7 +30,7 @@ VGC Reporter is the tool I wanted while team-building for Pokémon Champions: on
 
 ## Solution
 
-- **Real tournament data, not just ladder** — aggregates Limitless VGC standings into usage stats, with Smogon chaos as fallback when the format is too fresh. Recent Champions tournaments are listed with full decklists rendered inline.
+- **Real tournament data, not just ladder** - aggregates Limitless VGC standings into usage stats, with Smogon chaos as fallback when the format is too fresh. Recent tournaments are split into **official championships** (LAIC, NAIC, EUIC, Regionals, Specials, Worlds) and **Limitless community** events, each with its own badge; official rows link to their results page and show the published cash prize pool.
 - **Dynamic regulation calendar** — the app discovers the active Champions regulation and season from the official Pokémon HOME notices, validates the eligible roster, and cross-checks live tournament sources. If TPC moves a date, the app follows the published date; if the notice is late, a source with real decklists can activate the set.
 - **The live scene in one place** — a draggable **Novedades** board with the official VGC stream, official news previews, upcoming local tournaments and source status. Every panel collapses and can be grouped or separated, and the layout is remembered.
 - **Regulation workspace** — eligible Pokémon and items with usage percentages, sprites, localized descriptions, detail modals and usage/alphabetical sorting, not just a plain allow-list.
@@ -86,13 +86,19 @@ VGC Reporter is the tool I wanted while team-building for Pokémon Champions: on
     </td>
     <td align="center">
       <img src="assets/screen-calendar.png" alt="Tournament calendar" width="420" /><br/>
-      <sub><b>Tournament calendar</b> — addresses per day, text/country/city search, personal events and .ics export</sub>
+      <sub><b>Tournament calendar</b> - multi-day official majors highlighted per day, configured-timezone schedule, text/country/city search, personal events and .ics export</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="assets/screen-official-events.png" alt="Official championships and community tournaments with badges" width="840" /><br/>
+      <sub><b>Official championships</b> - LAIC/NAIC/Regionals/Worlds tier badges, multi-day ranges, prize pools and winners, separated from Limitless community tournaments</sub>
     </td>
   </tr>
   <tr>
     <td align="center" colspan="2">
       <img src="assets/screen-live-wall.png" alt="Full-screen TV wall of VGC live streams" width="840" /><br/>
-      <sub><b>Vitrina TV</b> — full-screen mosaic of the official broadcast and community screens (YukS VGC by default)</sub>
+      <sub><b>Vitrina TV</b> - full-screen mosaic of the official broadcast and community screens (YukS VGC by default)</sub>
     </td>
   </tr>
   <tr>
@@ -117,16 +123,16 @@ VGC Reporter is the tool I wanted while team-building for Pokémon Champions: on
 
 ## Download
 
-Pre-built installers for the **`v0.6.0.20261122-beta`** release:
+Pre-built installers for the **`v0.6.1.20261122-beta`** release:
 
 | Platform | Installer | Notes |
 |---|---|---|
-| Windows 10/11 | `VGC.Reporter_0.6.0_x64_en-US.msi` | MSI installer — unsigned; SmartScreen → More info → Run anyway |
-| Android 7+ (arm64) | `VGC.Reporter_v0.6.0.20261122-beta_android.apk` | Sideload: enable "Unknown sources" first |
+| Windows 10/11 | `VGC.Reporter_0.6.1_x64_en-US.msi` | MSI installer — unsigned; SmartScreen → More info → Run anyway |
+| Android 7+ (arm64) | `VGC.Reporter_v0.6.1.20261122-beta_android.apk` | Sideload: enable "Unknown sources" first |
 
 **[→ Download from the latest GitHub Release](https://github.com/felipesuarez-dev/vgc-reporter/releases/latest)**
 
-> **v0.6.0 signing note:** this release uses the 0.5.0 updater key. If an older installation does not offer the update automatically, install the MSI or APK manually. On Android, uninstall the previous app if the signature mismatch blocks the install.
+> **v0.6.1 signing note:** this release uses the 0.5.0 updater key. If an older installation does not offer the update automatically, install the MSI or APK manually. On Android, uninstall the previous app if the signature mismatch blocks the install.
 
 First launch downloads ~10 MB of Pokédex / moves / items / abilities and caches them locally; subsequent launches work offline until caches expire.
 
@@ -143,13 +149,13 @@ First launch downloads and caches Pokédex, moves, items, abilities and usage st
 
 | Area | What it does |
 |---|---|
-| **Dashboard** | Three views in the requested order - **Novedades** (default), **Métricas**, **Regulación** - with a dynamic format selector, live season label and season-aware date range. Top Pokémon with switchable bar chart / grid / meta-share treemap / tier list; Top Items / Moves / Abilities show the Pokémon that use each one most; recent Champions tournaments show the champion team, include a **champion-country filter** with flags and an honest empty state. Metrics and Regulation panels can be reordered by dragging or with the up/down buttons, and the order persists locally. |
+| **Dashboard** | Three views in the requested order - **Novedades** (default), **Métricas**, **Regulación** - with a dynamic format selector, live season label and season-aware date range. Top Pokémon with switchable bar chart / grid / meta-share treemap / tier list; Top Items / Moves / Abilities show the Pokémon that use each one most; recent tournaments are split into **official championships** and **Limitless community**, each with a source badge; official rows add a tier badge, multi-day range, prize pool and winner, while community rows keep the champion team and **champion-country filter** with flags and an honest empty state. Metrics and Regulation panels can be reordered by dragging or with the up/down buttons, and the order persists locally. |
 | **Novedades (Feed)** | Fully configurable panel stack: regulation summary, official VGC live broadcast, tournaments + month calendar and official news. Drag panels by the handle to reorder or group them into a shared row; drop on top/bottom edges to split rows. Every panel collapses, and the **Separados / Juntos** controls switch between one-per-row and all-in-one-row. Layout is persisted locally. |
 | **Learn** | Progress, guides, daily **type / speed / lead** practice, rules trivia, **real meta cores with “Try core”**, more starter teams with “See more”, a searchable glossary and tool shortcuts. Content in all five languages. |
 | **Quick tables** | `Ctrl+T` or the titlebar/mobile button opens an 18×18 type matrix, coverage, current-team matchups and a **nature table**. They stay pinned in the Pokédex and are configurable as a widget in Settings. |
 | **Live broadcast** | Configurable YouTube screens (YukS VGC, Play! Pokémon, WolfeyVGC, CybertronVGC, James Baek, PokeAlex, Moxie2D, Pokémon Champions, Sekiam, IRNemesis). A stable 9-slot TV wall; every tile has its own stop/resume, keep/mini-player and eye control, so hiding or reordering one never reloads the others. Only genuinely live streams get the live badge; otherwise the panel shows **Latest broadcasts** from `/streams`. **Vitrina TV** opens the fixed 3×3 wall. |
 | **Official news** | Pokémon Champions announcements paginated 6 at a time, always newest first. Banners use a shimmer/skeleton + fade-in while loading and a neutral fallback if an image 404s. Clicking an item opens an in-app preview modal rendering the official page, with "Open in browser" as the fallback. |
-| **Upcoming tournaments** | Separate **Official** (in-person Play! Pokémon) and **Limitless community** (online, unofficial) tabs. Country/city filters, free-text search, favourite-country star, local time and registration counts. Each event opens a full card with organizer, contact, full address, price, registration window, OpenStreetMap and `.ics` export. |
+| **Upcoming tournaments** | Separate **Official** (in-person Play! Pokémon + season championships) and **Limitless community** (online, unofficial) tabs. Official majors include **LAIC, NAIC, EUIC, Regionals, Specials and Worlds** with tier badges, multi-day date ranges, published cash prize pools and `.ics` exports; local country/city filters never hide the majors. Free-text search, favourite-country star, local time and registration counts. Each event opens a full card with organizer, contact, full address, price, registration window, OpenStreetMap and `.ics` export. |
 | **Regulation** | Active regulation and season with official local-time instants and the UTC data days used by metrics, eligible roster with sprites and usage %, new Megas, and allowed items with search, sprites, localized names, descriptions, **share of total teams** and the Pokémon that use each item most. |
 | **Pokédex** | Sortable by generation / alphabetical / meta usage; click any Pokémon for a large modal with curated competitive sets, live meta usage and type matchups. Includes the two Basculegion gendered forms and AZ's Floette-Eternal sprite. |
 | **Team Builder** | Classic (EVs/IVs) and **Champions** (66 Stat Points, 32 per stat, 31 IVs, level 50) modes, with automatic EV↔SP conversion and species/item clauses. 6 slots with searchable comboboxes, regulation-aware validation and Showdown import/export. |
@@ -185,6 +191,7 @@ Found something else? [Open an issue](https://github.com/felipesuarez-dev/vgc-re
 | [Official Pokémon HOME notices](https://champions-news.pokemon-home.com/en/list) | Regulation calendar, eligible roster, new Megas | Source of truth for the active set and season; parsed every hour |
 | [Labmaus](https://labmaus.net) | Top teams, meta snapshot, trending, source-validated regulations | Primary tournament source - requires Origin/Referer pinning, injected server-side so no CORS leaks |
 | [Limitless VGC](https://play.limitlesstcg.com/api/) | Tournaments, standings, decklists, upcoming online events | Authoritative for Champions standings; the public upcoming HTML table covers announcements the JSON API does not expose yet |
+| [Official Championship Series calendar](https://championships.pokemon.com/en-us/events) | Internationals, Regionals, Specials and Worlds; dates, venue, prize pool, winner | Upcoming and completed calendars; event pages are read for the published "Prizing Information" and the Masters results endpoint for the winner |
 | [PokéBase](https://pokebase.app/pokemon-champions/teams) | Community and tournament teams | Public team page parsed from its Next.js RSC payload; respects robots.txt, 12h cache and keeps the original attribution |
 | [Pokedata event locator mirror](https://pokedata.ovh/events/apiv2) | Upcoming in-person League Challenges / Cups | Country/city/venue, full address, coordinates, contact, admission and registration window |
 | [Official Play! Pokémon event pages](https://www.pokemon.com/us/play-pokemon/pokemon-events/find-an-event/) | Organizer, phone, website, category, premier event, status and price | Read on demand when an event card opens (6h cache), with a reader fallback and structured parsing |
@@ -217,7 +224,7 @@ flowchart TD
         ADP --> HTTP["HttpClient + SQLite cache"]
     end
 
-    HTTP -.-> EXT["External APIs<br/>Labmaus · Limitless · Showdown<br/>PokéAPI · Pikalytics · Smogon · Pokepaste"]
+    HTTP -.-> EXT["External APIs<br/>Labmaus · Limitless · Championships<br/>PokéAPI · Pikalytics · Smogon · Pokepaste"]
 
     classDef ext fill:#1a1f2e,stroke:#2b86ff,color:#cdd6f4;
     class EXT ext;
@@ -316,7 +323,7 @@ VGC-Reporter/
 MIT © 2026 PumaSoft — see [LICENSE](LICENSE).
 
 <!-- Reference-style definitions -->
-[version-badge]: https://img.shields.io/badge/version-0.6.0.20261122--beta-2b86ff?style=flat-square&labelColor=0a0e14
+[version-badge]: https://img.shields.io/badge/version-0.6.1.20261122--beta-2b86ff?style=flat-square&labelColor=0a0e14
 [version-link]: #download
 [beta-badge]: https://img.shields.io/badge/release-beta-ff6b6b?style=flat-square&labelColor=0a0e14
 [tauri-badge]: https://img.shields.io/badge/Tauri-2.4-24c8db?style=flat-square&labelColor=0a0e14&logo=tauri

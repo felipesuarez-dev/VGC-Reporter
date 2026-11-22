@@ -17,6 +17,7 @@ import {
   RotateCcw,
   ShieldCheck,
   Sparkles,
+  Swords,
   TrendingUp,
 } from "lucide-react";
 import { ipc } from "../lib/ipc";
@@ -63,6 +64,8 @@ import { DashboardViewTabs } from "../components/dashboard/DashboardViewTabs";
 import { RegulationFeed } from "../components/dashboard/RegulationFeed";
 import { RegulationInfoView } from "../components/dashboard/RegulationInfoView";
 import { UpcomingTournamentsSection } from "../components/dashboard/UpcomingTournamentsSection";
+import { RecentOfficialTournaments } from "../components/dashboard/RecentOfficialTournaments";
+import { EventSourceBadge } from "../components/dashboard/EventSourceBadge";
 import { PanelOrder, PanelOrderGroup } from "../components/layout/PanelBoard";
 
 function canonicalSpeciesId(s: string): string {
@@ -182,6 +185,7 @@ const POKE_INITIAL = 10;
       }
     : championsReportRaw;
 
+  const officialTournaments = championsReport?.official_tournaments ?? [];
   const championCountryOptions = useMemo(
     () =>
       [
@@ -785,11 +789,36 @@ const POKE_INITIAL = 10;
         )}
         {championsReport &&
           !championsFetching &&
-          championsReport.tournaments.length === 0 && (
+          officialTournaments.length > 0 && (
+            <RecentOfficialTournaments
+              tournaments={officialTournaments}
+              className="mb-4"
+            />
+          )}
+        {championsReport &&
+          !championsFetching &&
+          championsReport.tournaments.length === 0 &&
+          officialTournaments.length === 0 && (
             <p className="text-xs" style={{ color: "var(--text-dim)" }}>
               {t("common.empty")}
             </p>
           )}
+        {championsReport &&
+          officialTournaments.length > 0 &&
+          championsReport.tournaments.length > 0 && (
+          <div className="mb-1 flex items-center gap-2">
+            <Swords size={12} style={{ color: "#2b86ff" }} />
+            <h3
+              className="text-[11px] font-semibold uppercase tracking-wide"
+              style={{ color: "var(--text)" }}
+            >
+              {t("dashboard.community_tournaments")}
+            </h3>
+            <span className="text-[10px]" style={{ color: "var(--text-dim)" }}>
+              {championsReport.tournaments.length}
+            </span>
+          </div>
+        )}
         {championsReport && championsReport.tournaments.length > 0 && (
           filteredTournaments.length === 0 ? (
             <p className="text-xs" style={{ color: "var(--text-dim)" }}>
@@ -803,11 +832,14 @@ const POKE_INITIAL = 10;
                 className="flex flex-wrap items-center gap-3 py-2.5"
               >
                 <div className="min-w-0 flex-[1_1_20rem]">
-                  <div
-                    className="truncate text-sm font-medium"
-                    style={{ color: "var(--text)" }}
-                  >
-                    {tour.name}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span
+                      className="truncate text-sm font-medium"
+                      style={{ color: "var(--text)" }}
+                    >
+                      {tour.name}
+                    </span>
+                    <EventSourceBadge source={tour.source ?? "limitless"} />
                   </div>
                   <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>
                     {tour.date && <span>{formatDateTime(tour.date, i18n.language)}</span>}

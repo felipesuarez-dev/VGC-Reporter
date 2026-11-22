@@ -206,7 +206,10 @@
     "no_item": "Sem item",
     "entity_user_share_hint": "{{name}} contribui com {{share}}% de todos os times; {{percent}}% dos seus sets o usam",
     "panel_top_entities": "Top itens, golpes e habilidades",
-    "panel_trending": "Tendências do meta"
+    "panel_trending": "Tendências do meta",
+    "official_tournaments": "Campeonatos oficiais",
+    "community_tournaments": "Torneios da comunidade",
+    "view_results": "Ver resultados"
   },
   "tournament": {
     "standings": "Classificações",
@@ -217,12 +220,12 @@
   },
   "upcoming": {
     "title": "Próximos torneios",
-    "window": "Torneios anunciados nos próximos 30 dias",
+    "window": "Eventos oficiais da temporada e torneios dos próximos 30 dias.",
     "empty": "Nenhum torneio próximo anunciado.",
     "open": "Abrir",
     "all_countries": "Todos os países",
-    "source_official": "Play! Pokémon",
-    "source_limitless": "Limitless",
+    "source_official": "Oficial",
+    "source_limitless": "Comunidade Limitless",
     "favorite_country": "Definir como país favorito",
     "filter_country": "País",
     "filter_city": "Cidade",
@@ -267,13 +270,22 @@
     "registrations": "inscritos",
     "tab_official": "Oficiais",
     "tab_limitless": "Comunidade Limitless",
-    "tab_official_hint": "Eventos presenciais da Play! Pokémon.",
+    "tab_official_hint": "Eventos presenciais da Play! Pokémon e campeonatos oficiais da temporada.",
     "tab_limitless_hint": "Torneios online da comunidade; não são eventos oficiais.",
     "limitless_note": "Estes torneios são online e organizados pela comunidade no Limitless. Não são eventos oficiais da Play! Pokémon, por isso não têm país nem cidade.",
     "empty_official": "Nenhum evento oficial anunciado no momento.",
     "empty_limitless": "Nenhum torneio online do Limitless anunciado.",
     "empty_filtered": "Nenhum evento corresponde ao país, cidade ou busca.",
-    "admission_not_published": "Não publicado"
+    "admission_not_published": "Não publicado",
+    "tier_world": "Mundial",
+    "tier_international": "Internacional",
+    "tier_regional": "Regional",
+    "tier_special": "Especial",
+    "tier_local": "Local",
+    "tier_community": "Comunidade",
+    "majors_title": "Campeonatos oficiais",
+    "locals_title": "Eventos oficiais locais",
+    "prize_pool": "Prêmio em dinheiro"
   },
   "drawer": {
     "top_items": "Itens",

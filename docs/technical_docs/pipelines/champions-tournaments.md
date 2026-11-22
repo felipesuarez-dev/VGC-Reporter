@@ -9,10 +9,11 @@ Delegados a `ChampionsReportService` (`services/champions_report_service.rs`).
 
 ## list_recent
 
-1. `LimitlessClient::list_tournaments_by_format(format, limit*3)` — el factor 3 cubre torneos sin decklist publicada.
+1. `LimitlessClient::list_tournaments_by_format(format, limit*3)` - el factor 3 cubre torneos sin decklist publicada.
 2. Prefetch de `get_standings(id)` en paralelo con `futures::future::join_all`.
 3. Filtra: conserva sólo torneos con al menos un standing que tenga decklist no vacía (`has_any_decklist`).
 4. Mantiene los primeros `limit` que pasan el filtro.
+5. **Oficiales**: `ChampionshipsClient` mezcla el calendario completado con el de próximos para capturar un major en curso. Filtra por el mismo rango, deduplica por id/URL y enriquece en paralelo (`prize_pool` desde la ficha y campeón Masters desde `results.json`). Devuelve `official_tournaments` separado de `tournaments` (comunidad Limitless).
 
 ## get_standings
 

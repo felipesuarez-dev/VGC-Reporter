@@ -55,7 +55,7 @@ Handlers `#[tauri::command]` en `src-tauri/src/commands/`. Cada uno extrae `Stat
 - `set_setting(key, value) -> ()` — `SettingsRepo::set`.
 
 ### `upcoming.rs`
-- `list_upcoming_tournaments(country?) -> Vec<UpcomingTournament>` — `country` es un ISO de 2 letras o `None` para todos los países. Mezcla Limitless online + Pokedata presencial.
+- `list_upcoming_tournaments(country?) -> Vec<UpcomingTournament>` - `country` es un ISO de 2 letras o `None` para todos los países. Mezcla Limitless online + Pokedata presencial + majors oficiales de Championships (estos últimos globales, con `end_date`, `tier`, `prize_pool` y enlace a resultados).
 
 ## Registro
 

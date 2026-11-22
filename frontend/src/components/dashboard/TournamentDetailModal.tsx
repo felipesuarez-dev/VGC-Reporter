@@ -9,6 +9,7 @@ import {
   MapPin,
   Phone,
   Ticket,
+  Trophy,
   UserRound,
   X,
 } from "lucide-react";
@@ -16,13 +17,19 @@ import { useTranslation } from "react-i18next";
 import type { UpcomingTournament } from "../../lib/types";
 import { countryFlag, countryName } from "../../lib/countries";
 import { downloadIcs } from "../../lib/calendar";
-import { formatDate } from "../../lib/formatDate";
+import {
+  formatDate,
+  formatEventDateRange,
+  formatTime,
+} from "../../lib/formatDate";
 import { openExternal } from "../../lib/openExternal";
 import { sanitizeAddress } from "../../lib/upcoming";
 import { extractAdmission } from "../../lib/admission";
 import { useOfficialEventDetails } from "../../hooks/useOfficialEventDetails";
 import { useModalBack } from "../../hooks/useModalBack";
+import { useUiStore } from "../../stores/uiStore";
 import { EventSourceBadge } from "./EventSourceBadge";
+import { TournamentTierBadge } from "./TournamentTierBadge";
 
 interface Props {
   event: UpcomingTournament | null;
@@ -71,6 +78,7 @@ function Detail({
  */
 export function TournamentDetailModal({ event, onClose }: Props) {
   const { t, i18n } = useTranslation();
+  const timeZone = useUiStore((s) => s.timeZone);
   const [pageLoaded, setPageLoaded] = useState(false);
   const officialQuery = useOfficialEventDetails(
     event?.url ?? "",
@@ -99,6 +107,12 @@ export function TournamentDetailModal({ event, onClose }: Props) {
     event.source === "play-pokemon"
       ? t("upcoming.source_official")
       : t("upcoming.source_limitless");
+  const tierLabel = event.tier
+    ? t(`upcoming.tier_${event.tier}`, {
+        defaultValue: event.tier,
+      })
+    : null;
+  const typeLabel = event.kind ?? tierLabel ?? sourceLabel;
   const official = officialQuery.data;
   const officialAddress = [
     official?.address_line1,
@@ -168,13 +182,13 @@ export function TournamentDetailModal({ event, onClose }: Props) {
           latitude + 0.006
         }&layer=mapnik&marker=${latitude},${longitude}`
       : null;
-  const time = event.time ? event.time.slice(0, 5) : null;
-  const fullDate = new Intl.DateTimeFormat(i18n.language, {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(new Date(`${event.date}T12:00:00`));
+  const time =
+    event.starts_at || event.time
+      ? formatTime(event.starts_at ?? event.time, i18n.language, timeZone)
+      : null;
+  const fullDate = event.starts_at
+    ? formatDate(event.starts_at, i18n.language, timeZone)
+    : formatEventDateRange(event.date, event.end_date, i18n.language);
   // Every event has at least date/time/type/source, so the info panel is
   // always useful; individual rows disappear when the organizer did not
   // publish them.
@@ -210,9 +224,10 @@ export function TournamentDetailModal({ event, onClose }: Props) {
                 className="text-[9px] uppercase tracking-wide"
                 style={{ color: "var(--text-dim)" }}
               >
-                {event.kind ?? t("upcoming.title")}
+                {typeLabel}
               </span>
               <EventSourceBadge source={event.source} />
+              <TournamentTierBadge tier={event.tier} />
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <h2
@@ -237,7 +252,7 @@ export function TournamentDetailModal({ event, onClose }: Props) {
               )}
             </div>
             <p className="mt-0.5 text-[11px]" style={{ color: "var(--text-muted)" }}>
-              {formatDate(event.date, i18n.language)}
+              {fullDate}
               {time ? ` · ${time}` : ""}
               {event.city ? ` · ${event.city}` : ""}
               {event.players != null
@@ -264,7 +279,7 @@ export function TournamentDetailModal({ event, onClose }: Props) {
             <button
               type="button"
               className="btn-ghost text-xs"
-              onClick={() => downloadIcs(event, sourceLabel)}
+              onClick={() => downloadIcs(event, sourceLabel, i18n.language)}
               title={t("upcoming.export_ics")}
               aria-label={t("upcoming.export_ics")}
             >
@@ -320,7 +335,7 @@ export function TournamentDetailModal({ event, onClose }: Props) {
                   {time ? ` · ${time}` : ""}
                 </Detail>
                 <Detail icon={<Info size={12} />} label={t("upcoming.type")}>
-                  {event.kind ?? sourceLabel}
+                  {typeLabel}
                 </Detail>
                 {event.region && (
                   <Detail icon={<Info size={12} />} label={t("upcoming.format")}>
@@ -378,6 +393,19 @@ export function TournamentDetailModal({ event, onClose }: Props) {
                     </span>
                   )}
                 </Detail>
+                {event.prize_pool && (
+                  <Detail
+                    icon={<Trophy size={12} />}
+                    label={t("upcoming.prize_pool")}
+                  >
+                    <span
+                      className="font-semibold"
+                      style={{ color: "#f5c542" }}
+                    >
+                      {event.prize_pool}
+                    </span>
+                  </Detail>
+                )}
                 {organizer && (
                   <Detail
                     icon={<UserRound size={12} />}

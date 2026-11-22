@@ -17,6 +17,7 @@ Todo el fetching pasa por `HttpClient::get_cached` (`src-tauri/src/adapters/http
 | Pokepaste | `https://pokepast.es/<hash>/raw` | 30d (immutable) | `Accept: text/plain` | Resolución de decklists desde Labmaus |
 | PokéAPI CSV | `https://pokeapi.co/...` + mirror | 30d | — | Nombres y flavor text bilingüe (EN/ES) |
 | Pokedata event locator | `https://pokedata.ovh/events/apiv2` | 6h | UA de navegador | Próximos League Challenges/Cups presenciales: dirección, coordenadas, contacto, entrada e inscripción (espejo del localizador oficial) |
+| Championship Series calendar | `https://championships.pokemon.com/api/events.json` | 6h lista · 12h ficha/resultados | UA de navegador | LAIC, NAIC, EUIC, Regionales, Especiales y Worlds; fechas, sede, premio en efectivo y campeón Masters |
 | Play! Pokémon YouTube | `https://www.youtube.com/@PlayPokemon` | 5 min | `Accept-Language: en-US` | Detecta el stream **VGC** en vivo desde la pestaña `/streams` (nunca GO/TCG) |
 | Item sprites | PokéAPI sprites / Showdown itemicons / PokémonDB | cache HTTP | — | Cadena de fallback para los sprites de objetos |
 
@@ -36,6 +37,7 @@ Todo el fetching pasa por `HttpClient::get_cached` (`src-tauri/src/adapters/http
 - **Top Teams**: Labmaus discover_teams → Limitless top standings.
 - **Trending**: Labmaus discover_teams en dos ventanas de 7 días.
 - **Pokédex**: Showdown → heurísticas de sprite resolver.
-- **Próximos torneos**: Limitless online + Pokedata presencial; si una fuente falla se muestra la otra. El detalle del evento incluye dirección, mapa, contacto, entrada, inscripción y `.ics`.
+- **Próximos torneos**: Limitless online + Pokedata presencial + calendario oficial de Championship Series. Si una fuente falla se muestran las demás. Los majors globales no se filtran por país/ciudad; el detalle incluye fecha multi-día, sede, premio en efectivo cuando está publicado, mapa, contacto, inscripción y `.ics`.
+- **Torneos pasados**: Limitless comunidad + oficiales completados/en curso. La lista separa ambos orígenes con badge, muestra premio/campeón cuando la fuente lo publica y enlaza a los resultados oficiales.
 - **Stream en vivo**: `/streams` VGC → `/live` VGC → `None` (el panel se colapsa). Nunca se usa un stream GO/TCG.
 - **Nombres/descripciones de objetos**: Showdown EN + PokéAPI EN/localizado; cada locale cae a EN; el nombre cae a `prettifyItemName`. Sprites: PokéAPI → Showdown → PokémonDB → icono.

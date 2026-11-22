@@ -11,6 +11,17 @@ pub struct UpcomingTournament {
     pub region: Option<String>,
     pub players: Option<u32>,
     pub source: String,
+    /// Last day of multi-day events (official majors). `None` for single-day
+    /// local/online tournaments. The calendar expands the whole range.
+    #[serde(default)]
+    pub end_date: Option<String>,
+    /// Visual tier: `world`, `international`, `regional`, `special`, `local`
+    /// or `community`. Majors are highlighted with a dedicated badge.
+    #[serde(default)]
+    pub tier: Option<String>,
+    /// Published cash prize pool, when the official page has one.
+    #[serde(default)]
+    pub prize_pool: Option<String>,
     #[serde(default)]
     pub time: Option<String>,
     #[serde(default)]

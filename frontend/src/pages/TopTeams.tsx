@@ -12,6 +12,7 @@ import { LoadAllTeamsConfirmModal } from "../components/team/LoadAllTeamsConfirm
 import { ExportLargeMdConfirmModal } from "../components/team/ExportLargeMdConfirmModal";
 import { TournamentStandingsDrawer } from "../components/tournament/TournamentStandingsDrawer";
 import { ChampionsSearchHits } from "../components/tournament/ChampionsSearchHits";
+import { EventSourceBadge } from "../components/dashboard/EventSourceBadge";
 import { PokemonMultiSelect } from "../components/filters/PokemonMultiSelect";
 import { SearchTextInput } from "../components/filters/SearchTextInput";
 import { CountryFilter } from "../components/filters/CountryFilter";
@@ -667,11 +668,14 @@ export function TopTeams() {
                 className="flex items-center justify-between gap-3 py-2"
               >
                 <div className="min-w-0 flex-1">
-                  <div
-                    className="truncate text-sm font-medium"
-                    style={{ color: "var(--text)" }}
-                  >
-                    {tour.name}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span
+                      className="truncate text-sm font-medium"
+                      style={{ color: "var(--text)" }}
+                    >
+                      {tour.name}
+                    </span>
+                    <EventSourceBadge source={tour.source ?? "limitless"} />
                   </div>
                   <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>
                     {tour.date && <span>{formatDateTime(tour.date, i18n.language)}</span>}

@@ -2,7 +2,8 @@ use crate::adapters::sprite_resolver::{
     canonical_display_name, fallback_sprite_url, primary_sprite_url,
 };
 use crate::adapters::{
-    LimitlessClient, LimitlessDecklistEntry, LimitlessStanding, LimitlessTournamentSummary,
+    ChampionshipEvent, ChampionshipsClient, LimitlessClient, LimitlessDecklistEntry,
+    LimitlessStanding, LimitlessTournamentSummary,
 };
 use crate::domain::champions::{
     ChampionsReport, ChampionsSearchHit, ChampionsTournament, DecklistPokemon, SearchHitKind,
@@ -11,9 +12,9 @@ use crate::domain::champions::{
 use crate::domain::format::Format;
 use crate::error::AppError;
 use crate::services::pokedex_service::PokedexService;
-use chrono::Utc;
+use chrono::{Duration, NaiveDate, Utc};
 use futures::future::join_all;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 type SpriteMap = HashMap<String, (String, Option<String>, Option<String>)>;
@@ -22,11 +23,20 @@ type SpriteMap = HashMap<String, (String, Option<String>, Option<String>)>;
 pub struct ChampionsReportService {
     limitless: LimitlessClient,
     pokedex: Arc<PokedexService>,
+    championships: ChampionshipsClient,
 }
 
 impl ChampionsReportService {
-    pub fn new(limitless: LimitlessClient, pokedex: Arc<PokedexService>) -> Self {
-        Self { limitless, pokedex }
+    pub fn new(
+        limitless: LimitlessClient,
+        pokedex: Arc<PokedexService>,
+        championships: ChampionshipsClient,
+    ) -> Self {
+        Self {
+            limitless,
+            pokedex,
+            championships,
+        }
     }
 
     pub async fn list_recent(
@@ -37,7 +47,7 @@ impl ChampionsReportService {
     ) -> Result<ChampionsReport, AppError> {
         let raw = self
             .limitless
-            .list_tournaments_in_range(format, range, limit.saturating_mul(3))
+            .list_tournaments_in_range(format.clone(), range, limit.saturating_mul(3))
             .await?;
 
         let fetches = raw
@@ -99,10 +109,73 @@ impl ChampionsReportService {
             }
         }
 
+        let official_tournaments = self.official_recent(format.clone(), range, limit).await;
+
         Ok(ChampionsReport {
             tournaments: kept.into_iter().map(|(t, _)| t).collect(),
+            official_tournaments,
             fetched_at: Utc::now(),
         })
+    }
+
+    /// Official majors (Internationals, Regionals, Specials, Worlds) for the
+    /// same window as the community list. The official calendar carries the
+    /// dates and location; the event page adds the published cash prize and
+    /// the Masters winner when results are available.
+    async fn official_recent(
+        &self,
+        format: Format,
+        range: Option<(NaiveDate, NaiveDate)>,
+        limit: usize,
+    ) -> Vec<ChampionsTournament> {
+        let today = Utc::now().date_naive();
+        let (from, to) = match range {
+            Some((from, to)) => (from, to.min(today)),
+            None => format
+                .data_window()
+                .map(|(start, end)| (start, end.unwrap_or(today).min(today)))
+                .unwrap_or((today - Duration::days(90), today)),
+        };
+        if from > to {
+            return Vec::new();
+        }
+
+        // Completed events come from the completed calendar, but an ongoing
+        // major (for example LAIC on Sunday) is still listed as upcoming until
+        // the organizer moves it. Merge both sources so it appears in the
+        // past/recent panel on the same weekend it is being played.
+        let mut events = Vec::new();
+        match self.championships.list(true).await {
+            Ok(completed) => events.extend(completed),
+            Err(error) => tracing::warn!(%error, "completed official calendar unavailable"),
+        }
+        match self.championships.list(false).await {
+            Ok(upcoming) => events.extend(upcoming),
+            Err(error) => tracing::warn!(%error, "upcoming official calendar unavailable"),
+        }
+        if events.is_empty() {
+            return Vec::new();
+        }
+        events.sort_by(|a, b| b.start_date.cmp(&a.start_date));
+        let mut seen = HashSet::new();
+        events.retain(|event| seen.insert(event.url.clone()));
+        let mut selected = events
+            .into_iter()
+            .filter(|event| {
+                event.start_date <= today && event.end_date >= from && event.start_date <= to
+            })
+            .take(limit.max(1))
+            .collect::<Vec<_>>();
+        if selected.is_empty() {
+            return Vec::new();
+        }
+
+        let enrichments = selected
+            .iter_mut()
+            .map(|event| self.championships.enrich(event));
+        futures::future::join_all(enrichments).await;
+
+        selected.into_iter().map(into_official_tournament).collect()
     }
 
     pub async fn get_standings(
@@ -280,15 +353,42 @@ fn into_tournament(
     champion_name: Option<String>,
     champion_country: Option<String>,
 ) -> ChampionsTournament {
+    let url = format!("https://play.limitlesstcg.com/tournament/{}", t.id);
     ChampionsTournament {
         id: t.id,
         name: t.name,
         date: t.date,
+        end_date: None,
         players: t.players,
         format: t.format,
         organizer_id: t.organizer_id,
+        source: Some("limitless".into()),
+        url: Some(url),
+        location: None,
+        tier: Some("community".into()),
+        prize_pool: None,
         champion_name,
         champion_country,
+        champion_team: Vec::new(),
+    }
+}
+
+fn into_official_tournament(event: ChampionshipEvent) -> ChampionsTournament {
+    ChampionsTournament {
+        id: format!("official-{}", event.id),
+        name: event.name,
+        date: Some(event.start_date.to_string()),
+        end_date: Some(event.end_date.to_string()),
+        players: event.players,
+        format: None,
+        organizer_id: None,
+        source: Some("play-pokemon".into()),
+        url: Some(event.url),
+        location: Some(event.location),
+        tier: Some(event.type_code),
+        prize_pool: event.prize_pool,
+        champion_name: event.winner_name,
+        champion_country: event.winner_country,
         champion_team: Vec::new(),
     }
 }

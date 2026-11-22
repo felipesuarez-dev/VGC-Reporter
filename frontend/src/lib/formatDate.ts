@@ -115,3 +115,38 @@ export function formatDateRange(
   if (a && b) return `${a} - ${b}`;
   return a || b;
 }
+
+/**
+ * Compact range for tournament rows: `20–22 nov 2026` when both dates share
+ * the month, `31 oct – 1 nov 2026` across months, and the full range across
+ * years. Date-only values are formatted in local time so the configured
+ * timezone never shifts a calendar day.
+ */
+export function formatEventDateRange(
+  from: string | null | undefined,
+  to: string | null | undefined,
+  locale?: string,
+): string {
+  if (!from) return "";
+  if (!to || to === from) return formatDate(from, locale);
+  const start = parseDate(from);
+  const end = parseDate(to);
+  if (!start || !end) return formatDateRange(from, to, locale);
+  const normalized = normalizeLocale(locale);
+  const sameYear = start.getFullYear() === end.getFullYear();
+  const sameMonth = sameYear && start.getMonth() === end.getMonth();
+  const month = new Intl.DateTimeFormat(normalized, { month: "short" });
+  const day = new Intl.DateTimeFormat(normalized, { day: "numeric" });
+  const year = new Intl.DateTimeFormat(normalized, { year: "numeric" });
+  if (sameMonth) {
+    return `${day.format(start)}–${day.format(end)} ${month.format(
+      start,
+    )} ${year.format(start)}`;
+  }
+  if (sameYear) {
+    return `${day.format(start)} ${month.format(start)} – ${day.format(
+      end,
+    )} ${month.format(end)} ${year.format(end)}`;
+  }
+  return `${formatDate(from, locale)} – ${formatDate(to, locale)}`;
+}

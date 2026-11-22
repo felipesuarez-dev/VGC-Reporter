@@ -18,6 +18,7 @@ Genera el `MetaSnapshot` (Top Pokémon, top items/moves/abilities/tera, common m
 
 ## ChampionsReportService (`champions_report_service.rs`)
 - `list_recent`: pide `limit*3` tournaments a Limitless, prefetch de `get_standings` con `join_all`, conserva sólo los que tienen ≥1 decklist no vacía (`has_any_decklist`).
+- `official_recent`: mezcla el calendario oficial completado con el de próximos para incluir también un major en curso (LAIC en domingo). Filtra por rango, deduplica por id/URL, enriquece en paralelo con premio y campeón Masters y devuelve `official_tournaments` separado de la lista comunitaria.
 - `get_standings`: descarga estandarte raw, recolecta nombres únicos, los resuelve en batch vía `PokedexService::sprite_urls_for`, mapea a `TournamentStanding` con sprites inyectados.
 
 ## TrendingService (`trending_service.rs`)
@@ -50,7 +51,9 @@ Genera el `MetaSnapshot` (Top Pokémon, top items/moves/abilities/tera, common m
 ## UpcomingTournamentsService (`upcoming_tournaments_service.rs`)
 - Limitless `list_all_vgc(100)` filtrado por ventana de 30 días hacia adelante.
 - Suma eventos presenciales de Pokedata: por país (`_country/XX`) o global (sin `_country`, 2 páginas) cuando el filtro es "Todos".
-- Ordena por fecha/hora/nombre, deduplica por id y recorta a 60.
+- Suma el calendario oficial de Championship Series con ventana de 365 días: LAIC, NAIC, EUIC, Regionales, Especiales y Worlds. Los majors son globales y no se ocultan con el filtro país/ciudad; solo los eventos locales lo respetan.
+- Enriquece en paralelo los majors dentro de 120 días con premio en efectivo y campeón/resultados; los más lejanos se muestran con fecha y sede sin bloquear la carga.
+- Ordena por fecha/hora/nombre, deduplica por id y recorta a 200.
 
 ## Utilidades
 

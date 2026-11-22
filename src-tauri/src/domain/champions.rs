@@ -8,9 +8,27 @@ pub struct ChampionsTournament {
     pub id: String,
     pub name: String,
     pub date: Option<String>,
+    /// Last day for multi-day official majors.
+    #[serde(default)]
+    pub end_date: Option<String>,
     pub players: Option<u32>,
     pub format: Option<String>,
     pub organizer_id: Option<String>,
+    /// `limitless` (community) or `play-pokemon` (official major).
+    #[serde(default)]
+    pub source: Option<String>,
+    /// Official event page / results page. Community rows are opened through
+    /// the in-app Limitless standings drawer instead.
+    #[serde(default)]
+    pub url: Option<String>,
+    #[serde(default)]
+    pub location: Option<String>,
+    /// `world`, `international`, `regional` or `special` for official majors.
+    #[serde(default)]
+    pub tier: Option<String>,
+    /// Published cash prize pool, when the organizer lists one.
+    #[serde(default)]
+    pub prize_pool: Option<String>,
     pub champion_name: Option<String>,
     /// Country reported by Limitless for the champion; used by the local
     /// scene filter without touching standings or decklists.
@@ -24,7 +42,12 @@ pub struct ChampionsTournament {
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
 pub struct ChampionsReport {
+    /// Community tournaments with published teams (Limitless).
     pub tournaments: Vec<ChampionsTournament>,
+    /// Official Championship Series majors (Internationals, Regionals,
+    /// Specials and Worlds) for the same date window.
+    #[serde(default)]
+    pub official_tournaments: Vec<ChampionsTournament>,
     pub fetched_at: DateTime<Utc>,
 }
 

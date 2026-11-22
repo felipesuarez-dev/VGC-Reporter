@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   cityKey,
   eventAddress,
+  eventDayKeys,
+  isMajorEvent,
   matchesCity,
   matchesUpcomingQuery,
   parseCityKey,
@@ -124,5 +126,37 @@ describe("upcoming split", () => {
     const split = splitUpcomingEvents(events);
     expect(split.official.map((entry) => entry.id)).toEqual(["official"]);
     expect(split.limitless.map((entry) => entry.id)).toEqual(["online", "other"]);
+  });
+
+  it("expands multi-day official majors for the calendar", () => {
+    expect(
+      eventDayKeys({ date: "2026-11-20", end_date: "2026-11-22" }),
+    ).toEqual(["2026-11-20", "2026-11-21", "2026-11-22"]);
+    expect(eventDayKeys({ date: "2026-11-28", end_date: null })).toEqual([
+      "2026-11-28",
+    ]);
+  });
+
+  it("uses the configured timezone for timed events", () => {
+    expect(
+      eventDayKeys(
+        { date: "2026-11-21", starts_at: "2026-11-21T02:00:00Z" },
+        "UTC",
+      ),
+    ).toEqual(["2026-11-21"]);
+    expect(
+      eventDayKeys(
+        { date: "2026-11-21", starts_at: "2026-11-21T02:00:00Z" },
+        "America/Santiago",
+      ),
+    ).toEqual(["2026-11-20"]);
+  });
+
+  it("recognizes Worlds, Internationals, Regionals and Specials as majors", () => {
+    for (const tier of ["world", "international", "regional", "special"]) {
+      expect(isMajorEvent({ tier, source: "play-pokemon" })).toBe(true);
+    }
+    expect(isMajorEvent({ tier: "local", source: "play-pokemon" })).toBe(false);
+    expect(isMajorEvent({ tier: "community", source: "limitless" })).toBe(false);
   });
 });

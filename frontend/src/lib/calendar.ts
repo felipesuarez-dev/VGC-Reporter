@@ -1,4 +1,5 @@
 import type { UpcomingTournament } from "./types";
+import { formatTime } from "./formatDate";
 import { eventAddress } from "./upcoming";
 
 function escapeIcs(value: string): string {
@@ -38,13 +39,19 @@ function stamp(): string {
 export function eventToIcs(
   event: UpcomingTournament,
   sourceLabel: string,
+  locale?: string,
 ): string {
-  const time = event.time ? event.time.slice(0, 5) : null;
+  const time =
+    event.starts_at || event.time
+      ? formatTime(event.starts_at ?? event.time, locale)
+      : null;
   const location = eventAddress(event);
   const description = [
     time ? `Hora local del evento: ${time}` : null,
     `Fuente: ${sourceLabel}`,
     event.kind ? `Tipo: ${event.kind}` : null,
+    event.tier ? `Nivel: ${event.tier}` : null,
+    event.prize_pool ? `Premio en efectivo: ${event.prize_pool}` : null,
     event.admission ? `Entrada: ${event.admission}` : null,
     event.registration_start || event.registration_end
       ? `Inscripción: ${[event.registration_start, event.registration_end]
@@ -59,6 +66,8 @@ export function eventToIcs(
     .filter(Boolean)
     .join("\n");
   const summary = `${event.name}${time ? ` (${time})` : ""}`;
+  const lastDay =
+    event.end_date && event.end_date > event.date ? event.end_date : event.date;
 
   return [
     "BEGIN:VCALENDAR",
@@ -70,7 +79,7 @@ export function eventToIcs(
     `UID:${escapeIcs(event.id)}@vgc-reporter`,
     `DTSTAMP:${stamp()}`,
     `DTSTART;VALUE=DATE:${dateOnly(event.date)}`,
-    `DTEND;VALUE=DATE:${nextDate(event.date)}`,
+    `DTEND;VALUE=DATE:${nextDate(lastDay)}`,
     `SUMMARY:${escapeIcs(summary)}`,
     `LOCATION:${escapeIcs(location)}`,
     `DESCRIPTION:${escapeIcs(description)}`,
@@ -82,8 +91,12 @@ export function eventToIcs(
 }
 
 /** Triggers a download that Google/Outlook/Apple Calendar can import. */
-export function downloadIcs(event: UpcomingTournament, sourceLabel: string) {
-  const blob = new Blob([eventToIcs(event, sourceLabel)], {
+export function downloadIcs(
+  event: UpcomingTournament,
+  sourceLabel: string,
+  locale?: string,
+) {
+  const blob = new Blob([eventToIcs(event, sourceLabel, locale)], {
     type: "text/calendar;charset=utf-8",
   });
   const url = URL.createObjectURL(blob);

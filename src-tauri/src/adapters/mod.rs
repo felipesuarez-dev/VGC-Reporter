@@ -1,3 +1,4 @@
+pub mod championships_client;
 pub mod champteams_client;
 pub mod gen9_supplement;
 pub mod http_client;
@@ -16,6 +17,9 @@ pub mod showdown_client;
 pub mod smogon_client;
 pub mod sprite_resolver;
 
+pub use championships_client::{
+    ChampionshipDetails, ChampionshipEvent, ChampionshipWinner, ChampionshipsClient,
+};
 pub use champteams_client::{ChampteamsClient, ChampteamsTierList};
 pub use http_client::HttpClient;
 pub use labmaus_client::{

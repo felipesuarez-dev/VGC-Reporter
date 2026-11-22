@@ -1,8 +1,8 @@
 use crate::adapters::ChampteamsClient;
 use crate::adapters::{
-    HttpClient, LabmausClient, LimitlessClient, OfficialEventClient, OfficialRegulationClient,
-    OfficialStreamClient, PikalyticsClient, PkmnDataClient, PokeApiClient, PokebaseClient,
-    PokedataClient, PokepasteClient, ShowdownClient, SmogonClient,
+    ChampionshipsClient, HttpClient, LabmausClient, LimitlessClient, OfficialEventClient,
+    OfficialRegulationClient, OfficialStreamClient, PikalyticsClient, PkmnDataClient,
+    PokeApiClient, PokebaseClient, PokedataClient, PokepasteClient, ShowdownClient, SmogonClient,
 };
 use crate::error::AppError;
 use crate::services::meta_service::MetaServiceDeps;
@@ -51,6 +51,7 @@ impl AppState {
         let official_regulations = OfficialRegulationClient::new(http.clone());
         let official_stream = OfficialStreamClient::new(http.clone());
         let official_event = OfficialEventClient::new(http.clone());
+        let championships = ChampionshipsClient::new(http.clone());
         let champteams = ChampteamsClient::new(http.clone());
         let pokebase = PokebaseClient::new(http.clone());
         let pokepaste = PokepasteClient::new(http.clone());
@@ -80,8 +81,14 @@ impl AppState {
             pokedex.clone(),
             cache.clone(),
         );
-        let champions = ChampionsReportService::new(limitless.clone(), pokedex.clone());
-        let upcoming = UpcomingTournamentsService::new(limitless.clone(), pokedata, official_event);
+        let champions =
+            ChampionsReportService::new(limitless.clone(), pokedex.clone(), championships.clone());
+        let upcoming = UpcomingTournamentsService::new(
+            limitless.clone(),
+            pokedata,
+            official_event,
+            championships,
+        );
         let translations = TranslationsService::new(pokeapi);
         let pikalytics = PikalyticsService::new(pikalytics_client, cache.clone(), pokedex.clone());
         let trending = TrendingService::new(labmaus.clone(), cache.clone(), settings.clone());

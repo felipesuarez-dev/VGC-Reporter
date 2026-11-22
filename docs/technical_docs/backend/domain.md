@@ -15,10 +15,10 @@
 - **`item.rs`** — `Item { name, description }`.
 - **`move_.rs`** — `Move`, `MoveSummary`, `MoveCategory` (Physical/Special/Status).
 - **`usage_stats.rs`** — `MetaSnapshot`, `PokemonUsage`, `TeammateUsage`, `MovesetUsage`, `UsageEntry`, `MoveUsage`, `TeraUsage`. Output del aggregator.
-- **`champions.rs`** — `ChampionsReport`, `ChampionsTournament`, `TournamentStanding`, `DecklistPokemon`.
+- **`champions.rs`** - `ChampionsReport` (comunidad + `official_tournaments`), `ChampionsTournament` (incluye `source`, `url`, `location`, `tier`, `prize_pool`, `end_date`), `TournamentStanding`, `DecklistPokemon`.
 - **`trending.rs`** — `TrendingReport`, `TrendingPokemon`. Incluye `window_days` con `serde(default)` por compatibilidad de cache.
 - **`pikalytics.rs`** — `PikalyticsEntry`, `PikalyticsEvSpread`, `PikalyticsItem`, `PikalyticsTeammate`.
-- **`upcoming.rs`** — `UpcomingTournament` (nombre, fecha, hora, fuente, formato, jugadores, local, ciudad, país, dirección completa, coordenadas, contacto, entrada e inscripción).
+- **`upcoming.rs`** - `UpcomingTournament` (nombre, fecha, `end_date` multi-día, hora, fuente, `tier`, `prize_pool`, formato, jugadores, local, ciudad, país, dirección completa, coordenadas, contacto, entrada e inscripción).
 - **`sets.rs`** — `PokemonSet`, `SetsBundle`. Sets curados de Pikalytics Commons.
 
 ## Convenciones

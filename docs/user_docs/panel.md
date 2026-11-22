@@ -22,19 +22,29 @@ Muestra el "estado del meta" de la regulación activa en un vistazo.
   descripción y modal de detalle.
 - **Trending**: Pokémon que más suben o bajan comparando los últimos 7 días
   contra los 7 anteriores.
-- **Próximos torneos**: eventos online de Limitless y eventos presenciales del
-  localizador oficial Play! Pokémon. Por defecto se muestran **todos los
-  países**; los combobox de país y **ciudad** tienen buscador. Los países con
-  eventos aparecen primero y puedes marcar un país favorito con la estrella.
-  Cada fila indica su **fuente** y abre una ficha con dirección, mapa, contacto,
-  entrada, inscripción, categoría, evento premier, estado, ID del torneo,
-  código postal, web del local y "Exportar .ics". El precio se muestra como
-  badge junto al título.
-- **Champions tournaments**: torneos recientes con standings y decklists. La
-  fila muestra una etiqueta **Equipo campeón**; al pasar el mouse aparece el
-  tooltip con los seis Pokémon y su detalle (objeto, habilidad, Tera y
-  movimientos). El equipo no ocupa espacio en la fila. Click en **Ver
-  clasificación** abre el cajón lateral completo.
+- **Próximos torneos**: pestañas **Oficiales** y **Comunidad Limitless**.
+  Oficiales reúne los majors de la temporada (**LAIC, NAIC, EUIC, Regionales,
+  Especiales y Worlds**) y los eventos presenciales locales. Cada major lleva
+  un **badge de nivel** (Mundial/Internacional/Regional/Especial), rango de
+  fechas multi-día y, cuando la organización lo publica, el **premio en
+  efectivo** con su divisa. Los majors son globales: el filtro país/ciudad solo
+  afecta a los eventos locales y nunca los oculta. Por defecto se muestran
+  **todos los países**; los combobox de país y **ciudad** tienen buscador y
+  puedes marcar un país favorito con la estrella. Cada fila indica su **fuente**
+  y abre una ficha con dirección, mapa, contacto, entrada, inscripción,
+  categoría, evento premier, estado, ID del torneo, código postal, web del local
+  y **Exportar .ics** multi-día. El precio y el premio se muestran como badges.
+- **Torneos recientes**: separados en **Campeonatos oficiales** y **Torneos de
+  comunidad**, cada uno con su badge. Los oficiales muestran fecha, sede,
+  jugadores, campeón Masters, premio en efectivo cuando existe y un enlace a
+  los resultados oficiales. Los comunitarios conservan standings/decklists; la
+  fila muestra **Equipo campeón** y el tooltip con los seis Pokémon (objeto,
+  habilidad, Tera y movimientos). Click en **Ver clasificación** abre el cajón
+  lateral completo. Un major en curso (por ejemplo LAIC el domingo) aparece en
+  recientes ese mismo fin de semana.
+- **Calendario**: los majors oficiales se expanden a todos sus días y se
+  destacan con borde/punto dorado. La hora de cada evento respeta la **zona
+  horaria configurada** en Ajustes; las fechas de solo día no se desplazan.
 - **Fuentes**: chips clickables a Labmaus, Limitless y Pikalytics.
 
 ## Regulación
@@ -91,15 +101,18 @@ Es la superficie de "qué está pasando ahora". Tiene cuatro paneles:
    live, torneos y noticias están listos.
 3. **Torneos**: próximos eventos con filtros de país/ciudad, favorito con
    estrella, buscador de texto (nombre, local o dirección, sin importar
-   tildes) y fuente visible. El listado muestra la dirección completa de cada
-   evento. Click en un evento abre una ficha con organizador, teléfono, web,
-   local, dirección, mapa OpenStreetMap, entrada (badge junto al título),
-   inscripción, categoría, evento premier, estado, ID y **Exportar .ics**. Los
-   datos que faltan en el listado se leen de la
-   página oficial de Pokémon y se muestran dentro de la ficha; como esa página
-   bloquea los iframes, la app no la embebe y mantiene **Abrir en el
-   navegador** como respaldo. La pestaña **Calendario** muestra esos mismos
-   eventos en un calendario mensual.
+   tildes) y fuente visible. La pestaña **Oficiales** separa los **campeonatos
+   de la temporada** (LAIC, NAIC, EUIC, Regionales, Especiales y Worlds) de los
+   eventos locales; los majors llevan badge de nivel, rango multi-día y premio
+   en efectivo cuando está publicado. El listado muestra la dirección completa
+   de cada evento. Click en un evento abre una ficha con organizador, teléfono,
+   web, local, dirección, mapa OpenStreetMap, entrada, premio, inscripción,
+   categoría, evento premier, estado, ID y **Exportar .ics** multi-día. Los
+   datos que faltan en el listado se leen de la página oficial de Pokémon y se
+   muestran dentro de la ficha; como esa página bloquea los iframes, la app no
+   la embebe y mantiene **Abrir en el navegador** como respaldo. La pestaña
+   **Calendario** muestra esos mismos eventos en un calendario mensual, con los
+   días de campeonato destacados y las horas en la zona horaria configurada.
 4. **Noticias oficiales**: avisos de Pokémon Champions paginados de 6 en 6.
    Las imágenes usan un skeleton con brillo y aparecen con un fade; si una
    imagen falla se muestra un placeholder limpio. Al hacer click se abre un

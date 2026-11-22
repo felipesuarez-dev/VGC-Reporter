@@ -49,17 +49,20 @@ VGC Reporter es la herramienta que quería mientras construía equipos para Cham
   <img src="assets/screen-builder.png" alt="Constructor Champions" width="46%" />
   <br/>
   <img src="assets/screen-regulation.png" alt="Regulación y objetos permitidos" width="46%" />
+  <br/>
+  <img src="assets/screen-official-events.png" alt="Campeonatos oficiales y torneos de comunidad con badges" width="92%" />
+  <br/>
   <img src="assets/screen-live-wall.png" alt="Vitrina TV con 9 directos" width="92%" />
 </div>
 
 ## Descarga
 
-Instaladores de **`v0.6.0.20261122-beta`**:
+Instaladores de **`v0.6.1.20261122-beta`**:
 
 | Plataforma | Instalador | Notas |
 |---|---|---|
-| Windows 10/11 | `VGC.Reporter_0.6.0_x64_en-US.msi` | MSI sin firma Authenticode; SmartScreen → Más información → Ejecutar de todas formas |
-| Android 7+ (arm64) | `VGC.Reporter_v0.6.0.20261122-beta_android.apk` | Sideload: activa “Instalar apps desconocidas” |
+| Windows 10/11 | `VGC.Reporter_0.6.1_x64_en-US.msi` | MSI sin firma Authenticode; SmartScreen → Más información → Ejecutar de todas formas |
+| Android 7+ (arm64) | `VGC.Reporter_v0.6.1.20261122-beta_android.apk` | Sideload: activa “Instalar apps desconocidas” |
 
 **[Descargar desde el último release de GitHub](https://github.com/felipesuarez-dev/VGC-Reporter/releases/latest)**
 
@@ -79,11 +82,11 @@ bun run tauri:dev
 | Área | Qué hace |
 |---|---|
 | **Panel Principal** | Novedades (inicio), Métricas y Regulación. Selector dinámico de regulación/temporada, rango de fechas compartido, drag & drop de paneles en las tres vistas (con subir/bajar como alternativa), colapsables y layouts Separados/Juntos. |
-| **Métricas** | Top Pokémon en barras, grid, treemap con sprites y tooltip, o tiers. Top objetos/movimientos/habilidades con los Pokémon que más los usan. Trending, torneos recientes y próximos eventos. |
+| **Métricas** | Top Pokémon en barras, grid, treemap con sprites y tooltip, o tiers. Top objetos/movimientos/habilidades con los Pokémon que más los usan. Trending, torneos recientes separados en **campeonatos oficiales** y **comunidad Limitless**, cada uno con su badge, y próximos eventos. |
 | **Regulación** | Roster elegible, Megas, objetos permitidos con búsqueda, sprites, descripciones y porcentaje del total de equipos. Procedencia y confianza de cada fuente. |
 | **Novedades** | Resumen de temporada, muro de directos, torneos + calendario y noticias oficiales. Los paneles se arrastran, agrupan y colapsan; el layout se recuerda. |
 | **En Vivo** | Pantallas de YouTube (YukS, Play! Pokémon, Wolfey, Cybertron, James Baek, PokeAlex, Moxie2D, Pokémon Champions, Sekiam, IRNemesis…). Hasta 9 en Vitrina 3×3, últimas transmisiones reales, botón de detener por stream y ojo para ocultar sin recargar los demás. |
-| **Próximos torneos** | Pestañas **Oficiales** (Play! Pokémon presencial) y **Comunidad Limitless** (online, no oficiales). País/ciudad con búsqueda, favorito, dirección completa, precio, inscripción, mapa y `.ics`. |
+| **Próximos torneos** | Pestañas **Oficiales** (Play! Pokémon presencial + campeonatos de la temporada) y **Comunidad Limitless** (online, no oficiales). Los oficiales incluyen **LAIC, NAIC, EUIC, Regionales, Especiales y Worlds** con badge de nivel, rango de fechas, premio en efectivo cuando la fuente lo publica y `.ics` multi-día. País/ciudad con búsqueda, favorito, dirección completa, precio, inscripción y mapa; los majors no se ocultan por el filtro local. Calendario con días de campeonato destacados. |
 | **Noticias** | Avisos oficiales paginados, preview dentro de la app, skeleton/shimmer y “Abrir en el navegador”. |
 | **Aprender** | Progreso, guías, práctica diaria de tipos/velocidad/lead, trivia de reglas, **cores reales del meta con “Probar core”**, más equipos iniciales con “Ver más”, glosario y herramientas. Ya no repite el tablero de amenazas de otras vistas. |
 | **Tablas rápidas** | `Ctrl+T` o botón en la barra: matriz de tipos 18×18, cobertura de 1-2 tipos, equipo actual y **tabla de naturalezas**. En la Pokédex quedan fijas y en Ajustes se configuran como widget. |
@@ -116,6 +119,7 @@ La página **Aprender** no es un muro de texto. Reúne:
 | Labmaus | Equipos de torneo, meta y validación de regulación |
 | Limitless VGC | Torneos, standings, decklists y próximos online |
 | PokéBase | Equipos de torneo y comunidad de Pokémon Champions |
+| Calendario oficial Championship Series | LAIC, NAIC, EUIC, Regionales, Especiales y Worlds; fechas, sede, premios y resultados |
 | Pokedata / Play! Pokémon | Eventos presenciales, dirección, contacto y precio |
 | Smogon | Fallback de ladder |
 | Pokepaste | Pastes de equipos |
@@ -148,7 +152,7 @@ flowchart TD
     ADP --> HTTP[HttpClient + caché]
   end
 
-  HTTP -.-> EXT["Labmaus · Limitless · PokéBase<br/>Pokémon HOME · Pokedata · Showdown · PokéAPI"]
+  HTTP -.-> EXT["Labmaus · Limitless · PokéBase<br/>Pokémon HOME · Championships · Pokedata · Showdown · PokéAPI"]
 ```
 
 Las dependencias apuntan siempre hacia dentro. `domain/` no conoce I/O; todo el HTTP pasa por `adapters/http_client.rs` y su caché SQLite.
@@ -188,7 +192,7 @@ Calidad antes de release:
 
 ```bash
 bun scripts/check-locales.ts
-bun scripts/bump-version.ts --check --tag v0.6.0.20261122-beta
+bun scripts/bump-version.ts --check --tag v0.6.1.20261122-beta
 cd src-tauri && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
 bun run --cwd frontend build && bun run --cwd frontend test
 ```
@@ -210,7 +214,7 @@ bun run --cwd frontend build && bun run --cwd frontend test
 
 MIT. VGC Reporter es un proyecto no oficial y sin fines de lucro. No está afiliado a Nintendo, The Pokémon Company, Game Freak ni Creatures Inc. Pokémon y sus nombres son marcas de sus respectivos dueños. Consulta `DISCLAIMER.txt`.
 
-[version-badge]: https://img.shields.io/badge/version-0.6.0.20261122--beta-8b5cf6
+[version-badge]: https://img.shields.io/badge/version-0.6.1.20261122--beta-8b5cf6
 [version-link]: https://github.com/felipesuarez-dev/VGC-Reporter/releases
 [beta-badge]: https://img.shields.io/badge/status-beta-f59e0b
 [tauri-badge]: https://img.shields.io/badge/Tauri-2-24C8DB

@@ -10,6 +10,9 @@ const event: UpcomingTournament = {
   region: null,
   players: null,
   source: "play-pokemon",
+  end_date: null,
+  tier: "local",
+  prize_pool: null,
   time: "15:00:00",
   kind: "League Cup",
   city: "Santiago",
@@ -46,5 +49,23 @@ describe("eventToIcs", () => {
     expect(ics).toContain("Fuente: Play! Pokémon");
     expect(ics).toContain("URL:https://www.pokemon.com/event");
     expect(ics).toContain("END:VEVENT");
+  });
+
+  it("keeps the whole multi-day range and the cash prize", () => {
+    const ics = eventToIcs(
+      {
+        ...event,
+        id: "laic-2027",
+        name: "2027 Pokemon Latin America International Championships",
+        date: "2026-11-20",
+        end_date: "2026-11-22",
+        tier: "international",
+        prize_pool: "$500,000 USD",
+      },
+      "Official",
+    );
+    expect(ics).toContain("DTSTART;VALUE=DATE:20261120");
+    expect(ics).toContain("DTEND;VALUE=DATE:20261123");
+    expect(ics).toContain("Premio en efectivo: $500\\,000 USD");
   });
 });

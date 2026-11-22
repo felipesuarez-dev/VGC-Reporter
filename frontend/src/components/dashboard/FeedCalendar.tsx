@@ -7,13 +7,21 @@ import {
   Loader2,
   Plus,
   Trash2,
+  Trophy,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { RegulationInfo, UpcomingTournament } from "../../lib/types";
-import { formatDate, formatDateTime } from "../../lib/formatDate";
+import {
+  formatDate,
+  formatDateTime,
+  formatEventDateRange,
+  formatTime,
+} from "../../lib/formatDate";
 import { downloadIcs } from "../../lib/calendar";
 import {
   eventAddress,
+  eventDayKeys,
+  isMajorEvent,
   matchesCity,
   matchesUpcomingQuery,
 } from "../../lib/upcoming";
@@ -23,6 +31,7 @@ import { useUiStore } from "../../stores/uiStore";
 import { UpcomingFilters } from "../layout/UpcomingFilters";
 import { EventSourceBadge } from "./EventSourceBadge";
 import { TournamentDetailModal } from "./TournamentDetailModal";
+import { TournamentTierBadge } from "./TournamentTierBadge";
 import { CustomEventModal } from "./CustomEventModal";
 
 interface Props {
@@ -58,6 +67,7 @@ export function FeedCalendar({ info }: Props) {
   const upcomingCountry = useUiStore((s) => s.upcomingCountry);
   const upcomingCity = useUiStore((s) => s.upcomingCity);
   const setUpcomingCity = useUiStore((s) => s.setUpcomingCity);
+  const timeZone = useUiStore((s) => s.timeZone);
   const { data, isLoading, isError, refetch, isFetching } =
     useUpcomingTournaments(upcomingCountry);
   const allCountries = useUpcomingTournaments(null);
@@ -76,6 +86,7 @@ export function FeedCalendar({ info }: Props) {
     () =>
       new Set(
         (allCountries.data ?? [])
+          .filter((event) => !isMajorEvent(event))
           .map((event) => event.country)
           .filter((code): code is string => Boolean(code)),
       ),
@@ -87,6 +98,7 @@ export function FeedCalendar({ info }: Props) {
       countryEvents
         .filter((event) => matchesUpcomingQuery(event, query))
         .filter((event) =>
+          isMajorEvent(event) ||
           matchesCity(event.city, event.country, upcomingCity),
         ),
     [countryEvents, query, upcomingCity],
@@ -94,19 +106,29 @@ export function FeedCalendar({ info }: Props) {
   const eventsByDate = useMemo(() => {
     const map = new Map<string, UpcomingTournament[]>();
     for (const event of events) {
-      const list = map.get(event.date) ?? [];
-      list.push(event);
-      map.set(event.date, list);
+      for (const day of eventDayKeys(event, timeZone)) {
+        const list = map.get(day) ?? [];
+        list.push(event);
+        map.set(day, list);
+      }
     }
     for (const list of map.values()) {
       list.sort(
         (a, b) =>
+          Number(isMajorEvent(b)) - Number(isMajorEvent(a)) ||
           (a.time ?? "").localeCompare(b.time ?? "") ||
           a.name.localeCompare(b.name),
       );
     }
     return map;
-  }, [events]);
+  }, [events, timeZone]);
+  const majorDays = useMemo(() => {
+    const days = new Set<string>();
+    for (const [day, list] of eventsByDate) {
+      if (list.some((event) => isMajorEvent(event))) days.add(day);
+    }
+    return days;
+  }, [eventsByDate]);
   const customByDate = useMemo(() => {
     const map = new Map<string, typeof customEvents>();
     for (const event of customEvents) {
@@ -191,7 +213,7 @@ export function FeedCalendar({ info }: Props) {
   return (
     <div>
       <UpcomingFilters
-        events={countryEvents}
+        events={countryEvents.filter((event) => !isMajorEvent(event))}
         availableCountries={availableCountries}
         query={query}
         onQueryChange={setQuery}
@@ -250,6 +272,7 @@ export function FeedCalendar({ info }: Props) {
       <div className="mt-1 grid grid-cols-7 gap-1">
         {cells.map((cell) => {
           const selected = cell.key === selectedDay;
+          const hasMajor = majorDays.has(cell.key);
           return (
             <button
               key={cell.key}
@@ -263,21 +286,36 @@ export function FeedCalendar({ info }: Props) {
               style={{
                 backgroundColor: selected
                   ? "var(--accent-soft)"
-                  : cell.count > 0
-                    ? "var(--bg-elev-strong)"
-                    : "transparent",
+                  : hasMajor
+                    ? "color-mix(in srgb, #f5c542 13%, var(--bg-elev-strong))"
+                    : cell.count > 0
+                      ? "var(--bg-elev-strong)"
+                      : "transparent",
                 color: cell.inMonth ? "var(--text)" : "var(--text-dim)",
                 border: selected
                   ? "1px solid var(--accent)"
-                  : "1px solid transparent",
+                  : hasMajor
+                    ? "1px solid color-mix(in srgb, #f5c542 55%, transparent)"
+                    : "1px solid transparent",
               }}
               aria-label={formatDate(cell.key, i18n.language)}
+              title={
+                hasMajor
+                  ? (eventsByDate.get(cell.key) ?? [])
+                      .filter(isMajorEvent)
+                      .map((event) => event.name)
+                      .join(" · ")
+                  : undefined
+              }
+              data-major={hasMajor ? "true" : undefined}
             >
               {cell.date.getDate()}
               {cell.count > 0 && (
                 <span
                   className="absolute bottom-0.5 h-1 w-1 rounded-full"
-                  style={{ backgroundColor: "var(--accent)" }}
+                  style={{
+                    backgroundColor: hasMajor ? "#f5c542" : "var(--accent)",
+                  }}
                   aria-hidden
                 />
               )}
@@ -402,13 +440,37 @@ export function FeedCalendar({ info }: Props) {
                         {event.name}
                       </span>
                       <EventSourceBadge source={event.source} />
+                      <TournamentTierBadge tier={event.tier} />
                     </div>
                     <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                      {event.time ? `${event.time.slice(0, 5)} · ` : ""}
+                      {event.starts_at || event.time
+                        ? `${formatTime(
+                            event.starts_at ?? event.time,
+                            i18n.language,
+                            timeZone,
+                          )} · `
+                        : ""}
                       {event.kind ? `${event.kind} · ` : ""}
+                      {event.end_date && event.end_date !== event.date
+                        ? `${formatEventDateRange(
+                            event.date,
+                            event.end_date,
+                            i18n.language,
+                          )} · `
+                        : ""}
                       {event.city ?? event.venue ?? ""}
                     </div>
-                    {address && (
+                    {event.prize_pool && (
+                      <div
+                        className="mt-0.5 inline-flex items-center gap-1 text-[9px] font-semibold"
+                        style={{ color: "#f5c542" }}
+                        title={t("upcoming.prize_pool")}
+                      >
+                        <Trophy size={9} />
+                        {event.prize_pool}
+                      </div>
+                    )}
+                    {address && !isMajorEvent(event) && (
                       <div
                         className="mt-0.5 line-clamp-2 text-[9px]"
                         style={{ color: "var(--text-dim)" }}
@@ -421,7 +483,13 @@ export function FeedCalendar({ info }: Props) {
                   <button
                     type="button"
                     className="btn-ghost h-7 w-7 shrink-0 p-0"
-                    onClick={() => downloadIcs(event, sourceLabel(event.source))}
+                    onClick={() =>
+                      downloadIcs(
+                        event,
+                        sourceLabel(event.source),
+                        i18n.language,
+                      )
+                    }
                     title={t("upcoming.export_ics")}
                     aria-label={t("upcoming.export_ics")}
                   >

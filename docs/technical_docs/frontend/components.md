@@ -61,11 +61,13 @@
 - `NewsDetailModal.tsx` — iframe de la noticia oficial + "Abrir en el navegador" y `useModalBack`.
 - `NewsThumbnail.tsx` — banner 96×56 con shimmer mientras carga, fade/scale al terminar y placeholder si falla.
 - `FeedSidePanel.tsx` — tabs Próximos / Calendario. La pestaña de Fuentes se eliminó; la información de fuentes vive en Regulación y Ajustes.
-- `FeedCalendar.tsx` — calendario mensual con puntos por día (torneos + eventos personales), lista del día seleccionado con dirección completa, filtros país/ciudad, **Exportar .ics** y **Añadir evento** (evento personal persistido).
-- `CustomEventModal.tsx` — formulario de evento personal (título, fecha, hora, lugar, notas) guardado en `customEventsStore`.
-- `UpcomingTournamentsSection.tsx` — eventos online + presenciales; filtros país/ciudad, fuente visible y modal de detalle.
-- `EventSourceBadge.tsx` — badge Play! Pokémon vs Limitless para cada evento.
-- `TournamentDetailModal.tsx` — ficha con organizador, teléfono/email, local, dirección completa, código postal, contacto, web, entrada (badge junto al título), inscripción, categoría, evento premier, estado, ID, mapa OpenStreetMap, **Exportar .ics** y "Abrir en el navegador". Para Play! Pokémon consulta `get_official_event_details`; si el sitio bloquea la petición, usa el lector público de respaldo y muestra los datos estructurados (sin iframe ni aviso anti-bot). Limitless conserva la vista embebida.
+- `FeedCalendar.tsx` - calendario mensual con puntos por día (torneos + eventos personales), lista del día seleccionado con dirección completa, filtros país/ciudad, **Exportar .ics** y **Añadir evento** (evento personal persistido). Los majors oficiales se expanden a todos sus días y se destacan con borde/punto dorado; las horas respetan la zona horaria configurada.
+- `CustomEventModal.tsx` - formulario de evento personal (título, fecha, hora, lugar, notas) guardado en `customEventsStore`.
+- `UpcomingTournamentsSection.tsx` - eventos online + presenciales + majors oficiales; agrupa **Campeonatos oficiales** (LAIC/EUIC/NAIC/Regionales/Especiales/Worlds) y **Eventos oficiales locales**, muestra rango multi-día, premio en efectivo y modal de detalle. Los majors no se ocultan por el filtro país/ciudad.
+- `EventSourceBadge.tsx` - badge Oficial (Play! Pokémon) vs Comunidad Limitless para cada evento.
+- `TournamentTierBadge.tsx` - badge de nivel (Mundial/Internacional/Regional/Especial/Local) con color e icono; `tournamentTierColor()` comparte el acento con el calendario y las filas.
+- `RecentOfficialTournaments.tsx` - lista de majors oficiales en el panel de torneos recientes: fecha, sede, jugadores, campeón Masters, premio en efectivo y enlace a resultados.
+- `TournamentDetailModal.tsx` - ficha con organizador, teléfono/email, local, dirección completa, código postal, contacto, web, entrada/precio, **premio en efectivo cuando existe**, rango multi-día, inscripción, categoría, evento premier, estado, ID, mapa OpenStreetMap, **Exportar .ics** multi-día y "Abrir en el navegador". Las horas usan la zona horaria configurada. Para Play! Pokémon consulta `get_official_event_details`; si el sitio bloquea la petición, usa el lector público de respaldo y muestra los datos estructurados (sin iframe ni aviso anti-bot). Limitless conserva la vista embebida.
 
 ## items/
 - `ItemSprite.tsx` — sprite de objeto con cadena de fallback PokéAPI → Showdown itemicons → PokémonDB → icono neutro. El intento se resetea al cambiar de objeto sin `useEffect`.
