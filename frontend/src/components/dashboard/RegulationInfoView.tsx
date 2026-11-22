@@ -530,7 +530,7 @@ export function RegulationInfoView({
               </p>
             ) : (
               <div className="grid grid-cols-3 gap-2">
-                {megas.slice(0, 12).map((entry) => (
+                {megas.map((entry) => (
                   <PokemonTile
                     key={entry.name}
                     entry={entry}

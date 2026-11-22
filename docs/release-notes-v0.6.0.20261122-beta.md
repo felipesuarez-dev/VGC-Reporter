@@ -27,6 +27,7 @@
 
 ## Correcciones
 
+- **Megas elegibles** ahora muestra **todas** las Megas de la regulación, no solo las primeras 12.
 - El precio de entrada de próximos eventos se recupera también desde los detalles cuando la fuente no trae Admission; si no existe, el modal muestra “No publicado” en vez de ocultar la fila.
 - Se eliminó el enlace de watch party por defecto que aparecía como “última transmisión”.
 - Las últimas transmisiones ahora usan el primer vídeo de `/streams`, no el de mayor score.
