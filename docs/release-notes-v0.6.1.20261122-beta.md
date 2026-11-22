@@ -66,3 +66,13 @@ Series.
   "Instalar apps desconocidas".
 
 El updater de escritorio y Android se valida contra esta versión.
+
+## Artefactos y hashes
+
+- Release: <https://github.com/felipesuarez-dev/VGC-Reporter/releases/tag/v0.6.1.20261122-beta>
+- `300f41bda9c2e3051d2af604a75a5fd1ea5eebe58c79b7a7b5e96784e15d8038` — `VGC.Reporter_0.6.1_x64_en-US.msi`
+- `aa756d6062f3aac1c703f9c65f273c259783ed1e8176b3c7ed2ba0c12bd84e68` — `VGC.Reporter_0.6.1_x64_es-ES.msi`
+- `26359a72ecf9b214f2669aea50f9b3fb9358cb3a6ab088fcbb36efef3c493b87` — `VGC.Reporter_v0.6.1.20261122-beta_android.apk`
+
+`latest.json` declara `0.6.1` para `windows-x86_64`, `windows-x86_64-msi` y
+`android`; las firmas MSI/APK fueron comparadas contra los assets publicados.
