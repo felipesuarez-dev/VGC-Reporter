@@ -34,10 +34,11 @@ por su cuenta.
 
 | Plataforma | Nombre |
 |---|---|
-| Windows MSI | `VGC.Reporter_0.6.0_x64_en-US.msi` |
-| Android | `VGC.Reporter_v0.6.0.20261122-beta_android.apk` |
+| Windows MSI (en-US) | `VGC.Reporter_0.6.0_x64_en-US.msi` |
+| Windows MSI (es-ES) | `VGC.Reporter_0.6.0_x64_es-ES.msi` |
+| Android arm64 | `VGC.Reporter_v0.6.0.20261122-beta_android.apk` |
 
-El release distribuye **MSI** y **APK**. macOS y Linux ya no se compilan: el
+El APK publicado es **arm64** (Android 7+, `minSdk 24`). En Windows se publican ambos idiomas del MSI; `latest.json` apunta al `en-US` porque el updater usa un único asset por plataforma. macOS y Linux ya no se compilan: el
 objetivo es Windows + Android y no gastar minutos de Actions en plataformas que
 no se distribuyen.
 
