@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { LEARN_GUIDES, LEARN_GLOSSARY, learnLanguage } from "./learnContent";
+import {
+  LEARN_GUIDES,
+  LEARN_GLOSSARY,
+  LEARN_TRIVIA,
+  learnLanguage,
+} from "./learnContent";
 
 const LOCALES = ["es", "en", "fr", "it", "pt"] as const;
 
@@ -37,5 +42,15 @@ describe("Learn content", () => {
     expect(learnLanguage("es-CL")).toBe("es");
     expect(learnLanguage("pt-BR")).toBe("pt");
     expect(learnLanguage("ja-JP")).toBe("en");
+  });
+
+  it("ships five rules trivia questions per locale", () => {
+    for (const locale of LOCALES) {
+      expect(LEARN_TRIVIA[locale]).toHaveLength(5);
+      for (const item of LEARN_TRIVIA[locale]) {
+        expect(item.statement.trim().length).toBeGreaterThan(10);
+        expect(item.explanation.trim().length).toBeGreaterThan(10);
+      }
+    }
   });
 });

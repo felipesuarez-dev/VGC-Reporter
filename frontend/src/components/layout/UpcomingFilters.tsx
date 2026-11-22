@@ -12,6 +12,8 @@ interface Props {
   query: string;
   onQueryChange: (query: string) => void;
   className?: string;
+  /** Limitless online events have no country/city. */
+  showLocationFilters?: boolean;
 }
 
 /**
@@ -25,6 +27,7 @@ export function UpcomingFilters({
   query,
   onQueryChange,
   className,
+  showLocationFilters = true,
 }: Props) {
   const { t } = useTranslation();
   const upcomingCountry = useUiStore((s) => s.upcomingCountry);
@@ -100,6 +103,8 @@ export function UpcomingFilters({
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
+        {showLocationFilters && (
+          <>
         <div className="min-w-[9rem] flex-1">
           <div
             className="mb-1 text-[9px] uppercase tracking-wide"
@@ -128,6 +133,8 @@ export function UpcomingFilters({
             cities={cities}
           />
         </div>
+          </>
+        )}
       </div>
     </div>
   );

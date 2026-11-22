@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Check, Palette } from "lucide-react";
 import { ALL_THEMES, useUiStore, type Theme } from "../../stores/uiStore";
 import { cn } from "../../lib/cn";
+import { Tooltip } from "../ui/Tooltip";
 
 const SWATCH: Record<Theme, { bg: string; accent: string }> = {
   system: { bg: "linear-gradient(135deg, #0b0a14 50%, #fff5f7 50%)", accent: "#8b5cf6" },
@@ -12,8 +13,9 @@ const SWATCH: Record<Theme, { bg: string; accent: string }> = {
   incineroar: { bg: "#140908", accent: "#f97316" },
   tyranitar: { bg: "#0b120d", accent: "#84cc16" },
   sneasler: { bg: "#c4d4e2", accent: "#d6357a" },
-  umbreon: { bg: "#050507", accent: "#f5c542" },
-  zekrom: { bg: "#eef2f7", accent: "#1c64f2" },
+  umbreon: { bg: "#000000", accent: "#f5c542" },
+  zekrom: { bg: "#000308", accent: "#00a2ff" },
+  reshiram: { bg: "#ffffff", accent: "#c1121f" },
 };
 
 interface Props {
@@ -37,6 +39,7 @@ export function ThemeSelect({ variant = "default" }: Props) {
   }, [open]);
 
   const label = t(`ui.theme_${theme}`);
+  const hint = t(`ui.theme_${theme}_hint`);
   const isTitlebar = variant === "titlebar";
   const iconColor =
     theme === "system" ? "var(--text-muted)" : SWATCH[theme].accent;
@@ -53,8 +56,8 @@ export function ThemeSelect({ variant = "default" }: Props) {
           isTitlebar ? "h-7 px-2 py-0" : "p-1.5",
         )}
         onClick={() => setOpen((o) => !o)}
-        aria-label={label}
-        title={label}
+        aria-label={`${label}: ${hint}`}
+        title={`${label} — ${hint}`}
       >
         <Palette size={14} style={{ color: iconColor }} />
         <span
@@ -85,33 +88,44 @@ export function ThemeSelect({ variant = "default" }: Props) {
               th === "system"
                 ? SWATCH.system.bg
                 : `linear-gradient(135deg, ${SWATCH[th].bg} 50%, ${SWATCH[th].accent} 50%)`;
+            const name = t(`ui.theme_${th}`);
+            const description = t(`ui.theme_${th}_hint`);
             return (
-              <button
+              <Tooltip
                 key={th}
-                type="button"
-                onClick={() => {
-                  setTheme(th);
-                  setOpen(false);
-                }}
-                className={cn(
-                  "flex items-center gap-2 px-2 py-1 text-left text-xs hover:bg-[var(--bg-elev)]",
-                  active && "font-semibold",
-                )}
-                style={{ color: "var(--text)" }}
+                content={description}
+                placement="top"
+                maxWidth={260}
+                className="block"
               >
-                <span
-                  aria-hidden
-                  className="inline-block h-3.5 w-3.5 shrink-0 rounded-full border"
-                  style={{
-                    background: swatchBg,
-                    borderColor: "var(--border)",
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTheme(th);
+                    setOpen(false);
                   }}
-                />
-                <span className="flex-1 truncate">{t(`ui.theme_${th}`)}</span>
-                {active && (
-                  <Check size={12} style={{ color: "var(--accent)" }} />
-                )}
-              </button>
+                  title={description}
+                  aria-label={`${name}: ${description}`}
+                  className={cn(
+                    "flex w-full items-center gap-2 px-2 py-1 text-left text-xs hover:bg-[var(--bg-elev)]",
+                    active && "font-semibold",
+                  )}
+                  style={{ color: "var(--text)" }}
+                >
+                  <span
+                    aria-hidden
+                    className="inline-block h-3.5 w-3.5 shrink-0 rounded-full border"
+                    style={{
+                      background: swatchBg,
+                      borderColor: "var(--border)",
+                    }}
+                  />
+                  <span className="flex-1 truncate">{name}</span>
+                  {active && (
+                    <Check size={12} style={{ color: "var(--accent)" }} />
+                  )}
+                </button>
+              </Tooltip>
             );
           })}
         </div>

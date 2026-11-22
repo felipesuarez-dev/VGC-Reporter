@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ipc } from "../lib/ipc";
-import { AlertTriangle, CalendarDays, ChevronDown, ExternalLink, FileText, Info, RefreshCw, RotateCcw } from "lucide-react";
+import { AlertTriangle, CalendarDays, ChevronDown, ExternalLink, FileText, Info, RefreshCw, RotateCcw, Table2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { FormatSelector } from "../components/ui/FormatSelector";
 import { AboutModal } from "../components/layout/AboutModal";
@@ -20,7 +20,9 @@ import {
   useUiStore,
 } from "../stores/uiStore";
 import { usePlaybackStore } from "../stores/playbackStore";
+import { useTypeLabStore } from "../stores/typeLabStore";
 import { SyncSettings } from "../components/settings/SyncSettings";
+import { LiveScreensSettings } from "../components/settings/LiveScreensSettings";
 
 const LEGACY_INDER_LIVE = "https://www.youtube.com/watch?v=tP09BzCEJqU";
 
@@ -88,6 +90,10 @@ export function Settings() {
   const setCalendarPlacement = useUiStore((s) => s.setCalendarPlacement);
   const calendarCorner = useUiStore((s) => s.calendarCorner);
   const setCalendarCorner = useUiStore((s) => s.setCalendarCorner);
+  const pokedexQuickTables = useUiStore((s) => s.pokedexQuickTables);
+  const setPokedexQuickTables = useUiStore((s) => s.setPokedexQuickTables);
+  const quickTablesDefaultTab = useUiStore((s) => s.quickTablesDefaultTab);
+  const setQuickTablesDefaultTab = useUiStore((s) => s.setQuickTablesDefaultTab);
   const videoContinuity = usePlaybackStore((s) => s.continuity);
   const setVideoContinuity = usePlaybackStore((s) => s.setContinuity);
   const [aboutOpen, setAboutOpen] = useState(false);
@@ -180,6 +186,10 @@ export function Settings() {
         </button>
       </header>
 
+      <SettingsGroup
+        title={t("settings.group_general")}
+        hint={t("settings.group_general_hint")}
+      >
       <section className="card space-y-3">
         <div className="label">{t("settings.language")}</div>
         <LanguageCombobox variant="default" />
@@ -248,6 +258,12 @@ export function Settings() {
           {t("settings.home_country_hint")}
         </p>
       </section>
+      </SettingsGroup>
+
+      <SettingsGroup
+        title={t("settings.group_widgets")}
+        hint={t("settings.group_widgets_hint")}
+      >
 
       <section className="card space-y-3">
         <div className="flex items-center gap-2">
@@ -319,6 +335,61 @@ export function Settings() {
         )}
       </section>
 
+      <section className="card space-y-3">
+        <div className="flex items-center gap-2">
+          <Table2 size={15} style={{ color: "var(--accent)" }} />
+          <div>
+            <div className="label">{t("settings.quick_tables")}</div>
+            <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+              {t("settings.quick_tables_hint")}
+            </p>
+          </div>
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={pokedexQuickTables}
+            onChange={(event) => setPokedexQuickTables(event.target.checked)}
+          />
+          {t("settings.quick_tables_show")}
+        </label>
+        <div className="flex flex-wrap items-end gap-2">
+          <div>
+            <div className="mb-1 text-[10px] uppercase tracking-wide" style={{ color: "var(--text-dim)" }}>
+              {t("settings.quick_tables_default")}
+            </div>
+            <select
+              className="input h-9 w-48"
+              value={quickTablesDefaultTab}
+              onChange={(event) =>
+                setQuickTablesDefaultTab(
+                  event.target.value === "natures" ? "natures" : "types",
+                )
+              }
+            >
+              <option value="types">{t("settings.quick_tables_types")}</option>
+              <option value="natures">{t("settings.quick_tables_natures")}</option>
+            </select>
+          </div>
+          <button
+            type="button"
+            className="btn-ghost h-9 text-xs"
+            onClick={() => {
+              const store = useTypeLabStore.getState();
+              store.setTab(quickTablesDefaultTab === "types" ? "table" : "natures");
+              store.setOpen(true);
+            }}
+          >
+            {t("settings.quick_tables_open")}
+          </button>
+        </div>
+      </section>
+      </SettingsGroup>
+
+      <SettingsGroup
+        title={t("settings.group_playback")}
+        hint={t("settings.group_playback_hint")}
+      >
       <section className="card space-y-2">
         <div className="label">{t("settings.playback")}</div>
         <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
@@ -346,40 +417,18 @@ export function Settings() {
         </div>
       </section>
 
-      <SyncSettings />
+      <LiveScreensSettings
+        value={streamUrls}
+        onChange={setStreamUrls}
+        onSave={() => saveStreamUrls()}
+        defaults={DEFAULT_LIVE_SCREENS}
+      />
+      </SettingsGroup>
 
-      <section className="card space-y-2">
-        <div className="label">{t("settings.live_screens")}</div>
-        <textarea
-          className="input min-h-40 w-full resize-y font-mono text-xs"
-          placeholder={t("settings.live_screens_placeholder")}
-          value={streamUrls}
-          onChange={(event) => setStreamUrls(event.target.value)}
-          spellCheck={false}
-          autoComplete="off"
-        />
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            className="btn-ghost h-9 text-xs"
-            onClick={() => void saveStreamUrls()}
-          >
-            {t("common.save")}
-          </button>
-          <button
-            type="button"
-            className="btn-ghost h-9 text-xs"
-            onClick={() => setStreamUrls(DEFAULT_LIVE_SCREENS.join("\n"))}
-          >
-            <RotateCcw size={12} className="mr-1" />
-            {t("settings.live_screens_reset")}
-          </button>
-        </div>
-        <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-          {t("settings.live_screens_hint")}
-        </p>
-      </section>
-
+      <SettingsGroup
+        title={t("settings.group_data")}
+        hint={t("settings.group_data_hint")}
+      >
       <section className="card space-y-2">
         <div className="label">{t("settings.preferred_format")}</div>
         <FormatSelector
@@ -631,7 +680,19 @@ export function Settings() {
           </div>
         </details>
       </section>
+      </SettingsGroup>
 
+      <SettingsGroup
+        title={t("settings.group_sync")}
+        hint={t("settings.group_sync_hint")}
+      >
+        <SyncSettings />
+      </SettingsGroup>
+
+      <SettingsGroup
+        title={t("settings.group_advanced")}
+        hint={t("settings.group_advanced_hint")}
+      >
       <section className="card space-y-2">
         <div className="label">{t("settings.external_sources")}</div>
         <ul className="space-y-1">
@@ -672,8 +733,39 @@ export function Settings() {
           {t("settings.disclaimer")}
         </p>
       </section>
+      </SettingsGroup>
 
       <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
     </div>
+  );
+}
+
+function SettingsGroup({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-3">
+      <div className="flex items-start gap-2 px-1 pt-2">
+        <span
+          className="mt-1 h-4 w-1 shrink-0 rounded-full"
+          style={{ backgroundColor: "var(--accent)" }}
+        />
+        <div>
+          <h2 className="text-sm font-bold" style={{ color: "var(--text)" }}>
+            {title}
+          </h2>
+          <p className="text-[10px]" style={{ color: "var(--text-dim)" }}>
+            {hint}
+          </p>
+        </div>
+      </div>
+      {children}
+    </section>
   );
 }

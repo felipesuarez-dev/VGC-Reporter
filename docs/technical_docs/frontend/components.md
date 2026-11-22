@@ -97,3 +97,12 @@
 ## PanelBoard 0.6.0
 
 - `layout/PanelBoard.tsx` - `PanelOrderGroup` + `PanelOrder`. Reordena paneles de Métricas y Regulación con pointer events (WebView2/touch) y botones subir/bajar como alternativa accesible. El orden visual usa CSS `order`, así que los paneles no se desmontan ni pierden estado al arrastrar. Persistido en `dashboardStore` v23 (`metricsOrder`, `regulationOrder`).
+
+## Aprender 2.0 y QuickTools
+
+- `pages/Learn.tsx` - hero con progreso, trivia de reglas, cores reales (tríos) con `Probar core`, equipos iniciales paginados y datos del meta (win rate, speed control, objeto).
+- `lib/natures.ts` - 25 naturalezas agrupadas por stat potenciado; `NatureTable` las muestra con buscador.
+- `ui/QuickTables.tsx` - tablas fijas de tipos/naturalezas para la Pokédex; `TypeLabModal` usa los mismos componentes en el widget global.
+- `ui/TypeLabModal.tsx` - pestañas Tipos, Naturalezas, Cobertura y Mi equipo; exporta `TypeChartTable` y `NatureTable`.
+- `settings/LiveScreensSettings.tsx` - alta, edición, borrado y reordenación de pantallas en vivo.
+- `settings/SyncSettings.tsx` - flujo QR-first, código de 8 para desktop, enlace avanzado y explicador sin jerga de IPs.

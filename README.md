@@ -83,29 +83,30 @@ bun run tauri:dev
 | **Regulación** | Roster elegible, Megas, objetos permitidos con búsqueda, sprites, descripciones y porcentaje del total de equipos. Procedencia y confianza de cada fuente. |
 | **Novedades** | Resumen de temporada, muro de directos, torneos + calendario y noticias oficiales. Los paneles se arrastran, agrupan y colapsan; el layout se recuerda. |
 | **En Vivo** | Pantallas de YouTube (YukS, Play! Pokémon, Wolfey, Cybertron, James Baek, PokeAlex, Moxie2D, Pokémon Champions, Sekiam, IRNemesis…). Hasta 9 en Vitrina 3×3, últimas transmisiones reales, botón de detener por stream y ojo para ocultar sin recargar los demás. |
-| **Próximos torneos** | Limitless online (incluye la tabla `/tournaments/upcoming`) y eventos presenciales de Play! Pokémon. País/ciudad con búsqueda, favorito, dirección completa, precio, inscripción, mapa y `.ics`. |
+| **Próximos torneos** | Pestañas **Oficiales** (Play! Pokémon presencial) y **Comunidad Limitless** (online, no oficiales). País/ciudad con búsqueda, favorito, dirección completa, precio, inscripción, mapa y `.ics`. |
 | **Noticias** | Avisos oficiales paginados, preview dentro de la app, skeleton/shimmer y “Abrir en el navegador”. |
-| **Aprender** | Guías (empezar, equipo, stats, speed control, meta, errores), práctica diaria de tipos/velocidad/lead, starters reales, amenazas del meta con debilidades, glosario y accesos directos. |
-| **Tabla de tipos** | `Ctrl+T` o botón en la barra: matriz 18×18, cobertura de 1-2 tipos y cobertura del equipo actual (debilidades 4×, resistencias, inmunidades y ataque). |
+| **Aprender** | Progreso, guías, práctica diaria de tipos/velocidad/lead, trivia de reglas, **cores reales del meta con “Probar core”**, más equipos iniciales con “Ver más”, glosario y herramientas. Ya no repite el tablero de amenazas de otras vistas. |
+| **Tablas rápidas** | `Ctrl+T` o botón en la barra: matriz de tipos 18×18, cobertura de 1-2 tipos, equipo actual y **tabla de naturalezas**. En la Pokédex quedan fijas y en Ajustes se configuran como widget. |
 | **Top Equipos** | Equipos de torneo de Labmaus/Limitless y equipos de comunidad/torneo de PokéBase. Filtros por rango de fechas, fuente, país, jugador y Pokémon. |
 | **Constructor** | Clásico (EVs/IVs) y Champions (66 SP, 32 por stat, IVs 31, nivel 50, cláusulas de especie/objeto). Conversión EV↔SP al cambiar de modo. Import/export Showdown. |
 | **Mis equipos** | Persistencia SQLite, renombrar, duplicar, eliminar, importar y exportar varios equipos. |
 | **Calculadora** | `@smogon/calc` Gen 9 con buscadores para todos los campos. |
 | **Pokédex** | Orden por generación/alfabeto/uso, ficha con sets, stats, tipos, matchups y Pikalytics. |
-| **Ajustes** | Regulación/temporada, sync, calendario, reproducción, idioma, tema, tamaño de letra, zona horaria, país, pantallas en vivo y overrides de fuentes. |
+| **Ajustes** | Secciones General, Widgets, Reproducción y directos, Datos y fuentes, Sincronización y Avanzado. Calendario y tablas rápidas como widgets; pantallas en vivo como lista editable; sync QR-first. |
 | **5 idiomas** | ES / EN / FR / IT / PT en UI, datos localizados y Learn. |
 
 ## Aprender
 
 La página **Aprender** no es un muro de texto. Reúne:
 
-- **Progreso** de guías leídas.
-- **Equipos iniciales** desde torneos recientes y PokéBase, con “Cargar en constructor”.
-- **Práctica diaria**: efectividad de tipos con racha, más quizzes de velocidad/lead.
-- **Guías** de construcción, cores, Stat Points, speed control, Megas, lectura del meta y errores comunes.
-- **Amenazas del meta** con uso y debilidades.
+- **Progreso** visual de guías leídas.
+- **Equipos iniciales** desde torneos recientes y PokéBase, con “Ver más” y “Cargar en constructor”.
+- **Práctica diaria**: tipos, velocidad y lead, más **trivia de reglas** y racha.
+- **Cores reales del meta**: tríos con sprites, objetos, porcentaje de uso y **Probar core** en el constructor.
+- **Datos que importan**: mejor win rate con muestra, speed control y objeto más adoptado.
+- **Guías** de construcción, cores, Stat Points, speed control, lectura del meta y errores comunes.
 - **Glosario** buscable.
-- **Herramientas**: TypeLab, constructor, calculadora, regulación, Top Equipos y calendario.
+- **Herramientas**: tablas rápidas, constructor, calculadora, regulación, Top Equipos y calendario.
 
 ## Fuentes de datos
 
@@ -169,7 +170,7 @@ sequenceDiagram
 ```
 
 - Misma Wi-Fi; sin nube.
-- QR para desktop→móvil; código de 8 para móvil→desktop.
+- QR para ambos sentidos; código de 8 para desktop, que no tiene cámara. El enlace manual queda en opciones avanzadas.
 - Equipos + configuración + preferencias de UI.
 - Conflictos: renombrar el importado, reemplazar u omitir.
 - Si la red bloquea la transferencia, se puede exportar/importar un archivo.

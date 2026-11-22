@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type TypeLabTab = "table" | "coverage" | "team";
+export type TypeLabTab = "table" | "coverage" | "team" | "natures";
 
 interface TypeLabState {
   open: boolean;

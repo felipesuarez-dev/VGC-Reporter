@@ -14,6 +14,7 @@
     --accent: #8b5cf6;
     --accent-soft: rgba(139, 92, 246, 0.2);
     --accent-strong: #7c3aed;
+    --accent-contrast: #ffffff;
     --danger: #f87171;
     --warning: #fbbf24;
     --success: #34d399;
@@ -56,6 +57,7 @@
     --accent: #ec4899;
     --accent-soft: rgba(236, 72, 153, 0.15);
     --accent-strong: #db2777;
+    --accent-contrast: #2b0a18;
     --danger: #dc2626;
     --warning: #d97706;
     --success: #059669;
@@ -98,6 +100,7 @@
     --accent: #f97316;
     --accent-soft: rgba(249, 115, 22, 0.22);
     --accent-strong: #ea580c;
+    --accent-contrast: #1a0800;
     --danger: #f87171;
     --warning: #fbbf24;
     --success: #34d399;
@@ -140,6 +143,7 @@
     --accent: #1e6fa8;
     --accent-soft: rgba(30, 111, 168, 0.18);
     --accent-strong: #17548a;
+    --accent-contrast: #ffffff;
     --danger: #b91c3c;
     --warning: #b45309;
     --success: #15803d;
@@ -182,6 +186,7 @@
     --accent: #84cc16;
     --accent-soft: rgba(132, 204, 22, 0.2);
     --accent-strong: #65a30d;
+    --accent-contrast: #0b120d;
     --danger: #f87171;
     --warning: #fbbf24;
     --success: #34d399;
@@ -224,6 +229,7 @@
     --accent: #d6357a;
     --accent-soft: rgba(214, 53, 122, 0.2);
     --accent-strong: #a52460;
+    --accent-contrast: #ffffff;
     --danger: #c12424;
     --warning: #e0a51d;
     --success: #15803d;
@@ -256,30 +262,31 @@
   }
 
   :root.theme-umbreon {
-    --bg: #050507;
-    --bg-elev: #0c0c11;
-    --bg-elev-strong: #17171f;
-    --border: #2b2b38;
-    --text: #f4f1e8;
-    --text-muted: #b7b2a4;
-    --text-dim: #7f7a70;
+    --bg: #000000;
+    --bg-elev: #050505;
+    --bg-elev-strong: #0b0b0b;
+    --border: #f5c542;
+    --text: #ffffff;
+    --text-muted: #e8dca8;
+    --text-dim: #b9a75f;
     --accent: #f5c542;
-    --accent-soft: rgba(245, 197, 66, 0.16);
-    --accent-strong: #d9a91d;
-    --danger: #fb7185;
+    --accent-soft: rgba(245, 197, 66, 0.18);
+    --accent-strong: #ffd84d;
+    --accent-contrast: #000000;
+    --danger: #ff6b86;
     --warning: #f5c542;
-    --success: #4ade80;
-    --badge-bg: rgba(0, 0, 0, 0.75);
+    --success: #48f08a;
+    --badge-bg: #000000;
     --badge-foreground: #ffffff;
     --tier-gold-bg: rgba(245, 197, 66, 0.18);
-    --tier-gold-foreground: #fde68a;
-    --tier-gold-border: rgba(245, 197, 66, 0.5);
-    --tier-silver-bg: rgba(148, 163, 184, 0.15);
-    --tier-silver-foreground: #e2e8f0;
-    --tier-silver-border: rgba(148, 163, 184, 0.4);
-    --tier-bronze-bg: rgba(146, 64, 14, 0.25);
-    --tier-bronze-foreground: #fcd34d;
-    --tier-bronze-border: rgba(146, 64, 14, 0.5);
+    --tier-gold-foreground: #ffe066;
+    --tier-gold-border: #f5c542;
+    --tier-silver-bg: rgba(245, 197, 66, 0.08);
+    --tier-silver-foreground: #f4e7b0;
+    --tier-silver-border: rgba(245, 197, 66, 0.55);
+    --tier-bronze-bg: rgba(245, 197, 66, 0.12);
+    --tier-bronze-foreground: #ffd84d;
+    --tier-bronze-border: rgba(245, 197, 66, 0.7);
     --tier-s-bg: var(--tier-gold-bg);
     --tier-s-foreground: var(--tier-gold-foreground);
     --tier-s-border: var(--tier-gold-border);
@@ -298,30 +305,74 @@
   }
 
   :root.theme-zekrom {
-    --bg: #eef2f7;
-    --bg-elev: #ffffff;
-    --bg-elev-strong: #dde6f2;
-    --border: #1f2937;
-    --text: #0b1220;
-    --text-muted: #334155;
-    --text-dim: #475569;
-    --accent: #1c64f2;
-    --accent-soft: rgba(28, 100, 242, 0.14);
-    --accent-strong: #1746b0;
-    --danger: #b91c1c;
-    --warning: #a16207;
-    --success: #15803d;
-    --badge-bg: rgba(11, 18, 32, 0.9);
+    --bg: #000308;
+    --bg-elev: #000814;
+    --bg-elev-strong: #00132b;
+    --border: #00a2ff;
+    --text: #ffffff;
+    --text-muted: #b8d8ff;
+    --text-dim: #7fa7d9;
+    --accent: #00a2ff;
+    --accent-soft: rgba(0, 162, 255, 0.22);
+    --accent-strong: #0077ff;
+    --accent-contrast: #000000;
+    --danger: #ff4d6d;
+    --warning: #ffd60a;
+    --success: #00e6a8;
+    --badge-bg: #000000;
     --badge-foreground: #ffffff;
-    --tier-gold-bg: rgba(245, 158, 11, 0.22);
-    --tier-gold-foreground: #78350f;
-    --tier-gold-border: rgba(180, 83, 9, 0.55);
-    --tier-silver-bg: rgba(100, 116, 139, 0.2);
-    --tier-silver-foreground: #1e293b;
-    --tier-silver-border: rgba(71, 85, 105, 0.55);
-    --tier-bronze-bg: rgba(180, 83, 9, 0.2);
-    --tier-bronze-foreground: #78350f;
-    --tier-bronze-border: rgba(120, 53, 15, 0.55);
+    --tier-gold-bg: rgba(0, 162, 255, 0.22);
+    --tier-gold-foreground: #ffffff;
+    --tier-gold-border: #00a2ff;
+    --tier-silver-bg: rgba(0, 162, 255, 0.12);
+    --tier-silver-foreground: #e6f4ff;
+    --tier-silver-border: rgba(0, 162, 255, 0.6);
+    --tier-bronze-bg: rgba(0, 162, 255, 0.16);
+    --tier-bronze-foreground: #b8d8ff;
+    --tier-bronze-border: rgba(0, 162, 255, 0.75);
+    --tier-s-bg: var(--tier-gold-bg);
+    --tier-s-foreground: var(--tier-gold-foreground);
+    --tier-s-border: var(--tier-gold-border);
+    --tier-a-bg: var(--accent-soft);
+    --tier-a-foreground: var(--accent);
+    --tier-a-border: var(--accent);
+    --tier-b-bg: var(--tier-silver-bg);
+    --tier-b-foreground: var(--tier-silver-foreground);
+    --tier-b-border: var(--tier-silver-border);
+    --tier-c-bg: var(--tier-bronze-bg);
+    --tier-c-foreground: var(--tier-bronze-foreground);
+    --tier-c-border: var(--tier-bronze-border);
+    --tier-d-bg: var(--bg-elev-strong);
+    --tier-d-foreground: var(--text-dim);
+    --tier-d-border: var(--border);
+  }
+
+  :root.theme-reshiram {
+    --bg: #ffffff;
+    --bg-elev: #ffffff;
+    --bg-elev-strong: #e6e6e6;
+    --border: #000000;
+    --text: #000000;
+    --text-muted: #262626;
+    --text-dim: #4a4a4a;
+    --accent: #c1121f;
+    --accent-soft: rgba(193, 18, 31, 0.14);
+    --accent-strong: #8f0e18;
+    --accent-contrast: #ffffff;
+    --danger: #a40000;
+    --warning: #7a4b00;
+    --success: #006b2d;
+    --badge-bg: #000000;
+    --badge-foreground: #ffffff;
+    --tier-gold-bg: rgba(193, 18, 31, 0.16);
+    --tier-gold-foreground: #000000;
+    --tier-gold-border: #c1121f;
+    --tier-silver-bg: rgba(0, 0, 0, 0.08);
+    --tier-silver-foreground: #000000;
+    --tier-silver-border: #000000;
+    --tier-bronze-bg: rgba(193, 18, 31, 0.1);
+    --tier-bronze-foreground: #000000;
+    --tier-bronze-border: #8f0e18;
     --tier-s-bg: var(--tier-gold-bg);
     --tier-s-foreground: var(--tier-gold-foreground);
     --tier-s-border: var(--tier-gold-border);
@@ -363,8 +414,9 @@
     @apply inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-primary {
-    @apply btn text-white;
+    @apply btn;
     background-color: var(--accent);
+    color: var(--accent-contrast, #ffffff);
   }
   .btn-primary:hover {
     background-color: var(--accent-strong);
@@ -480,3 +532,4 @@ img[data-sprite="true"] {
 .news-shimmer {
   animation: news-shimmer 1.4s ease-in-out infinite;
 }
+

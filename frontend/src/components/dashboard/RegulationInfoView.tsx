@@ -6,6 +6,7 @@ import {
   ArrowDownWideNarrow,
   BadgeCheck,
   CalendarDays,
+  Package,
   Search,
   ShieldCheck,
   Sparkles,
@@ -360,7 +361,11 @@ export function RegulationInfoView({
         order={panelOrder}
         onOrderChange={onPanelOrderChange ?? (() => undefined)}
       >
-        <PanelOrder id="roster" label={t("feed.eligible_pokemon")}>
+        <PanelOrder
+          id="roster"
+          label={t("feed.eligible_pokemon")}
+          icon={<ShieldCheck size={12} />}
+        >
         <section className="card">
           <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
             <div>
@@ -425,7 +430,11 @@ export function RegulationInfoView({
         </section>
         </PanelOrder>
 
-        <PanelOrder id="items" label={t("feed.allowed_items")}>
+        <PanelOrder
+          id="items"
+          label={t("feed.allowed_items")}
+          icon={<Package size={12} />}
+        >
         <section className="card" data-section="allowed-items">
           <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
             <div>
@@ -502,7 +511,11 @@ export function RegulationInfoView({
         </section>
         </PanelOrder>
 
-          <PanelOrder id="megas" label={t("feed.eligible_megas")}>
+          <PanelOrder
+            id="megas"
+            label={t("feed.eligible_megas")}
+            icon={<Sparkles size={12} />}
+          >
           <section className="card">
             <h3 className="text-sm font-semibold" style={{ color: "var(--text)" }}>
               {t("feed.eligible_megas")}{" "}

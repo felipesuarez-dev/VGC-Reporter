@@ -371,7 +371,7 @@ export function LiveStreamCard({
             Featuring or hiding a stream only changes classes / removes that
             one tile, so React never remounts the other iframes. */}
         <div
-          className={`grid gap-3 ${
+          className={`grid gap-2 ${
             featured && featuredLayout === "side"
               ? "lg:grid-cols-4"
               : live.length > 1
@@ -389,11 +389,12 @@ export function LiveStreamCard({
                   ? "order-first lg:col-span-2"
                   : "";
             return (
-              <div key={screen.source_url} className={span}>
+              <div key={screen.source_url} className={`${span} min-w-0`}>
                 <LiveTile
                   screen={screen}
                   dragging={dragging}
                   featured={isFeatured}
+                  compact={live.length > 1 && !isFeatured}
                   stopped={stoppedScreens.includes(screen.source_url)}
                   onToggleStop={() => toggleStopped(screen.source_url)}
                   kept={playback.active?.source_url === screen.source_url}
@@ -454,6 +455,7 @@ function LiveTile({
   screen,
   dragging,
   featured = false,
+  compact = false,
   stopped = false,
   kept = false,
   onToggleStop,
@@ -466,6 +468,7 @@ function LiveTile({
   screen: LiveStreamScreen;
   dragging: boolean;
   featured?: boolean;
+  compact?: boolean;
   stopped?: boolean;
   kept?: boolean;
   onToggleStop?: () => void;
@@ -477,8 +480,8 @@ function LiveTile({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-start justify-between gap-2">
+    <div className="min-w-0 space-y-1.5 overflow-hidden">
+      <div className="flex flex-col gap-1.5">
         <div className="min-w-0">
           <p
             className="line-clamp-2 text-xs font-semibold"
@@ -487,7 +490,7 @@ function LiveTile({
             {screen.title}
           </p>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+        <div className="flex min-w-0 flex-wrap items-center gap-1">
           {(onKeep || onUnkeep) && (
             <button
               type="button"
@@ -503,9 +506,9 @@ function LiveTile({
               aria-pressed={kept}
             >
               <Pin size={11} />
-              <span className="hidden sm:inline">
-                {kept ? t("feed.unkeep") : t("feed.keep")}
-              </span>
+              {!compact && (
+                <span>{kept ? t("feed.unkeep") : t("feed.keep")}</span>
+              )}
             </button>
           )}
           {onToggleStop && (
@@ -524,15 +527,19 @@ function LiveTile({
               data-testid={`live-stop-${screen.source_url}`}
             >
               {stopped ? <Play size={11} /> : <Square size={11} />}
-              <span className="hidden sm:inline">
-                {stopped ? t("feed.resume") : t("feed.stop")}
-              </span>
+              {!compact && (
+                <span>{stopped ? t("feed.resume") : t("feed.stop")}</span>
+              )}
             </button>
           )}
           {onHide && (
             <button
               type="button"
-              className="btn-ghost text-[10px]"
+              className="flex items-center justify-center rounded-md border px-1.5 py-1"
+              style={{
+                borderColor: "var(--border)",
+                color: "var(--text-muted)",
+              }}
               onClick={onHide}
               title={t("feed.hide_stream")}
               aria-label={t("feed.hide_stream")}
@@ -552,7 +559,7 @@ function LiveTile({
               title={t("feed.unfeature")}
             >
               <Minimize2 size={11} />
-              {t("feed.unfeature")}
+              {!compact && t("feed.unfeature")}
             </button>
           ) : (
             onFeature && (
@@ -568,31 +575,41 @@ function LiveTile({
                 title={t("feed.feature_hint")}
               >
                 <Maximize2 size={11} />
-                {t("feed.feature")}
+                {!compact && t("feed.feature")}
               </button>
             )
           )}
           {channelSubscribeUrl(screen.source_url) && (
             <button
               type="button"
-              className="btn-ghost text-[10px]"
+              className="flex items-center gap-1 rounded-md border px-1.5 py-1 text-[10px] font-medium"
+              style={{
+                borderColor: "var(--border)",
+                color: "var(--text-muted)",
+              }}
               onClick={() =>
                 openExternal(channelSubscribeUrl(screen.source_url)!)
               }
               title={t("feed.subscribe")}
+              aria-label={t("feed.subscribe")}
             >
-              <Youtube size={11} className="mr-0.5" />
-              {t("feed.subscribe")}
+              <Youtube size={11} />
+              {!compact && t("feed.subscribe")}
             </button>
           )}
           <button
             type="button"
-            className="btn-ghost text-[10px]"
+            className="flex items-center gap-1 rounded-md border px-1.5 py-1 text-[10px] font-medium"
+            style={{
+              borderColor: "var(--border)",
+              color: "var(--text-muted)",
+            }}
             onClick={() => screen.url && openExternal(screen.url)}
             title={t("upcoming.open")}
+            aria-label={t("upcoming.open")}
           >
-            <ExternalLink size={11} className="mr-0.5" />
-            {t("upcoming.open")}
+            <ExternalLink size={11} />
+            {!compact && t("upcoming.open")}
           </button>
         </div>
       </div>

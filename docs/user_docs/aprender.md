@@ -5,20 +5,23 @@
 ## Secciones
 
 - **Progreso**: marca las guías que ya leíste; se guarda en tu dispositivo.
-- **Equipos para empezar**: equipos reales de torneos recientes o de la comunidad de PokéBase. **Cargar en el constructor** los abre como borrador Champions.
-- **Práctica del día**: tres modos (tipos, velocidad y lead) con racha. Cada día cambia la pregunta.
+- **Equipos para empezar**: equipos reales de torneos recientes o de la comunidad de PokéBase. Puedes ver más equipos con **Ver más** y cargar cualquiera en el constructor.
+- **Práctica del día**: pregunta de tipos, velocidad o lead, más una **trivia rápida** de reglas. La racha se guarda.
+- **Cores del meta**: tríos reales calculados con los compañeros más frecuentes del meta actual. Muestra sprites, objetos y porcentaje de uso, y permite **Probar core** en el constructor.
+- **Datos que importan**: mejor win rate con muestra suficiente, speed control más usado y objeto más adoptado.
 - **Guías**: empezar en Champions, construir equipo, Stat Points y naturaleza, control de velocidad, leer el meta y errores comunes.
-- **Amenazas del meta**: los Pokémon más usados y sus debilidades.
 - **Glosario**: términos de VGC/Champions con buscador.
-- **Herramientas**: TypeLab, constructor, calculadora, regulación, Top Equipos y calendario.
+- **Herramientas**: constructor, calculadora, regulación, Top Equipos y calendario.
 
-## TypeLab
+## Tablas rápidas
 
-Abre con `Ctrl+T`, el botón de la barra o el buscador. Tiene tres pestañas:
+`Ctrl+T` o el botón de la barra abren el widget global. Incluye:
 
-- **Tabla**: matriz de 18 tipos con 0×, ½×, 1× y 2×.
-- **Cobertura**: elige uno o dos tipos defensivos y mira qué ataques les pegan.
-- **Mi equipo**: debilidades 4×/2×, resistencias, inmunidades y cobertura ofensiva del equipo actual.
+- **Tipos**: matriz 18×18 y cobertura de uno o dos tipos.
+- **Naturalezas**: qué stat sube y baja cada naturaleza, con buscador.
+- **Mi equipo**: debilidades 4×/2×, resistencias, inmunidades y cobertura ofensiva.
+
+En **Pokédex** las tablas de tipos y naturalezas quedan fijas. En **Ajustes → Widgets** decides si se muestran y qué pestaña abre primero.
 
 ## Consejo
 

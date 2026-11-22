@@ -11,7 +11,8 @@ export type Theme =
   | "milotic"
   | "sneasler"
   | "umbreon"
-  | "zekrom";
+  | "zekrom"
+  | "reshiram";
 
 export const ALL_THEMES: Theme[] = [
   "system",
@@ -23,6 +24,7 @@ export const ALL_THEMES: Theme[] = [
   "sneasler",
   "umbreon",
   "zekrom",
+  "reshiram",
 ];
 
 export const FONT_SIZE_MIN = 12;
@@ -65,6 +67,8 @@ interface UiState {
   calendarPlacement: "corner" | "free";
   calendarCorner: "bottom-right" | "bottom-left";
   calendarPosition: { x: number; y: number } | null;
+  pokedexQuickTables: boolean;
+  quickTablesDefaultTab: "types" | "natures";
   setTheme: (theme: Theme) => void;
   setTimeZone: (timeZone: string) => void;
   setHomeCountry: (country: string) => void;
@@ -83,6 +87,8 @@ interface UiState {
   setCalendarPlacement: (placement: "corner" | "free") => void;
   setCalendarCorner: (corner: "bottom-right" | "bottom-left") => void;
   setCalendarPosition: (position: { x: number; y: number } | null) => void;
+  setPokedexQuickTables: (enabled: boolean) => void;
+  setQuickTablesDefaultTab: (tab: "types" | "natures") => void;
 }
 
 export const useUiStore = create<UiState>()(
@@ -104,6 +110,8 @@ export const useUiStore = create<UiState>()(
       calendarPlacement: "corner",
       calendarCorner: "bottom-right",
       calendarPosition: null,
+      pokedexQuickTables: true,
+      quickTablesDefaultTab: "types",
       setTheme: (theme) => set({ theme }),
       setTimeZone: (timeZone) => set({ timeZone }),
       setHomeCountry: (homeCountry) => set({ homeCountry }),
@@ -159,10 +167,13 @@ export const useUiStore = create<UiState>()(
       setCalendarPlacement: (calendarPlacement) => set({ calendarPlacement }),
       setCalendarCorner: (calendarCorner) => set({ calendarCorner }),
       setCalendarPosition: (calendarPosition) => set({ calendarPosition }),
+      setPokedexQuickTables: (pokedexQuickTables) => set({ pokedexQuickTables }),
+      setQuickTablesDefaultTab: (quickTablesDefaultTab) =>
+        set({ quickTablesDefaultTab }),
     }),
     {
       name: "vgc-ui",
-      version: 13,
+      version: 14,
       migrate: (persisted: unknown, version: number) => {
         const prior = (persisted ?? {}) as Partial<UiState> & { theme?: string };
         let theme: Theme;
@@ -246,6 +257,14 @@ export const useUiStore = create<UiState>()(
             typeof prior.calendarPosition === "object"
               ? (prior.calendarPosition as { x: number; y: number })
               : null,
+          pokedexQuickTables:
+            version >= 14 && typeof prior.pokedexQuickTables === "boolean"
+              ? prior.pokedexQuickTables
+              : true,
+          quickTablesDefaultTab:
+            version >= 14 && prior.quickTablesDefaultTab === "natures"
+              ? "natures"
+              : "types",
         } as UiState;
       },
     },

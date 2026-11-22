@@ -5,6 +5,7 @@ import {
   matchesCity,
   matchesUpcomingQuery,
   parseCityKey,
+  splitUpcomingEvents,
 } from "./upcoming";
 
 describe("city filters", () => {
@@ -21,8 +22,8 @@ describe("city filters", () => {
     expect(matchesCity("Santiago", "CL", "CL|Santiago")).toBe(true);
     expect(matchesCity("Santiago", "AR", "CL|Santiago")).toBe(false);
     expect(matchesCity("Santiago", "CL", null)).toBe(true);
-    // Online events have no city/country and must stay visible.
-    expect(matchesCity(null, null, "CL|Santiago")).toBe(true);
+    // A city filter only matches events that actually have that city.
+    expect(matchesCity(null, null, "CL|Santiago")).toBe(false);
   });
 });
 
@@ -112,3 +113,16 @@ describe("free-text search", () => {
   });
 });
 
+
+describe("upcoming split", () => {
+  it("separates official Play! Pokemon from Limitless community events", () => {
+    const events = [
+      { id: "official", source: "play-pokemon" },
+      { id: "online", source: "limitless" },
+      { id: "other", source: "limitless" },
+    ];
+    const split = splitUpcomingEvents(events);
+    expect(split.official.map((entry) => entry.id)).toEqual(["official"]);
+    expect(split.limitless.map((entry) => entry.id)).toEqual(["online", "other"]);
+  });
+});

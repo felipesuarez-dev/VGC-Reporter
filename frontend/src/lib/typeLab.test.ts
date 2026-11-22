@@ -30,9 +30,10 @@ describe("countryFlag", () => {
 });
 
 describe("themes", () => {
-  it("offers Umbreon and Zekrom alongside the existing themes", () => {
+  it("offers Umbreon, Zekrom and Reshiram alongside the existing themes", () => {
     expect(ALL_THEMES).toContain("umbreon");
     expect(ALL_THEMES).toContain("zekrom");
+    expect(ALL_THEMES).toContain("reshiram");
     expect(new Set(ALL_THEMES).size).toBe(ALL_THEMES.length);
   });
 });

@@ -110,12 +110,12 @@ export function AppShell() {
   // one-line change per item; labels/tooltips come from i18n.
   const navItems = [
     { to: "/dashboard", icon: LayoutDashboard, label: t("nav.dashboard") },
-    { to: "/learn", icon: GraduationCap, label: t("nav.learn") },
     { to: "/pokedex", icon: BookOpen, label: t("nav.pokedex") },
     { to: "/team-builder", icon: Blocks, label: t("nav.team_builder") },
     { to: "/my-teams", icon: UsersRound, label: t("nav.my_teams") },
     { to: "/top-teams", icon: Trophy, label: t("nav.top_teams") },
     { to: "/damage-calc", icon: Calculator, label: t("nav.damage_calc") },
+    { to: "/learn", icon: GraduationCap, label: t("nav.learn") },
     { to: "/settings", icon: SettingsIcon, label: t("nav.settings") },
   ];
 

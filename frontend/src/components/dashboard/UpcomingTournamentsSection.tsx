@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Eye } from "lucide-react";
+import { BadgeCheck, Eye, Globe2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatDate, formatTime } from "../../lib/formatDate";
 import { countryFlag } from "../../lib/countries";
@@ -7,6 +7,7 @@ import {
   eventAddress,
   matchesCity,
   matchesUpcomingQuery,
+  splitUpcomingEvents,
 } from "../../lib/upcoming";
 import { useUpcomingTournaments } from "../../hooks/useUpcomingTournaments";
 import { useUiStore } from "../../stores/uiStore";
@@ -14,6 +15,9 @@ import type { UpcomingTournament } from "../../lib/types";
 import { UpcomingFilters } from "../layout/UpcomingFilters";
 import { EventSourceBadge } from "./EventSourceBadge";
 import { TournamentDetailModal } from "./TournamentDetailModal";
+import { cn } from "../../lib/cn";
+
+type UpcomingTab = "official" | "limitless";
 
 interface Props {
   /** Only show events for this regulation code (for example `M-C`). */
@@ -37,6 +41,7 @@ export function UpcomingTournamentsSection({
   const upcomingCity = useUiStore((s) => s.upcomingCity);
   const setUpcomingCity = useUiStore((s) => s.setUpcomingCity);
   const [query, setQuery] = useState("");
+  const [tab, setTab] = useState<UpcomingTab>("official");
   const [selected, setSelected] = useState<UpcomingTournament | null>(null);
   const { data, isLoading, isError, error, refetch, isFetching } =
     useUpcomingTournaments(upcomingCountry);
@@ -52,30 +57,51 @@ export function UpcomingTournamentsSection({
     [allCountries.data],
   );
   const countryEvents = useMemo(() => data ?? [], [data]);
+  const { official: officialEvents, limitless: limitlessEvents } = useMemo(
+    () => splitUpcomingEvents(countryEvents),
+    [countryEvents],
+  );
+  const activeEvents =
+    tab === "official" ? officialEvents : limitlessEvents;
   const cities = useMemo(
     () =>
-      countryEvents
+      officialEvents
         .filter((event) => event.city)
         .map((event) => ({
           city: event.city as string,
           country: event.country,
         })),
-    [countryEvents],
+    [officialEvents],
   );
 
   useEffect(() => {
     if (!upcomingCity || isLoading) return;
-    const exists = countryEvents.some((event) =>
+    const exists = officialEvents.some((event) =>
       matchesCity(event.city, event.country, upcomingCity),
     );
     if (!exists) setUpcomingCity(null);
-  }, [countryEvents, isLoading, setUpcomingCity, upcomingCity]);
+  }, [isLoading, officialEvents, setUpcomingCity, upcomingCity]);
 
-  const events = countryEvents
+  const events = activeEvents
     .filter((event) => !formatCode || !event.region || event.region === formatCode)
     .filter((event) => matchesUpcomingQuery(event, query))
-    .filter((event) => matchesCity(event.city, event.country, upcomingCity))
+    .filter((event) =>
+      tab === "official"
+        ? !upcomingCountry || event.country === upcomingCountry
+        : true,
+    )
+    .filter((event) =>
+      tab === "official"
+        ? matchesCity(event.city, event.country, upcomingCity)
+        : true,
+    )
     .slice(0, limit ?? undefined);
+  const emptyKey =
+    tab === "official"
+      ? upcomingCountry || upcomingCity
+        ? "upcoming.empty_filtered"
+        : "upcoming.empty_official"
+      : "upcoming.empty_limitless";
 
   return (
     <section className={className}>
@@ -86,13 +112,95 @@ export function UpcomingTournamentsSection({
         {t("upcoming.window")}
       </p>
 
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div
+          className="flex overflow-hidden rounded-lg border"
+          style={{ borderColor: "var(--border)" }}
+          role="tablist"
+          aria-label={t("upcoming.title")}
+        >
+          {(
+            [
+              {
+                id: "official" as const,
+                icon: BadgeCheck,
+                label: t("upcoming.tab_official"),
+                count: officialEvents.length,
+              },
+              {
+                id: "limitless" as const,
+                icon: Globe2,
+                label: t("upcoming.tab_limitless"),
+                count: limitlessEvents.length,
+              },
+            ] as const
+          ).map((entry) => {
+            const Icon = entry.icon;
+            const active = tab === entry.id;
+            return (
+              <button
+                key={entry.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => {
+                  setTab(entry.id);
+                  setUpcomingCity(null);
+                }}
+                className={cn(
+                  "flex h-8 items-center gap-1.5 px-3 text-[11px] font-medium transition-colors",
+                  active
+                    ? "bg-[var(--accent-soft)] text-[var(--accent)]"
+                    : "text-[var(--text-muted)] hover:bg-[var(--bg-elev-strong)]",
+                )}
+              >
+                <Icon size={13} />
+                {entry.label}
+                <span
+                  className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold"
+                  style={{
+                    backgroundColor: active
+                      ? "var(--accent)"
+                      : "var(--bg-elev-strong)",
+                    color: active
+                      ? "var(--accent-contrast, #fff)"
+                      : "var(--text-dim)",
+                  }}
+                >
+                  {entry.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <span className="text-[10px]" style={{ color: "var(--text-dim)" }}>
+          {tab === "official"
+            ? t("upcoming.tab_official_hint")
+            : t("upcoming.tab_limitless_hint")}
+        </span>
+      </div>
+
       <UpcomingFilters
-        events={countryEvents}
+        events={tab === "official" ? officialEvents : limitlessEvents}
         availableCountries={availableCountries}
         query={query}
         onQueryChange={setQuery}
+        showLocationFilters={tab === "official"}
         className="mb-3"
       />
+
+      {tab === "limitless" && (
+        <p
+          className="mb-3 rounded-lg border px-2.5 py-2 text-[10px]"
+          style={{
+            borderColor: "var(--border)",
+            backgroundColor: "var(--bg-elev-strong)",
+            color: "var(--text-muted)",
+          }}
+        >
+          {t("upcoming.limitless_note")}
+        </p>
+      )}
 
       {isLoading && (
         <p className="text-xs" style={{ color: "var(--text-dim)" }}>
@@ -121,7 +229,7 @@ export function UpcomingTournamentsSection({
       )}
       {!isLoading && !isError && events.length === 0 && (
         <p className="text-xs" style={{ color: "var(--text-dim)" }}>
-          {t("upcoming.empty")}
+          {t(emptyKey)}
         </p>
       )}
       {events.length > 0 && (

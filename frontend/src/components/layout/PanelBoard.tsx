@@ -8,7 +8,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
-import { ChevronDown, ChevronUp, GripVertical } from "lucide-react";
+import { ArrowDown, ArrowUp, GripVertical } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../lib/cn";
 
@@ -159,10 +159,12 @@ export function PanelOrderGroup({
 export function PanelOrder({
   id,
   label,
+  icon,
   children,
 }: {
   id: string;
   label: string;
+  icon?: ReactNode;
   children: ReactNode;
 }) {
   const { t } = useTranslation();
@@ -183,46 +185,60 @@ export function PanelOrder({
           "ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--bg)]",
       )}
     >
-      <div className="flex items-center justify-between gap-2 px-1 pb-1">
-        <span
-          className="truncate text-[10px] font-medium uppercase tracking-wide"
-          style={{ color: "var(--text-dim)" }}
-        >
-          {label}
-        </span>
-        <div className="flex items-center gap-0.5">
-          <button
-            type="button"
-            className="rounded p-1 disabled:opacity-30"
-            style={{ color: "var(--text-dim)" }}
-            onClick={() => moveBy(id, -1)}
-            title={t("ui.move_panel_up")}
-            aria-label={t("ui.move_panel_up")}
-          >
-            <ChevronUp size={12} />
-          </button>
-          <button
-            type="button"
-            className="rounded p-1 disabled:opacity-30"
-            style={{ color: "var(--text-dim)" }}
-            onClick={() => moveBy(id, 1)}
-            title={t("ui.move_panel_down")}
-            aria-label={t("ui.move_panel_down")}
-          >
-            <ChevronDown size={12} />
-          </button>
+      <div className="mb-1.5 flex flex-wrap items-center justify-between gap-1.5 px-1">
+        <div className="flex min-w-0 items-center gap-1.5">
           <button
             type="button"
             data-panel-drag-handle={id}
             className={cn(
-              "rounded p-1",
+              "flex h-6 w-6 shrink-0 items-center justify-center rounded-md border",
               isDragging ? "cursor-grabbing" : "cursor-grab",
             )}
-            style={{ color: "var(--text-muted)", touchAction: "none" }}
+            style={{
+              borderColor: "var(--border)",
+              backgroundColor: "var(--bg-elev)",
+              color: "var(--text-dim)",
+              touchAction: "none",
+            }}
             title={t("ui.drag_panel")}
             aria-label={t("ui.drag_panel")}
           >
             <GripVertical size={13} />
+          </button>
+          {icon && (
+            <span aria-hidden style={{ color: "var(--text-dim)" }}>
+              {icon}
+            </span>
+          )}
+          <span
+            className="truncate text-[10px] font-semibold uppercase tracking-wide"
+            style={{ color: "var(--text-dim)" }}
+          >
+            {label}
+          </span>
+        </div>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <button
+            type="button"
+            className="flex h-6 w-6 items-center justify-center rounded-md transition-colors enabled:hover:bg-[var(--bg-elev-strong)] disabled:opacity-30"
+            style={{ color: "var(--text-muted)" }}
+            onClick={() => moveBy(id, -1)}
+            disabled={index === 0}
+            title={t("feed.move_up")}
+            aria-label={t("feed.move_up")}
+          >
+            <ArrowUp size={14} />
+          </button>
+          <button
+            type="button"
+            className="flex h-6 w-6 items-center justify-center rounded-md transition-colors enabled:hover:bg-[var(--bg-elev-strong)] disabled:opacity-30"
+            style={{ color: "var(--text-muted)" }}
+            onClick={() => moveBy(id, 1)}
+            disabled={index >= order.length - 1}
+            title={t("feed.move_down")}
+            aria-label={t("feed.move_down")}
+          >
+            <ArrowDown size={14} />
           </button>
         </div>
       </div>

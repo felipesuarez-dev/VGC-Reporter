@@ -82,3 +82,8 @@ muestra todos.
 ## Stores 0.6.0 (PanelBoard)
 
 - `dashboardStore` v23 añade `metricsOrder` y `regulationOrder` para Métricas y Regulación, con `normalizePanelOrder` para reparar ids desconocidos/duplicados y añadir paneles nuevos.
+
+## Stores 0.6.0 (widgets)
+
+- `uiStore` v14 añade `pokedexQuickTables` y `quickTablesDefaultTab`; también guarda calendario, temas y pantallas.
+- `typeLabStore` incluye la pestaña `natures`.

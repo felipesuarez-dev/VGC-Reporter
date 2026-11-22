@@ -446,3 +446,50 @@ export function learnLanguage(language: string): LearnLang {
     ? (head as LearnLang)
     : "en";
 }
+
+
+export interface LearnTrivia {
+  id: string;
+  statement: string;
+  answer: boolean;
+  explanation: string;
+}
+
+/** Short rules trivia. Two are picked each day, deterministic by date. */
+export const LEARN_TRIVIA: Record<LearnLang, LearnTrivia[]> = {
+  es: [
+    { id: "item", statement: "Puedes llevar dos Pokémon con el mismo objeto.", answer: false, explanation: "No: la cláusula de objeto impide repetir el mismo objeto." },
+    { id: "tr", statement: "Trick Room hace que los Pokémon más lentos muevan primero.", answer: true, explanation: "Sí: invierte el orden de velocidad durante cinco turnos." },
+    { id: "preview", statement: "En VGC llevas 6 Pokémon y eliges 4 en la previa.", answer: true, explanation: "Sí: los otros dos se quedan fuera de esa batalla." },
+    { id: "ivs", statement: "Los IVs se pueden editar en Pokémon Champions.", answer: false, explanation: "No: todos los Pokémon tienen 31 IVs en Champions." },
+    { id: "sp", statement: "Un Pokémon puede tener 32 Stat Points en un solo stat.", answer: true, explanation: "Sí: el máximo es 32 por stat y 66 en total." },
+  ],
+  en: [
+    { id: "item", statement: "You can bring two Pokémon holding the same item.", answer: false, explanation: "No: the item clause forbids repeating the same item." },
+    { id: "tr", statement: "Trick Room makes slower Pokémon move first.", answer: true, explanation: "Yes: it reverses speed order for five turns." },
+    { id: "preview", statement: "In VGC you bring 6 Pokémon and pick 4 at team preview.", answer: true, explanation: "Yes: the other two sit out that battle." },
+    { id: "ivs", statement: "IVs can be edited in Pokémon Champions.", answer: false, explanation: "No: every Pokémon has 31 IVs in Champions." },
+    { id: "sp", statement: "A Pokémon can have 32 Stat Points in a single stat.", answer: true, explanation: "Yes: the cap is 32 per stat and 66 total." },
+  ],
+  fr: [
+    { id: "item", statement: "Tu peux aligner deux Pokémon avec le même objet.", answer: false, explanation: "Non : l'item clause interdit de répéter le même objet." },
+    { id: "tr", statement: "Trick Room fait bouger les Pokémon les plus lents en premier.", answer: true, explanation: "Oui : l'ordre de vitesse est inversé pendant cinq tours." },
+    { id: "preview", statement: "En VGC tu amènes 6 Pokémon et tu en choisis 4 à l'aperçu.", answer: true, explanation: "Oui : les deux autres restent hors de ce combat." },
+    { id: "ivs", statement: "Les IV sont modifiables dans Pokémon Champions.", answer: false, explanation: "Non : tous les Pokémon ont 31 IV." },
+    { id: "sp", statement: "Un Pokémon peut avoir 32 Stat Points dans une seule stat.", answer: true, explanation: "Oui : maximum 32 par stat et 66 au total." },
+  ],
+  it: [
+    { id: "item", statement: "Puoi portare due Pokémon con lo stesso oggetto.", answer: false, explanation: "No: l'item clause vieta di ripetere lo stesso oggetto." },
+    { id: "tr", statement: "Trick Room fa muovere prima i Pokémon più lenti.", answer: true, explanation: "Sì: inverte l'ordine di velocità per cinque turni." },
+    { id: "preview", statement: "In VGC porti 6 Pokémon e ne scegli 4 all'anteprima.", answer: true, explanation: "Sì: gli altri due restano fuori da quella partita." },
+    { id: "ivs", statement: "Gli IV si possono modificare in Pokémon Champions.", answer: false, explanation: "No: ogni Pokémon ha 31 IV in Champions." },
+    { id: "sp", statement: "Un Pokémon può avere 32 Stat Points in una sola stat.", answer: true, explanation: "Sì: il massimo è 32 per stat e 66 in totale." },
+  ],
+  pt: [
+    { id: "item", statement: "Você pode levar dois Pokémon com o mesmo item.", answer: false, explanation: "Não: a cláusula de item proíbe repetir o mesmo item." },
+    { id: "tr", statement: "Trick Room faz os Pokémon mais lentos moverem primeiro.", answer: true, explanation: "Sim: inverte a ordem de velocidade por cinco turnos." },
+    { id: "preview", statement: "Em VGC você leva 6 Pokémon e escolhe 4 na prévia.", answer: true, explanation: "Sim: os outros dois ficam fora daquela batalha." },
+    { id: "ivs", statement: "Os IVs podem ser editados em Pokémon Champions.", answer: false, explanation: "Não: todos os Pokémon têm 31 IVs em Champions." },
+    { id: "sp", statement: "Um Pokémon pode ter 32 Stat Points em um único stat.", answer: true, explanation: "Sim: o máximo é 32 por stat e 66 no total." },
+  ],
+};

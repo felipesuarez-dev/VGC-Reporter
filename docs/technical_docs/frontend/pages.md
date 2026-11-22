@@ -47,3 +47,8 @@ Idioma, tema, tamaño de fuente, zona horaria global, país local, URL del direc
 - IPC: `getSettings`, `setSetting`, `getRegulations`, `refreshRegulations`, `getRegulationStatus`.
 - Stores: `dashboardStore` (favoriteFormat), `uiStore` (timeZone, homeCountry, fontSizePx).
 
+
+## Pokedex y próximos
+
+- `Pokedex.tsx` monta `QuickTables` (tipos/naturalezas) y respeta la configuración de widgets.
+- `UpcomingTournamentsSection.tsx` separa `official` (`play-pokemon`) y `limitless`; los filtros de país/ciudad solo aplican a oficiales.

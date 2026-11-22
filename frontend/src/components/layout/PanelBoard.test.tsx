@@ -35,16 +35,16 @@ describe("PanelOrderGroup", () => {
   it("renders a drag handle and move controls for every panel", () => {
     render(<Harness />);
     expect(screen.getAllByLabelText("ui.drag_panel")).toHaveLength(3);
-    expect(screen.getAllByLabelText("ui.move_panel_down")).toHaveLength(3);
+    expect(screen.getAllByLabelText("feed.move_down")).toHaveLength(3);
     expect(screen.getByText("Panel A")).toBeInTheDocument();
   });
 
   it("reorders with the keyboard/accessibility buttons", async () => {
     render(<Harness />);
     expect(screen.getByTestId("order")).toHaveTextContent("a,b,c");
-    await userEvent.click(screen.getAllByLabelText("ui.move_panel_down")[0]);
+    await userEvent.click(screen.getAllByLabelText("feed.move_down")[0]);
     expect(screen.getByTestId("order")).toHaveTextContent("b,a,c");
-    await userEvent.click(screen.getAllByLabelText("ui.move_panel_up")[2]);
+    await userEvent.click(screen.getAllByLabelText("feed.move_up")[2]);
     expect(screen.getByTestId("order")).toHaveTextContent("b,c,a");
   });
 
@@ -65,3 +65,4 @@ describe("PanelOrderGroup", () => {
     vi.restoreAllMocks();
   });
 });
+

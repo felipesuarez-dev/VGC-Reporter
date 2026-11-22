@@ -17,6 +17,7 @@ import {
   GripVertical,
   Loader2,
   Newspaper,
+  PanelsTopLeft,
   Radio,
   RotateCcw,
   Rows3,
@@ -342,9 +343,6 @@ export function RegulationFeed({ info }: Props) {
     <div className={cn("space-y-3", dragId && "select-none")}>
       <div className="flex flex-wrap items-center justify-between gap-2 px-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px]" style={{ color: "var(--text-dim)" }}>
-            {t("feed.layout")}
-          </span>
           <div
             className="flex overflow-hidden rounded-md border"
             style={{ borderColor: "var(--border)" }}
@@ -360,6 +358,7 @@ export function RegulationFeed({ info }: Props) {
               }}
               onClick={() => setFeedLayoutMode("vertical")}
               title={t("feed.layout_vertical_hint")}
+              aria-pressed={mode === "vertical"}
             >
               <Rows3 size={12} />
               {t("feed.layout_vertical")}
@@ -375,22 +374,26 @@ export function RegulationFeed({ info }: Props) {
               }}
               onClick={() => setFeedLayoutMode("horizontal")}
               title={t("feed.layout_horizontal_hint")}
+              aria-pressed={mode === "horizontal"}
             >
               <Columns3 size={12} />
               {t("feed.layout_horizontal")}
             </button>
+            {mode === "custom" && (
+              <span
+                className="flex h-7 w-7 items-center justify-center"
+                style={{
+                  backgroundColor: "var(--accent-soft)",
+                  color: "var(--accent)",
+                }}
+                title={t("feed.layout_custom")}
+                aria-label={t("feed.layout_custom")}
+                aria-current="true"
+              >
+                <PanelsTopLeft size={13} />
+              </span>
+            )}
           </div>
-          {mode === "custom" && (
-            <span
-              className="rounded-full px-1.5 py-0.5 text-[9px] uppercase tracking-wide"
-              style={{
-                backgroundColor: "var(--bg-elev-strong)",
-                color: "var(--text-dim)",
-              }}
-            >
-              {t("feed.layout_custom")}
-            </span>
-          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">

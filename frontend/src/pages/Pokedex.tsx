@@ -10,6 +10,8 @@ import {
   type PokemonType,
 } from "../lib/types";
 import { PokemonCard } from "../components/pokemon/PokemonCard";
+import { QuickTables } from "../components/ui/QuickTables";
+import { useTypeLabStore } from "../stores/typeLabStore";
 import { SearchSelect } from "../components/ui/SearchSelect";
 import { MultiTypeSelect } from "../components/ui/MultiTypeSelect";
 import { typeLabel } from "../lib/labels";
@@ -17,6 +19,7 @@ import { defensiveMultiplier, offensiveCoverage } from "../lib/typeChart";
 import { cn } from "../lib/cn";
 import { useDashboardStore } from "../stores/dashboardStore";
 import { usePokedexStore, type PokedexSort } from "../stores/pokedexStore";
+import { useUiStore } from "../stores/uiStore";
 import { useLocalize } from "../hooks/useTranslations";
 import { useLearnsetsIndex } from "../hooks/useLearnsetsIndex";
 import { useMoveSummary } from "../hooks/useMoveCatalog";
@@ -51,6 +54,8 @@ export function Pokedex() {
   const scrollY = usePokedexStore((s) => s.scrollY);
   const setScrollY = usePokedexStore((s) => s.setScrollY);
   const format = useDashboardStore((s) => s.format);
+  const showQuickTables = useUiStore((s) => s.pokedexQuickTables);
+  const quickTablesDefaultTab = useUiStore((s) => s.quickTablesDefaultTab);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: queryKeys.pokedex.search(query, type || undefined),
@@ -182,6 +187,17 @@ export function Pokedex() {
       <header>
         <h1 className="text-2xl font-bold">{t("pokedex.title")}</h1>
       </header>
+
+      {showQuickTables && (
+        <QuickTables
+          defaultTab={quickTablesDefaultTab}
+          onOpenFull={(tab) => {
+            const store = useTypeLabStore.getState();
+            store.setTab(tab === "types" ? "table" : "natures");
+            store.setOpen(true);
+          }}
+        />
+      )}
 
       <div className="card space-y-4">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">

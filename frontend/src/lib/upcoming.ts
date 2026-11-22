@@ -88,10 +88,19 @@ export function matchesCity(
 ): boolean {
   const filter = parseCityKey(key);
   if (!filter) return true;
-  // Online tournaments have no city/country. They must remain visible when a
-  // local country is selected; the filter is about the local scene, not about
-  // hiding international online events.
-  if (!eventCity && !eventCountry) return true;
+  // A city filter must not match events without a city. Online events live in
+  // their own tab and do not use the location filters.
   if (!eventCity || eventCity !== filter.city) return false;
   return !filter.country || eventCountry === filter.country;
+}
+
+/** Play! Pokémon in-person events vs Limitless community online events. */
+export function splitUpcomingEvents<T extends { source: string }>(events: T[]): {
+  official: T[];
+  limitless: T[];
+} {
+  return {
+    official: events.filter((event) => event.source === "play-pokemon"),
+    limitless: events.filter((event) => event.source !== "play-pokemon"),
+  };
 }

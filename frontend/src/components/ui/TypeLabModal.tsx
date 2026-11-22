@@ -1,9 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Grid3x3, Shield, ShieldCheck, Swords, X } from "lucide-react";
+import { Dna, Grid3x3, Search, Shield, ShieldCheck, Swords, X } from "lucide-react";
 import { ALL_TYPES, canonicalSpeciesId, type PokemonType } from "../../lib/types";
-import { typeLabel } from "../../lib/labels";
+import { natureLabel, statLabel, typeLabel, type StatKey } from "../../lib/labels";
+import {
+  NATURE_BOOSTS,
+  naturesForBoost,
+  type NatureStat,
+} from "../../lib/natures";
 import {
   defensiveMultiplier,
   offensiveCoverage,
@@ -127,6 +132,7 @@ export function TypeLabModal() {
           {(
             [
               ["table", Grid3x3, "type_lab.tab_table"],
+              ["natures", Dna, "type_lab.tab_natures"],
               ["coverage", Swords, "type_lab.tab_coverage"],
               ["team", ShieldCheck, "type_lab.tab_team"],
             ] as const
@@ -148,7 +154,8 @@ export function TypeLabModal() {
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
-          {tab === "table" && <TypeTable />}
+          {tab === "table" && <TypeChartTable />}
+          {tab === "natures" && <NatureTable />}
           {tab === "coverage" && <TypeCoverage />}
           {tab === "team" && <TeamCoverage />}
         </div>
@@ -157,7 +164,7 @@ export function TypeLabModal() {
   );
 }
 
-function TypeTable() {
+export function TypeChartTable() {
   const { t } = useTranslation();
   return (
     <div className="overflow-auto">
@@ -224,6 +231,128 @@ function TypeTable() {
         <span>2× {t("type_lab.weak")}</span>
         <span>4× {t("type_lab.double_weak")}</span>
       </div>
+    </div>
+  );
+}
+
+export function NatureTable() {
+  const { t } = useTranslation();
+  const [query, setQuery] = useState("");
+  const needle = query.trim().toLowerCase();
+  const groups = [
+    ...NATURE_BOOSTS.map((stat) => ({
+      key: stat as string,
+      stat: stat as NatureStat | null,
+      entries: naturesForBoost(stat),
+    })),
+    { key: "neutral", stat: null, entries: naturesForBoost("neutral") },
+  ].map((group) => ({
+    ...group,
+    entries: group.entries.filter(
+      (entry) =>
+        !needle || natureLabel(t, entry.nature).toLowerCase().includes(needle),
+    ),
+  }));
+  const visible = groups.filter((group) => group.entries.length > 0);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="max-w-xl text-[11px]" style={{ color: "var(--text-muted)" }}>
+          {t("type_lab.nature_hint")}
+        </p>
+        <div className="relative w-full sm:w-64">
+          <Search
+            size={13}
+            className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2"
+            style={{ color: "var(--text-dim)" }}
+          />
+          <input
+            className="input h-8 w-full pl-8 text-xs"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={t("type_lab.nature_search")}
+            aria-label={t("type_lab.nature_search")}
+          />
+        </div>
+      </div>
+      <div
+        className="overflow-auto rounded-lg border"
+        style={{ borderColor: "var(--border)" }}
+      >
+        <table className="w-full border-collapse text-[11px]">
+          <thead>
+            <tr style={{ backgroundColor: "var(--bg-elev-strong)" }}>
+              <th
+                className="sticky top-0 border-b px-2.5 py-2 text-left font-semibold"
+                style={{ borderColor: "var(--border)" }}
+              >
+                {t("type_lab.nature_name")}
+              </th>
+              <th
+                className="sticky top-0 border-b px-2.5 py-2 text-left font-semibold"
+                style={{ borderColor: "var(--border)", color: "var(--success)" }}
+              >
+                +10%
+              </th>
+              <th
+                className="sticky top-0 border-b px-2.5 py-2 text-left font-semibold"
+                style={{ borderColor: "var(--border)", color: "var(--danger)" }}
+              >
+                −10%
+              </th>
+            </tr>
+          </thead>
+          {visible.map((group) => (
+            <tbody key={group.key}>
+              <tr>
+                <td
+                  colSpan={3}
+                  className="border-b px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wide"
+                  style={{
+                    borderColor: "var(--border)",
+                    backgroundColor: "var(--accent-soft)",
+                    color: "var(--accent)",
+                  }}
+                >
+                  {group.stat
+                    ? t("type_lab.nature_boost", {
+                        stat: statLabel(t, group.stat as StatKey),
+                      })
+                    : t("type_lab.nature_neutral")}
+                </td>
+              </tr>
+              {group.entries.map((entry) => (
+                <tr key={entry.nature} className="hover:bg-[var(--bg-elev-strong)]">
+                  <td
+                    className="border-b px-2.5 py-1.5 font-medium"
+                    style={{ borderColor: "var(--border)" }}
+                  >
+                    {natureLabel(t, entry.nature)}
+                  </td>
+                  <td
+                    className="border-b px-2.5 py-1.5"
+                    style={{ borderColor: "var(--border)", color: "var(--success)" }}
+                  >
+                    {entry.up ? statLabel(t, entry.up) : "—"}
+                  </td>
+                  <td
+                    className="border-b px-2.5 py-1.5"
+                    style={{ borderColor: "var(--border)", color: "var(--danger)" }}
+                  >
+                    {entry.down ? statLabel(t, entry.down) : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          ))}
+        </table>
+      </div>
+      {visible.length === 0 && (
+        <p className="text-xs" style={{ color: "var(--text-dim)" }}>
+          {t("type_lab.nature_no_results")}
+        </p>
+      )}
     </div>
   );
 }

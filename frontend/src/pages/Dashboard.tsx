@@ -5,14 +5,19 @@ import {
   AlertTriangle,
   BarChart3,
   CalendarRange,
+  CalendarClock,
   Check,
   ExternalLink,
   Grid2x2,
   Trophy,
   LayoutGrid,
   Loader2,
+  Package,
   RefreshCw,
   RotateCcw,
+  ShieldCheck,
+  Sparkles,
+  TrendingUp,
 } from "lucide-react";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
@@ -382,15 +387,8 @@ const POKE_INITIAL = 10;
       />
 
       {view === "metrics" && selectedRegulation && defaultRange && dateRange && (
-        <section
-          className="relative overflow-hidden rounded-xl border px-3 py-2.5"
-          style={{
-            borderColor: "var(--border)",
-            backgroundColor: "var(--bg-elev)",
-            borderLeft: "3px solid var(--accent)",
-          }}
-        >
-          <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+        <section className="card space-y-3">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               <span
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
@@ -403,7 +401,7 @@ const POKE_INITIAL = 10;
               </span>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-semibold" style={{ color: "var(--text)" }}>
+                  <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>
                     {t("dashboard.date_range")}
                   </span>
                   {seasonName && (
@@ -580,7 +578,11 @@ const POKE_INITIAL = 10;
       >
       {data && data.pokemon.length > 0 && (
         <>
-          <PanelOrder id="top_pokemon" label={t("dashboard.top_pokemon")}>
+          <PanelOrder
+            id="top_pokemon"
+            label={t("dashboard.top_pokemon")}
+            icon={<BarChart3 size={12} />}
+          >
           <section className="card">
             {(data?.sources?.length ?? 0) > 0 && (
               <div className="mb-2">
@@ -687,11 +689,19 @@ const POKE_INITIAL = 10;
           </section>
           </PanelOrder>
 
-          <PanelOrder id="trending" label={t("dashboard.panel_trending")}>
+          <PanelOrder
+            id="trending"
+            label={t("dashboard.panel_trending")}
+            icon={<TrendingUp size={12} />}
+          >
             <TrendingCard format={format} />
           </PanelOrder>
 
-          <PanelOrder id="top_entities" label={t("dashboard.panel_top_entities")}>
+          <PanelOrder
+            id="top_entities"
+            label={t("dashboard.panel_top_entities")}
+            icon={<LayoutGrid size={12} />}
+          >
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div className="card">
               <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
@@ -739,6 +749,7 @@ const POKE_INITIAL = 10;
             ? t("dashboard.recent_tournaments")
             : t("dashboard.champions_report")
         }
+        icon={<Trophy size={12} />}
       >
       <section className="card">
         <h2 className="mb-1 text-sm font-semibold" style={{ color: "var(--text)" }}>
@@ -858,11 +869,19 @@ const POKE_INITIAL = 10;
       </section>
       </PanelOrder>
 
-      <PanelOrder id="upcoming" label={t("upcoming.title")}>
+      <PanelOrder
+        id="upcoming"
+        label={t("upcoming.title")}
+        icon={<CalendarClock size={12} />}
+      >
         <UpcomingTournamentsSection />
       </PanelOrder>
 
-      <PanelOrder id="external_sources" label={t("dashboard.external_sources")}>
+      <PanelOrder
+        id="external_sources"
+        label={t("dashboard.external_sources")}
+        icon={<ExternalLink size={12} />}
+      >
       <section className="card">
         <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
           {t("dashboard.external_sources")}
