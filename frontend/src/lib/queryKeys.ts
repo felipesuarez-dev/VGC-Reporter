@@ -27,7 +27,21 @@ export const queryKeys = {
     list: ["teams", "list"] as const,
     detail: (id: number) => ["teams", "detail", id] as const,
   },
-  topTeams: (format: Format, limit: number) => ["topTeams", format, limit] as const,
+  topTeams: (
+    format: Format,
+    limit: number,
+    source?: string | null,
+    from?: string | null,
+    to?: string | null,
+  ) =>
+    [
+      "topTeams",
+      format,
+      limit,
+      source ?? "all",
+      from ?? "auto",
+      to ?? "auto",
+    ] as const,
   items: { all: ["items", "all"] as const },
   moves: { all: ["moves", "all"] as const },
   learnsetsIndex: () => ["learnsets-index"] as const,

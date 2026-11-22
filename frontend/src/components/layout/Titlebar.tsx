@@ -10,11 +10,13 @@ import {
   PanelLeftOpen,
   Search,
   Square,
+  Grid3x3,
   X,
 } from "lucide-react";
 import { useNavHistoryStore } from "../../stores/navHistoryStore";
 import { useSearchStore } from "../../stores/searchStore";
 import { useUiStore } from "../../stores/uiStore";
+import { useTypeLabStore } from "../../stores/typeLabStore";
 import { LanguageCombobox } from "./LanguageCombobox";
 import { ThemeSelect } from "./ThemeSelect";
 
@@ -22,6 +24,7 @@ const TITLE = "VGC Reporter";
 
 const ROUTE_I18N: { pattern: string; key: string }[] = [
   { pattern: "/dashboard", key: "nav.dashboard" },
+  { pattern: "/learn", key: "nav.learn" },
   { pattern: "/pokedex", key: "nav.pokedex" },
   { pattern: "/team-builder", key: "nav.team_builder" },
   { pattern: "/team-builder/:id", key: "nav.team_builder" },
@@ -185,6 +188,17 @@ export function Titlebar() {
             style={{ color: "var(--text)" }}
           >
             <Search size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={() => useTypeLabStore.getState().setOpen(true)}
+            aria-label={t("type_lab.title")}
+            title={`${t("type_lab.title")} (Ctrl+T)`}
+            aria-keyshortcuts="Control+T Meta+T"
+            className="flex h-full w-8 items-center justify-center hover:bg-[var(--bg-elev-strong)]"
+            style={{ color: "var(--text)" }}
+          >
+            <Grid3x3 size={14} />
           </button>
         </div>
       </div>

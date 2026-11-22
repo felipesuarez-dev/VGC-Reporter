@@ -103,8 +103,9 @@ export function ItemDetailModal() {
                     borderColor: "var(--border)",
                     backgroundColor: "var(--bg-elev-strong)",
                   }}
-                  title={t("dashboard.entity_user_hint", {
+                  title={t("dashboard.entity_user_share_hint", {
                     name: user.species,
+                    share: user.sharePercent.toFixed(1),
                     percent: user.usagePercent.toFixed(1),
                   })}
                 >
@@ -126,7 +127,7 @@ export function ItemDetailModal() {
                     className="shrink-0 text-[11px] font-semibold tabular-nums"
                     style={{ color: "var(--accent)" }}
                   >
-                    {user.usagePercent.toFixed(1)}%
+                    {user.sharePercent.toFixed(1)}%
                   </span>
                 </li>
               ))}

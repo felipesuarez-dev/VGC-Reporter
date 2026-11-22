@@ -52,10 +52,10 @@ export function NewsDetailModal({ item, onClose }: Props) {
         onClick={(event) => event.stopPropagation()}
       >
         <div
-          className="flex flex-wrap items-start justify-between gap-2 border-b px-4 py-3"
+          className="relative flex flex-wrap items-start justify-between gap-2 border-b px-4 py-3 pr-12 sm:flex-nowrap"
           style={{ borderColor: "var(--border)" }}
         >
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div
               className="text-[10px] uppercase tracking-wide"
               style={{ color: "var(--text-dim)" }}
@@ -72,7 +72,7 @@ export function NewsDetailModal({ item, onClose }: Props) {
               {item.title}
             </h2>
           </div>
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="flex w-full flex-wrap items-center justify-start gap-1 sm:w-auto sm:shrink-0 sm:justify-end">
             <button
               type="button"
               className="btn-ghost text-xs"
@@ -82,16 +82,18 @@ export function NewsDetailModal({ item, onClose }: Props) {
               <ExternalLink size={13} className="mr-1" />
               {t("feed.open_in_browser")}
             </button>
-            <button
-              type="button"
-              className="btn-ghost"
-              onClick={onClose}
-              aria-label={t("common.close")}
-              title={t("common.close")}
-            >
-              <X size={16} />
-            </button>
           </div>
+          <button
+            type="button"
+            className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-[var(--bg-elev-strong)]"
+            style={{ color: "var(--text-muted)" }}
+            onClick={onClose}
+            aria-label={t("common.close")}
+            title={t("common.close")}
+            data-testid="news-detail-close"
+          >
+            <X size={16} />
+          </button>
         </div>
 
         <div

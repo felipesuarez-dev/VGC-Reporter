@@ -1,8 +1,8 @@
 use crate::adapters::ChampteamsClient;
 use crate::adapters::{
     HttpClient, LabmausClient, LimitlessClient, OfficialEventClient, OfficialRegulationClient,
-    OfficialStreamClient, PikalyticsClient, PkmnDataClient, PokeApiClient, PokedataClient,
-    PokepasteClient, ShowdownClient, SmogonClient,
+    OfficialStreamClient, PikalyticsClient, PkmnDataClient, PokeApiClient, PokebaseClient,
+    PokedataClient, PokepasteClient, ShowdownClient, SmogonClient,
 };
 use crate::error::AppError;
 use crate::services::meta_service::MetaServiceDeps;
@@ -52,6 +52,7 @@ impl AppState {
         let official_stream = OfficialStreamClient::new(http.clone());
         let official_event = OfficialEventClient::new(http.clone());
         let champteams = ChampteamsClient::new(http.clone());
+        let pokebase = PokebaseClient::new(http.clone());
         let pokepaste = PokepasteClient::new(http.clone());
 
         let pokedex = Arc::new(PokedexService::new(
@@ -75,6 +76,7 @@ impl AppState {
             labmaus.clone(),
             pokepaste.clone(),
             limitless.clone(),
+            pokebase,
             pokedex.clone(),
             cache.clone(),
         );

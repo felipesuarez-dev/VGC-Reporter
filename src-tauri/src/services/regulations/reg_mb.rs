@@ -73,7 +73,7 @@ mod tests {
     use super::*;
     use crate::domain::evs::EvSpread;
     use crate::domain::nature::Nature;
-    use crate::domain::team::TeamMember;
+    use crate::domain::team::{BuildMode, TeamMember};
     use crate::domain::{format::Format, team::Team};
 
     fn complete_member(species: &str) -> TeamMember {
@@ -100,6 +100,7 @@ mod tests {
             shiny: false,
             nickname: None,
             ivs: Default::default(),
+            stat_points: Default::default(),
         }
     }
 
@@ -124,6 +125,7 @@ mod tests {
             id: None,
             name: "t".into(),
             format: Format::mb(),
+            build_mode: BuildMode::Classic,
             notes: None,
             members,
             created_at: None,

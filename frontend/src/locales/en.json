@@ -12,7 +12,8 @@
     "my_teams": "My Teams",
     "top_teams": "Top Teams",
     "damage_calc": "Damage Calc",
-    "settings": "Settings"
+    "settings": "Settings",
+    "learn": "Learn"
   },
   "entity": {
     "ability": "Ability",
@@ -197,7 +198,8 @@
     "custom_range": "Custom",
     "entity_user_hint": "{{name}} uses it in {{percent}}% of its sets",
     "champion_team": "Champion team",
-    "no_item": "No item"
+    "no_item": "No item",
+    "entity_user_share_hint": "{{name}} contributes {{share}}% of all teams; {{percent}}% of its sets carry it"
   },
   "tournament": {
     "standings": "Standings",
@@ -254,7 +256,8 @@
     "tournament_id": "Tournament ID",
     "postal_code": "Postal code",
     "export_ics": "Export .ics",
-    "website_short": "Venue website"
+    "website_short": "Venue website",
+    "registrations": "registered"
   },
   "drawer": {
     "top_items": "Items",
@@ -343,7 +346,15 @@
       "missing_ability": "{{slot}}: ability missing",
       "missing_item": "{{slot}}: item missing",
       "missing_moves": "{{slot}}: moves missing"
-    }
+    },
+    "mode": "Build mode",
+    "classic": "Classic",
+    "champions": "Champions",
+    "classic_hint": "Classic EVs and IVs, free level.",
+    "champions_hint": "66 Stat Points, 32 per stat, 31 IVs and level 50. Stats convert when you switch modes.",
+    "stat_points": "Stat Points",
+    "sp_remaining": "{{count}} left",
+    "sp_over": "{{count}} over"
   },
   "my_teams": {
     "title": "My Teams",
@@ -402,7 +413,14 @@
     "export_warning_body": "You're about to export {{count}} teams as Markdown. This may take a moment and could slow the app while it runs.",
     "export_warning_dont_ask": "Don't show this message again",
     "export_warning_cancel": "Cancel",
-    "export_warning_confirm": "Export anyway"
+    "export_warning_confirm": "Export anyway",
+    "provider_all": "All sources",
+    "provider_labmaus": "Labmaus",
+    "provider_limitless": "Limitless",
+    "provider_pokebase": "PokéBase",
+    "origin_all": "All",
+    "origin_community": "Community",
+    "origin_tournament": "Tournament"
   },
   "damage_calc": {
     "title": "Damage Calculator",
@@ -454,7 +472,47 @@
     "live_screens": "Live screens",
     "live_screens_hint": "One URL per line. Line order is screen order; defaults include YukS, Play! Pokémon, Sekiam, IRNemesis and more. Maximum 12.",
     "live_screens_placeholder": "https://www.youtube.com/@yuksvgc\nhttps://www.youtube.com/@PlayPokemon\nhttps://www.youtube.com/@WolfeyVGC\nhttps://www.youtube.com/@CybertronVGC\nhttps://www.youtube.com/@JamesBaek\nhttps://www.youtube.com/@PokeAlex\nhttps://www.youtube.com/@Moxie2D\nhttps://www.youtube.com/@PokemonChampions\nhttps://www.youtube.com/@Sekiam\nhttps://www.youtube.com/@IRNemesisTV\nhttps://www.youtube.com/watch?v=tP09BzCEJqU",
-    "live_screens_reset": "Reset defaults"
+    "live_screens_reset": "Reset defaults",
+    "calendar": "Calendar",
+    "calendar_hint": "Choose where you want it within reach.",
+    "calendar_panel": "Anchored in Feed",
+    "calendar_floating": "Floating widget",
+    "calendar_corner": "Fixed corner",
+    "calendar_free": "Free (draggable)",
+    "calendar_bottom_right": "Bottom right",
+    "calendar_bottom_left": "Bottom left",
+    "widget_title": "Tournament calendar",
+    "playback": "Playback when changing pages",
+    "playback_hint": "Keep a live stream while you browse the app.",
+    "playback_stop": "Stop the video",
+    "playback_mini": "Mini player in the corner",
+    "sync": "Sync data",
+    "sync_hint": "Move teams and settings between desktop and Android over the same Wi-Fi.",
+    "sync_send": "Send to another device",
+    "sync_scan": "Scan QR",
+    "sync_code": "Code",
+    "sync_copy": "Copy URL",
+    "sync_receive": "Receive from another device",
+    "sync_fetch": "Fetch bundle",
+    "sync_preview": "Preview",
+    "sync_preview_detail": "{{teams}} teams and {{settings}} settings ready to import.",
+    "sync_rename": "Suffix imported teams",
+    "sync_import": "Import",
+    "sync_done": "Imported {{teams}} teams and {{settings}} settings.",
+    "sync_copied": "Copied.",
+    "sync_copy_failed": "Could not copy.",
+    "sync_lan_note": "Same Wi-Fi, no cloud. Session expires in 2 minutes.",
+    "sync_receive_code": "Receive with code",
+    "sync_fetch_code": "Find on network",
+    "sync_conflicts": "{{count}} teams already use the same name",
+    "sync_conflict_rename": "Rename",
+    "sync_conflict_rename_hint": "Add the date to the imported name",
+    "sync_conflict_replace": "Replace",
+    "sync_conflict_replace_hint": "Delete the local team and use the new one",
+    "sync_conflict_skip": "Skip",
+    "sync_conflict_skip_hint": "Leave the local team untouched",
+    "sync_replace_warning": "{{count}} local teams will be deleted before importing.",
+    "sync_nothing": "There are no new teams to import."
   },
   "about": {
     "title": "About",
@@ -551,7 +609,9 @@
     "theme_incineroar": "Incineroar",
     "theme_tyranitar": "Tyranitar",
     "theme_sneasler": "Sneasler",
-    "timezone_system": "System ({{zone}})"
+    "timezone_system": "System ({{zone}})",
+    "theme_umbreon": "Umbreon (true black)",
+    "theme_zekrom": "Zekrom (high contrast)"
   },
   "ptr": {
     "pull": "Pull to refresh",
@@ -610,7 +670,8 @@
     "other_regulation": "data from another regulation",
     "unknown_regulation": "regulation not declared",
     "filtered_hint": "Showing {{source}} only. Switch to “All sources” for the merged count.",
-    "monthly_ladder": "Monthly ladder"
+    "monthly_ladder": "Monthly ladder",
+    "favorite_source": "Mark as favorite source"
   },
   "feed": {
     "season": "Season",
@@ -708,7 +769,18 @@
     "search_item": "Search item",
     "recent_streams": "Recent streams",
     "recent_hint": "No channels are live right now; these are their latest broadcasts.",
-    "last_stream": "Latest broadcast"
+    "last_stream": "Latest broadcast",
+    "showing_nine": "Showing 9 of {{count}} signals",
+    "empty_tv_slot": "Empty slot",
+    "stop": "Stop",
+    "resume": "Resume",
+    "stop_stream": "Stop playback",
+    "resume_stream": "Resume playback",
+    "stream_stopped": "Playback stopped",
+    "keep": "Keep",
+    "unkeep": "Release",
+    "keep_stream": "Keep playing when changing pages",
+    "unkeep_stream": "Release playback"
   },
   "item_detail": {
     "effect": "Effect",
@@ -726,6 +798,73 @@
     "event_notes": "Notes",
     "save_event": "Save event",
     "delete_event": "Delete event",
-    "personal": "Personal"
+    "personal": "Personal",
+    "widget_title": "Tournament calendar"
+  },
+  "external_link": {
+    "title": "External link",
+    "body": "This link will open a URL outside VGC Reporter in your default browser. Continue?",
+    "mail": "This link will open your email app outside VGC Reporter. Continue?",
+    "phone": "This link will open your phone app outside VGC Reporter. Continue?",
+    "open": "Open outside"
+  },
+  "type_lab": {
+    "title": "Type chart",
+    "hint": "Quick effectiveness and coverage lookup",
+    "tab_table": "Chart",
+    "tab_coverage": "Coverage",
+    "tab_team": "My team",
+    "attacker": "Attack ↓ / Defend →",
+    "immune": "Immune",
+    "resists": "Resists",
+    "weak": "Weak",
+    "double_weak": "Double weak",
+    "pick_defenders": "Pick 1 or 2 defending types",
+    "team_empty": "Add Pokémon to your team to see coverage.",
+    "team_defense": "Team weaknesses",
+    "team_offense": "Offensive coverage"
+  },
+  "learn": {
+    "eyebrow": "Learn competitive Pokémon",
+    "title": "Learn to play Champions for real",
+    "subtitle": "Guides, daily practice, starter teams, meta threats and tools to go from ladder to competition.",
+    "start_guides": "Start with the guides",
+    "open_types": "Type chart",
+    "progress": "Progress",
+    "starters_title": "Teams to start",
+    "starters_hint": "Real teams from the current meta, ready to load into the builder.",
+    "starters_empty": "No complete recent teams yet; check back later.",
+    "community": "Community",
+    "no_record": "No record",
+    "load_builder": "Load into builder",
+    "guides_title": "Guide library",
+    "guides_hint": "Learn one idea at a time and apply it in your games.",
+    "read_guide": "Read guide",
+    "glossary_title": "Competitive glossary",
+    "glossary_hint": "VGC and Champions jargon, without the fluff.",
+    "search_glossary": "Search a term...",
+    "tools_title": "Learning tools",
+    "tools_hint": "Everything you need to practise and build.",
+    "calendar_hint": "Calendar",
+    "quiz_title": "Daily practice",
+    "quiz_hint": "A new question every day. Keep the streak.",
+    "quiz_question": "Which type is super effective against {{type}}?",
+    "quiz_correct": "Correct!",
+    "quiz_wrong": "Almost. The answer was {{type}}.",
+    "streak": "{{count}} streak",
+    "threats_title": "Meta threats",
+    "threats_hint": "The Pokémon you will face most and their weaknesses.",
+    "level_beginner": "Beginner",
+    "level_intermediate": "Intermediate",
+    "level_advanced": "Advanced",
+    "quiz_mode_type": "Types",
+    "quiz_mode_speed": "Speed",
+    "quiz_mode_lead": "Lead",
+    "quiz_speed_question": "Who moves first: {{a}} or {{b}}? (same investment)",
+    "quiz_speed_hint": "{{a}}: {{aSpeed}} base Speed · {{b}}: {{bSpeed}} base Speed.",
+    "quiz_lead_question": "Against {{threat}}, which top-meta pick is the safest answer?",
+    "quiz_lead_hint": "{{answer}} resists the {{types}} types of {{threat}} best.",
+    "quiz_wrong_answer": "Almost. The answer was {{answer}}.",
+    "quiz_not_enough": "There is not enough meta data for this question yet."
   }
 }

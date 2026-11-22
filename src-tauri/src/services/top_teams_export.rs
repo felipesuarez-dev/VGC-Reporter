@@ -337,6 +337,10 @@ mod tests {
             country: Some("jp".into()),
             record: Some("5-1".into()),
             members: vec![full_member()],
+            provider: Some("labmaus".into()),
+            community: false,
+            source_url: None,
+            shared_at: None,
         };
         let report = TopTeamsReport {
             teams: vec![team.clone(), team.clone()],
@@ -375,6 +379,10 @@ mod tests {
             country: None,
             record: None,
             members: vec![full_member()],
+            provider: Some("labmaus".into()),
+            community: false,
+            source_url: None,
+            shared_at: None,
         };
         let report = TopTeamsReport {
             teams: vec![team.clone(), team.clone(), team.clone()],

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { openExternal as requestExternalOpen } from "../../lib/openExternal";
 import { formatDate } from "../../lib/formatDate";
 
 const MAIN_SOURCES: { label: string; url: string }[] = [
@@ -8,14 +8,6 @@ const MAIN_SOURCES: { label: string; url: string }[] = [
   { label: "Limitless", url: "https://play.limitlesstcg.com/tournaments?game=VGC" },
   { label: "Pikalytics", url: "https://www.pikalytics.com/" },
 ];
-
-async function openExternal(url: string) {
-  try {
-    await openUrl(url);
-  } catch {
-    window.open(url, "_blank");
-  }
-}
 
 export interface SourcesChipProps {
   tournamentsUsed: number;
@@ -86,7 +78,7 @@ export function SourcesChip({
           {i > 0 && <span style={{ color: "var(--text-dim)" }}>/</span>}
           <button
             type="button"
-            onClick={() => void openExternal(s.url)}
+            onClick={() => void requestExternalOpen(s.url)}
             className="hover:underline"
             style={{ color: "var(--text-muted)" }}
           >

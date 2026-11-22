@@ -16,7 +16,7 @@ pub async fn save_top_teams_markdown(
     let limit = limit as usize;
     let report = state
         .top_teams
-        .get_top_teams_report(format.clone(), limit)
+        .get_top_teams_report(format.clone(), limit, None, None)
         .await?;
     let md = top_teams_export::build_markdown(&report, limit, format);
     std::fs::write(&path, md)?;

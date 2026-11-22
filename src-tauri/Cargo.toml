@@ -1,6 +1,6 @@
 [package]
 name = "vgc-reporter"
-version = "0.5.0"
+version = "0.6.0"
 description = "VGC-Reporter - Pokemon Champions stats & team builder"
 authors = ["PumaSoft"]
 edition = "2021"
@@ -20,6 +20,7 @@ tauri-plugin-store = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
+tauri-plugin-barcode-scanner = "2"
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -42,6 +43,9 @@ csv = "1"
 scraper = "0.20"
 futures = "0.3"
 urlencoding = "2"
+tiny_http = "0.12"
+local-ip-address = "0.6"
+rand = "0.8"
 
 ts-rs = { version = "10", features = ["serde-compat", "chrono-impl"] }
 

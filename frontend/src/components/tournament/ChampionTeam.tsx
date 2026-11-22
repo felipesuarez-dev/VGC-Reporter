@@ -1,6 +1,7 @@
 import { Trophy } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { ChampionsTournament } from "../../lib/types";
+import { countryFlag } from "../../lib/countryFlag";
 import { PokemonSprite } from "../pokemon/PokemonSprite";
 import { ItemSprite } from "../items/ItemSprite";
 import { useLocalize } from "../../hooks/useTranslations";
@@ -26,6 +27,12 @@ export function ChampionTeam({
       <span className="text-[10px]" style={{ color: "var(--text-dim)" }}>
         <Trophy size={10} className="mr-1 inline" />
         {t("dashboard.champion_team")}: {champion}
+        {tournament.champion_country && (
+          <span>
+            {" "}· {countryFlag(tournament.champion_country)}{" "}
+            {tournament.champion_country.toUpperCase()}
+          </span>
+        )}
       </span>
     ) : null;
   }
@@ -52,6 +59,8 @@ export function ChampionTeam({
             style={{ color: "var(--text-muted)" }}
           >
             {champion}
+            {tournament.champion_country &&
+              ` · ${countryFlag(tournament.champion_country)} ${tournament.champion_country.toUpperCase()}`}
           </span>
         )}
       </div>

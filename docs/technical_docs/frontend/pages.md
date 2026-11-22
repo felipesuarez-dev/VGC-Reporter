@@ -5,11 +5,14 @@
 ## Dashboard.tsx
 Panel principal con tres vistas: **Métricas**, **Regulación** y **Novedades**.
 
-- **Métricas**: rango de fechas con default de temporada, Top Pokémon (chart/grid/treemap/tier), top items/moves/abilities, trending, próximos torneos, Champions tournaments y links a fuentes.
+- **Métricas**: rango de fechas con default de temporada, Top Pokémon (chart/grid/treemap/tier), top items/moves/abilities, trending, próximos torneos, Champions tournaments con filtro por país del campeón y links a fuentes.
 - **Regulación**: `RegulationInfoView` con roster y objetos legales, uso %, sprites, descripciones y modales.
 - **Novedades**: `RegulationFeed` con paneles drag-and-drop, live VGC, noticias y eventos.
 - IPC: `getMetaStats`, `listChampionsTournaments`, `getTournamentStandings`, `getTrending`, `listUpcomingTournaments`, `getAllowedSpecies`, `getAllowedItems`.
 - Stores: `dashboardStore` (formato, vista, filas/colapso del feed), `pokedexStore` (modal de detalle), `uiStore` (timezone/país de próximos).
+
+## Learn.tsx
+Página **Aprender** (`/learn`): hero con progreso persistido, equipos iniciales desde Top Teams, práctica diaria de tipos/velocidad/lead, guías de `lib/learnContent.ts` en 5 idiomas, amenazas del meta con debilidades, glosario buscable y accesos a TypeLab/builder/calc/regulación/calendario. Usa `getMetaStats`, `listPokemon`, `getTopTeams` y `useTeamBuilder` para cargar starters.
 
 ## Pokedex.tsx
 Pokédex completa con filtros: búsqueda por nombre, tipo, ability, move, generación, weak/strong matchups. Sort por usage / generación / alfabético.
@@ -18,7 +21,7 @@ Pokédex completa con filtros: búsqueda por nombre, tipo, ability, move, genera
 - Stores: `pokedexStore` (sort, modal target, scrollY), `dashboardStore` (formato).
 
 ## TeamBuilder.tsx
-Formulario de 6 miembros con EVs, naturaleza, item, ability, tera, moves. Importar/exportar Showdown text. Validación contra la regulación.
+Formulario de 6 miembros con pestañas Clásico/Champions. Clásico usa EVs/IVs; Champions usa 66 Stat Points (32 por stat), IVs 31 y nivel 50; al cambiar de modo se convierten evs/stat_points. Importar/exportar Showdown text. Validación contra la regulación.
 
 - IPC: `saveTeam`, `getTeam`, `importShowdownText`, `exportTeamToShowdown`, `validateTeam`, `listMoves`, `listMovesForSpecies`, `listPokemon`, `listItems`.
 - Stores: `teamBuilderStore` (draft, pendingImport).
@@ -43,3 +46,4 @@ Idioma, tema, tamaño de fuente, zona horaria global, país local, URL del direc
 
 - IPC: `getSettings`, `setSetting`, `getRegulations`, `refreshRegulations`, `getRegulationStatus`.
 - Stores: `dashboardStore` (favoriteFormat), `uiStore` (timeZone, homeCountry, fontSizePx).
+

@@ -4,6 +4,7 @@ import { ResponsiveContainer, Tooltip, Treemap } from "recharts";
 import { ipc } from "../../lib/ipc";
 import { queryKeys } from "../../lib/queryKeys";
 import { canonicalSpeciesId, type PokemonType } from "../../lib/types";
+import { PokemonSprite } from "../pokemon/PokemonSprite";
 import type { UsageBarItem } from "./UsageBarChart";
 
 interface Props {
@@ -40,6 +41,7 @@ interface TreemapEntry {
   name: string;
   size: number;
   color: string;
+  rank: number;
   item: UsageBarItem;
 }
 
@@ -68,6 +70,7 @@ function readEntry(props: CellProps): TreemapEntry | null {
       name: props.name,
       size: 0,
       color: props.color,
+      rank: props.payload?.rank ?? 0,
       item: props.item,
     };
   }
@@ -84,12 +87,21 @@ function TreemapCell(props: CellProps) {
   const entry = readEntry(props);
   if (!entry) return null;
   const usagePercent = entry.item?.usage_percent ?? 0;
-  const showLabel = width > 60 && height > 28;
+  const showLabel = width > 54 && height > 24;
+  const showSprite = width >= 96 && height >= 62 && Boolean(entry.item?.sprite_url);
+  const maxChars = Math.max(6, Math.floor((width - 12) / 6.2));
+  const label =
+    entry.name.length > maxChars
+      ? `${entry.name.slice(0, Math.max(1, maxChars - 1))}…`
+      : entry.name;
   return (
     <g
       onClick={() => onClick?.(entry.item)}
       style={{ cursor: onClick ? "pointer" : "default" }}
     >
+      <title>
+        {entry.name} · {usagePercent.toFixed(2)}%
+      </title>
       <rect
         x={x}
         y={y}
@@ -100,21 +112,32 @@ function TreemapCell(props: CellProps) {
         stroke="var(--bg-elev)"
         strokeWidth={1}
       />
+      {showSprite && (
+        <image
+          href={entry.item.sprite_url}
+          x={x + 5}
+          y={y + 5}
+          width={Math.min(32, height - 20)}
+          height={Math.min(32, height - 20)}
+          preserveAspectRatio="xMidYMid meet"
+          style={{ pointerEvents: "none", imageRendering: "pixelated" }}
+        />
+      )}
       {showLabel && (
         <>
           <text
-            x={x + 6}
+            x={x + (showSprite ? 42 : 6)}
             y={y + 16}
             fill="#ffffff"
             fontSize={11}
             fontWeight={600}
             style={{ pointerEvents: "none" }}
           >
-            {entry.name.length > 18 ? entry.name.slice(0, 17) + "…" : entry.name}
+            {label}
           </text>
           <text
-            x={x + 6}
-            y={y + height - 6}
+            x={x + (showSprite ? 42 : 6)}
+            y={showSprite ? y + 32 : y + height - 6}
             fill="#ffffffd0"
             fontSize={10}
             style={{ pointerEvents: "none" }}
@@ -146,16 +169,31 @@ function TooltipContent({
   if (!datum || !datum.item) return null;
   return (
     <div
-      className="rounded-md border px-2 py-1 text-xs shadow-md"
+      className="flex items-center gap-2 rounded-lg border px-2 py-1.5 text-xs shadow-lg"
       style={{
         backgroundColor: "var(--bg-elev-strong)",
         borderColor: "var(--border)",
         color: "var(--text)",
       }}
     >
-      <div className="font-semibold">{datum.name}</div>
-      <div style={{ color: "var(--text-muted)" }}>
-        {(datum.item.usage_percent ?? 0).toFixed(2)}%
+      <PokemonSprite
+        url={datum.item.sprite_url ?? ""}
+        fallbackUrl={datum.item.sprite_fallback_url}
+        homeUrl={datum.item.home_sprite_url}
+        name={datum.name}
+        size={40}
+        variant="pixel"
+      />
+      <div className="min-w-0">
+        <div className="font-semibold">{datum.name}</div>
+        <div style={{ color: "var(--accent)" }}>
+          {(datum.item.usage_percent ?? 0).toFixed(2)}%
+        </div>
+        {datum.rank > 0 && (
+          <div className="text-[10px]" style={{ color: "var(--text-dim)" }}>
+            #{datum.rank}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -179,12 +217,13 @@ export function UsageTreemap({ data, height = 400, onItemClick }: Props) {
   const treemapData: TreemapEntry[] = useMemo(() => {
     return data
       .filter((d) => d != null && typeof d.usage_percent === "number" && d.usage_percent > 0)
-      .map((d) => {
+      .map((d, index) => {
         const ttype = typeBySpecies.get(canonicalSpeciesId(d.name)) ?? "Normal";
         return {
           name: d.name,
           size: Math.max(0.1, d.usage_percent),
           color: TYPE_HEX[ttype],
+          rank: index + 1,
           item: d,
         };
       });

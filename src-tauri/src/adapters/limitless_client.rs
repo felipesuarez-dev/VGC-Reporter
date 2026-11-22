@@ -2,7 +2,8 @@ use crate::adapters::HttpClient;
 use crate::config;
 use crate::domain::format::Format;
 use crate::error::AppError;
-use chrono::NaiveDate;
+use chrono::{DateTime, NaiveDate, Utc};
+use scraper::{Html, Selector};
 use serde::Deserialize;
 
 #[derive(Clone)]
@@ -117,6 +118,113 @@ impl LimitlessClient {
             self.http.get_json(&url, config::TTL_LIMITLESS_LIST).await?;
         Ok(exclude_non_vgc(list))
     }
+
+    /// Upcoming events from the public HTML table. The JSON API only exposes
+    /// completed/ongoing tournaments, so this is the only way to see what is
+    /// announced next. The page is allowed by robots.txt and cached for the
+    /// same short TTL as the API list.
+    pub async fn list_upcoming_vgc(&self) -> Result<Vec<LimitlessUpcoming>, AppError> {
+        let url = "https://play.limitlesstcg.com/tournaments/upcoming?game=VGC";
+        let bytes = self
+            .http
+            .get_cached_with_headers(url, HTML_HEADERS, config::TTL_LIMITLESS_LIST)
+            .await?;
+        Ok(parse_upcoming(&String::from_utf8_lossy(&bytes)))
+    }
+}
+
+const HTML_HEADERS: &[(&str, &str)] = &[
+    (
+        "User-Agent",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 \
+         (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    ),
+    ("Accept-Language", "en-US,en;q=0.9"),
+];
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LimitlessUpcoming {
+    pub id: String,
+    pub name: String,
+    pub starts_at: String,
+    pub registrations: Option<u32>,
+    pub url: String,
+    pub region: Option<String>,
+}
+
+fn parse_upcoming(html: &str) -> Vec<LimitlessUpcoming> {
+    let Ok(row_selector) = Selector::parse("tr[data-date]") else {
+        return Vec::new();
+    };
+    let Ok(link_selector) = Selector::parse("a[href^=\"/tournament/\"]") else {
+        return Vec::new();
+    };
+    let mut out = Vec::new();
+    for row in Html::parse_document(html).select(&row_selector) {
+        let Some(starts_at) = row.value().attr("data-date") else {
+            continue;
+        };
+        let Some(name) = row.value().attr("data-name") else {
+            continue;
+        };
+        let Some(link) = row.select(&link_selector).next() else {
+            continue;
+        };
+        let Some(href) = link.value().attr("href") else {
+            continue;
+        };
+        let Some(id) = href
+            .strip_prefix("/tournament/")
+            .and_then(|rest| rest.split('/').next())
+            .filter(|id| !id.is_empty())
+        else {
+            continue;
+        };
+        out.push(LimitlessUpcoming {
+            id: id.to_string(),
+            name: name.to_string(),
+            starts_at: starts_at.to_string(),
+            registrations: row
+                .value()
+                .attr("data-players")
+                .and_then(|value| value.parse().ok()),
+            url: format!("https://play.limitlesstcg.com/tournament/{id}"),
+            region: region_from_name(name),
+        });
+    }
+    out.sort_by(|a, b| a.starts_at.cmp(&b.starts_at));
+    out
+}
+
+fn region_from_name(name: &str) -> Option<String> {
+    let upper = name.to_uppercase();
+    for code in ["M-A", "M-B", "M-C", "M-D", "M-E", "M-F"] {
+        if upper.contains(code) {
+            return Some(code.to_string());
+        }
+    }
+    for code in ["M/A", "M/B", "M/C", "M/D", "M/E", "M/F"] {
+        if upper.contains(code) {
+            return Some(code.replace('/', "-"));
+        }
+    }
+    let re = regex::Regex::new(r"(?i)\bREG(?:ULATION)?\s*([IVX]+)\b").ok()?;
+    re.captures(name)
+        .and_then(|capture| capture.get(1))
+        .map(|value| value.as_str().to_uppercase())
+}
+
+/// Drop past events while keeping everything that starts later today.
+pub fn upcoming_is_future(starts_at: &str, now: DateTime<Utc>) -> bool {
+    DateTime::parse_from_rfc3339(starts_at)
+        .map(|value| value.with_timezone(&Utc) >= now)
+        .unwrap_or_else(|_| {
+            starts_at
+                .get(..10)
+                .and_then(|date| NaiveDate::parse_from_str(date, "%Y-%m-%d").ok())
+                .map(|date| date >= now.date_naive())
+                .unwrap_or(false)
+        })
 }
 
 /// Defensive filter: even though the query is `game=VGC`, some older entries

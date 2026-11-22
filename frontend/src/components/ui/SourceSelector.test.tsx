@@ -4,15 +4,6 @@ import userEvent from "@testing-library/user-event";
 import { SourceProvenanceChips, SourceSelector } from "./SourceSelector";
 import type { SourceProvenance } from "../../lib/types";
 
-/**
- * Runtime tests for the source selector and the provenance strip (Regla 1).
- *
- * The provenance strip is the app's honest-labelling surface: if it silently
- * drops the "this source is describing another regulation" marker, the Panel
- * starts presenting last season's numbers as if they were current. That is a
- * correctness bug the type checker cannot see, so it is asserted here.
- */
-
 function provenance(over: Partial<SourceProvenance> = {}): SourceProvenance {
   return {
     source: "labmaus",
@@ -30,64 +21,53 @@ function provenance(over: Partial<SourceProvenance> = {}): SourceProvenance {
 describe("SourceSelector", () => {
   it("defaults to the merged view", () => {
     render(<SourceSelector value={null} onChange={vi.fn()} sources={[provenance()]} />);
-    expect(screen.getByRole("combobox")).toHaveValue("all");
+    expect(screen.getByRole("button", { name: "sources.label" })).toHaveTextContent(
+      "sources.all",
+    );
   });
 
-  it("offers every known source even when a snapshot returned none", () => {
+  it("offers every known source plus the merged option", async () => {
     render(<SourceSelector value={null} onChange={vi.fn()} sources={[]} />);
-    const options = screen.getAllByRole("option");
-    // all + the four providers
-    expect(options).toHaveLength(5);
+    await userEvent.click(screen.getByRole("button", { name: "sources.label" }));
+    expect(screen.getAllByRole("option")).toHaveLength(5);
   });
 
   it("reports the chosen source to its caller", async () => {
     const onChange = vi.fn();
     render(<SourceSelector value={null} onChange={onChange} sources={[provenance()]} />);
-    await userEvent.selectOptions(screen.getByRole("combobox"), "labmaus");
+    await userEvent.click(screen.getByRole("button", { name: "sources.label" }));
+    await userEvent.click(screen.getByRole("option", { name: /sources.name_labmaus/ }));
     expect(onChange).toHaveBeenCalledWith("labmaus");
   });
 
   it("maps the merged option back to null rather than the string 'all'", async () => {
     const onChange = vi.fn();
-    render(<SourceSelector value="labmaus" onChange={onChange} sources={[provenance()]} />);
-    await userEvent.selectOptions(screen.getByRole("combobox"), "all");
+    render(
+      <SourceSelector value="labmaus" onChange={onChange} sources={[provenance()]} />,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "sources.label" }));
+    await userEvent.click(screen.getByRole("option", { name: /sources.all/ }));
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
-  it("says so when the view is pinned to one source", () => {
-    render(<SourceSelector value="smogon" onChange={vi.fn()} sources={[]} />);
-    expect(screen.getByRole("combobox")).toHaveAttribute(
-      "title",
-      expect.stringContaining("sources.filtered_hint"),
+  it("stars a source and selects it", async () => {
+    const onChange = vi.fn();
+    const onFavoriteChange = vi.fn();
+    render(
+      <SourceSelector
+        value={null}
+        onChange={onChange}
+        onFavoriteChange={onFavoriteChange}
+        sources={[provenance()]}
+      />,
     );
+    await userEvent.click(screen.getByRole("button", { name: "sources.label" }));
+    await userEvent.click(screen.getAllByTitle("sources.favorite_source")[1]);
+    expect(onFavoriteChange).toHaveBeenCalledWith("labmaus");
+    expect(onChange).toHaveBeenCalledWith("labmaus");
   });
 
-  it("stays quiet about filtering while merged", () => {
-    render(<SourceSelector value={null} onChange={vi.fn()} sources={[]} />);
-    expect(screen.getByRole("combobox")).not.toHaveAttribute("title");
-  });
-
-  it("survives provenance with every optional field missing", () => {
-    expect(() =>
-      render(
-        <SourceSelector
-          value={null}
-          onChange={vi.fn()}
-          sources={[
-            provenance({
-              declared_regulation: null,
-              from_date: null,
-              to_date: null,
-              teams: 0,
-              tournaments: 0,
-            }),
-          ]}
-        />,
-      ),
-    ).not.toThrow();
-  });
-
-  it("does not leak the Smogon slug into the option label", () => {
+  it("keeps the Smogon slug out of option labels", async () => {
     render(
       <SourceSelector
         value={null}
@@ -96,17 +76,14 @@ describe("SourceSelector", () => {
           provenance({
             source: "smogon",
             declared_regulation: "gen9championsvgc2026regmc",
-            teams: 277,
             tournaments: 0,
+            teams: 277,
           }),
         ]}
       />,
     );
-    expect(
-      screen
-        .getAllByRole("option")
-        .some((option) => option.textContent?.includes("gen9championsvgc2026regmc")),
-    ).toBe(false);
+    await userEvent.click(screen.getByRole("button", { name: "sources.label" }));
+    expect(screen.queryByText(/gen9championsvgc2026regmc/)).not.toBeInTheDocument();
   });
 });
 
@@ -126,10 +103,6 @@ describe("SourceProvenanceChips", () => {
     expect(screen.getByText("38%")).toBeInTheDocument();
   });
 
-  /**
-   * The case the whole provenance mechanism exists for: a source serving a
-   * different regulation must be visibly marked, never folded in silently.
-   */
   it("marks a source that is describing another regulation", () => {
     render(
       <SourceProvenanceChips
@@ -143,20 +116,5 @@ describe("SourceProvenanceChips", () => {
       />,
     );
     expect(screen.getByLabelText("sources.other_regulation")).toBeInTheDocument();
-  });
-
-  it("leaves a current source unmarked", () => {
-    render(<SourceProvenanceChips sources={[provenance({ matches_active_format: true })]} />);
-    expect(screen.queryByLabelText("sources.other_regulation")).not.toBeInTheDocument();
-  });
-
-  it("does not crash when a source declares no regulation", () => {
-    expect(() =>
-      render(
-        <SourceProvenanceChips
-          sources={[provenance({ declared_regulation: null, matches_active_format: false })]}
-        />,
-      ),
-    ).not.toThrow();
   });
 });

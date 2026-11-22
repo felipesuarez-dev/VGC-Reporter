@@ -360,6 +360,14 @@ export function TournamentDetailModal({ event, onClose }: Props) {
                 )}
               </div>
               <div className="space-y-2">
+                {admission && (
+                  <Detail
+                    icon={<Ticket size={12} />}
+                    label={t("upcoming.admission")}
+                  >
+                    <span data-testid="event-price">{admission}</span>
+                  </Detail>
+                )}
                 {organizer && (
                   <Detail
                     icon={<UserRound size={12} />}
@@ -375,7 +383,7 @@ export function TournamentDetailModal({ event, onClose }: Props) {
                         <button
                           type="button"
                           className="underline decoration-dotted"
-                          onClick={() => openExternal(`mailto:${contactEmail}`)}
+                          onClick={() => openExternal(`mailto:${contactEmail}`, "mail")}
                         >
                           {contactEmail}
                         </button>
@@ -384,7 +392,7 @@ export function TournamentDetailModal({ event, onClose }: Props) {
                         <button
                           type="button"
                           className="inline-flex items-center gap-1 underline decoration-dotted"
-                          onClick={() => openExternal(`tel:${contactPhone}`)}
+                          onClick={() => openExternal(`tel:${contactPhone}`, "phone")}
                         >
                           <Phone size={10} />
                           {contactPhone}

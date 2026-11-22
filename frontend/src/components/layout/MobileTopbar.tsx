@@ -1,7 +1,8 @@
-import { Menu, Search, X } from "lucide-react";
+import { Grid3x3, Menu, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useUiStore } from "../../stores/uiStore";
 import { useSearchStore } from "../../stores/searchStore";
+import { useTypeLabStore } from "../../stores/typeLabStore";
 import { ThemeSelect } from "./ThemeSelect";
 import { LanguageCombobox } from "./LanguageCombobox";
 
@@ -38,8 +39,7 @@ export function MobileTopbar() {
           className="h-7 w-7 shrink-0 rounded-full object-cover ml-1"
         />
         <span className="ml-2 min-w-0 flex-1 truncate text-sm font-bold tracking-tight">
-          <span className="sm:hidden">VGC</span>
-          <span className="hidden sm:inline">VGC Reporter</span>
+          VGC Reporter
         </span>
 
         <button
@@ -50,6 +50,16 @@ export function MobileTopbar() {
           style={{ color: "var(--text)" }}
         >
           <Search size={20} />
+        </button>
+        <button
+          type="button"
+          onClick={() => useTypeLabStore.getState().setOpen(true)}
+          aria-label={t("type_lab.title")}
+          title={t("type_lab.title")}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg hover:bg-[var(--bg-elev-strong)]"
+          style={{ color: "var(--text)" }}
+        >
+          <Grid3x3 size={19} />
         </button>
 
         <div className="flex h-11 shrink-0 items-center">

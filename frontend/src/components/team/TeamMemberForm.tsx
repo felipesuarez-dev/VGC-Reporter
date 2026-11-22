@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import type {
+  BuildMode,
   MoveSummary,
   Nature,
   Pokemon,
@@ -9,10 +10,12 @@ import type {
   TeamMember,
 } from "../../lib/types";
 import { ALL_NATURES } from "../../lib/types";
+import { evsToStatPoints, statPointsToEvs } from "../../lib/champions";
 import { natureLabel } from "../../lib/labels";
 import { ipc } from "../../lib/ipc";
 import { useLocalize } from "../../hooks/useTranslations";
 import { EVSliders } from "./EVSliders";
+import { StatPointSliders } from "./StatPointSliders";
 import { PokemonSprite } from "../pokemon/PokemonSprite";
 import { TypeBadge } from "../pokemon/TypeBadge";
 import { SearchSelect } from "../ui/SearchSelect";
@@ -23,10 +26,19 @@ interface Props {
   pokedex: Pokemon[];
   items: string[];
   moves: string[];
+  mode: BuildMode;
   onChange: (m: TeamMember) => void;
 }
 
-export function TeamMemberForm({ slot, value, pokedex, items, moves, onChange }: Props) {
+export function TeamMemberForm({
+  slot,
+  value,
+  pokedex,
+  items,
+  moves,
+  mode,
+  onChange,
+}: Props) {
   const { t } = useTranslation();
   const localize = useLocalize();
 
@@ -164,9 +176,34 @@ export function TeamMemberForm({ slot, value, pokedex, items, moves, onChange }:
       </div>
 
       <div>
-        <label className="label">{t("team_builder.evs")}</label>
+        <label className="label">
+          {mode === "champions" ? t("team_builder.stat_points") : t("team_builder.evs")}
+        </label>
         <div className="mt-1">
-          <EVSliders value={value.evs} onChange={(evs) => onChange({ ...value, evs })} />
+          {mode === "champions" ? (
+            <StatPointSliders
+              value={value.stat_points}
+              onChange={(statPoints) =>
+                onChange({
+                  ...value,
+                  stat_points: statPoints,
+                  evs: statPointsToEvs(statPoints),
+                  level: 50,
+                })
+              }
+            />
+          ) : (
+            <EVSliders
+              value={value.evs}
+              onChange={(evs) =>
+                onChange({
+                  ...value,
+                  evs,
+                  stat_points: evsToStatPoints(evs),
+                })
+              }
+            />
+          )}
         </div>
       </div>
     </div>

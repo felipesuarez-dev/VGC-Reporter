@@ -1,6 +1,6 @@
 import { ExternalLink } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { openExternal } from "../../lib/openExternal";
 
 interface Props {
   handle: string;
@@ -23,12 +23,8 @@ function XIcon({ className }: { className?: string }) {
 
 export function XCard({ handle, url, description }: Props) {
   const { t } = useTranslation();
-  const open = async () => {
-    try {
-      await openUrl(url);
-    } catch {
-      window.open(url, "_blank");
-    }
+  const open = () => {
+    void openExternal(url);
   };
 
   return (

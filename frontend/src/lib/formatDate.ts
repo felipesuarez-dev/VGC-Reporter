@@ -73,6 +73,22 @@ export function formatDate(
   return new Intl.DateTimeFormat(normalizeLocale(locale), options).format(d);
 }
 
+export function formatTime(
+  value: string | null | undefined,
+  locale?: string,
+  timeZone?: string | null,
+): string {
+  if (!value) return "";
+  if (!value.includes("T")) return value.slice(0, 5);
+  const d = parseDate(value);
+  if (!d) return value;
+  return new Intl.DateTimeFormat(normalizeLocale(locale), {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: activeTimeZone(timeZone),
+  }).format(d);
+}
+
 export function formatDateTime(
   value: string | null | undefined,
   locale?: string,

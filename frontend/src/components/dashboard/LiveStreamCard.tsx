@@ -11,13 +11,15 @@ import {
   MonitorPlay,
   PanelBottom,
   PanelRight,
+  Pin,
   Play,
   Radio,
   RefreshCw,
   Settings2,
+  Square,
   Youtube,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useLiveStreams } from "../../hooks/useLiveStreams";
@@ -26,6 +28,7 @@ import type { LiveStreamScreen, OfficialLiveStream } from "../../lib/types";
 import { openExternal } from "../../lib/openExternal";
 import { channelSubscribeUrl } from "../../lib/youtube";
 import { LiveWall } from "./LiveWall";
+import { PlaybackHost, usePlayback } from "../playback/PlaybackProvider";
 
 interface Props {
   className?: string;
@@ -55,6 +58,17 @@ export function LiveStreamCard({
   );
   const hiddenScreens = useUiStore((s) => s.hiddenLiveScreens);
   const toggleHidden = useUiStore((s) => s.toggleLiveScreenHidden);
+  const playback = usePlayback();
+  // Per-session stop state. Stopping unmounts only that iframe; the screen
+  // stays configured and can be resumed with Play. It is intentionally not
+  // persisted: reopening the app starts every configured stream fresh.
+  const [stoppedScreens, setStoppedScreens] = useState<string[]>([]);
+  const toggleStopped = (url: string) =>
+    setStoppedScreens((current) =>
+      current.includes(url)
+        ? current.filter((entry) => entry !== url)
+        : [...current, url],
+    );
 
   const screens = streams.data ?? [];
   const visibleScreens = screens.filter(
@@ -79,6 +93,18 @@ export function LiveStreamCard({
     setFeaturedView("featured");
   };
   const showEqual = () => setFeaturedView("equal");
+
+  // If the kept stream goes offline (or disappears from the list while the
+  // app is open), stop its audio instead of leaving it playing in a hidden
+  // host.
+  useEffect(() => {
+    if (!playback.active || streams.isLoading || !streams.data) return;
+    const stillLive = streams.data.some(
+      (screen) =>
+        screen.source_url === playback.active?.source_url && screen.live,
+    );
+    if (!stillLive) playback.stop();
+  }, [playback, streams.data, streams.isLoading]);
 
   const controls = (
     <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
@@ -341,81 +367,55 @@ export function LiveStreamCard({
           {controls}
         </div>
 
-        {featured ? (
-          featuredLayout === "side" ? (
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,3fr)_minmax(16rem,1fr)]">
-              <LiveTile
-                key={featured.source_url}
-                screen={featured}
-                dragging={dragging}
-                featured
-                onReset={showEqual}
-                onHide={() => toggleHidden(featured.source_url)}
-              />
-              <div className="space-y-3">
-                {live
-                  .filter((screen) => screen.source_url !== featured.source_url)
-                  .map((screen) => (
-                    <LiveTile
-                      key={screen.source_url}
-                      screen={screen}
-                      dragging={dragging}
-                      onFeature={() => featureScreen(screen.source_url)}
-                      onHide={() => toggleHidden(screen.source_url)}
-                    />
-                  ))}
+        {/* One stable grid: every tile is a sibling with a stable key.
+            Featuring or hiding a stream only changes classes / removes that
+            one tile, so React never remounts the other iframes. */}
+        <div
+          className={`grid gap-3 ${
+            featured && featuredLayout === "side"
+              ? "lg:grid-cols-4"
+              : live.length > 1
+                ? "lg:grid-cols-2"
+                : "mx-auto w-full max-w-5xl"
+          }`}
+        >
+          {live.map((screen) => {
+            const isFeatured =
+              Boolean(featured) && featured?.source_url === screen.source_url;
+            const span =
+              isFeatured && featuredLayout === "side"
+                ? "order-first lg:col-span-3 lg:row-span-2"
+                : isFeatured
+                  ? "order-first lg:col-span-2"
+                  : "";
+            return (
+              <div key={screen.source_url} className={span}>
+                <LiveTile
+                  screen={screen}
+                  dragging={dragging}
+                  featured={isFeatured}
+                  stopped={stoppedScreens.includes(screen.source_url)}
+                  onToggleStop={() => toggleStopped(screen.source_url)}
+                  kept={playback.active?.source_url === screen.source_url}
+                  onKeep={() => playback.activate(screen)}
+                  onUnkeep={() => playback.stop()}
+                  onFeature={
+                    live.length > 1
+                      ? () => featureScreen(screen.source_url)
+                      : undefined
+                  }
+                  onReset={isFeatured ? showEqual : undefined}
+                  onHide={() => {
+                    if (playback.active?.source_url === screen.source_url) {
+                      playback.stop();
+                    }
+                    toggleHidden(screen.source_url);
+                  }}
+                />
               </div>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <LiveTile
-                key={featured.source_url}
-                screen={featured}
-                dragging={dragging}
-                featured
-                onReset={showEqual}
-                onHide={() => toggleHidden(featured.source_url)}
-              />
-              <div
-                className={`grid gap-3 ${
-                  live.length > 2 ? "lg:grid-cols-2" : "mx-auto w-full lg:w-3/5"
-                }`}
-              >
-                {live
-                  .filter((screen) => screen.source_url !== featured.source_url)
-                  .map((screen) => (
-                    <LiveTile
-                      key={screen.source_url}
-                      screen={screen}
-                      dragging={dragging}
-                      onFeature={() => featureScreen(screen.source_url)}
-                      onHide={() => toggleHidden(screen.source_url)}
-                    />
-                  ))}
-              </div>
-            </div>
-          )
-        ) : (
-          <div
-            className={`grid gap-3 ${
-              live.length > 1 ? "lg:grid-cols-2" : "mx-auto w-full max-w-5xl"
-            }`}
-          >
-            {live.map((screen) => (
-              <LiveTile
-                key={screen.source_url}
-                screen={screen}
-                dragging={dragging}
-                onFeature={
-                  live.length > 1
-                    ? () => featureScreen(screen.source_url)
-                    : undefined
-                }
-                onHide={() => toggleHidden(screen.source_url)}
-              />
-            ))}
-          </div>
-        )}
+            );
+          })}
+        </div>
 
         {(hiddenLive.length > 0 ||
           screens.some((screen) => !screen.live)) && (
@@ -454,6 +454,11 @@ function LiveTile({
   screen,
   dragging,
   featured = false,
+  stopped = false,
+  kept = false,
+  onToggleStop,
+  onKeep,
+  onUnkeep,
   onFeature,
   onReset,
   onHide,
@@ -461,6 +466,11 @@ function LiveTile({
   screen: LiveStreamScreen;
   dragging: boolean;
   featured?: boolean;
+  stopped?: boolean;
+  kept?: boolean;
+  onToggleStop?: () => void;
+  onKeep?: () => void;
+  onUnkeep?: () => void;
   onFeature?: () => void;
   onReset?: () => void;
   onHide?: () => void;
@@ -478,6 +488,47 @@ function LiveTile({
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+          {(onKeep || onUnkeep) && (
+            <button
+              type="button"
+              className="flex items-center gap-1 rounded-md border px-1.5 py-1 text-[10px] font-medium"
+              style={{
+                borderColor: kept ? "var(--accent)" : "var(--border)",
+                backgroundColor: kept ? "var(--accent-soft)" : "transparent",
+                color: kept ? "var(--accent)" : "var(--text-muted)",
+              }}
+              onClick={kept ? onUnkeep : onKeep}
+              title={kept ? t("feed.unkeep_stream") : t("feed.keep_stream")}
+              aria-label={kept ? t("feed.unkeep_stream") : t("feed.keep_stream")}
+              aria-pressed={kept}
+            >
+              <Pin size={11} />
+              <span className="hidden sm:inline">
+                {kept ? t("feed.unkeep") : t("feed.keep")}
+              </span>
+            </button>
+          )}
+          {onToggleStop && (
+            <button
+              type="button"
+              className="flex items-center gap-1 rounded-md border px-1.5 py-1 text-[10px] font-medium"
+              style={{
+                borderColor: stopped ? "var(--accent)" : "var(--border)",
+                backgroundColor: stopped ? "var(--accent-soft)" : "transparent",
+                color: stopped ? "var(--accent)" : "var(--text-muted)",
+              }}
+              onClick={onToggleStop}
+              title={stopped ? t("feed.resume_stream") : t("feed.stop_stream")}
+              aria-label={stopped ? t("feed.resume_stream") : t("feed.stop_stream")}
+              aria-pressed={stopped}
+              data-testid={`live-stop-${screen.source_url}`}
+            >
+              {stopped ? <Play size={11} /> : <Square size={11} />}
+              <span className="hidden sm:inline">
+                {stopped ? t("feed.resume") : t("feed.stop")}
+              </span>
+            </button>
+          )}
           {onHide && (
             <button
               type="button"
@@ -546,18 +597,41 @@ function LiveTile({
         </div>
       </div>
       <div
-        className="w-full overflow-hidden rounded-lg border"
+        className="relative w-full overflow-hidden rounded-lg border"
         style={{ borderColor: "var(--border)" }}
       >
-        <iframe
-          src={screen.embed_url ?? ""}
-          title={screen.title ?? screen.label}
-          className="aspect-video w-full"
-          style={{ pointerEvents: dragging ? "none" : undefined }}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          referrerPolicy="strict-origin-when-cross-origin"
-        />
+        {kept ? (
+          <PlaybackHost screen={screen} />
+        ) : stopped ? (
+          <div
+            className="flex aspect-video w-full flex-col items-center justify-center gap-2"
+            style={{ backgroundColor: "var(--bg)" }}
+          >
+            <span className="text-[11px]" style={{ color: "var(--text-dim)" }}>
+              {t("feed.stream_stopped")}
+            </span>
+            {onToggleStop && (
+              <button
+                type="button"
+                className="btn-ghost text-xs"
+                onClick={onToggleStop}
+              >
+                <Play size={12} className="mr-1" />
+                {t("feed.resume_stream")}
+              </button>
+            )}
+          </div>
+        ) : (
+          <iframe
+            src={screen.embed_url ?? ""}
+            title={screen.title ?? screen.label}
+            className="aspect-video w-full"
+            style={{ pointerEvents: dragging ? "none" : undefined }}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            referrerPolicy="strict-origin-when-cross-origin"
+          />
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-1">
         <span

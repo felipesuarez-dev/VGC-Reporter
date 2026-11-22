@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Eye } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { formatDate } from "../../lib/formatDate";
+import { formatDate, formatTime } from "../../lib/formatDate";
 import { countryFlag } from "../../lib/countries";
 import {
   eventAddress,
@@ -150,8 +150,15 @@ export function UpcomingTournamentsSection({
                     className="text-[11px]"
                     style={{ color: "var(--text-muted)" }}
                   >
-                    <span>{formatDate(event.date, i18n.language)}</span>
-                    {event.time && <span> · {event.time.slice(0, 5)}</span>}
+                    <span>
+                      {formatDate(event.starts_at ?? event.date, i18n.language)}
+                    </span>
+                    {(event.starts_at || event.time) && (
+                      <span>
+                        {" "}
+                        · {formatTime(event.starts_at ?? event.time, i18n.language)}
+                      </span>
+                    )}
                     {event.kind && <span> · {event.kind}</span>}
                     {event.city && (
                       <span>
@@ -163,6 +170,12 @@ export function UpcomingTournamentsSection({
                       <span>
                         {" "}
                         · {event.players} {t("dashboard.players")}
+                      </span>
+                    )}
+                    {event.registrations != null && (
+                      <span>
+                        {" "}
+                        · {event.registrations} {t("upcoming.registrations")}
                       </span>
                     )}
                     {event.region && <span> · {event.region}</span>}

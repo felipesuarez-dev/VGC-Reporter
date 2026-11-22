@@ -88,6 +88,10 @@ export function matchesCity(
 ): boolean {
   const filter = parseCityKey(key);
   if (!filter) return true;
+  // Online tournaments have no city/country. They must remain visible when a
+  // local country is selected; the filter is about the local scene, not about
+  // hiding international online events.
+  if (!eventCity && !eventCountry) return true;
   if (!eventCity || eventCity !== filter.city) return false;
   return !filter.country || eventCountry === filter.country;
 }

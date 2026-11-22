@@ -9,7 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { openExternal } from "../../lib/openExternal";
 import { APP_VERSION } from "../../lib/version";
 import { useUpdaterStore } from "../../stores/updaterStore";
 import { runUpdateCheck, type CheckOutcome } from "../../hooks/useAutoUpdate";
@@ -32,12 +32,8 @@ export function AboutModal({ open, onClose }: Props) {
 
   if (!open) return null;
 
-  const openRepo = async () => {
-    try {
-      await openUrl(REPO_URL);
-    } catch {
-      window.open(REPO_URL, "_blank");
-    }
+  const openRepo = () => {
+    void openExternal(REPO_URL);
   };
 
   const handleCheck = async () => {

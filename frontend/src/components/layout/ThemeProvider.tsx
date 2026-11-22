@@ -8,6 +8,8 @@ const CONCRETE_CLASSES = [
   "theme-tyranitar",
   "theme-milotic",
   "theme-sneasler",
+  "theme-umbreon",
+  "theme-zekrom",
 ];
 
 function resolveTheme(theme: Theme, prefersDark: boolean): string {

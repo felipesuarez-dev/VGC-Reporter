@@ -21,7 +21,8 @@ describe("city filters", () => {
     expect(matchesCity("Santiago", "CL", "CL|Santiago")).toBe(true);
     expect(matchesCity("Santiago", "AR", "CL|Santiago")).toBe(false);
     expect(matchesCity("Santiago", "CL", null)).toBe(true);
-    expect(matchesCity(null, null, "CL|Santiago")).toBe(false);
+    // Online events have no city/country and must stay visible.
+    expect(matchesCity(null, null, "CL|Santiago")).toBe(true);
   });
 });
 

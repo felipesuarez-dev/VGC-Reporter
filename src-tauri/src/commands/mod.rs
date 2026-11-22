@@ -4,6 +4,7 @@ pub mod pikalytics;
 pub mod pokedex;
 pub mod regulations;
 pub mod settings;
+pub mod sync;
 pub mod teams;
 pub mod top_teams;
 pub mod top_teams_export;
