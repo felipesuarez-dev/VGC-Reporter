@@ -3,11 +3,11 @@ import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import { check } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { openPath } from "@tauri-apps/plugin-opener";
+import { openExternal } from "../../lib/openExternal";
+import { ipc } from "../../lib/ipc";
 import { useUpdaterStore } from "../../stores/updaterStore";
 import { APP_VERSION } from "../../lib/version";
-import { useIsMobile } from "../../hooks/useIsMobile";
-
 function isMacOS(): boolean {
   const p = typeof navigator !== "undefined" ? navigator.platform : "";
   const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
@@ -26,7 +26,8 @@ export function UpdaterModal() {
   const dismiss = useUpdaterStore((s) => s.dismiss);
   const [isInstalling, setIsInstalling] = useState(false);
   const [installError, setInstallError] = useState<string | null>(null);
-  const isMobile = useIsMobile();
+  const isAndroid =
+    typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
 
   if (!available || dismissed) return null;
 
@@ -59,13 +60,30 @@ export function UpdaterModal() {
     }
   };
 
-  const downloadManual = async (target: string) => {
-    try {
-      await openUrl(target);
-    } catch {
-      window.open(target, "_blank");
-    }
+  const downloadManual = (target: string) => {
+    void openExternal(target);
     dismiss();
+  };
+
+  const installAndroid = async () => {
+    const url = available.downloadUrl ?? null;
+    if (!url) {
+      downloadManual(RELEASES_PAGE_URL);
+      return;
+    }
+    setIsInstalling(true);
+    setInstallError(null);
+    try {
+      const path = await ipc.downloadAndroidUpdate(url);
+      await openPath(path);
+      dismiss();
+    } catch (error) {
+      setInstallError(error instanceof Error ? error.message : String(error));
+      // If the system refuses the file URI, leave the browser fallback.
+      downloadManual(url);
+    } finally {
+      setIsInstalling(false);
+    }
   };
 
   const mac = isMacOS();
@@ -147,15 +165,16 @@ export function UpdaterModal() {
           >
             {t("updater.later")}
           </button>
-          {isMobile ? (
+          {isAndroid ? (
             <button
               type="button"
               className="btn-primary text-xs"
-              onClick={() =>
-                void downloadManual(available.downloadUrl ?? RELEASES_PAGE_URL)
-              }
+              onClick={() => void installAndroid()}
+              disabled={isInstalling}
             >
-              {t("updater.download_update")}
+              {isInstalling
+                ? t("updater.downloading", { pct: progress ?? 0 })
+                : t("updater.download_update")}
             </button>
           ) : mac ? (
             <button

@@ -43,6 +43,13 @@ pub struct UpcomingTournament {
     pub registration_end: Option<String>,
     #[serde(default)]
     pub admission: Option<String>,
+    /// Exact start instant for sources that publish one (Limitless). Kept
+    /// alongside `date`/`time` so the UI can render the user's timezone.
+    #[serde(default)]
+    pub starts_at: Option<String>,
+    /// Upcoming Limitless registration count (not the player field).
+    #[serde(default)]
+    pub registrations: Option<u32>,
     #[serde(default)]
     pub event_website: Option<String>,
     #[serde(default)]

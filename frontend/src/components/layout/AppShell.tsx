@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   BookOpen,
   Blocks,
+  GraduationCap,
   UsersRound,
   Trophy,
   Calculator,
@@ -26,6 +27,11 @@ import { GlobalSearchPalette } from "../search/GlobalSearchPalette";
 import { MoveDetailModal } from "../info/MoveDetailModal";
 import { ItemDetailModal } from "../info/ItemDetailModal";
 import { AbilityDetailModal } from "../info/AbilityDetailModal";
+import { ExternalLinkDialog } from "./ExternalLinkDialog";
+import { TypeLabModal } from "../ui/TypeLabModal";
+import { CalendarWidget } from "../dashboard/CalendarWidget";
+import { MiniPlayback, PlaybackProvider } from "../playback/PlaybackProvider";
+import { useTypeLabStore } from "../../stores/typeLabStore";
 
 const SIDEBAR_COLLAPSED_WIDTH = 64;
 
@@ -44,6 +50,26 @@ export function AppShell() {
   useEffect(() => {
     if (isMobile) useUiStore.getState().setSidebarCollapsed(true);
   }, [isMobile]);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "t") {
+        return;
+      }
+      const target = event.target as HTMLElement | null;
+      if (
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.isContentEditable
+      ) {
+        return;
+      }
+      event.preventDefault();
+      useTypeLabStore.getState().setOpen(true);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     if (!isResizing) return;
@@ -84,6 +110,7 @@ export function AppShell() {
   // one-line change per item; labels/tooltips come from i18n.
   const navItems = [
     { to: "/dashboard", icon: LayoutDashboard, label: t("nav.dashboard") },
+    { to: "/learn", icon: GraduationCap, label: t("nav.learn") },
     { to: "/pokedex", icon: BookOpen, label: t("nav.pokedex") },
     { to: "/team-builder", icon: Blocks, label: t("nav.team_builder") },
     { to: "/my-teams", icon: UsersRound, label: t("nav.my_teams") },
@@ -93,6 +120,7 @@ export function AppShell() {
   ];
 
   return (
+    <PlaybackProvider>
     <div
       className="flex h-screen w-screen flex-col"
       style={{ backgroundColor: "var(--bg)", color: "var(--text)" }}
@@ -315,6 +343,11 @@ export function AppShell() {
       <AbilityDetailModal />
       <GlobalSearchPalette />
       <UpdaterModal />
+      <ExternalLinkDialog />
+      <TypeLabModal />
+      <CalendarWidget />
+      <MiniPlayback />
     </div>
+    </PlaybackProvider>
   );
 }

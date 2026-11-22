@@ -255,6 +255,90 @@
     --tier-d-border: var(--border);
   }
 
+  :root.theme-umbreon {
+    --bg: #050507;
+    --bg-elev: #0c0c11;
+    --bg-elev-strong: #17171f;
+    --border: #2b2b38;
+    --text: #f4f1e8;
+    --text-muted: #b7b2a4;
+    --text-dim: #7f7a70;
+    --accent: #f5c542;
+    --accent-soft: rgba(245, 197, 66, 0.16);
+    --accent-strong: #d9a91d;
+    --danger: #fb7185;
+    --warning: #f5c542;
+    --success: #4ade80;
+    --badge-bg: rgba(0, 0, 0, 0.75);
+    --badge-foreground: #ffffff;
+    --tier-gold-bg: rgba(245, 197, 66, 0.18);
+    --tier-gold-foreground: #fde68a;
+    --tier-gold-border: rgba(245, 197, 66, 0.5);
+    --tier-silver-bg: rgba(148, 163, 184, 0.15);
+    --tier-silver-foreground: #e2e8f0;
+    --tier-silver-border: rgba(148, 163, 184, 0.4);
+    --tier-bronze-bg: rgba(146, 64, 14, 0.25);
+    --tier-bronze-foreground: #fcd34d;
+    --tier-bronze-border: rgba(146, 64, 14, 0.5);
+    --tier-s-bg: var(--tier-gold-bg);
+    --tier-s-foreground: var(--tier-gold-foreground);
+    --tier-s-border: var(--tier-gold-border);
+    --tier-a-bg: var(--accent-soft);
+    --tier-a-foreground: var(--accent);
+    --tier-a-border: var(--accent);
+    --tier-b-bg: var(--tier-silver-bg);
+    --tier-b-foreground: var(--tier-silver-foreground);
+    --tier-b-border: var(--tier-silver-border);
+    --tier-c-bg: var(--tier-bronze-bg);
+    --tier-c-foreground: var(--tier-bronze-foreground);
+    --tier-c-border: var(--tier-bronze-border);
+    --tier-d-bg: var(--bg-elev-strong);
+    --tier-d-foreground: var(--text-dim);
+    --tier-d-border: var(--border);
+  }
+
+  :root.theme-zekrom {
+    --bg: #eef2f7;
+    --bg-elev: #ffffff;
+    --bg-elev-strong: #dde6f2;
+    --border: #1f2937;
+    --text: #0b1220;
+    --text-muted: #334155;
+    --text-dim: #475569;
+    --accent: #1c64f2;
+    --accent-soft: rgba(28, 100, 242, 0.14);
+    --accent-strong: #1746b0;
+    --danger: #b91c1c;
+    --warning: #a16207;
+    --success: #15803d;
+    --badge-bg: rgba(11, 18, 32, 0.9);
+    --badge-foreground: #ffffff;
+    --tier-gold-bg: rgba(245, 158, 11, 0.22);
+    --tier-gold-foreground: #78350f;
+    --tier-gold-border: rgba(180, 83, 9, 0.55);
+    --tier-silver-bg: rgba(100, 116, 139, 0.2);
+    --tier-silver-foreground: #1e293b;
+    --tier-silver-border: rgba(71, 85, 105, 0.55);
+    --tier-bronze-bg: rgba(180, 83, 9, 0.2);
+    --tier-bronze-foreground: #78350f;
+    --tier-bronze-border: rgba(120, 53, 15, 0.55);
+    --tier-s-bg: var(--tier-gold-bg);
+    --tier-s-foreground: var(--tier-gold-foreground);
+    --tier-s-border: var(--tier-gold-border);
+    --tier-a-bg: var(--accent-soft);
+    --tier-a-foreground: var(--accent);
+    --tier-a-border: var(--accent);
+    --tier-b-bg: var(--tier-silver-bg);
+    --tier-b-foreground: var(--tier-silver-foreground);
+    --tier-b-border: var(--tier-silver-border);
+    --tier-c-bg: var(--tier-bronze-bg);
+    --tier-c-foreground: var(--tier-bronze-foreground);
+    --tier-c-border: var(--tier-bronze-border);
+    --tier-d-bg: var(--bg-elev-strong);
+    --tier-d-foreground: var(--text-dim);
+    --tier-d-border: var(--border);
+  }
+
   html,
   body,
   #root {

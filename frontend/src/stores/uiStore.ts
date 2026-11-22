@@ -9,7 +9,9 @@ export type Theme =
   | "incineroar"
   | "tyranitar"
   | "milotic"
-  | "sneasler";
+  | "sneasler"
+  | "umbreon"
+  | "zekrom";
 
 export const ALL_THEMES: Theme[] = [
   "system",
@@ -19,6 +21,8 @@ export const ALL_THEMES: Theme[] = [
   "tyranitar",
   "milotic",
   "sneasler",
+  "umbreon",
+  "zekrom",
 ];
 
 export const FONT_SIZE_MIN = 12;
@@ -57,6 +61,10 @@ interface UiState {
   confirmLargeMdExport: boolean;
   /** Live screens hidden from the player but kept in the configured list. */
   hiddenLiveScreens: string[];
+  calendarMode: "panel" | "floating";
+  calendarPlacement: "corner" | "free";
+  calendarCorner: "bottom-right" | "bottom-left";
+  calendarPosition: { x: number; y: number } | null;
   setTheme: (theme: Theme) => void;
   setTimeZone: (timeZone: string) => void;
   setHomeCountry: (country: string) => void;
@@ -71,6 +79,10 @@ interface UiState {
   setConfirmAllTopTeams: (v: boolean) => void;
   setConfirmLargeMdExport: (v: boolean) => void;
   toggleLiveScreenHidden: (url: string) => void;
+  setCalendarMode: (mode: "panel" | "floating") => void;
+  setCalendarPlacement: (placement: "corner" | "free") => void;
+  setCalendarCorner: (corner: "bottom-right" | "bottom-left") => void;
+  setCalendarPosition: (position: { x: number; y: number } | null) => void;
 }
 
 export const useUiStore = create<UiState>()(
@@ -88,6 +100,10 @@ export const useUiStore = create<UiState>()(
       confirmAllTopTeams: true,
       confirmLargeMdExport: true,
       hiddenLiveScreens: [],
+      calendarMode: "panel",
+      calendarPlacement: "corner",
+      calendarCorner: "bottom-right",
+      calendarPosition: null,
       setTheme: (theme) => set({ theme }),
       setTimeZone: (timeZone) => set({ timeZone }),
       setHomeCountry: (homeCountry) => set({ homeCountry }),
@@ -139,10 +155,14 @@ export const useUiStore = create<UiState>()(
             ? state.hiddenLiveScreens.filter((entry) => entry !== url)
             : [...state.hiddenLiveScreens, url],
         })),
+      setCalendarMode: (calendarMode) => set({ calendarMode }),
+      setCalendarPlacement: (calendarPlacement) => set({ calendarPlacement }),
+      setCalendarCorner: (calendarCorner) => set({ calendarCorner }),
+      setCalendarPosition: (calendarPosition) => set({ calendarPosition }),
     }),
     {
       name: "vgc-ui",
-      version: 12,
+      version: 13,
       migrate: (persisted: unknown, version: number) => {
         const prior = (persisted ?? {}) as Partial<UiState> & { theme?: string };
         let theme: Theme;
@@ -208,6 +228,24 @@ export const useUiStore = create<UiState>()(
                   (url): url is string => typeof url === "string",
                 )
               : [],
+          calendarMode:
+            version >= 13 && prior.calendarMode === "floating"
+              ? "floating"
+              : "panel",
+          calendarPlacement:
+            version >= 13 && prior.calendarPlacement === "free"
+              ? "free"
+              : "corner",
+          calendarCorner:
+            version >= 13 && prior.calendarCorner === "bottom-left"
+              ? "bottom-left"
+              : "bottom-right",
+          calendarPosition:
+            version >= 13 &&
+            prior.calendarPosition &&
+            typeof prior.calendarPosition === "object"
+              ? (prior.calendarPosition as { x: number; y: number })
+              : null,
         } as UiState;
       },
     },

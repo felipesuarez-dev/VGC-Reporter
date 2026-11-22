@@ -65,7 +65,15 @@ impl ChampionsReportService {
                     .and_then(|s| s.name.clone())
                     .map(|n| n.trim().to_string())
                     .filter(|n| !n.is_empty());
-                kept.push((into_tournament(t, champion_name), champion));
+                let champion_country = champion
+                    .as_ref()
+                    .and_then(|s| s.country.clone())
+                    .map(|country| country.trim().to_uppercase())
+                    .filter(|country| !country.is_empty());
+                kept.push((
+                    into_tournament(t, champion_name, champion_country),
+                    champion,
+                ));
                 if kept.len() >= limit {
                     break;
                 }
@@ -270,6 +278,7 @@ fn has_any_decklist(standings: &[LimitlessStanding]) -> bool {
 fn into_tournament(
     t: LimitlessTournamentSummary,
     champion_name: Option<String>,
+    champion_country: Option<String>,
 ) -> ChampionsTournament {
     ChampionsTournament {
         id: t.id,
@@ -279,6 +288,7 @@ fn into_tournament(
         format: t.format,
         organizer_id: t.organizer_id,
         champion_name,
+        champion_country,
         champion_team: Vec::new(),
     }
 }
@@ -484,5 +494,21 @@ mod tests {
             s.decklist[0].home_sprite_url.as_deref(),
             Some("https://example/home.png")
         );
+    }
+
+    #[test]
+    fn champion_country_is_preserved_for_the_local_filter() {
+        let summary = LimitlessTournamentSummary {
+            id: "abc".into(),
+            name: "Santiago Cup".into(),
+            date: Some("2026-11-20".into()),
+            players: Some(64),
+            format: Some("M-C".into()),
+            game: Some("VGC".into()),
+            organizer_id: Some("limitless".into()),
+        };
+        let tournament = into_tournament(summary, Some("Ash".into()), Some("CL".into()));
+        assert_eq!(tournament.champion_country.as_deref(), Some("CL"));
+        assert_eq!(tournament.champion_name.as_deref(), Some("Ash"));
     }
 }

@@ -22,8 +22,9 @@ pub const DEFAULT_POKEMON_CHAMPIONS_SOURCE: &str = "https://www.youtube.com/@Pok
 pub const DEFAULT_SEKIAM_SOURCE: &str = "https://www.youtube.com/@Sekiam";
 /// Chilean VGC channel (Pokémon VGC Chile Invitational).
 pub const DEFAULT_IRNEMESIS_SOURCE: &str = "https://www.youtube.com/@IRNemesisTV";
-/// Currently-live watch party requested as a default screen.
-pub const DEFAULT_INDER_LIVE: &str = "https://www.youtube.com/watch?v=tP09BzCEJqU";
+/// Old default watch-party URL shipped before 0.6.0. It is not a channel and
+/// must never come back as "latest stream": remove it from stored settings.
+pub const LEGACY_INDER_LIVE: &str = "https://www.youtube.com/watch?v=tP09BzCEJqU";
 
 /// Curated default screens. The user can reorder or remove them in Settings.
 pub const DEFAULT_LIVE_SCREENS: &[&str] = &[
@@ -37,7 +38,6 @@ pub const DEFAULT_LIVE_SCREENS: &[&str] = &[
     DEFAULT_POKEMON_CHAMPIONS_SOURCE,
     DEFAULT_SEKIAM_SOURCE,
     DEFAULT_IRNEMESIS_SOURCE,
-    DEFAULT_INDER_LIVE,
 ];
 
 const HEADERS: &[(&str, &str)] = &[("Accept-Language", "en-US,en;q=0.9")];
@@ -95,16 +95,11 @@ impl OfficialStreamClient {
         } else {
             config::TTL_OFFICIAL_STREAM
         };
-        if let Some(video_id) = youtube_video_id(&resolved) {
-            let watch_url = format!("https://www.youtube.com/watch?v={video_id}");
-            let bytes = self
-                .http
-                .get_cached_with_headers(&watch_url, HEADERS, ttl)
-                .await?;
-            return Ok(parse_watch_page_recent(
-                &String::from_utf8_lossy(&bytes),
-                &video_id,
-            ));
+        // An explicit video is not a channel, so it has no "latest past
+        // broadcast" we can trust. Returning None avoids presenting an old
+        // watch-party link as if it were the channel's latest stream.
+        if youtube_video_id(&resolved).is_some() {
+            return Ok(None);
         }
         let streams_url = channel_streams_url(&resolved);
         match self
@@ -318,25 +313,6 @@ fn parse_watch_page_live(html: &str, expected_video_id: &str) -> Option<Official
     ))
 }
 
-/// Last known state of an explicit video URL, used as a fallback when it is no
-/// longer live. The card is always rendered with `live: false`.
-fn parse_watch_page_recent(html: &str, expected_video_id: &str) -> Option<OfficialLiveStream> {
-    let re = Regex::new(
-        r#"(?s)"videoDetails":\{"videoId":"([A-Za-z0-9_-]{11})","title":"((?:[^"\\]|\\.)*)".{0,4000}?"isLive":(true|false)"#,
-    )
-    .ok()?;
-    let capture = re.captures(html)?;
-    if capture.get(1)?.as_str() != expected_video_id {
-        return None;
-    }
-    let mut candidate = stream(
-        capture.get(1)?.as_str(),
-        unescape_title(capture.get(2)?.as_str()),
-    );
-    candidate.live = false;
-    Some(candidate)
-}
-
 /// Live VGC entry from the channel `/streams` tab. The page renders cards as
 /// `lockupMetadataViewModel`; live ones show "N watching" while past streams
 /// show "Streamed ... ago".
@@ -383,16 +359,22 @@ fn parse_streams_page(html: &str, vgc_only: bool, want_live: bool) -> Option<Off
         else {
             continue;
         };
-        let score = if title.to_lowercase().contains("vgc") {
+        // Live cards are ordered by preference (VGC first). Past cards are
+        // ordered newest-first by YouTube, so the first match IS the latest
+        // broadcast; scoring them would resurrect an older VGC stream.
+        let score = if want_live && title.to_lowercase().contains("vgc") {
             2
         } else {
             1
         };
-        if best
-            .as_ref()
-            .map(|(current, _)| score > *current)
-            .unwrap_or(true)
-        {
+        let better = if want_live {
+            best.as_ref()
+                .map(|(current, _)| score > *current)
+                .unwrap_or(true)
+        } else {
+            best.is_none()
+        };
+        if better {
             let mut candidate = stream(&video_id, title);
             candidate.live = want_live;
             best = Some((score, candidate));

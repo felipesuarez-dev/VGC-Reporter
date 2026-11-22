@@ -4,7 +4,10 @@ export type EntityUsageKey = "top_items" | "top_moves" | "top_abilities";
 
 export interface EntityUser {
   species: string;
+  /** Adoption inside this Pokémon's own sets (0..100). */
   usagePercent: number;
+  /** Contribution to the global team usage of the entity (0..100). */
+  sharePercent: number;
   spriteUrl: string;
   fallbackUrl: string | null;
   homeUrl: string | null;
@@ -33,9 +36,13 @@ export function buildEntityUsers(
       }
       const entityKey = canonicalSpeciesId(usage.name);
       const users = map.get(entityKey) ?? [];
+      const speciesShare = Number.isFinite(entry.usage_percent)
+        ? Math.max(0, Math.min(100, entry.usage_percent))
+        : 0;
       users.push({
         species: entry.species,
         usagePercent: usage.usage_percent,
+        sharePercent: (speciesShare * usage.usage_percent) / 100,
         spriteUrl: entry.sprite_url,
         fallbackUrl: entry.sprite_fallback_url ?? null,
         homeUrl: entry.home_sprite_url ?? null,
@@ -46,6 +53,7 @@ export function buildEntityUsers(
   for (const [entityKey, users] of map) {
     users.sort(
       (a, b) =>
+        b.sharePercent - a.sharePercent ||
         b.usagePercent - a.usagePercent ||
         a.species.localeCompare(b.species),
     );

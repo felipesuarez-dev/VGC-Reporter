@@ -26,6 +26,8 @@ const event: UpcomingTournament = {
   registration_start: "2026-11-22 14:30:00",
   registration_end: "2026-11-22 15:00:00",
   admission: "5000 CLP",
+  starts_at: null,
+  registrations: null,
   event_website: null,
   third_party_registration_website: null,
 };

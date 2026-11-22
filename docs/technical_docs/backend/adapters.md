@@ -46,8 +46,17 @@ Host: `https://play.limitlesstcg.com/api`. TTL 1h listas / 24h detalle.
 
 - `list_tournaments(format, limit)` — sin filtrar. URL: `?game=VGC&format={code}&limit={limit}`.
 - `list_tournaments_by_format(format, limit)` — aplica `filter_champions` + `players > 0`.
-- `list_all_vgc(limit)` — todos los VGC sin filtro de formato.
-- `get_standings(id)` — URL: `?limit=500`. Sin este parámetro la API devuelve ~5 entradas por defecto. Incluye decklist inline cuando el organizador lo publicó.
+- `list_all_vgc(limit)` - todos los VGC sin filtro de formato.
+- `list_upcoming_vgc()` - parsea la tabla pública `/tournaments/upcoming?game=VGC` (HTML) para anuncios que la API JSON todavía no expone. Devuelve `LimitlessUpcoming` con `starts_at`, `registrations` y `region`.
+- `get_standings(id)` - URL: `?limit=500`. Sin este parámetro la API devuelve ~5 entradas por defecto. Incluye decklist inline cuando el organizador lo publicó.
+
+## PokebaseClient (`pokebase_client.rs`)
+Host: `https://pokebase.app/pokemon-champions/teams`. TTL 12h.
+
+- Lee la página pública (no `/api`, que está bloqueado por `robots.txt`) y decodifica el payload RSC de Next.js (`self.__next_f.push`).
+- Extrae `showcase.community` y `showcase.tournament` con sus totales.
+- Cada tarjeta conserva `source_url`/`date_shared` si PokéBase atribuye el equipo a otra fuente; `TopTeamsService` muestra esa atribución en lugar de apropiársela.
+- Tests: payload RSC válido y página sin payload.
 
 ## ShowdownClient (`showdown_client.rs`)
 Host: `https://play.pokemonshowdown.com/data`. TTL 7d.

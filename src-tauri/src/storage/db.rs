@@ -12,6 +12,7 @@ const MIGRATION_004: &str = include_str!("migrations/004_basculegion_data_migrat
 const MIGRATION_005: &str = include_str!("migrations/005_team_member_competitive_fields.sql");
 const MIGRATION_006: &str = include_str!("migrations/006_basculegion_revert_to_bare.sql");
 const MIGRATION_007: &str = include_str!("migrations/007_regulation_mc.sql");
+const MIGRATION_008: &str = include_str!("migrations/008_champions_stat_points.sql");
 
 pub fn init_pool(db_path: &Path) -> Result<DbPool, AppError> {
     if let Some(parent) = db_path.parent() {
@@ -48,6 +49,9 @@ pub fn init_pool(db_path: &Path) -> Result<DbPool, AppError> {
     // it's UPDATE ... WHERE so naturally idempotent (idempotent on every boot).
     conn.execute_batch(MIGRATION_006)?;
     conn.execute_batch(MIGRATION_007)?;
+    if !column_exists(&conn, "teams", "build_mode")? {
+        conn.execute_batch(MIGRATION_008)?;
+    }
 
     Ok(pool)
 }

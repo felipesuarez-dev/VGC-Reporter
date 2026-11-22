@@ -70,3 +70,11 @@ muestra todos.
 - Persistencia con middleware `persist` cuando la pieza es UX-relevant entre sesiones.
 - Los `migrate` deben ser tolerantes: nunca asumir que un campo nuevo existe en
   el estado persistido anterior.
+
+## Stores 0.6.0
+- `dashboardStore` v22: `favoriteSource`, `dateRanges` por formato y layout de feed/metricas/regulacion.
+- `uiStore` v13: `calendarMode`, `calendarPlacement`, `calendarCorner` y `calendarPosition`.
+- `playbackStore`: continuidad `stop`/`mini` para el directo.
+- `typeLabStore`: apertura y pestaña del TypeLab.
+- `learnProgress` se guarda directamente en localStorage junto con la racha del quiz.
+

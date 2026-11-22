@@ -8,6 +8,7 @@ import { MyTeams } from "./pages/MyTeams";
 import { TopTeams } from "./pages/TopTeams";
 import { DamageCalc } from "./pages/DamageCalc";
 import { Settings } from "./pages/Settings";
+import { Learn } from "./pages/Learn";
 
 export const router = createHashRouter([
   {
@@ -27,6 +28,7 @@ export const router = createHashRouter([
           </ErrorBoundary>
         ),
       },
+      { path: "learn", element: <Learn /> },
       { path: "pokedex", element: <Pokedex /> },
       { path: "team-builder", element: <TeamBuilder /> },
       { path: "team-builder/:id", element: <TeamBuilder /> },

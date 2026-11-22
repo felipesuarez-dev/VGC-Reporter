@@ -77,9 +77,9 @@ for (const [rel, re, want] of RULES) {
   }
 }
 
-// README: badge + tabla de descarga. Varias ocurrencias, dos formatos.
-{
-  const rel = "README.md";
+// README: badge + tabla de descarga. Se mantienen las dos versiones
+// (español principal + inglés enlazado) sincronizadas.
+for (const rel of ["README.md", "README.en.md"]) {
   const path = join(ROOT, rel);
   let src = readFileSync(path, "utf8");
   const before = src;

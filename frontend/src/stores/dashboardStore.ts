@@ -134,6 +134,10 @@ interface DashboardState {
   feedPanels: Record<FeedPanelId, FeedPanelPrefs>;
   /** `null` merges every source; a value pins the view to one provider. */
   sourceFilter: SourceId | null;
+  /** Starred source. `null` means "all sources". */
+  favoriteSource: SourceId | null;
+  /** Custom date window per format, shared by Metrics and Top Teams. */
+  dateRanges: Record<string, { from: string; to: string }>;
   setFormat: (format: Format) => void;
   setFavoriteFormat: (format: Format) => void;
   setShowArchived: (show: boolean) => void;
@@ -146,6 +150,8 @@ interface DashboardState {
   followActive: (format: Format) => void;
   setTopPokemonView: (view: TopPokemonView) => void;
   setSourceFilter: (source: SourceId | null) => void;
+  setFavoriteSource: (source: SourceId | null) => void;
+  setDateRange: (format: Format, range: { from: string; to: string } | null) => void;
 }
 
 const SOURCES: readonly SourceId[] = ["labmaus", "limitless", "champteams", "smogon"];
@@ -181,6 +187,8 @@ export const useDashboardStore = create<DashboardState>()(
       feedRows: normalizeFeedRows(DEFAULT_FEED_ROWS),
       feedPanels: normalizeFeedPanels(DEFAULT_FEED_PANELS),
       sourceFilter: null,
+      favoriteSource: null,
+      dateRanges: {},
       setFormat: (format) => set({ format, formatPinned: true }),
       setFavoriteFormat: (favoriteFormat) =>
         set({ favoriteFormat, format: favoriteFormat, formatPinned: true }),
@@ -226,10 +234,19 @@ export const useDashboardStore = create<DashboardState>()(
       },
       setTopPokemonView: (topPokemonView) => set({ topPokemonView }),
       setSourceFilter: (sourceFilter) => set({ sourceFilter }),
+      setFavoriteSource: (favoriteSource) =>
+        set({ favoriteSource, sourceFilter: favoriteSource }),
+      setDateRange: (format, range) =>
+        set((state) => {
+          const next = { ...state.dateRanges };
+          if (range) next[format] = range;
+          else delete next[format];
+          return { dateRanges: next };
+        }),
     }),
     {
       name: "vgc-dashboard",
-      version: 21,
+      version: 22,
       migrate: (persisted: unknown, version: number) => {
         const prior = (persisted ?? {}) as Record<string, unknown>;
         if (!(version >= 11)) {
@@ -243,6 +260,8 @@ export const useDashboardStore = create<DashboardState>()(
             feedRows: normalizeFeedRows(DEFAULT_FEED_ROWS),
             feedPanels: normalizeFeedPanels(DEFAULT_FEED_PANELS),
             sourceFilter: null,
+            favoriteSource: null,
+            dateRanges: {},
           } as DashboardState;
         }
         const savedRows = normalizeFeedRows(prior.feedRows ?? prior.feedOrder);
@@ -258,6 +277,14 @@ export const useDashboardStore = create<DashboardState>()(
             version < 20 ? placeLiveBelowSummary(savedRows) : savedRows,
           feedPanels: normalizeFeedPanels(prior.feedPanels),
           sourceFilter: normalizeSource(prior.sourceFilter),
+          favoriteSource:
+            version >= 22 ? normalizeSource(prior.favoriteSource) : null,
+          dateRanges:
+            version >= 22 &&
+            prior.dateRanges &&
+            typeof prior.dateRanges === "object"
+              ? (prior.dateRanges as Record<string, { from: string; to: string }>)
+              : {},
         } as DashboardState;
       },
     },

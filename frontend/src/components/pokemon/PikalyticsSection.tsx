@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { ExternalLink } from "lucide-react";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { openExternal } from "../../lib/openExternal";
 import { usePikalyticsEntry } from "../../hooks/usePikalyticsEntry";
 import { usePokedexStore } from "../../stores/pokedexStore";
 import { canonicalSpeciesId } from "../../lib/types";
@@ -109,7 +109,7 @@ function SectionHeader({ source }: { source: string | null }) {
           className="inline-flex items-center gap-1 text-[10px] hover:underline"
           style={{ color: "var(--text-dim)" }}
           onClick={() => {
-            void openUrl(source);
+            void openExternal(source);
           }}
         >
           <ExternalLink size={10} aria-hidden />

@@ -11,8 +11,9 @@ export function useLiveStreams() {
   return useQuery({
     queryKey: queryKeys.liveStreams,
     queryFn: () => ipc.getLiveStreams(),
-    staleTime: 5 * 60 * 1000,
-    refetchInterval: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
+    refetchInterval: 2 * 60 * 1000,
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }

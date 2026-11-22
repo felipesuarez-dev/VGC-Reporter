@@ -2,11 +2,18 @@
 
 export type Ability = { id: string, name: string, description: string, };
 
+export type BuildMode = "classic" | "champions";
+
 export type ChampionsReport = { tournaments: Array<ChampionsTournament>, fetched_at: string, };
 
 export type ChampionsSearchHit = { tournament_id: string, tournament_name: string, tournament_date: string | null, kind: SearchHitKind, matched_text: string, player_name: string | null, player_placing: number | null, player_pokemon: Array<string>, };
 
 export type ChampionsTournament = { id: string, name: string, date: string | null, players: number | null, format: string | null, organizer_id: string | null, champion_name: string | null, 
+/**
+ * Country reported by Limitless for the champion; used by the local
+ * scene filter without touching standings or decklists.
+ */
+champion_country: string | null, 
 /**
  * Champion's six-Pokémon decklist, when the organizer published it.
  */
@@ -208,13 +215,30 @@ matches_active_format: boolean, teams: number, tournaments: number, from_date: s
  */
 weight: number, };
 
+export type StatPointSpread = { hp: number, atk: number, def: number, spa: number, spd: number, spe: number, };
+
 export type Stats = { hp: number, atk: number, def: number, spa: number, spd: number, spe: number, };
 
-export type Team = { id: number | null, name: string, format: Format, notes: string | null, members: Array<TeamMember>, created_at: string | null, updated_at: string | null, };
+export type SyncBundle = { schema: number, app_version: string, exported_at: string, teams: Array<Team>, settings: { [key in string]?: string }, 
+/**
+ * UI preferences serialized by the frontend (localStorage stores).
+ */
+ui_json: string, };
 
-export type TeamMember = { species: string, item: string | null, ability: string | null, nature: Nature | null, tera_type: PokemonType | null, moves: Array<string>, evs: EvSpread, level: number, gender: Gender | null, shiny: boolean, nickname: string | null, ivs: IvSpread, };
+export type SyncImportResult = { teams_imported: number, settings_imported: number, };
 
-export type TeamValidationError = { "WrongSize": number } | { "InvalidEvs": number } | { "InvalidMoves": number } | { "EmptySpecies": number } | "EmptyName";
+export type SyncSession = { code: string, url: string, expires_at: string, };
+
+export type Team = { id: number | null, name: string, format: Format, build_mode: BuildMode, notes: string | null, members: Array<TeamMember>, created_at: string | null, updated_at: string | null, };
+
+export type TeamMember = { species: string, item: string | null, ability: string | null, nature: Nature | null, tera_type: PokemonType | null, moves: Array<string>, evs: EvSpread, level: number, gender: Gender | null, shiny: boolean, nickname: string | null, ivs: IvSpread, 
+/**
+ * Champions stat points. Kept alongside EVs so switching modes is a
+ * conversion, never a data loss.
+ */
+stat_points: StatPointSpread, };
+
+export type TeamValidationError = { "WrongSize": number } | { "InvalidEvs": number } | { "InvalidStatPoints": number } | { "DuplicateSpecies": string } | { "DuplicateItem": string } | { "InvalidMoves": number } | { "EmptySpecies": number } | "EmptyName";
 
 export type TeammateUsage = { name: string, usage_percent: number, count: number, sprite_url: string, sprite_fallback_url: string | null, home_sprite_url: string | null, };
 
@@ -228,7 +252,7 @@ export type TeraUsage = { tera_type: string, usage_percent: number, };
 
 export type Tier = "S" | "A" | "B" | "C" | "D";
 
-export type TopTeam = { tournament: string, placing: number | null, player: string | null, country: string | null, record: string | null, members: Array<TopTeamMember>, };
+export type TopTeam = { tournament: string, placing: number | null, player: string | null, country: string | null, record: string | null, members: Array<TopTeamMember>, provider: string | null, community: boolean, source_url: string | null, shared_at: string | null, };
 
 export type TopTeamMember = { species: string, sprite_url: string, sprite_fallback_url: string | null, home_sprite_url: string | null, item: string | null, tera_type: string | null, ability: string | null, nature: string | null, moves: Array<string>, level: number | null, evs: EvStatSpread | null, ivs: EvStatSpread | null, };
 
@@ -244,7 +268,16 @@ export type TrendingPokemon = { species: string, sprite_url: string, sprite_fall
 
 export type TrendingReport = { rising: Array<TrendingPokemon>, falling: Array<TrendingPokemon>, from_date: string | null, to_date: string | null, window_days: number, };
 
-export type UpcomingTournament = { id: string, name: string, date: string, url: string, region: string | null, players: number | null, source: string, time: string | null, kind: string | null, city: string | null, country: string | null, venue: string | null, street_address: string | null, state: string | null, postal_code: string | null, latitude: number | null, longitude: number | null, contact_email: string | null, contact_phone: string | null, details: string | null, registration_start: string | null, registration_end: string | null, admission: string | null, event_website: string | null, third_party_registration_website: string | null, };
+export type UpcomingTournament = { id: string, name: string, date: string, url: string, region: string | null, players: number | null, source: string, time: string | null, kind: string | null, city: string | null, country: string | null, venue: string | null, street_address: string | null, state: string | null, postal_code: string | null, latitude: number | null, longitude: number | null, contact_email: string | null, contact_phone: string | null, details: string | null, registration_start: string | null, registration_end: string | null, admission: string | null, 
+/**
+ * Exact start instant for sources that publish one (Limitless). Kept
+ * alongside `date`/`time` so the UI can render the user's timezone.
+ */
+starts_at: string | null, 
+/**
+ * Upcoming Limitless registration count (not the player field).
+ */
+registrations: number | null, event_website: string | null, third_party_registration_website: string | null, };
 
 export type UpdateInfo = { version: string, current_version: string, notes: string, android_url: string | null, };
 

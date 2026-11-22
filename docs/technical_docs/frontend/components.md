@@ -54,8 +54,8 @@
 - `DashboardViewTabs.tsx` — tabs en orden **Novedades / Métricas / Regulación** + pin de vista inicial. En mobile hacen wrap para no cortar etiquetas.
 - `FeedSummaryCard.tsx` — resumen de regulación/temporada con instantes locales y días de datos UTC.
 - `RegulationFeed.tsx` — stack de filas drag-and-drop. Usa pointer events (no HTML5 DnD) para que funcione en WebView2 y touch: lado = misma fila, arriba/abajo = fila nueva. Incluye collapse y el ghost que sigue al cursor. Mientras live/eventos/noticias cargan, muestra `FeedLoading` (spinner + skeletons) y evita renderizar una vista a medio cargar.
-- `LiveStreamCard.tsx` — vitrina de pantallas de YouTube (`useLiveStreams`): 11 pantallas VGC por defecto (YukS, Play! Pokémon, WolfeyVGC, CybertronVGC, James Baek, PokeAlex, Moxie2D, Pokémon Champions, Sekiam, IRNemesis y un watch party); estados de carga con spinner/skeletons, señales en vivo con badges EN VIVO / canal / Oficial **debajo del video**, canales offline visibles y botón **Vitrina TV**. La primera señal viva es la grande de la izquierda y las demás van en columna a la derecha; **Destacar** cambia la principal, un toggle permite pasarlas abajo (`side`/`below`) y el ojo oculta/restaura cada señal sin borrarla. Si no hay ninguna en vivo, muestra **Últimas transmisiones** con el último directo de cada canal. El oficial filtra VGC; los canales de comunidad muestran su directo actual. Cada señal tiene Suscribirse/Abrir.
-- `LiveWall.tsx` — overlay a pantalla completa con las señales en vivo en mosaico (1–6), badges al pie y botón de cierre/Escape.
+- `LiveStreamCard.tsx` - vitrina de pantallas de YouTube (`useLiveStreams`): 11 pantallas VGC por defecto (YukS, Play! Pokémon, WolfeyVGC, CybertronVGC, James Baek, PokeAlex, Moxie2D, Pokémon Champions, Sekiam, IRNemesis y un watch party). La vitrina usa una grilla estable de 9 TVs; si no hay ninguna en vivo, muestra **Últimas transmisiones** (primer vídeo real de `/streams`, no el de mayor score). Cada tile tiene controles de **detener/reanudar** y **mantener**, y el ojo oculta/detiene solo esa señal sin remontar las demás. **Vitrina TV** abre `LiveWall`.
+- `LiveWall.tsx` - overlay a pantalla completa con grilla fija 3×3/2×/1× de 9 slots, badges al pie y botón de cierre/Escape.
 - `lib/youtube.ts` — construye la URL `?sub_confirmation=1` de un canal; el "Me gusta" real requiere OAuth de Google y no se intenta desde el iframe.
 - `RegulationNews.tsx` — noticias oficiales paginadas 6 por página; click abre `NewsDetailModal`. Las miniaturas usan `NewsThumbnail` (skeleton/shimmer + fade-in y fallback).
 - `NewsDetailModal.tsx` — iframe de la noticia oficial + "Abrir en el navegador" y `useModalBack`.
@@ -82,3 +82,14 @@
 - `MoveDetailModal.tsx` — modal de detalle de movimiento (z-[55]). Usa `useModalBack`.
 - `ItemDetailModal.tsx` — modal de detalle de objeto con sprite, nombre, tipo "Objeto" y sección de efecto. Usa `useModalBack` y cae a "Sin descripción disponible" sólo si todas las fuentes fallan.
 - `AbilityDetailModal.tsx` — modal de detalle de habilidad. Usa `useModalBack`.
+
+## Componentes 0.6.0
+
+- ui/TypeLabModal.tsx - tabla 18x18, cobertura de 1-2 tipos y cobertura del equipo; atajo Ctrl+T.
+- playback/PlaybackProvider.tsx - iframe único persistente que se mueve entre hosts y mini-reproductor.
+- settings/SyncSettings.tsx - QR, URL, código, preview e importación LAN.
+- dashboard/CalendarWidget.tsx - calendario flotante en esquina o libre.
+- dashboard/LiveWall.tsx - grilla fija 3x3 de 9 TVs.
+- dashboard/EventSourceBadge.tsx - badge diferenciado Play! Pokémon / Limitless.
+- team/StatPointSliders.tsx - 66 SP y 32 por stat.
+- pages/Learn.tsx - guías, práctica, starters, amenazas y glosario.

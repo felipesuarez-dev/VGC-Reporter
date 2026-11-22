@@ -1,5 +1,6 @@
 use crate::adapters::{
-    LimitlessClient, LimitlessTournamentSummary, OfficialEventClient, PokedataClient, PokedataEvent,
+    LimitlessClient, LimitlessTournamentSummary, LimitlessUpcoming, OfficialEventClient,
+    PokedataClient, PokedataEvent,
 };
 use crate::domain::{OfficialEventDetails, UpcomingTournament};
 use crate::error::AppError;
@@ -40,15 +41,27 @@ impl UpcomingTournamentsService {
         &self,
         country: Option<String>,
     ) -> Result<Vec<UpcomingTournament>, AppError> {
-        let today = Utc::now().date_naive();
+        let now = Utc::now();
+        let today = now.date_naive();
         let window_end = today + Duration::days(WINDOW_DAYS);
-        let pokedata_start = today + Duration::days(1);
+        let pokedata_start = today;
 
         let raw = self.limitless.list_all_vgc(200).await?;
         let mut upcoming: Vec<UpcomingTournament> = raw
             .into_iter()
             .filter_map(|t| to_upcoming(t, today, window_end))
             .collect();
+
+        // The JSON API only exposes completed/ongoing tournaments. The public
+        // upcoming table is the only source for what is announced next.
+        match self.limitless.list_upcoming_vgc().await {
+            Ok(events) => upcoming.extend(
+                events
+                    .into_iter()
+                    .filter_map(|event| to_limitless_upcoming(event, now, window_end)),
+            ),
+            Err(error) => tracing::warn!(%error, "limitless upcoming table unavailable"),
+        }
 
         let country = country
             .as_deref()
@@ -100,7 +113,8 @@ fn to_upcoming(
 ) -> Option<UpcomingTournament> {
     let raw_date = t.date.as_deref()?;
     let parsed = parse_date(raw_date)?;
-    if parsed <= today || parsed > window_end {
+    // Keep today's events: a tournament at 20:00 is still upcoming at noon.
+    if parsed < today || parsed > window_end {
         return None;
     }
     Some(UpcomingTournament {
@@ -127,6 +141,50 @@ fn to_upcoming(
         registration_start: None,
         registration_end: None,
         admission: None,
+        starts_at: None,
+        registrations: None,
+        event_website: None,
+        third_party_registration_website: None,
+    })
+}
+
+fn to_limitless_upcoming(
+    event: LimitlessUpcoming,
+    now: chrono::DateTime<Utc>,
+    window_end: NaiveDate,
+) -> Option<UpcomingTournament> {
+    let parsed = chrono::DateTime::parse_from_rfc3339(&event.starts_at)
+        .ok()?
+        .with_timezone(&Utc);
+    if parsed < now || parsed.date_naive() > window_end {
+        return None;
+    }
+    Some(UpcomingTournament {
+        id: event.id,
+        name: event.name,
+        date: parsed.date_naive().format("%Y-%m-%d").to_string(),
+        url: event.url,
+        region: event.region,
+        players: None,
+        source: LIMITLESS_SOURCE.to_string(),
+        time: Some(parsed.format("%H:%M").to_string()),
+        kind: Some("Online".to_string()),
+        city: None,
+        country: None,
+        venue: None,
+        street_address: None,
+        state: None,
+        postal_code: None,
+        latitude: None,
+        longitude: None,
+        contact_email: None,
+        contact_phone: None,
+        details: None,
+        registration_start: None,
+        registration_end: None,
+        admission: None,
+        starts_at: Some(event.starts_at),
+        registrations: event.registrations,
         event_website: None,
         third_party_registration_website: None,
     })
@@ -138,7 +196,7 @@ fn to_pokedata_upcoming(
     window_end: NaiveDate,
 ) -> Option<UpcomingTournament> {
     let parsed = NaiveDate::parse_from_str(&event.date, "%Y-%m-%d").ok()?;
-    if parsed <= today || parsed > window_end {
+    if parsed < today || parsed > window_end {
         return None;
     }
     Some(UpcomingTournament {
@@ -167,6 +225,8 @@ fn to_pokedata_upcoming(
         registration_start: event.registration_start,
         registration_end: event.registration_end,
         admission: event.admission,
+        starts_at: None,
+        registrations: None,
         event_website: event.event_website,
         third_party_registration_website: event.third_party_registration_website,
     })
@@ -214,9 +274,9 @@ mod tests {
         assert!(to_upcoming(mk("far", Some("2026-06-01")), today, window).is_none());
         assert!(to_upcoming(mk("none", None), today, window).is_none());
         assert!(to_upcoming(mk("next", Some("2026-04-25")), today, window).is_some());
-        // A tournament dated today has either already finished or is in
-        // progress - it is no longer "upcoming".
-        assert!(to_upcoming(mk("today", Some("2026-04-17")), today, window).is_none());
+        // Today's events stay visible: a tournament at 20:00 is still
+        // upcoming at noon.
+        assert!(to_upcoming(mk("today", Some("2026-04-17")), today, window).is_some());
         assert!(to_upcoming(mk("tomorrow", Some("2026-04-18")), today, window).is_some());
     }
 

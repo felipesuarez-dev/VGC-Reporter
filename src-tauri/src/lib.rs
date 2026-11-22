@@ -66,6 +66,8 @@ pub fn run() {
                 .plugin(tauri_plugin_updater::Builder::new().build())?;
             #[cfg(desktop)]
             app.handle().plugin(tauri_plugin_process::init())?;
+            #[cfg(mobile)]
+            app.handle().plugin(tauri_plugin_barcode_scanner::init())?;
 
             let app_data = match app.path().app_data_dir() {
                 Ok(dir) => dir.join("vgc-reporter.sqlite"),
@@ -129,6 +131,11 @@ pub fn run() {
             commands::pikalytics::get_pikalytics_entry,
             commands::trending::get_trending,
             commands::updater::check_for_app_update,
+            commands::updater::download_android_update,
+            commands::sync::sync_start_send,
+            commands::sync::sync_fetch,
+            commands::sync::sync_fetch_by_code,
+            commands::sync::sync_import,
         ])
         .run(tauri::generate_context!())
         .expect("error while running VGC-Reporter");

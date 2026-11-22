@@ -40,6 +40,8 @@ import { ChampionTeam } from "../components/tournament/ChampionTeam";
 import { ChampionsSearchHits } from "../components/tournament/ChampionsSearchHits";
 import { SourcesChip } from "../components/layout/SourcesChip";
 import { SearchTextInput } from "../components/filters/SearchTextInput";
+import { CountryFilter } from "../components/filters/CountryFilter";
+import { countryFlag } from "../lib/countryFlag";
 import { useDashboardStore, type DashboardView } from "../stores/dashboardStore";
 import { useRegulationCatalog, useRegulationStatus } from "../hooks/useRegulationCatalog";
 import { usePokedexStore } from "../stores/pokedexStore";
@@ -75,6 +77,8 @@ export function Dashboard() {
   const topPokemonView = useDashboardStore((s) => s.topPokemonView);
   const sourceFilter = useDashboardStore((s) => s.sourceFilter);
   const setSourceFilter = useDashboardStore((s) => s.setSourceFilter);
+  const favoriteSource = useDashboardStore((s) => s.favoriteSource);
+  const setFavoriteSource = useDashboardStore((s) => s.setFavoriteSource);
   const setTopPokemonView = useDashboardStore((s) => s.setTopPokemonView);
   const openDetail = usePokedexStore((s) => s.openDetail);
   const openSpecies = (species: string) => openDetail(canonicalSpeciesId(species));
@@ -87,15 +91,11 @@ export function Dashboard() {
   const defaultRange = selectedRegulation
     ? defaultRangeFor(selectedRegulation)
     : null;
-  const rangeKey = selectedRegulation
-    ? `${selectedRegulation.id}:${selectedRegulation.active_season?.name ?? selectedRegulation.seasons.length}`
-    : "none";
-  const [dateRange, setDateRange] = useState<{ from: string; to: string } | null>(
-    defaultRange,
-  );
-  useEffect(() => {
-    setDateRange(defaultRange);
-  }, [rangeKey]);
+  const storedDateRange = useDashboardStore((s) => s.dateRanges[format]);
+  const setStoredDateRange = useDashboardStore((s) => s.setDateRange);
+  const dateRange = storedDateRange ?? defaultRange;
+  const setDateRange = (range: { from: string; to: string } | null) =>
+    setStoredDateRange(format, range);
   const isCustomRange =
     Boolean(dateRange && defaultRange) &&
     (dateRange!.from !== defaultRange!.from ||
@@ -110,6 +110,7 @@ export function Dashboard() {
   const TOURNAMENT_PAGE = 10;
   const [tournamentVisible, setTournamentVisible] = useState(TOURNAMENT_INITIAL);
   const [tournamentSearch, setTournamentSearch] = useState("");
+  const [tournamentCountry, setTournamentCountry] = useState<string[]>([]);
   const [debouncedSearch, setDebouncedSearch] = useState("");
   useEffect(() => {
     const handle = setTimeout(() => setDebouncedSearch(tournamentSearch.trim()), 250);
@@ -165,6 +166,35 @@ const POKE_INITIAL = 10;
         ),
       }
     : championsReportRaw;
+
+  const championCountryOptions = useMemo(
+    () =>
+      [
+        ...new Set(
+          (championsReport?.tournaments ?? [])
+            .map((tournament) => tournament.champion_country?.toUpperCase())
+            .filter((country): country is string => Boolean(country)),
+        ),
+      ].sort(),
+    [championsReport],
+  );
+
+  const filteredTournaments = useMemo(() => {
+    const q = tournamentSearch.trim().toLowerCase();
+    return (championsReport?.tournaments ?? []).filter((tour) => {
+      if (
+        tournamentCountry.length > 0 &&
+        (!tour.champion_country ||
+          !tournamentCountry.includes(tour.champion_country.toUpperCase()))
+      ) {
+        return false;
+      }
+      if (!q) return true;
+      const name = (tour.name ?? "").toLowerCase();
+      const champ = (tour.champion_name ?? "").toLowerCase();
+      return name.includes(q) || champ.includes(q);
+    });
+  }, [championsReport, tournamentSearch, tournamentCountry]);
 
   const allPokemon = data?.pokemon ?? [];
   const topPokemon = allPokemon.slice(0, pokeVisible);
@@ -238,6 +268,8 @@ const POKE_INITIAL = 10;
       w.kind === "source_validated",
   );
   const refreshAll = () => {
+    qc.invalidateQueries({ queryKey: queryKeys.liveStreams });
+    qc.invalidateQueries({ queryKey: queryKeys.regulationNews });
     qc.invalidateQueries({
       queryKey: queryKeys.meta(
         format,
@@ -289,6 +321,8 @@ const POKE_INITIAL = 10;
                 value={sourceFilter}
                 onChange={setSourceFilter}
                 sources={data?.sources ?? []}
+                favorite={favoriteSource}
+                onFavoriteChange={setFavoriteSource}
                 className="w-full sm:w-72"
               />
               {!isMobile && (
@@ -690,11 +724,18 @@ const POKE_INITIAL = 10;
           })}
         </p>
         {championsReport && championsReport.tournaments.length > 0 && (
-          <div className="mb-2">
+          <div className="mb-2 flex flex-col gap-2 sm:flex-row">
             <SearchTextInput
               value={tournamentSearch}
               onChange={setTournamentSearch}
               placeholder={t("common.filter_search_tournament")}
+            />
+            <CountryFilter
+              options={championCountryOptions}
+              selected={tournamentCountry}
+              onChange={setTournamentCountry}
+              placeholder={t("common.filter_country_placeholder")}
+              className="sm:w-64"
             />
           </div>
         )}
@@ -711,16 +752,13 @@ const POKE_INITIAL = 10;
             </p>
           )}
         {championsReport && championsReport.tournaments.length > 0 && (
+          filteredTournaments.length === 0 ? (
+            <p className="text-xs" style={{ color: "var(--text-dim)" }}>
+              {t("common.no_results")}
+            </p>
+          ) : (
           <ul className="divide-y divide-[var(--border)]">
-            {championsReport.tournaments
-              .filter((tour) => {
-                const q = tournamentSearch.trim().toLowerCase();
-                if (!q) return true;
-                const name = (tour.name ?? "").toLowerCase();
-                const champ = (tour.champion_name ?? "").toLowerCase();
-                return name.includes(q) || champ.includes(q);
-              })
-              .map((tour) => (
+            {filteredTournaments.map((tour) => (
               <li
                 key={tour.id}
                 className="flex flex-wrap items-center gap-3 py-2.5"
@@ -738,6 +776,12 @@ const POKE_INITIAL = 10;
                       <span> · {tour.players} {t("dashboard.players")}</span>
                     )}
                     {tour.format && <span> · {tour.format}</span>}
+                    {tour.champion_country && (
+                      <span>
+                        {" "}· {countryFlag(tour.champion_country)}{" "}
+                        {tour.champion_country.toUpperCase()}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -752,6 +796,7 @@ const POKE_INITIAL = 10;
               </li>
             ))}
           </ul>
+          )
         )}
         {searchQuery.length >= 3 && (
           <ChampionsSearchHits
@@ -762,7 +807,7 @@ const POKE_INITIAL = 10;
         )}
         {championsReport && championsReport.tournaments.length > 0 && (
           <div className="mt-2 flex justify-center gap-2">
-            {championsReport.tournaments.length >= tournamentVisible && (
+            {filteredTournaments.length >= tournamentVisible && (
               <button
                 className="btn-ghost text-xs"
                 onClick={() =>

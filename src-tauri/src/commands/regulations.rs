@@ -1,4 +1,4 @@
-use crate::adapters::official_stream_client::DEFAULT_LIVE_SCREENS;
+use crate::adapters::official_stream_client::{DEFAULT_LIVE_SCREENS, LEGACY_INDER_LIVE};
 use crate::domain::format::Format;
 use crate::domain::regulation::{
     LiveStreamScreen, OfficialLiveStream, RegulationInfo, RegulationNewsItem, RegulationSyncStatus,
@@ -90,12 +90,15 @@ fn configured_live_sources(configured: Option<&str>, legacy: Option<&str>) -> Ve
         .unwrap_or_default()
         .lines()
         .map(str::trim)
-        .filter(|line| !line.is_empty())
+        .filter(|line| !line.is_empty() && *line != LEGACY_INDER_LIVE)
         .map(str::to_string)
         .collect();
     if sources.is_empty() {
         sources.push(DEFAULT_LIVE_SCREENS[0].to_string());
-        if let Some(legacy) = legacy.map(str::trim).filter(|url| !url.is_empty()) {
+        if let Some(legacy) = legacy
+            .map(str::trim)
+            .filter(|url| !url.is_empty() && *url != LEGACY_INDER_LIVE)
+        {
             sources.push(legacy.to_string());
         }
         sources.extend(

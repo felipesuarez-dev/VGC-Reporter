@@ -1,5 +1,5 @@
-import { ExternalLink, MonitorPlay, Radio, X, Youtube } from "lucide-react";
-import { useEffect } from "react";
+import { ExternalLink, MonitorPlay, Radio, Tv, X, Youtube } from "lucide-react";
+import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { LiveStreamScreen } from "../../lib/types";
 import { openExternal } from "../../lib/openExternal";
@@ -10,19 +10,18 @@ interface Props {
   onClose: () => void;
 }
 
-function wallColumns(count: number): string {
-  if (count <= 1) return "grid-cols-1";
-  if (count <= 4) return "md:grid-cols-2";
-  return "md:grid-cols-2 2xl:grid-cols-3";
-}
-
 /**
- * Full-window TV wall. It turns the configured live screens into a showcase:
- * one large signal, or a grid of up to six channels.
+ * Full-window TV wall. It is deliberately a fixed 3x3 showcase: nine slots,
+ * never one giant player that stretches when only one channel is live. Live
+ * signals fill first, then configured offline channels, then neutral slots.
  */
 export function LiveWall({ screens, onClose }: Props) {
   const { t } = useTranslation();
   const live = screens.filter((screen) => screen.live);
+  const slots = useMemo(() => {
+    const ordered = [...live, ...screens.filter((screen) => !screen.live)];
+    return Array.from({ length: 9 }, (_, index) => ordered[index] ?? null);
+  }, [live, screens]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -59,6 +58,9 @@ export function LiveWall({ screens, onClose }: Props) {
               {live.length > 0
                 ? t("feed.live_count", { count: live.length })
                 : t("feed.no_live_short")}
+              {screens.length > 9
+                ? ` · ${t("feed.showing_nine", { count: screens.length })}`
+                : ""}
             </p>
           </div>
         </div>
@@ -74,91 +76,106 @@ export function LiveWall({ screens, onClose }: Props) {
         </button>
       </header>
 
-      {live.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
-          <Radio size={30} className="text-white/30" />
-          <p className="text-sm font-medium text-white/80">
-            {t("feed.no_live")}
-          </p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {screens.map((screen) => (
-              <button
-                key={screen.source_url}
-                type="button"
-                className="flex items-center gap-1 rounded-md border border-white/15 px-3 py-1.5 text-xs text-white/70 hover:bg-white/10"
-                onClick={() => openExternal(screen.source_url)}
-              >
-                <ExternalLink size={12} />
-                {screen.label}
-              </button>
-            ))}
-          </div>
+      <div className="min-h-0 flex-1 overflow-y-auto p-3">
+        <div className="mx-auto grid max-w-[1800px] grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          {slots.map((screen, index) =>
+            screen ? (
+              <LiveWallTile key={screen.source_url} screen={screen} />
+            ) : (
+              <EmptySlot key={`empty-${index}`} />
+            ),
+          )}
         </div>
-      ) : (
-        <div className={`grid min-h-0 flex-1 gap-3 p-3 ${wallColumns(live.length)}`}>
-          {live.map((screen) => (
-            <div
-              key={screen.source_url}
-              className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-black"
+      </div>
+    </div>
+  );
+}
+
+function LiveWallTile({ screen }: { screen: LiveStreamScreen }) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-black">
+      <div className="flex min-h-8 items-center justify-between gap-2 px-2.5 py-1.5">
+        <div className="min-w-0">
+          <p className="truncate text-[11px] font-semibold text-white">
+            {screen.title ?? screen.label}
+          </p>
+          <p className="truncate text-[9px] text-white/45">{screen.label}</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          {channelSubscribeUrl(screen.source_url) && (
+            <button
+              type="button"
+              className="rounded-md p-1 text-white/60 hover:bg-white/10 hover:text-white"
+              onClick={() => void openExternal(channelSubscribeUrl(screen.source_url)!)}
+              title={t("feed.subscribe")}
+              aria-label={t("feed.subscribe")}
             >
-              <div className="flex items-center justify-between gap-2 px-3 py-2">
-                <div className="min-w-0">
-                  <p className="truncate text-xs font-semibold text-white">
-                    {screen.title}
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  {channelSubscribeUrl(screen.source_url) && (
-                    <button
-                      type="button"
-                      className="rounded-md p-1.5 text-white/60 hover:bg-white/10 hover:text-white"
-                      onClick={() =>
-                        openExternal(channelSubscribeUrl(screen.source_url)!)
-                      }
-                      title={t("feed.subscribe")}
-                      aria-label={t("feed.subscribe")}
-                    >
-                      <Youtube size={14} />
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    className="rounded-md p-1.5 text-white/60 hover:bg-white/10 hover:text-white"
-                    onClick={() => screen.url && openExternal(screen.url)}
-                    title={t("upcoming.open")}
-                    aria-label={t("upcoming.open")}
-                  >
-                    <ExternalLink size={13} />
-                  </button>
-                </div>
-              </div>
-              {screen.embed_url && (
-                <iframe
-                  src={screen.embed_url}
-                  title={screen.title ?? screen.label}
-                  className="min-h-0 w-full flex-1"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  referrerPolicy="strict-origin-when-cross-origin"
-                />
-              )}
-              <div className="flex flex-wrap items-center gap-1 px-3 py-1.5">
-                <span className="rounded-full bg-red-500/20 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-red-400">
-                  {t("feed.live_now")}
-                </span>
-                <span className="rounded-full border border-white/15 px-1.5 py-0.5 text-[9px] text-white/60">
-                  {screen.label}
-                </span>
-                {screen.official && (
-                  <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] text-white/60">
-                    {t("feed.official")}
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
+              <Youtube size={13} />
+            </button>
+          )}
+          {screen.url && (
+            <button
+              type="button"
+              className="rounded-md p-1 text-white/60 hover:bg-white/10 hover:text-white"
+              onClick={() => void openExternal(screen.url!)}
+              title={t("upcoming.open")}
+              aria-label={t("upcoming.open")}
+            >
+              <ExternalLink size={12} />
+            </button>
+          )}
+        </div>
+      </div>
+      {screen.live && screen.embed_url ? (
+        <iframe
+          src={screen.embed_url}
+          title={screen.title ?? screen.label}
+          className="aspect-video w-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          referrerPolicy="strict-origin-when-cross-origin"
+        />
+      ) : (
+        <div
+          className="flex aspect-video w-full flex-col items-center justify-center gap-1.5 text-center"
+          style={{ backgroundColor: "#0b0a14" }}
+        >
+          <Radio size={20} className="text-white/25" />
+          <span className="text-[10px] text-white/45">
+            {t("feed.screen_offline")}
+          </span>
         </div>
       )}
+      <div className="flex flex-wrap items-center gap-1 px-2.5 py-1.5">
+        {screen.live ? (
+          <span className="rounded-full bg-red-500/20 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-red-400">
+            {t("feed.live_now")}
+          </span>
+        ) : (
+          <span className="rounded-full border border-white/15 px-1.5 py-0.5 text-[8px] uppercase tracking-wide text-white/45">
+            {t("feed.offline")}
+          </span>
+        )}
+        <span className="rounded-full border border-white/15 px-1.5 py-0.5 text-[8px] text-white/60">
+          {screen.label}
+        </span>
+        {screen.official && (
+          <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[8px] text-white/60">
+            {t("feed.official")}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EmptySlot() {
+  const { t } = useTranslation();
+  return (
+    <div className="flex min-h-[160px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/10 bg-white/[0.02]">
+      <Tv size={22} className="text-white/20" />
+      <span className="text-[10px] text-white/35">{t("feed.empty_tv_slot")}</span>
     </div>
   );
 }

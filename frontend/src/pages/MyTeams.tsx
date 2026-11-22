@@ -118,6 +118,23 @@ export function MyTeams() {
                     >
                       {new Date().getFullYear()}
                     </span>
+                    <span
+                      className="rounded px-1.5 py-0.5 text-[10px] font-semibold"
+                      style={{
+                        backgroundColor:
+                          team.build_mode === "champions"
+                            ? "var(--accent-soft)"
+                            : "var(--bg-elev-strong)",
+                        color:
+                          team.build_mode === "champions"
+                            ? "var(--accent)"
+                            : "var(--text-muted)",
+                      }}
+                    >
+                      {team.build_mode === "champions"
+                        ? t("team_builder.champions")
+                        : t("team_builder.classic")}
+                    </span>
                   </div>
                   {team.notes && team.notes.trim() !== "" ? (
                     <p

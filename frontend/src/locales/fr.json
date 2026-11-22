@@ -17,7 +17,8 @@
     "my_teams": "Mes équipes",
     "top_teams": "Top équipes",
     "damage_calc": "Calc. dégâts",
-    "settings": "Paramètres"
+    "settings": "Paramètres",
+    "learn": "Apprendre"
   },
   "entity": {
     "ability": "Talent",
@@ -202,7 +203,8 @@
     "custom_range": "Personnalisé",
     "entity_user_hint": "{{name}} l'utilise dans {{percent}}% de ses sets",
     "champion_team": "Équipe championne",
-    "no_item": "Sans objet"
+    "no_item": "Sans objet",
+    "entity_user_share_hint": "{{name}} contribue à {{share}}% de toutes les équipes ; {{percent}}% de ses sets le portent"
   },
   "tournament": {
     "standings": "Classements",
@@ -259,7 +261,8 @@
     "tournament_id": "ID du tournoi",
     "postal_code": "Code postal",
     "export_ics": "Exporter .ics",
-    "website_short": "Site du lieu"
+    "website_short": "Site du lieu",
+    "registrations": "inscrits"
   },
   "drawer": {
     "top_items": "Objets",
@@ -348,7 +351,15 @@
       "missing_ability": "{{slot}} : talent manquant",
       "missing_item": "{{slot}} : objet manquant",
       "missing_moves": "{{slot}} : capacités manquantes"
-    }
+    },
+    "mode": "Mode de construction",
+    "classic": "Classique",
+    "champions": "Champions",
+    "classic_hint": "EV et IV classiques, niveau libre.",
+    "champions_hint": "66 Stat Points, 32 par stat, 31 IV et niveau 50. Les stats se convertissent au changement de mode.",
+    "stat_points": "Stat Points",
+    "sp_remaining": "{{count}} restants",
+    "sp_over": "{{count}} en trop"
   },
   "my_teams": {
     "title": "Mes équipes",
@@ -407,7 +418,14 @@
     "export_warning_body": "Vous êtes sur le point d'exporter {{count}} équipes en Markdown. Cela peut prendre du temps et ralentir l'application.",
     "export_warning_dont_ask": "Ne plus afficher ce message",
     "export_warning_cancel": "Annuler",
-    "export_warning_confirm": "Exporter quand même"
+    "export_warning_confirm": "Exporter quand même",
+    "provider_all": "Toutes les sources",
+    "provider_labmaus": "Labmaus",
+    "provider_limitless": "Limitless",
+    "provider_pokebase": "PokéBase",
+    "origin_all": "Tous",
+    "origin_community": "Communauté",
+    "origin_tournament": "Tournoi"
   },
   "damage_calc": {
     "title": "Calculateur de dégâts",
@@ -459,7 +477,47 @@
     "live_screens": "Écrans en direct",
     "live_screens_hint": "Une URL par ligne. L'ordre des lignes est l'ordre des écrans ; les écrans par défaut incluent YukS, Play! Pokémon, Sekiam, IRNemesis et plus. Maximum 12.",
     "live_screens_placeholder": "https://www.youtube.com/@yuksvgc\nhttps://www.youtube.com/@PlayPokemon\nhttps://www.youtube.com/@WolfeyVGC\nhttps://www.youtube.com/@CybertronVGC\nhttps://www.youtube.com/@JamesBaek\nhttps://www.youtube.com/@PokeAlex\nhttps://www.youtube.com/@Moxie2D\nhttps://www.youtube.com/@PokemonChampions\nhttps://www.youtube.com/@Sekiam\nhttps://www.youtube.com/@IRNemesisTV\nhttps://www.youtube.com/watch?v=tP09BzCEJqU",
-    "live_screens_reset": "Réinitialiser"
+    "live_screens_reset": "Réinitialiser",
+    "calendar": "Calendrier",
+    "calendar_hint": "Choisis où le garder à portée.",
+    "calendar_panel": "Ancré dans le Feed",
+    "calendar_floating": "Widget flottant",
+    "calendar_corner": "Coin fixe",
+    "calendar_free": "Libre (déplaçable)",
+    "calendar_bottom_right": "En bas à droite",
+    "calendar_bottom_left": "En bas à gauche",
+    "widget_title": "Calendrier des tournois",
+    "playback": "Lecture en changeant de page",
+    "playback_hint": "Garde un direct pendant que tu navigues.",
+    "playback_stop": "Arrêter la vidéo",
+    "playback_mini": "Mini-lecteur dans le coin",
+    "sync": "Synchroniser",
+    "sync_hint": "Passe équipes et réglages entre desktop et Android sur le même Wi-Fi.",
+    "sync_send": "Envoyer vers un autre appareil",
+    "sync_scan": "Scanner le QR",
+    "sync_code": "Code",
+    "sync_copy": "Copier l'URL",
+    "sync_receive": "Recevoir d'un autre appareil",
+    "sync_fetch": "Télécharger le bundle",
+    "sync_preview": "Aperçu",
+    "sync_preview_detail": "{{teams}} équipes et {{settings}} réglages prêts.",
+    "sync_rename": "Ajouter un suffixe aux équipes",
+    "sync_import": "Importer",
+    "sync_done": "{{teams}} équipes et {{settings}} réglages importés.",
+    "sync_copied": "Copié.",
+    "sync_copy_failed": "Copie impossible.",
+    "sync_lan_note": "Même Wi-Fi, sans cloud. La session expire en 2 minutes.",
+    "sync_receive_code": "Recevoir avec le code",
+    "sync_fetch_code": "Chercher sur le réseau",
+    "sync_conflicts": "{{count}} équipes portent déjà ce nom",
+    "sync_conflict_rename": "Renommer",
+    "sync_conflict_rename_hint": "Ajoute la date au nom importé",
+    "sync_conflict_replace": "Remplacer",
+    "sync_conflict_replace_hint": "Supprime l'équipe locale et garde la nouvelle",
+    "sync_conflict_skip": "Ignorer",
+    "sync_conflict_skip_hint": "Laisse l'équipe locale intacte",
+    "sync_replace_warning": "{{count}} équipes locales seront supprimées avant l'import.",
+    "sync_nothing": "Aucune nouvelle équipe à importer."
   },
   "about": {
     "title": "À propos",
@@ -556,7 +614,9 @@
     "theme_incineroar": "Félinferno",
     "theme_tyranitar": "Tyranocif",
     "theme_sneasler": "Farfurex",
-    "timezone_system": "Système ({{zone}})"
+    "timezone_system": "Système ({{zone}})",
+    "theme_umbreon": "Umbreon (noir total)",
+    "theme_zekrom": "Zekrom (fort contraste)"
   },
   "ptr": {
     "pull": "Tirez pour actualiser",
@@ -615,7 +675,8 @@
     "other_regulation": "données d'une autre régulation",
     "unknown_regulation": "régulation non déclarée",
     "filtered_hint": "Affichage de {{source}} uniquement. Choisissez « Toutes les sources » pour le total fusionne.",
-    "monthly_ladder": "Ladder mensuel"
+    "monthly_ladder": "Ladder mensuel",
+    "favorite_source": "Marquer comme source favorite"
   },
   "feed": {
     "season": "Saison",
@@ -713,7 +774,18 @@
     "search_item": "Rechercher un objet",
     "recent_streams": "Derniers directs",
     "recent_hint": "Aucune chaîne n'est en direct ; voici leurs dernières diffusions.",
-    "last_stream": "Dernière diffusion"
+    "last_stream": "Dernière diffusion",
+    "showing_nine": "9 signaux sur {{count}} affichés",
+    "empty_tv_slot": "Emplacement libre",
+    "stop": "Arrêter",
+    "resume": "Reprendre",
+    "stop_stream": "Arrêter playback",
+    "resume_stream": "Reprendre playback",
+    "stream_stopped": "Lecture arrêtée",
+    "keep": "Garder",
+    "unkeep": "Relâcher",
+    "keep_stream": "Garder la lecture en changeant de page",
+    "unkeep_stream": "Relâcher la lecture"
   },
   "item_detail": {
     "effect": "Effet",
@@ -731,6 +803,73 @@
     "event_notes": "Notes",
     "save_event": "Enregistrer",
     "delete_event": "Supprimer l'événement",
-    "personal": "Personnel"
+    "personal": "Personnel",
+    "widget_title": "Calendrier des tournois"
+  },
+  "external_link": {
+    "title": "Lien externe",
+    "body": "Ce lien ouvrira une URL en dehors de VGC Reporter dans votre navigateur par défaut. Continuer ?",
+    "mail": "Ce lien ouvrira votre application de messagerie en dehors de VGC Reporter. Continuer ?",
+    "phone": "Ce lien ouvrira votre application téléphonique en dehors de VGC Reporter. Continuer ?",
+    "open": "Ouvrir à l’extérieur"
+  },
+  "type_lab": {
+    "title": "Table des types",
+    "hint": "Consultation rapide de l’efficacité et des couvertures",
+    "tab_table": "Table",
+    "tab_coverage": "Couverture",
+    "tab_team": "Mon équipe",
+    "attacker": "Attaque ↓ / Défense →",
+    "immune": "Immunisé",
+    "resists": "Résiste",
+    "weak": "Faible",
+    "double_weak": "Très faible",
+    "pick_defenders": "Choisis 1 ou 2 types défensifs",
+    "team_empty": "Ajoute des Pokémon à ton équipe pour voir la couverture.",
+    "team_defense": "Faiblesses de l’équipe",
+    "team_offense": "Couverture offensive"
+  },
+  "learn": {
+    "eyebrow": "Apprendre le Pokémon compétitif",
+    "title": "Apprends à jouer Champions pour de vrai",
+    "subtitle": "Guides, pratique quotidienne, équipes de départ, menaces du méta et outils pour passer du ladder à la compétition.",
+    "start_guides": "Commencer par les guides",
+    "open_types": "Table des types",
+    "progress": "Progression",
+    "starters_title": "Équipes pour débuter",
+    "starters_hint": "De vraies équipes du méta actuel, prêtes à charger dans le builder.",
+    "starters_empty": "Pas encore d'équipes récentes complètes.",
+    "community": "Communauté",
+    "no_record": "Sans record",
+    "load_builder": "Charger dans le builder",
+    "guides_title": "Bibliothèque de guides",
+    "guides_hint": "Apprends une idée à la fois et applique-la.",
+    "read_guide": "Lire le guide",
+    "glossary_title": "Glossaire compétitif",
+    "glossary_hint": "Le jargon VGC et Champions, sans détour.",
+    "search_glossary": "Chercher un terme...",
+    "tools_title": "Outils d'apprentissage",
+    "tools_hint": "Tout pour pratiquer et construire.",
+    "calendar_hint": "Calendrier",
+    "quiz_title": "Pratique du jour",
+    "quiz_hint": "Une nouvelle question chaque jour. Garde ta série.",
+    "quiz_question": "Quel type est super efficace contre {{type}} ?",
+    "quiz_correct": "Correct !",
+    "quiz_wrong": "Presque. La réponse était {{type}}.",
+    "streak": "Série de {{count}}",
+    "threats_title": "Menaces du méta",
+    "threats_hint": "Les Pokémon que tu affronteras le plus et leurs faiblesses.",
+    "level_beginner": "Débutant",
+    "level_intermediate": "Intermédiaire",
+    "level_advanced": "Avancé",
+    "quiz_mode_type": "Types",
+    "quiz_mode_speed": "Vitesse",
+    "quiz_mode_lead": "Lead",
+    "quiz_speed_question": "Qui bouge en premier : {{a}} ou {{b}} ? (même investissement)",
+    "quiz_speed_hint": "{{a}} : {{aSpeed}} de Speed de base · {{b}} : {{bSpeed}}.",
+    "quiz_lead_question": "Contre {{threat}}, quelle réponse du top méta est la plus sûre ?",
+    "quiz_lead_hint": "{{answer}} résiste mieux aux types {{types}} de {{threat}}.",
+    "quiz_wrong_answer": "Presque. La réponse était {{answer}}.",
+    "quiz_not_enough": "Pas encore assez de données méta pour cette question."
   }
 }

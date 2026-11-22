@@ -10,8 +10,9 @@ import {
 } from "lucide-react";
 import { ipc, AppError } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
-import type { Format, Violation } from "../lib/types";
+import type { BuildMode, Format, Violation } from "../lib/types";
 import { FALLBACK_FORMATS, canonicalSpeciesId, isAllowedName } from "../lib/types";
+import { evsToStatPoints, statPointsToEvs } from "../lib/champions";
 import { useRegulationCatalog } from "../hooks/useRegulationCatalog";
 import { useTeamBuilder } from "../stores/teamBuilderStore";
 import { TeamMemberForm } from "../components/team/TeamMemberForm";
@@ -36,6 +37,23 @@ export function TeamBuilder() {
     useRegulationCatalog();
   const formatOptions =
     regulationOptions.length > 0 ? regulationOptions : FALLBACK_FORMATS;
+
+  const switchMode = (mode: BuildMode) => {
+    if (mode === team.build_mode) return;
+    const members = team.members.map((member) =>
+      mode === "champions"
+        ? {
+            ...member,
+            level: 50,
+            stat_points: evsToStatPoints(member.evs),
+          }
+        : {
+            ...member,
+            evs: statPointsToEvs(member.stat_points),
+          },
+    );
+    setTeam({ ...team, build_mode: mode, members });
+  };
   // A blank team starts on the active regulation. The guard makes it a
   // one-time default: after the user picks a format (or an import provides
   // one) the catalog must not keep changing it.
@@ -210,6 +228,43 @@ export function TeamBuilder() {
         </div>
       </header>
 
+      <div
+        role="tablist"
+        aria-label={t("team_builder.mode")}
+        className="inline-flex rounded-xl border p-1"
+        style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-elev)" }}
+      >
+        {(
+          [
+            ["classic", t("team_builder.classic")],
+            ["champions", t("team_builder.champions")],
+          ] as const
+        ).map(([mode, label]) => (
+          <button
+            key={mode}
+            type="button"
+            role="tab"
+            aria-selected={team.build_mode === mode}
+            onClick={() => switchMode(mode)}
+            className="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+            style={{
+              backgroundColor:
+                team.build_mode === mode ? "var(--accent-soft)" : "transparent",
+              color:
+                team.build_mode === mode ? "var(--accent)" : "var(--text-muted)",
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <p className="text-[11px]" style={{ color: "var(--text-dim)" }}>
+        {team.build_mode === "champions"
+          ? t("team_builder.champions_hint")
+          : t("team_builder.classic_hint")}
+      </p>
+
       <div className="card grid grid-cols-1 gap-3 md:grid-cols-3">
         <div>
           <label className="label">{t("team_builder.team_name")}</label>
@@ -260,6 +315,7 @@ export function TeamBuilder() {
             pokedex={pokedex}
             items={items}
             moves={moves}
+            mode={team.build_mode}
             onChange={(next) => setMember(i, next)}
           />
         ))}

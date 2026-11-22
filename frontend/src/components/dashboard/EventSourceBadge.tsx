@@ -1,4 +1,4 @@
-import { BadgeCheck, Globe2 } from "lucide-react";
+import { BadgeCheck, Swords } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface Props {
@@ -10,7 +10,7 @@ interface Props {
 export function EventSourceBadge({ source, className }: Props) {
   const { t } = useTranslation();
   const official = source === "play-pokemon";
-  const Icon = official ? BadgeCheck : Globe2;
+  const Icon = official ? BadgeCheck : Swords;
   const label = official
     ? t("upcoming.source_official")
     : t("upcoming.source_limitless");
@@ -18,11 +18,14 @@ export function EventSourceBadge({ source, className }: Props) {
     <span
       className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-medium ${className ?? ""}`}
       style={{
-        borderColor: official ? "var(--accent)" : "var(--border)",
-        color: official ? "var(--accent)" : "var(--text-muted)",
-        backgroundColor: "var(--bg-elev-strong)",
+        borderColor: official ? "var(--accent)" : "#2b86ff",
+        color: official ? "var(--accent)" : "#2b86ff",
+        backgroundColor: official
+          ? "var(--bg-elev-strong)"
+          : "color-mix(in srgb, #2b86ff 12%, var(--bg-elev-strong))",
       }}
       title={label}
+      data-source={source}
     >
       <Icon size={10} />
       {label}

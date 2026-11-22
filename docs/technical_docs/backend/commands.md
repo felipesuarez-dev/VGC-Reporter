@@ -64,3 +64,19 @@ Todos los commands se registran en `lib.rs` dentro de `tauri::generate_handler![
 ## Errores
 
 El tipo de retorno **debe** ser `Result<T, AppError>` para que el frontend reciba `{ kind, message }`.
+
+### sync.rs
+- `sync_start_send(ui_json) -> SyncSession` - crea un servidor LAN temporal y devuelve QR/URL/código.
+- `sync_fetch(url) -> SyncBundle` - descarga y valida un bundle por Rust/reqwest.
+- `sync_import(bundle) -> SyncImportResult` - importa equipos y ajustes de la whitelist.
+
+### updater.rs
+- `check_for_app_update() -> Option<UpdateInfo>`.
+- `download_android_update(url) -> String` - descarga el APK al cache para el instalador del sistema.
+
+
+### sync.rs (0.6.0)
+- `sync_start_send(ui_json) -> SyncSession`: crea un servidor HTTP temporal de 2 minutos, devuelve código de 8, URL con token y lanza un responder UDP en el puerto 47823.
+- `sync_fetch(url) -> SyncBundle`: descarga y valida el bundle por Rust/reqwest (timeout 10s, máximo 2 MB).
+- `sync_fetch_by_code(code) -> SyncBundle`: descubre la URL por broadcast UDP y luego descarga el bundle. Útil en desktop, que no puede escanear el QR del móvil.
+- `sync_import(bundle) -> SyncImportResult`: valida todos los equipos antes de escribir, importa equipos y solo las claves de settings de la whitelist. El frontend decide renombrar/reemplazar/omitir conflictos antes de llamarlo.

@@ -22,8 +22,9 @@ export function EntityUsers({
             borderColor: "var(--border)",
             color: "var(--text-muted)",
           }}
-          title={t("dashboard.entity_user_hint", {
+          title={t("dashboard.entity_user_share_hint", {
             name: user.species,
+            share: user.sharePercent.toFixed(1),
             percent: user.usagePercent.toFixed(1),
           })}
         >
@@ -40,7 +41,7 @@ export function EntityUsers({
             className="shrink-0 tabular-nums"
             style={{ color: "var(--accent)" }}
           >
-            {user.usagePercent.toFixed(0)}%
+            {user.sharePercent.toFixed(1)}%
           </span>
         </span>
       ))}

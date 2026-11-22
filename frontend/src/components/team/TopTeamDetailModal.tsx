@@ -13,6 +13,7 @@ import type {
   TopTeam,
 } from "../../lib/types";
 import { ALL_NATURES, canonicalSpeciesId, emptyTeamMember } from "../../lib/types";
+import { evsToStatPoints } from "../../lib/champions";
 import { PokemonSprite } from "../pokemon/PokemonSprite";
 import { EntityChip } from "../info/EntityChip";
 import { Tooltip } from "../ui/Tooltip";
@@ -72,6 +73,16 @@ function toDraftTeam(top: TopTeam, format: Format): Team {
   const members: TeamMember[] = Array.from({ length: 6 }, (_, i) => {
     const m = validMembers[i];
     if (!m) return emptyTeamMember();
+    const evs = m.evs
+      ? {
+          hp: m.evs.hp,
+          atk: m.evs.atk,
+          def: m.evs.def,
+          spa: m.evs.spa,
+          spd: m.evs.spd,
+          spe: m.evs.spe,
+        }
+      : { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
     return {
       species: m.species,
       item: m.item ?? null,
@@ -79,16 +90,8 @@ function toDraftTeam(top: TopTeam, format: Format): Team {
       nature: asNature(m.nature),
       tera_type: null,
       moves: (m.moves ?? []).filter((mv) => mv && mv.length > 0),
-      evs: m.evs
-        ? {
-            hp: m.evs.hp,
-            atk: m.evs.atk,
-            def: m.evs.def,
-            spa: m.evs.spa,
-            spd: m.evs.spd,
-            spe: m.evs.spe,
-          }
-        : { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+      evs,
+      stat_points: evsToStatPoints(evs),
       level: 50,
       gender: null,
       shiny: false,
@@ -103,6 +106,7 @@ function toDraftTeam(top: TopTeam, format: Format): Team {
     id: null,
     name,
     format,
+    build_mode: "champions",
     notes: null,
     members,
     created_at: null,

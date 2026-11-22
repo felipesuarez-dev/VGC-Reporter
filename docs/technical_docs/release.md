@@ -3,12 +3,12 @@
 ## Versionado
 
 La versión visible es `MAJOR.MINOR.PATCH.YYYYMMDD-beta` (por ejemplo
-`0.5.0.20261121-beta`). Tauri, Cargo y los `package.json` usan el semver
-`0.5.0`; el sufijo con fecha vive en `frontend/src/lib/version.ts` y en el tag.
+`0.6.0.20261122-beta`). Tauri, Cargo y los `package.json` usan el semver
+`0.6.0`; el sufijo con fecha vive en `frontend/src/lib/version.ts` y en el tag.
 
 ```bash
-bun scripts/bump-version.ts 0.5.0.20261121-beta
-bun scripts/bump-version.ts --check --tag v0.5.0.20261121-beta
+bun scripts/bump-version.ts 0.6.0.20261122-beta
+bun scripts/bump-version.ts --check --tag v0.6.0.20261122-beta
 ```
 
 `--check --tag` falla si el tag no coincide con la versión de la app. El
@@ -34,8 +34,8 @@ por su cuenta.
 
 | Plataforma | Nombre |
 |---|---|
-| Windows MSI | `VGC.Reporter_0.5.0_x64_en-US.msi` |
-| Android | `VGC.Reporter_v0.5.0.20261121-beta_android.apk` |
+| Windows MSI | `VGC.Reporter_0.6.0_x64_en-US.msi` |
+| Android | `VGC.Reporter_v0.6.0.20261122-beta_android.apk` |
 
 El release distribuye **MSI** y **APK**. macOS y Linux ya no se compilan: el
 objetivo es Windows + Android y no gastar minutos de Actions en plataformas que
@@ -102,7 +102,7 @@ release queda en draft.
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/release-local.ps1 `
-  -Tag v0.5.0.20261121-beta -NoPublish
+  -Tag v0.6.0.20261122-beta -NoPublish
 ```
 
 Sin `-NoPublish` publica el release al terminar. El script:
@@ -130,3 +130,10 @@ Android está en la raíz del repo y está cubierto por `*.keystore` en
 7. `bun x tauri android build --apk`, firmar y verificar el APK
 8. Capturas del README actualizadas
 9. Confirmación de Felipe; recién entonces commit `[release] ...`, tag y push
+
+
+## Instalador 0.6.0
+
+- src-tauri/windows/main.wxs es una copia de la plantilla de Tauri 2.10 con el shortcut de escritorio usando Icon=ProductIcon. Cualquier actualización de Tauri debe re-diffearse contra esta plantilla.
+- DISCLAIMER.txt se pasa como bundle.licenseFile; el MSI muestra la página de licencia y el descargo bilingüe.
+- bundle.homepage apunta al repositorio.

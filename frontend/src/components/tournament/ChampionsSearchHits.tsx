@@ -115,6 +115,7 @@ export function ChampionsSearchHits({ hits, isFetching, onOpenTournament }: Prop
                     format: null,
                     organizer_id: null,
                     champion_name: null,
+                    champion_country: null,
                     champion_team: [],
                   })
                 }

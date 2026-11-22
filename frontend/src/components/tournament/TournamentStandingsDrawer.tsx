@@ -13,6 +13,7 @@ import { SearchTextInput } from "../filters/SearchTextInput";
 import { CountryFilter } from "../filters/CountryFilter";
 import { PokemonMultiSelect } from "../filters/PokemonMultiSelect";
 import type { Format, Pokemon } from "../../lib/types";
+import { evsToStatPoints } from "../../lib/champions";
 import type {
   ChampionsTournament,
   DecklistPokemon,
@@ -58,6 +59,7 @@ function standingToDraftTeam(
       tera_type: null,
       moves: (p.moves ?? []).filter((mv) => mv && mv.length > 0),
       evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+      stat_points: evsToStatPoints({ hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }),
       level: 50,
       gender: null,
       shiny: false,
@@ -68,8 +70,9 @@ function standingToDraftTeam(
   const player = standing.player_name ?? standing.player_id ?? "?";
   return {
     id: null,
-    name: `${player} — ${tournamentName}`,
+    name: `${player} - ${tournamentName}`,
     format,
+    build_mode: "champions",
     notes: null,
     members,
     created_at: null,

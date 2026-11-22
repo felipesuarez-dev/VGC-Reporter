@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ipc } from "../lib/ipc";
-import { ExternalLink, Info, FileText, RefreshCw, RotateCcw, AlertTriangle, ChevronDown } from "lucide-react";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { AlertTriangle, CalendarDays, ChevronDown, ExternalLink, FileText, Info, RefreshCw, RotateCcw } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { FormatSelector } from "../components/ui/FormatSelector";
 import { AboutModal } from "../components/layout/AboutModal";
@@ -11,6 +10,7 @@ import { useDashboardStore } from "../stores/dashboardStore";
 import { useRegulationCatalog, useRegulationStatus } from "../hooks/useRegulationCatalog";
 import { regulationLabel } from "../lib/regulations";
 import { queryKeys } from "../lib/queryKeys";
+import { openExternal } from "../lib/openExternal";
 import { TimeZoneSelect } from "../components/layout/TimeZoneSelect";
 import { CountrySelect } from "../components/layout/CountrySelect";
 import {
@@ -19,6 +19,10 @@ import {
   FONT_SIZE_MIN,
   useUiStore,
 } from "../stores/uiStore";
+import { usePlaybackStore } from "../stores/playbackStore";
+import { SyncSettings } from "../components/settings/SyncSettings";
+
+const LEGACY_INDER_LIVE = "https://www.youtube.com/watch?v=tP09BzCEJqU";
 
 const DEFAULT_LIVE_SCREENS = [
   "https://www.youtube.com/@yuksvgc",
@@ -31,16 +35,23 @@ const DEFAULT_LIVE_SCREENS = [
   "https://www.youtube.com/@PokemonChampions",
   "https://www.youtube.com/@Sekiam",
   "https://www.youtube.com/@IRNemesisTV",
-  "https://www.youtube.com/watch?v=tP09BzCEJqU",
 ];
 
 function defaultLiveScreens(settings: Record<string, string>): string {
   const configured = settings.live_stream_urls?.trim();
-  if (configured) return configured;
+  if (configured) {
+    return configured
+      .split(/\r?\n/)
+      .map((url) => url.trim())
+      .filter((url) => url && url !== LEGACY_INDER_LIVE)
+      .join("\n");
+  }
   const legacy = settings.official_stream_url?.trim();
   return [
     DEFAULT_LIVE_SCREENS[0],
-    legacy || DEFAULT_LIVE_SCREENS[1],
+    legacy && legacy !== LEGACY_INDER_LIVE
+      ? legacy
+      : DEFAULT_LIVE_SCREENS[1],
     ...DEFAULT_LIVE_SCREENS.slice(2),
   ]
     .filter((url, index, all) => all.indexOf(url) === index)
@@ -71,6 +82,14 @@ export function Settings() {
   const setFontSizePx = useUiStore((s) => s.setFontSizePx);
   const homeCountry = useUiStore((s) => s.homeCountry);
   const setHomeCountry = useUiStore((s) => s.setHomeCountry);
+  const calendarMode = useUiStore((s) => s.calendarMode);
+  const setCalendarMode = useUiStore((s) => s.setCalendarMode);
+  const calendarPlacement = useUiStore((s) => s.calendarPlacement);
+  const setCalendarPlacement = useUiStore((s) => s.setCalendarPlacement);
+  const calendarCorner = useUiStore((s) => s.calendarCorner);
+  const setCalendarCorner = useUiStore((s) => s.setCalendarCorner);
+  const videoContinuity = usePlaybackStore((s) => s.continuity);
+  const setVideoContinuity = usePlaybackStore((s) => s.setContinuity);
   const [aboutOpen, setAboutOpen] = useState(false);
   const qc = useQueryClient();
   const { options, active } = useRegulationCatalog();
@@ -95,7 +114,7 @@ export function Settings() {
         streamUrls
           .split(/\r?\n/)
           .map((url) => url.trim())
-          .filter(Boolean),
+          .filter((url) => url && url !== LEGACY_INDER_LIVE),
       ),
     ).slice(0, 12);
     await ipc.setSetting("live_stream_urls", urls.join("\n"));
@@ -149,14 +168,6 @@ export function Settings() {
     await ipc.setSetting(`smogon_slug::${active.id}`, "");
     setOverrides({ labmaus: "", limitless: "", smogon: "" });
     await refreshCatalog();
-  };
-
-  const open = async (url: string) => {
-    try {
-      await openUrl(url);
-    } catch {
-      window.open(url, "_blank");
-    }
   };
 
   return (
@@ -237,6 +248,105 @@ export function Settings() {
           {t("settings.home_country_hint")}
         </p>
       </section>
+
+      <section className="card space-y-3">
+        <div className="flex items-center gap-2">
+          <CalendarDays size={15} style={{ color: "var(--accent)" }} />
+          <div>
+            <div className="label">{t("settings.calendar")}</div>
+            <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+              {t("settings.calendar_hint")}
+            </p>
+          </div>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="radio"
+              name="calendar-mode"
+              checked={calendarMode === "panel"}
+              onChange={() => setCalendarMode("panel")}
+            />
+            {t("settings.calendar_panel")}
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="radio"
+              name="calendar-mode"
+              checked={calendarMode === "floating"}
+              onChange={() => setCalendarMode("floating")}
+            />
+            {t("settings.calendar_floating")}
+          </label>
+        </div>
+        {calendarMode === "floating" && (
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-3">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="calendar-placement"
+                  checked={calendarPlacement === "corner"}
+                  onChange={() => setCalendarPlacement("corner")}
+                />
+                {t("settings.calendar_corner")}
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="calendar-placement"
+                  checked={calendarPlacement === "free"}
+                  onChange={() => setCalendarPlacement("free")}
+                />
+                {t("settings.calendar_free")}
+              </label>
+            </div>
+            {calendarPlacement === "corner" && (
+              <select
+                className="input h-9 w-full sm:w-64"
+                value={calendarCorner}
+                onChange={(event) =>
+                  setCalendarCorner(
+                    event.target.value as "bottom-right" | "bottom-left",
+                  )
+                }
+              >
+                <option value="bottom-right">{t("settings.calendar_bottom_right")}</option>
+                <option value="bottom-left">{t("settings.calendar_bottom_left")}</option>
+              </select>
+            )}
+          </div>
+        )}
+      </section>
+
+      <section className="card space-y-2">
+        <div className="label">{t("settings.playback")}</div>
+        <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+          {t("settings.playback_hint")}
+        </p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="radio"
+              name="video-continuity"
+              checked={videoContinuity === "stop"}
+              onChange={() => setVideoContinuity("stop")}
+            />
+            {t("settings.playback_stop")}
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="radio"
+              name="video-continuity"
+              checked={videoContinuity === "mini"}
+              onChange={() => setVideoContinuity("mini")}
+            />
+            {t("settings.playback_mini")}
+          </label>
+        </div>
+      </section>
+
+      <SyncSettings />
 
       <section className="card space-y-2">
         <div className="label">{t("settings.live_screens")}</div>
@@ -528,7 +638,7 @@ export function Settings() {
           {EXTERNAL_LINKS.map((link) => (
             <li key={link.key}>
               <button
-                onClick={() => open(link.url)}
+                onClick={() => void openExternal(link.url)}
                 className="flex items-center gap-2 text-sm"
                 style={{ color: "var(--accent)" }}
               >

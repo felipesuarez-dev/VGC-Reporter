@@ -16,6 +16,8 @@ Bienvenido a **VGC-Reporter**, una aplicación nativa (desktop y Android) para s
 ## Guías por módulo
 
 - [Panel](./panel.md)
+- [Aprender](./aprender.md)
+- [Sincronización](./sincronizacion.md)
 - [Pokédex](./pokedex.md)
 - [Constructor de equipos](./constructor-equipos.md)
 - [Mis equipos](./mis-equipos.md)

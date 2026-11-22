@@ -3,7 +3,8 @@ use crate::domain::format::Format;
 use crate::domain::ivs::IvSpread;
 use crate::domain::nature::Nature;
 use crate::domain::pokemon::PokemonType;
-use crate::domain::team::{Gender, Team, TeamMember, DEFAULT_LEVEL};
+use crate::domain::stat_points::evs_to_stat_points;
+use crate::domain::team::{BuildMode, Gender, Team, TeamMember, DEFAULT_LEVEL};
 use crate::error::AppError;
 use chrono::Utc;
 
@@ -23,6 +24,7 @@ pub fn parse_team(text: &str) -> Result<Team, AppError> {
         id: None,
         name: "Imported team".to_string(),
         format: Format::mc(),
+        build_mode: BuildMode::Classic,
         notes: None,
         members,
         created_at: Some(Utc::now()),
@@ -138,6 +140,7 @@ fn parse_member(lines: Vec<String>) -> TeamMember {
         shiny,
         nickname,
         ivs,
+        stat_points: evs_to_stat_points(&evs),
     }
 }
 

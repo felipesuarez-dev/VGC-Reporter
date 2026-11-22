@@ -19,6 +19,9 @@ import type {
   SetsBundle,
   Team,
   TopTeamsReport,
+  SyncBundle,
+  SyncImportResult,
+  SyncSession,
   TournamentStanding,
   TranslationTable,
   TrendingReport,
@@ -100,8 +103,20 @@ export const ipc = {
     call<string[]>("get_allowed_items", { format }),
   getAllowedMoves: (format: Format) =>
     call<string[]>("get_allowed_moves", { format }),
-  getTopTeams: (format: Format, limit = 20) =>
-    call<TopTeamsReport>("get_top_teams", { format, limit }),
+  getTopTeams: (
+    format: Format,
+    limit = 20,
+    source?: string | null,
+    from?: string | null,
+    to?: string | null,
+  ) =>
+    call<TopTeamsReport>("get_top_teams", {
+      format,
+      limit,
+      source: source ?? null,
+      from: from ?? null,
+      to: to ?? null,
+    }),
   saveTopTeamsMarkdown: (format: Format, limit: number, path: string) =>
     call<void>("save_top_teams_markdown", { format, limit, path }),
   listItems: () => call<string[]>("list_items"),
@@ -149,4 +164,13 @@ export const ipc = {
     call<TrendingReport>("get_trending", { format }),
   checkForAppUpdate: () =>
     call<UpdateInfo | null>("check_for_app_update"),
+  downloadAndroidUpdate: (url: string) =>
+    call<string>("download_android_update", { url }),
+  syncStartSend: (uiJson: string) =>
+    call<SyncSession>("sync_start_send", { uiJson }),
+  syncFetch: (url: string) => call<SyncBundle>("sync_fetch", { url }),
+  syncFetchByCode: (code: string) =>
+    call<SyncBundle>("sync_fetch_by_code", { code }),
+  syncImport: (bundle: SyncBundle) =>
+    call<SyncImportResult>("sync_import", { bundle }),
 };

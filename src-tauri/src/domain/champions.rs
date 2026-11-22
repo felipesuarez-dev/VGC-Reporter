@@ -12,6 +12,10 @@ pub struct ChampionsTournament {
     pub format: Option<String>,
     pub organizer_id: Option<String>,
     pub champion_name: Option<String>,
+    /// Country reported by Limitless for the champion; used by the local
+    /// scene filter without touching standings or decklists.
+    #[serde(default)]
+    pub champion_country: Option<String>,
     /// Champion's six-Pokémon decklist, when the organizer published it.
     #[serde(default)]
     pub champion_team: Vec<DecklistPokemon>,

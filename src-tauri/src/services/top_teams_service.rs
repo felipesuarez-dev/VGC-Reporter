@@ -4,7 +4,7 @@ use crate::adapters::{LabmausClient, LimitlessClient, PokepasteClient, ShowdownE
 use crate::config;
 use crate::domain::format::Format;
 use crate::error::AppError;
-use crate::services::date_window::window_for;
+use crate::services::date_window::{effective_range, DateRange};
 use crate::services::pokedex_service::PokedexService;
 use crate::services::usage_aggregator::prettify_public;
 use crate::storage::CacheRepo;
@@ -21,6 +21,7 @@ pub struct TopTeamsService {
     labmaus: LabmausClient,
     pokepaste: PokepasteClient,
     limitless: LimitlessClient,
+    pokebase: crate::adapters::PokebaseClient,
     pokedex: Arc<PokedexService>,
     cache: Arc<CacheRepo>,
 }
@@ -35,6 +36,14 @@ pub struct TopTeam {
     pub country: Option<String>,
     pub record: Option<String>,
     pub members: Vec<TopTeamMember>,
+    #[serde(default)]
+    pub provider: Option<String>,
+    #[serde(default)]
+    pub community: bool,
+    #[serde(default)]
+    pub source_url: Option<String>,
+    #[serde(default)]
+    pub shared_at: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -110,6 +119,7 @@ impl TopTeamsService {
         labmaus: LabmausClient,
         pokepaste: PokepasteClient,
         limitless: LimitlessClient,
+        pokebase: crate::adapters::PokebaseClient,
         pokedex: Arc<PokedexService>,
         cache: Arc<CacheRepo>,
     ) -> Self {
@@ -117,6 +127,7 @@ impl TopTeamsService {
             labmaus,
             pokepaste,
             limitless,
+            pokebase,
             pokedex,
             cache,
         }
@@ -126,40 +137,89 @@ impl TopTeamsService {
         &self,
         format: Format,
         limit: usize,
+        source: Option<String>,
+        requested_range: Option<DateRange>,
     ) -> Result<TopTeamsReport, AppError> {
-        let key = format!("top-teams::v12::{}::{}", format.cache_id(), limit);
+        let range = effective_range(&format, requested_range);
+        let (from, to) = range.strings();
+        let source = source
+            .as_deref()
+            .map(|value| value.trim().to_ascii_lowercase())
+            .filter(|value| !value.is_empty());
+        let key = format!(
+            "top-teams::v13::{}::{}::{}::{from}::{to}",
+            format.cache_id(),
+            limit,
+            source.as_deref().unwrap_or("all")
+        );
         if let Some(bytes) = self.cache.get(&key)? {
             if let Ok(report) = serde_json::from_slice::<TopTeamsReport>(&bytes) {
                 return Ok(report);
             }
         }
 
-        // PRIMARY: labmaus discover_teams + pokepast.es (any format with a
-        // labmaus regulation name, i.e. the Champions sets M-A / M-B).
-        if let Some(regulation) = format.default_labmaus_name() {
-            match self
-                .build_from_labmaus(format.clone(), &regulation, limit)
-                .await
-            {
-                Ok(report) if !report.teams.is_empty() => {
-                    tracing::info!(
-                        source = "labmaus",
-                        teams = report.teams.len(),
-                        "top teams report"
-                    );
-                    let bytes = serde_json::to_vec(&report)?;
-                    self.cache.put(&key, &bytes, config::TTL_META_SNAPSHOT)?;
-                    return Ok(report);
+        // PRIMARY: labmaus discover_teams + pokepast.es. When the user pins
+        // Limitless we skip this path entirely; when a source that doesn't
+        // publish teams is pinned we return an honest empty report.
+        if source.as_deref().is_none() || source.as_deref() == Some("labmaus") {
+            if let Some(regulation) = format.default_labmaus_name() {
+                match self
+                    .build_from_labmaus(
+                        format.clone(),
+                        &regulation,
+                        limit,
+                        (from.clone(), to.clone()),
+                    )
+                    .await
+                {
+                    Ok(report) if !report.teams.is_empty() => {
+                        tracing::info!(
+                            source = "labmaus",
+                            teams = report.teams.len(),
+                            "top teams report"
+                        );
+                        let bytes = serde_json::to_vec(&report)?;
+                        self.cache.put(&key, &bytes, config::TTL_META_SNAPSHOT)?;
+                        return Ok(report);
+                    }
+                    Ok(_) => {
+                        tracing::warn!("labmaus returned no teams, falling back to limitless")
+                    }
+                    Err(e) => {
+                        tracing::warn!(error = ?e, "labmaus failed, falling back to limitless")
+                    }
                 }
-                Ok(_) => {
-                    tracing::warn!("labmaus returned no teams, falling back to limitless")
-                }
-                Err(e) => tracing::warn!(error = ?e, "labmaus failed, falling back to limitless"),
             }
         }
 
-        let report = self.build_from_limitless(format, limit).await?;
-        // Don't cache an empty report — a transient miss would otherwise stick
+        if source.as_deref() == Some("pokebase") {
+            let report = self.build_from_pokebase(limit).await?;
+            let bytes = serde_json::to_vec(&report)?;
+            self.cache.put(&key, &bytes, config::TTL_META_SNAPSHOT)?;
+            return Ok(report);
+        }
+
+        if source.as_deref().is_some()
+            && source.as_deref() != Some("labmaus")
+            && source.as_deref() != Some("limitless")
+        {
+            return Ok(TopTeamsReport {
+                teams: Vec::new(),
+                meta: TopTeamsMeta {
+                    tournaments_analyzed: 0,
+                    battles_analyzed: 0,
+                    source: format!(
+                        "{} does not publish teams",
+                        source.as_deref().unwrap_or("source")
+                    ),
+                    from_date: Some(from),
+                    to_date: Some(to),
+                },
+            });
+        }
+
+        let report = self.build_from_limitless(format, limit, (from, to)).await?;
+        // Don't cache an empty report - a transient miss would otherwise stick
         // for the full TTL and keep the page blank after the source recovers.
         if !report.teams.is_empty() {
             let bytes = serde_json::to_vec(&report)?;
@@ -170,11 +230,11 @@ impl TopTeamsService {
 
     async fn build_from_labmaus(
         &self,
-        format: Format,
+        _format: Format,
         regulation: &str,
         limit: usize,
+        (from, to): (String, String),
     ) -> Result<TopTeamsReport, AppError> {
-        let (from, to) = window_for(format);
         let teams = self
             .labmaus
             .get_discover_teams(&from, &to, regulation)
@@ -258,6 +318,10 @@ impl TopTeamsService {
             country: team.country.clone(),
             record: team.record.clone(),
             members,
+            provider: Some("labmaus".into()),
+            community: false,
+            source_url: None,
+            shared_at: None,
         })
     }
 
@@ -311,10 +375,16 @@ impl TopTeamsService {
         &self,
         format: Format,
         limit: usize,
+        (from, to): (String, String),
     ) -> Result<TopTeamsReport, AppError> {
+        let parse = |value: &str| chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d").ok();
+        let range = match (parse(&from), parse(&to)) {
+            (Some(from), Some(to)) => Some((from, to)),
+            _ => None,
+        };
         let tournaments = self
             .limitless
-            .list_tournaments(format, 10)
+            .list_tournaments_in_range(format, range, 10)
             .await
             .unwrap_or_default();
         let tournaments_analyzed = tournaments.len() as u32;
@@ -378,6 +448,10 @@ impl TopTeamsService {
                     country: s.country.clone(),
                     record: s.record.as_ref().map(|r| r.display()),
                     members,
+                    provider: Some("limitless".into()),
+                    community: false,
+                    source_url: None,
+                    shared_at: None,
                 });
                 if out.len() >= limit {
                     break;
@@ -396,6 +470,93 @@ impl TopTeamsService {
                 source: "Limitless VGC".into(),
                 from_date,
                 to_date,
+            },
+        })
+    }
+
+    async fn build_from_pokebase(&self, limit: usize) -> Result<TopTeamsReport, AppError> {
+        let page = self.pokebase.teams(1).await?;
+        let community_total = page.community_total;
+        let tournament_total = page.tournament_total;
+        let cards = page
+            .community
+            .into_iter()
+            .map(|card| (true, card))
+            .chain(page.tournament.into_iter().map(|card| (false, card)));
+        let mut out = Vec::new();
+        for (community, card) in cards {
+            let Some(top) = card.top.as_ref() else {
+                continue;
+            };
+            if top.pokemon.len() < 3 {
+                continue;
+            }
+            let mut members = Vec::new();
+            for pokemon in &top.pokemon {
+                let display = canonical_display_name(&pokemon.name);
+                if display.is_empty() {
+                    continue;
+                }
+                let (sprite_url, sprite_fallback_url, home_sprite_url) =
+                    self.pokedex.sprite_urls_for(&display).await;
+                members.push(TopTeamMember {
+                    species: display,
+                    sprite_url: pokemon.icon_url.clone().unwrap_or(sprite_url),
+                    sprite_fallback_url,
+                    home_sprite_url,
+                    item: pokemon.item.clone(),
+                    tera_type: None,
+                    ability: None,
+                    nature: None,
+                    moves: pokemon
+                        .moves
+                        .iter()
+                        .filter(|movement| !movement.slug.is_empty())
+                        .map(|movement| prettify_public(&movement.slug))
+                        .collect(),
+                    level: None,
+                    evs: None,
+                    ivs: None,
+                });
+            }
+            if members.len() < 3 {
+                continue;
+            }
+            let record = match (top.wins, top.losses) {
+                (Some(wins), Some(losses)) => {
+                    Some(format!("{wins}-{losses}-{}", top.ties.unwrap_or(0)))
+                }
+                _ => None,
+            };
+            out.push(TopTeam {
+                tournament: card
+                    .tournament
+                    .as_ref()
+                    .map(|t| t.name.clone())
+                    .filter(|name| !name.trim().is_empty())
+                    .unwrap_or_else(|| "PokéBase community".to_string()),
+                placing: top.placing,
+                player: card.player(),
+                country: card.country.clone(),
+                record,
+                members,
+                provider: Some("pokebase".into()),
+                community,
+                source_url: card.source(),
+                shared_at: card.shared_at(),
+            });
+            if out.len() >= limit {
+                break;
+            }
+        }
+        Ok(TopTeamsReport {
+            teams: out,
+            meta: TopTeamsMeta {
+                tournaments_analyzed: tournament_total,
+                battles_analyzed: community_total + tournament_total,
+                source: "pokebase.app".into(),
+                from_date: None,
+                to_date: None,
             },
         })
     }

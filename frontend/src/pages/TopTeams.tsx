@@ -16,7 +16,9 @@ import { PokemonMultiSelect } from "../components/filters/PokemonMultiSelect";
 import { SearchTextInput } from "../components/filters/SearchTextInput";
 import { CountryFilter } from "../components/filters/CountryFilter";
 import { SourcesChip } from "../components/layout/SourcesChip";
+import { SearchSelect } from "../components/ui/SearchSelect";
 import { formatDateTime } from "../lib/formatDate";
+import { defaultRangeFor } from "../lib/regulations";
 import { formatLabel } from "../lib/labels";
 import { useUiStore } from "../stores/uiStore";
 import { useDashboardStore } from "../stores/dashboardStore";
@@ -61,7 +63,27 @@ export function TopTeams() {
   const FORMAT: Format = useDashboardStore((s) => s.format);
   // Keep the active regulation in sync even when this is the first page the
   // user opens after a launch.
-  useRegulationCatalog();
+  const { regulations } = useRegulationCatalog();
+  const selectedRegulation =
+    regulations.find((regulation) => regulation.id === FORMAT) ?? null;
+  const defaultRange = selectedRegulation
+    ? defaultRangeFor(selectedRegulation)
+    : null;
+  const storedRange = useDashboardStore((s) => s.dateRanges[FORMAT]);
+  const dateRange = storedRange ?? defaultRange;
+  const sourceFilter = useDashboardStore((s) => s.sourceFilter);
+  const [teamProvider, setTeamProvider] = useState<
+    "all" | "labmaus" | "limitless" | "pokebase"
+  >("all");
+  const [pokebaseOrigin, setPokebaseOrigin] = useState<
+    "all" | "community" | "tournament"
+  >("all");
+  const apiSource =
+    teamProvider !== "all"
+      ? teamProvider
+      : sourceFilter === "labmaus" || sourceFilter === "limitless"
+        ? sourceFilter
+        : null;
   const qc = useQueryClient();
   const [selectedTournament, setSelectedTournament] =
     useState<ChampionsTournament | null>(null);
@@ -98,8 +120,21 @@ export function TopTeams() {
   const setConfirmLargeMdExport = useUiStore((s) => s.setConfirmLargeMdExport);
 
   const { data: report, isLoading, isError, isFetching } = useQuery({
-    queryKey: queryKeys.topTeams(FORMAT, fetchLimit),
-    queryFn: () => ipc.getTopTeams(FORMAT, fetchLimit),
+    queryKey: queryKeys.topTeams(
+      FORMAT,
+      fetchLimit,
+      apiSource,
+      dateRange?.from,
+      dateRange?.to,
+    ),
+    queryFn: () =>
+      ipc.getTopTeams(
+        FORMAT,
+        fetchLimit,
+        apiSource,
+        dateRange?.from,
+        dateRange?.to,
+      ),
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
   });
@@ -109,8 +144,19 @@ export function TopTeams() {
     staleTime: 24 * 60 * 60 * 1000,
   });
   const { data: championsReport, isFetching: tournamentsFetching } = useQuery({
-    queryKey: queryKeys.championsReport(FORMAT, RECENT_EXPANDED),
-    queryFn: () => ipc.listChampionsTournaments(FORMAT, RECENT_EXPANDED),
+    queryKey: queryKeys.championsReport(
+      FORMAT,
+      RECENT_EXPANDED,
+      dateRange?.from,
+      dateRange?.to,
+    ),
+    queryFn: () =>
+      ipc.listChampionsTournaments(
+        FORMAT,
+        RECENT_EXPANDED,
+        dateRange?.from,
+        dateRange?.to,
+      ),
     staleTime: 30 * 60 * 1000,
   });
 
@@ -136,6 +182,10 @@ export function TopTeams() {
     if (countryFilter.length > 0) {
       if (!tt.country || !countryFilter.includes(tt.country.toUpperCase())) return false;
     }
+    if (teamProvider === "pokebase" && pokebaseOrigin !== "all") {
+      if (pokebaseOrigin === "community" && !tt.community) return false;
+      if (pokebaseOrigin === "tournament" && tt.community) return false;
+    }
     const q = teamSearch.trim().toLowerCase();
     if (q) {
       const hay = `${tt.player ?? ""} ${tt.tournament ?? ""}`.toLowerCase();
@@ -157,9 +207,22 @@ export function TopTeams() {
   const hasMoreRecent = filteredRecent.length > RECENT_INITIAL;
 
   const refresh = () => {
-    qc.invalidateQueries({ queryKey: queryKeys.topTeams(FORMAT, fetchLimit) });
     qc.invalidateQueries({
-      queryKey: queryKeys.championsReport(FORMAT, RECENT_EXPANDED),
+      queryKey: queryKeys.topTeams(
+        FORMAT,
+        fetchLimit,
+        apiSource,
+        dateRange?.from,
+        dateRange?.to,
+      ),
+    });
+    qc.invalidateQueries({
+      queryKey: queryKeys.championsReport(
+        FORMAT,
+        RECENT_EXPANDED,
+        dateRange?.from,
+        dateRange?.to,
+      ),
     });
   };
   const isMobile = useIsMobile();
@@ -219,6 +282,42 @@ export function TopTeams() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <SearchSelect<string>
+            value={teamProvider}
+            options={["all", "labmaus", "limitless", "pokebase"]}
+            onChange={(value) => setTeamProvider((value ?? "all") as typeof teamProvider)}
+            getOptionLabel={(value) => t(`top_teams.provider_${value}`)}
+            allowClear={false}
+            className="w-full sm:w-56"
+            triggerClassName="h-8 text-xs"
+          />
+          {teamProvider === "pokebase" && (
+            <div
+              className="flex overflow-hidden rounded-md border"
+              style={{ borderColor: "var(--border)" }}
+            >
+              {(["all", "community", "tournament"] as const).map((origin) => (
+                <button
+                  key={origin}
+                  type="button"
+                  className="px-2 py-1 text-[10px] font-medium"
+                  style={{
+                    backgroundColor:
+                      pokebaseOrigin === origin
+                        ? "var(--accent-soft)"
+                        : "transparent",
+                    color:
+                      pokebaseOrigin === origin
+                        ? "var(--accent)"
+                        : "var(--text-muted)",
+                  }}
+                  onClick={() => setPokebaseOrigin(origin)}
+                >
+                  {t(`top_teams.origin_${origin}`)}
+                </button>
+              ))}
+            </div>
+          )}
           <div
             className="flex items-center gap-2 rounded-lg px-2 py-1"
             style={{
@@ -460,6 +559,30 @@ export function TopTeams() {
                 >
                   {tt.tournament}
                 </div>
+                {tt.provider && (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    <span
+                      className="rounded-full px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide"
+                      style={{
+                        backgroundColor: "var(--accent-soft)",
+                        color: "var(--accent)",
+                      }}
+                    >
+                      {t(`top_teams.provider_${tt.provider}`)}
+                    </span>
+                    {tt.community && (
+                      <span
+                        className="rounded-full px-1.5 py-0.5 text-[8px] uppercase tracking-wide"
+                        style={{
+                          backgroundColor: "var(--bg-elev-strong)",
+                          color: "var(--text-muted)",
+                        }}
+                      >
+                        {t("top_teams.origin_community")}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
               <div
                 className="shrink-0 whitespace-nowrap text-right text-[11px]"
