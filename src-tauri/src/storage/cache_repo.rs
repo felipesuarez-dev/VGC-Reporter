@@ -43,6 +43,15 @@ impl CacheRepo {
         Ok(())
     }
 
+    pub fn remove(&self, url: &str) -> Result<(), AppError> {
+        let conn = self
+            .pool
+            .get()
+            .map_err(|e| AppError::Internal(e.to_string()))?;
+        conn.execute("DELETE FROM api_cache WHERE url=?1", params![url])?;
+        Ok(())
+    }
+
     pub fn purge_expired(&self) -> Result<usize, AppError> {
         let conn = self
             .pool

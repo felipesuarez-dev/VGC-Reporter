@@ -34,6 +34,10 @@ Thumbs.db
 *.swp
 *~
 
+# Python cache
+__pycache__/
+*.pyc
+
 # Logs
 *.log
 npm-debug.log*
@@ -45,8 +49,20 @@ yarn-error.log*
 *.sqlite3
 *.db
 
-# Claude Code local state
+# AI assistant instructions — local only, never committed
+CLAUDE.md
+**/CLAUDE.md
+AGENTS.md
+**/AGENTS.md
 .claude/
+.cursor/
+.windsurf/
+.continue/
+.codex/
+.aider*
+.github/copilot-instructions.md
+GEMINI.md
+COPILOT.md
 
 # Local installer staging — never committed
 /release-artifacts/

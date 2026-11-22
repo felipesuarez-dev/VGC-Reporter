@@ -48,11 +48,26 @@ fn merge_lang(
     en: HashMap<String, String>,
     locale_map: &HashMap<String, LocalizedDescription>,
 ) -> HashMap<String, LocalizedDescription> {
-    // For each Showdown EN description, pull whatever per-locale strings
-    // PokéAPI emitted; fall back to the EN string when a locale is missing.
-    let mut out: HashMap<String, LocalizedDescription> = HashMap::with_capacity(en.len());
-    for (key, en_text) in en {
-        let upstream = locale_map.get(&key);
+    // Union both sources: Showdown supplies concise English text for moves and
+    // abilities, while PokéAPI supplies English flavor text for items (Showdown
+    // items.js has no descriptions) and all localized strings.
+    let keys: std::collections::HashSet<&String> = en.keys().chain(locale_map.keys()).collect();
+    let mut out: HashMap<String, LocalizedDescription> = HashMap::with_capacity(keys.len());
+    for key in keys {
+        let upstream = locale_map.get(key);
+        let en_text = en
+            .get(key)
+            .filter(|text| !text.is_empty())
+            .cloned()
+            .or_else(|| {
+                upstream
+                    .map(|entry| entry.en.clone())
+                    .filter(|text| !text.is_empty())
+            })
+            .unwrap_or_default();
+        if en_text.is_empty() {
+            continue;
+        }
         let pick = |getter: fn(&LocalizedDescription) -> &str| -> String {
             upstream
                 .map(getter)
@@ -65,7 +80,7 @@ fn merge_lang(
         let it = pick(|d| d.it.as_str());
         let fr = pick(|d| d.fr.as_str());
         out.insert(
-            key,
+            key.clone(),
             LocalizedDescription {
                 en: en_text,
                 es,
@@ -247,7 +262,7 @@ impl PokedexService {
         // v3 bumps the cache key now that the Gen 9 Spanish supplement is
         // overlaid onto the PokéAPI merge — older caches were built without
         // it and would mask the new translations.
-        const KEY: &str = "showdown::entity_descriptions::v3";
+        const KEY: &str = "showdown::entity_descriptions::v5";
         if let Some(bytes) = self.cache.get(KEY)? {
             if let Ok(data) = serde_json::from_slice::<EntityDescriptions>(&bytes) {
                 return Ok(data);
@@ -266,9 +281,27 @@ impl PokedexService {
             tokio::join!(showdown_fut, abilities_fut, moves_fut, items_fut);
 
         let en_maps = en_maps?;
-        let es_abilities = es_abilities.unwrap_or_default();
-        let es_moves = es_moves.unwrap_or_default();
-        let es_items = es_items.unwrap_or_default();
+        let es_abilities = es_abilities.unwrap_or_else(|error| {
+            tracing::warn!(%error, "PokéAPI ability descriptions unavailable");
+            Default::default()
+        });
+        let es_moves = es_moves.unwrap_or_else(|error| {
+            tracing::warn!(%error, "PokéAPI move descriptions unavailable");
+            Default::default()
+        });
+        let es_items = es_items.unwrap_or_else(|error| {
+            tracing::warn!(%error, "PokéAPI item descriptions unavailable");
+            Default::default()
+        });
+        tracing::debug!(
+            showdown_items = en_maps.items.len(),
+            showdown_moves = en_maps.moves.len(),
+            showdown_abilities = en_maps.abilities.len(),
+            pokeapi_items = es_items.len(),
+            pokeapi_moves = es_moves.len(),
+            pokeapi_abilities = es_abilities.len(),
+            "entity description sources loaded"
+        );
 
         let mut moves = merge_lang(en_maps.moves, &es_moves);
         let mut abilities = merge_lang(en_maps.abilities, &es_abilities);
@@ -329,5 +362,53 @@ impl PokedexService {
             species_list.dedup();
         }
         Ok(inverted)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+
+    fn localized(en: &str, es: &str) -> LocalizedDescription {
+        LocalizedDescription {
+            en: en.into(),
+            es: es.into(),
+            pt: String::new(),
+            it: String::new(),
+            fr: String::new(),
+        }
+    }
+
+    #[test]
+    fn merge_keeps_pokeapi_only_items() {
+        let mut localized_map = HashMap::new();
+        localized_map.insert(
+            "leftovers".to_string(),
+            localized("Restores HP each turn.", "Restaura PS cada turno."),
+        );
+        let merged = merge_lang(HashMap::new(), &localized_map);
+        let entry = merged.get("leftovers").expect("item description missing");
+        assert_eq!(entry.en, "Restores HP each turn.");
+        assert_eq!(entry.es, "Restaura PS cada turno.");
+        // Locales without a value fall back to the English description.
+        assert_eq!(entry.pt, "Restores HP each turn.");
+        assert_eq!(entry.fr, "Restores HP each turn.");
+    }
+
+    #[test]
+    fn merge_prefers_showdown_english_when_present() {
+        let mut en = HashMap::new();
+        en.insert("protect".to_string(), "Prevents moves.".to_string());
+        let mut localized_map = HashMap::new();
+        localized_map.insert(
+            "protect".to_string(),
+            localized("PokéAPI English.", "Protege."),
+        );
+        let merged = merge_lang(en, &localized_map);
+        let entry = merged.get("protect").expect("move description missing");
+        assert_eq!(entry.en, "Prevents moves.");
+        assert_eq!(entry.es, "Protege.");
+        assert_eq!(entry.it, "Prevents moves.");
     }
 }

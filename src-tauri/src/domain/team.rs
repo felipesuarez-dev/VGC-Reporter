@@ -134,7 +134,7 @@ mod tests {
         Team {
             id: None,
             name: name.to_string(),
-            format: Format::RegulationMA,
+            format: Format::ma(),
             notes: None,
             members: (0..6).map(|i| make_member(&format!("pkm{i}"))).collect(),
             created_at: None,

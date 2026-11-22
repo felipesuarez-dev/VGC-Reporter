@@ -30,25 +30,25 @@ export function terrainLabel(t: TFunction, terrain: Terrain): string {
   return t(`terrain.${terrain}`, { defaultValue: terrain });
 }
 
-const FORMAT_NAME: Record<Format, string> = {
+const FORMAT_NAME: Record<string, string> = {
   "regulation-m-c": "Regulation M-C",
   "regulation-m-b": "Regulation M-B",
   "regulation-m-a": "Regulation M-A",
   "regulation-i": "Regulation I",
 };
 
-const FORMAT_SEASON_KEY: Partial<Record<Format, string>> = {
-  "regulation-m-c": "regulations.reg_mc_s1",
-  "regulation-m-b": "regulations.reg_mb_s1",
-  "regulation-m-a": "regulations.reg_ma_s2",
-};
-
-export function formatLabel(t: TFunction, format: Format): string {
-  const name = FORMAT_NAME[format] ?? format;
-  const seasonKey = FORMAT_SEASON_KEY[format];
-  if (!seasonKey) return name;
-  const season = t(seasonKey, { defaultValue: "" });
-  return season ? `${name} (${season})` : name;
+/**
+ * Label used outside the live catalog (markdown export, prefixes). The
+ * dashboard selector uses `regulationLabel`, which includes the active season
+ * and comes from the backend. This fallback deliberately does not pin a
+ * season, so a season change never leaves a stale `M-6` behind.
+ */
+export function formatLabel(_t: TFunction, format: Format): string {
+  if (FORMAT_NAME[format]) return FORMAT_NAME[format];
+  if (format.startsWith("regulation-")) {
+    return `Regulation ${format.slice("regulation-".length).toUpperCase()}`;
+  }
+  return format;
 }
 
 export function prettifyName(s: string): string {
@@ -59,6 +59,21 @@ export function prettifyName(s: string): string {
     .filter(Boolean)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
+}
+
+/**
+ * Item-name fallback for the Showdown-style concatenated ids the regulation
+ * roster uses (`BrightPowder`, `TwistedSpoon`). Used only when the localization
+ * table has no entry, so the user never sees a run-together name.
+ */
+export function prettifyItemName(s: string): string {
+  if (!s) return s;
+  return s
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
+    .replace(/[_-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export function formatViolation(t: TFunction, v: Violation): string {
@@ -90,40 +105,40 @@ export function formatViolation(t: TFunction, v: Violation): string {
       return t("validation.duplicate_item", { item: v.item });
     case "missing_item":
       return t("validation.missing_item", {
-        slot: v.slot + 1,
+        slot: v.slot,
         species: v.species,
       });
     case "missing_ability":
       return t("validation.missing_ability", {
-        slot: v.slot + 1,
+        slot: v.slot,
         species: v.species,
       });
     case "missing_nature":
       return t("validation.missing_nature", {
-        slot: v.slot + 1,
+        slot: v.slot,
         species: v.species,
       });
     case "missing_moves":
       return t("validation.missing_moves", {
-        slot: v.slot + 1,
+        slot: v.slot,
         species: v.species,
         have: v.have,
         need: v.need,
       });
     case "evs_not_assigned":
       return t("validation.evs_not_assigned", {
-        slot: v.slot + 1,
+        slot: v.slot,
         species: v.species,
       });
     case "item_not_allowed":
       return t("validation.item_not_allowed", {
-        slot: v.slot + 1,
+        slot: v.slot,
         species: v.species,
         item: v.item,
       });
     case "move_not_allowed":
       return t("validation.move_not_allowed", {
-        slot: v.slot + 1,
+        slot: v.slot,
         species: v.species,
         mv: v.mv,
       });

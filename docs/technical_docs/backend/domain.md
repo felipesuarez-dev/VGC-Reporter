@@ -7,7 +7,8 @@
 - **`pokemon.rs`** — `Pokemon`, `PokemonType` (Normal..Stellar), `Stats`. Entrada nacional con bases, tipos, abilities y URLs de sprite (primary/fallback/home).
 - **`team.rs`** — `Team`, `TeamMember`, `TeamValidationError`. Validaciones: 252 EVs por stat, 508 totales, moves únicos (≤4), species no vacío.
 - **`evs.rs`** — `EvSpread`. Constantes `EV_MAX_PER_STAT=252`, `EV_MAX_TOTAL=508`.
-- **`format.rs`** — `Format` (`RegulationMA` activo, `RegulationI` reservado). Métodos: `cache_id`, `limitless_code`, `default_smogon_slug`, `default_labmaus_name`, `rating_ladder`.
+- **`format.rs`** — `Format` es un newtype string (`regulation-m-c`, `regulation-m-d`, …). Los IDs estáticos conservan la metadata verificada; los dinámicos la leen del catálogo. Métodos: `cache_id`, `limitless_code`, `default_smogon_slug`, `default_labmaus_name`, `data_window`, `rating_ladder`.
+- **`regulation.rs`** — `RegulationInfo`, `SeasonInfo`, `RegulationSnapshot`, `RegulationSyncStatus`, origen/confianza y el registry en memoria que publica `RegulationService`.
 - **`nature.rs`** — `Nature` (Adamant, Timid, ...).
 - **`tera_type.rs`** — `TeraType` (18 + Stellar).
 - **`ability.rs`** — `Ability { name, description }`.
@@ -17,7 +18,7 @@
 - **`champions.rs`** — `ChampionsReport`, `ChampionsTournament`, `TournamentStanding`, `DecklistPokemon`.
 - **`trending.rs`** — `TrendingReport`, `TrendingPokemon`. Incluye `window_days` con `serde(default)` por compatibilidad de cache.
 - **`pikalytics.rs`** — `PikalyticsEntry`, `PikalyticsEvSpread`, `PikalyticsItem`, `PikalyticsTeammate`.
-- **`upcoming.rs`** — `UpcomingTournament` (nombre, fecha, organizer, players).
+- **`upcoming.rs`** — `UpcomingTournament` (nombre, fecha, hora, fuente, formato, jugadores, local, ciudad, país, dirección completa, coordenadas, contacto, entrada e inscripción).
 - **`sets.rs`** — `PokemonSet`, `SetsBundle`. Sets curados de Pikalytics Commons.
 
 ## Convenciones

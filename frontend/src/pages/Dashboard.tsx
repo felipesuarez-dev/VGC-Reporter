@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
+  AlertTriangle,
   BarChart3,
+  CalendarRange,
   Check,
   ExternalLink,
   Grid2x2,
@@ -10,13 +12,15 @@ import {
   LayoutGrid,
   Loader2,
   RefreshCw,
+  RotateCcw,
 } from "lucide-react";
-import { openUrl } from "@tauri-apps/plugin-opener";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
 import { formatDate, formatDateTime } from "../lib/formatDate";
 import { formatLabel } from "../lib/labels";
 import { type ChampionsTournament } from "../lib/types";
+import { defaultRangeFor } from "../lib/regulations";
+import { openExternal } from "../lib/openExternal";
 import { UsageBarChart, type UsageBarItem } from "../components/charts/UsageBarChart";
 import { UsageGridView } from "../components/charts/UsageGridView";
 import { UsageTreemap } from "../components/charts/UsageTreemap";
@@ -27,19 +31,26 @@ import {
 } from "../components/ui/SourceSelector";
 import { cn } from "../lib/cn";
 import { TopList } from "../components/charts/TopList";
+import { buildEntityUsers } from "../lib/entityUsers";
 import { TrendingCard } from "../components/charts/TrendingCard";
 import { FormatSelector } from "../components/ui/FormatSelector";
 import { XCard } from "../components/dashboard/XCard";
 import { TournamentStandingsDrawer } from "../components/tournament/TournamentStandingsDrawer";
+import { ChampionTeam } from "../components/tournament/ChampionTeam";
 import { ChampionsSearchHits } from "../components/tournament/ChampionsSearchHits";
 import { SourcesChip } from "../components/layout/SourcesChip";
 import { SearchTextInput } from "../components/filters/SearchTextInput";
-import { useDashboardStore } from "../stores/dashboardStore";
+import { useDashboardStore, type DashboardView } from "../stores/dashboardStore";
+import { useRegulationCatalog, useRegulationStatus } from "../hooks/useRegulationCatalog";
 import { usePokedexStore } from "../stores/pokedexStore";
 import { useLongLoadingHint } from "../hooks/useLoadingHint";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { usePullToRefresh } from "../hooks/usePullToRefresh";
 import { PullToRefreshIndicator } from "../components/layout/PullToRefreshIndicator";
+import { DashboardViewTabs } from "../components/dashboard/DashboardViewTabs";
+import { RegulationFeed } from "../components/dashboard/RegulationFeed";
+import { RegulationInfoView } from "../components/dashboard/RegulationInfoView";
+import { UpcomingTournamentsSection } from "../components/dashboard/UpcomingTournamentsSection";
 
 function canonicalSpeciesId(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -54,14 +65,6 @@ const EXTERNAL_SITES: { name: string; url: string }[] = [
   { name: "Munchstats", url: "https://munchstats.com/" },
 ];
 
-async function openExternal(url: string) {
-  try {
-    await openUrl(url);
-  } catch {
-    window.open(url, "_blank");
-  }
-}
-
 export function Dashboard() {
   const { t, i18n } = useTranslation();
   const qc = useQueryClient();
@@ -73,14 +76,34 @@ export function Dashboard() {
   const sourceFilter = useDashboardStore((s) => s.sourceFilter);
   const setSourceFilter = useDashboardStore((s) => s.setSourceFilter);
   const setTopPokemonView = useDashboardStore((s) => s.setTopPokemonView);
-  const initRef = useRef(false);
-  useEffect(() => {
-    if (initRef.current) return;
-    initRef.current = true;
-    if (format !== favoriteFormat) setFormat(favoriteFormat);
-  }, [favoriteFormat, format, setFormat]);
   const openDetail = usePokedexStore((s) => s.openDetail);
   const openSpecies = (species: string) => openDetail(canonicalSpeciesId(species));
+  const dashboardView = useDashboardStore((s) => s.dashboardView);
+  const setDashboardView = useDashboardStore((s) => s.setDashboardView);
+  const [view, setView] = useState<DashboardView>(() => dashboardView);
+  const { options: formatOptions, regulations } = useRegulationCatalog();
+  const selectedRegulation =
+    regulations.find((regulation) => regulation.id === format) ?? null;
+  const defaultRange = selectedRegulation
+    ? defaultRangeFor(selectedRegulation)
+    : null;
+  const rangeKey = selectedRegulation
+    ? `${selectedRegulation.id}:${selectedRegulation.active_season?.name ?? selectedRegulation.seasons.length}`
+    : "none";
+  const [dateRange, setDateRange] = useState<{ from: string; to: string } | null>(
+    defaultRange,
+  );
+  useEffect(() => {
+    setDateRange(defaultRange);
+  }, [rangeKey]);
+  const isCustomRange =
+    Boolean(dateRange && defaultRange) &&
+    (dateRange!.from !== defaultRange!.from ||
+      dateRange!.to !== defaultRange!.to);
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const regulationStart =
+    selectedRegulation?.start_at.slice(0, 10) ?? todayIso;
+  const seasonName = selectedRegulation?.active_season?.name ?? null;
   const [selectedTournament, setSelectedTournament] =
     useState<ChampionsTournament | null>(null);
   const TOURNAMENT_INITIAL = 10;
@@ -106,12 +129,30 @@ const POKE_INITIAL = 10;
   const POKE_PAGE = 10;
   const [pokeVisible, setPokeVisible] = useState(POKE_INITIAL);
   const { data, isLoading, isFetching, isError, error } = useQuery({
-    queryKey: queryKeys.meta(format, undefined, sourceFilter),
-    queryFn: () => ipc.getMetaStats(format, undefined, sourceFilter),
+    queryKey: queryKeys.meta(format, undefined, sourceFilter, dateRange?.from, dateRange?.to),
+    queryFn: () =>
+      ipc.getMetaStats(
+        format,
+        undefined,
+        sourceFilter,
+        dateRange?.from,
+        dateRange?.to,
+      ),
   });
   const { data: championsReportRaw, isFetching: championsFetching } = useQuery({
-    queryKey: queryKeys.championsReport(format, tournamentLimit),
-    queryFn: () => ipc.listChampionsTournaments(format, tournamentLimit),
+    queryKey: queryKeys.championsReport(
+      format,
+      tournamentLimit,
+      dateRange?.from,
+      dateRange?.to,
+    ),
+    queryFn: () =>
+      ipc.listChampionsTournaments(
+        format,
+        tournamentLimit,
+        dateRange?.from,
+        dateRange?.to,
+      ),
     staleTime: 30 * 60 * 1000,
   });
   const championsReport = championsReportRaw
@@ -177,65 +218,288 @@ const POKE_INITIAL = 10;
   const topItems = data?.top_items ?? [];
   const topMoves = data?.top_moves ?? [];
   const topAbilities = data?.top_abilities ?? [];
+  const itemUsers = useMemo(
+    () => buildEntityUsers(allPokemon, "top_items"),
+    [allPokemon],
+  );
+  const moveUsers = useMemo(
+    () => buildEntityUsers(allPokemon, "top_moves"),
+    [allPokemon],
+  );
+  const abilityUsers = useMemo(
+    () => buildEntityUsers(allPokemon, "top_abilities"),
+    [allPokemon],
+  );
 
   const isMobile = useIsMobile();
+  const { data: syncStatus } = useRegulationStatus();
+  const sourceValidated = syncStatus?.warnings.find(
+    (w): w is Extract<typeof w, { kind: "source_validated" }> =>
+      w.kind === "source_validated",
+  );
   const refreshAll = () => {
     qc.invalidateQueries({
-      queryKey: queryKeys.meta(format, undefined, sourceFilter),
+      queryKey: queryKeys.meta(
+        format,
+        undefined,
+        sourceFilter,
+        dateRange?.from,
+        dateRange?.to,
+      ),
     });
-    qc.invalidateQueries({ queryKey: queryKeys.championsReport(format, tournamentLimit) });
+    qc.invalidateQueries({
+      queryKey: queryKeys.championsReport(
+        format,
+        tournamentLimit,
+        dateRange?.from,
+        dateRange?.to,
+      ),
+    });
   };
   const ptrState = usePullToRefresh(refreshAll, isMobile);
+
+  const updateRange = (patch: Partial<{ from: string; to: string }>) => {
+    if (!dateRange) return;
+    const next = { ...dateRange, ...patch };
+    if (next.from > next.to) {
+      if (patch.from) next.to = next.from;
+      else next.from = next.to;
+    }
+    setDateRange(next);
+  };
 
   return (
     <div>
       {isMobile && <PullToRefreshIndicator state={ptrState} />}
       <div className="space-y-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+      <header className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold">{t("dashboard.title")}</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <FormatSelector
             value={format}
             favorite={favoriteFormat}
+            options={formatOptions}
             onChange={setFormat}
             onFavoriteChange={setFavoriteFormat}
-            className="w-72"
+            className="w-full sm:w-72"
           />
-          <SourceSelector
-            value={sourceFilter}
-            onChange={setSourceFilter}
-            sources={data?.sources ?? []}
-          />
-          {!isMobile && (
-            <button
-              className="btn-ghost"
-              disabled={isFetching}
-              onClick={() =>
-                qc.invalidateQueries({
-                  queryKey: queryKeys.meta(format, undefined, sourceFilter),
-                })
-              }
-            >
-              {isFetching ? (
-                <Loader2 size={14} className="mr-1 animate-spin" />
-              ) : justRefreshed ? (
-                <Check
-                  size={14}
-                  className="mr-1"
-                  style={{ color: "var(--accent)" }}
-                />
-              ) : (
-                <RefreshCw size={14} className="mr-1" />
+          {view === "metrics" && (
+            <>
+              <SourceSelector
+                value={sourceFilter}
+                onChange={setSourceFilter}
+                sources={data?.sources ?? []}
+                className="w-full sm:w-72"
+              />
+              {!isMobile && (
+                <button
+                  className="btn-ghost h-10"
+                  disabled={isFetching}
+                  onClick={() =>
+                    qc.invalidateQueries({
+                      queryKey: queryKeys.meta(
+                        format,
+                        undefined,
+                        sourceFilter,
+                        dateRange?.from,
+                        dateRange?.to,
+                      ),
+                    })
+                  }
+                >
+                  {isFetching ? (
+                    <Loader2 size={14} className="mr-1 animate-spin" />
+                  ) : justRefreshed ? (
+                    <Check
+                      size={14}
+                      className="mr-1"
+                      style={{ color: "var(--accent)" }}
+                    />
+                  ) : (
+                    <RefreshCw size={14} className="mr-1" />
+                  )}
+                  {isFetching
+                    ? t("dashboard.refreshing")
+                    : justRefreshed
+                      ? t("dashboard.refreshed")
+                      : t("dashboard.refresh")}
+                </button>
               )}
-              {isFetching
-                ? t("dashboard.refreshing")
-                : justRefreshed
-                  ? t("dashboard.refreshed")
-                  : t("dashboard.refresh")}
-            </button>
+            </>
           )}
         </div>
       </header>
+
+      <DashboardViewTabs
+        view={view}
+        pinned={dashboardView === view}
+        onChange={setView}
+        onPin={() => setDashboardView(view)}
+      />
+
+      {view === "metrics" && selectedRegulation && defaultRange && dateRange && (
+        <section
+          className="relative overflow-hidden rounded-xl border px-3 py-2.5"
+          style={{
+            borderColor: "var(--border)",
+            backgroundColor: "var(--bg-elev)",
+            borderLeft: "3px solid var(--accent)",
+          }}
+        >
+          <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <span
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+                style={{
+                  backgroundColor: "var(--accent-soft)",
+                  color: "var(--accent)",
+                }}
+              >
+                <CalendarRange size={15} />
+              </span>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-semibold" style={{ color: "var(--text)" }}>
+                    {t("dashboard.date_range")}
+                  </span>
+                  {seasonName && (
+                    <span
+                      className="rounded-full border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
+                      style={{
+                        borderColor: "var(--accent)",
+                        color: "var(--accent)",
+                      }}
+                      title={t("feed.data_days_hint")}
+                    >
+                      {seasonName}
+                    </span>
+                  )}
+                  {isCustomRange && (
+                    <span
+                      className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
+                      style={{
+                        backgroundColor:
+                          "color-mix(in srgb, var(--warning) 16%, transparent)",
+                        color: "var(--warning)",
+                      }}
+                    >
+                      {t("dashboard.custom_range")}
+                    </span>
+                  )}
+                </div>
+                <p
+                  className="truncate text-[10px]"
+                  style={{ color: "var(--text-dim)" }}
+                >
+                  {formatDate(dateRange.from, i18n.language)} →{" "}
+                  {formatDate(dateRange.to, i18n.language)}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <label
+                className="flex h-9 items-center gap-1.5 rounded-lg border px-2 transition-colors focus-within:border-[var(--accent)]"
+                style={{
+                  borderColor: "var(--border)",
+                  backgroundColor: "var(--bg)",
+                }}
+              >
+                <span
+                  className="text-[9px] font-semibold uppercase tracking-wide"
+                  style={{ color: "var(--text-dim)" }}
+                >
+                  {t("dashboard.from")}
+                </span>
+                <input
+                  type="date"
+                  className="w-[7.4rem] bg-transparent text-xs outline-none"
+                  style={{ color: "var(--text)" }}
+                  value={dateRange.from}
+                  min={regulationStart}
+                  max={todayIso}
+                  onChange={(event) => updateRange({ from: event.target.value })}
+                  aria-label={t("dashboard.from")}
+                />
+              </label>
+              <span className="text-[10px]" style={{ color: "var(--text-dim)" }}>
+                →
+              </span>
+              <label
+                className="flex h-9 items-center gap-1.5 rounded-lg border px-2 transition-colors focus-within:border-[var(--accent)]"
+                style={{
+                  borderColor: "var(--border)",
+                  backgroundColor: "var(--bg)",
+                }}
+              >
+                <span
+                  className="text-[9px] font-semibold uppercase tracking-wide"
+                  style={{ color: "var(--text-dim)" }}
+                >
+                  {t("dashboard.to")}
+                </span>
+                <input
+                  type="date"
+                  className="w-[7.4rem] bg-transparent text-xs outline-none"
+                  style={{ color: "var(--text)" }}
+                  value={dateRange.to}
+                  min={dateRange.from}
+                  max={todayIso}
+                  onChange={(event) => updateRange({ to: event.target.value })}
+                  aria-label={t("dashboard.to")}
+                />
+              </label>
+              <button
+                type="button"
+                className="btn-ghost h-9 text-[11px]"
+                disabled={!isCustomRange}
+                onClick={() => setDateRange(defaultRange)}
+              >
+                <RotateCcw size={12} className="mr-1" />
+                {seasonName
+                  ? t("dashboard.reset_season", { season: seasonName })
+                  : t("dashboard.reset_regulation")}
+              </button>
+            </div>
+          </div>
+
+          {isCustomRange && (
+            <p
+              className="mt-2 flex items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-[10px]"
+              style={{
+                borderColor:
+                  "color-mix(in srgb, var(--warning) 35%, transparent)",
+                backgroundColor:
+                  "color-mix(in srgb, var(--warning) 8%, transparent)",
+                color: "var(--warning)",
+              }}
+            >
+              <AlertTriangle size={12} className="mt-0.5 shrink-0" />
+              {t("dashboard.range_warning", {
+                season: seasonName ?? t("dashboard.range_regulation"),
+              })}
+            </p>
+          )}
+        </section>
+      )}
+      {(sourceValidated || syncStatus?.calendar_pending) && (
+        <div
+          className="flex items-start gap-2 rounded-lg border px-3 py-2 text-xs"
+          style={{ borderColor: "var(--warning)", color: "var(--warning)" }}
+        >
+          <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+          <span>
+            {sourceValidated
+              ? t("regulations.source_validated_banner", {
+                  teams: sourceValidated.teams,
+                  count: sourceValidated.source_count,
+                })
+              : t("regulations.calendar_pending")}
+          </span>
+        </div>
+      )}
+      {view === "metrics" ? (
+        <>
       {data && (
         <div className="-mt-4 flex items-center gap-2">
           <SourcesChip
@@ -380,19 +644,34 @@ const POKE_INITIAL = 10;
               <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
                 {t("dashboard.top_items")}
               </h2>
-              <TopList data={topItems} limit={10} entityKind="item" />
+              <TopList
+                data={topItems}
+                limit={10}
+                entityKind="item"
+                users={itemUsers}
+              />
             </div>
             <div className="card">
               <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
                 {t("dashboard.top_moves")}
               </h2>
-              <TopList data={topMoves} limit={10} entityKind="move" />
+              <TopList
+                data={topMoves}
+                limit={10}
+                entityKind="move"
+                users={moveUsers}
+              />
             </div>
             <div className="card">
               <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
                 {t("dashboard.top_abilities")}
               </h2>
-              <TopList data={topAbilities} limit={10} entityKind="ability" />
+              <TopList
+                data={topAbilities}
+                limit={10}
+                entityKind="ability"
+                users={abilityUsers}
+              />
             </div>
           </section>
 
@@ -444,9 +723,9 @@ const POKE_INITIAL = 10;
               .map((tour) => (
               <li
                 key={tour.id}
-                className="flex items-center justify-between gap-3 py-2"
+                className="flex flex-wrap items-center gap-3 py-2.5"
               >
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-[1_1_20rem]">
                   <div
                     className="truncate text-sm font-medium"
                     style={{ color: "var(--text)" }}
@@ -461,12 +740,15 @@ const POKE_INITIAL = 10;
                     {tour.format && <span> · {tour.format}</span>}
                   </div>
                 </div>
-                <button
-                  className="btn-ghost shrink-0 text-xs"
-                  onClick={() => setSelectedTournament(tour)}
-                >
-                  {t("dashboard.view_standings")}
-                </button>
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  <ChampionTeam tournament={tour} />
+                  <button
+                    className="btn-ghost shrink-0 text-xs"
+                    onClick={() => setSelectedTournament(tour)}
+                  >
+                    {t("dashboard.view_standings")}
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -526,6 +808,12 @@ const POKE_INITIAL = 10;
           ))}
         </div>
       </section>
+        </>
+      ) : view === "regulation" ? (
+        <RegulationInfoView format={format} info={selectedRegulation} />
+      ) : (
+        <RegulationFeed format={format} info={selectedRegulation} />
+      )}
 
       <TournamentStandingsDrawer
         tournament={selectedTournament}
@@ -612,83 +900,5 @@ function MetaSkeleton({
         ))}
       </div>
     </div>
-  );
-}
-
-function UpcomingTournamentsSection() {
-  const { t, i18n } = useTranslation();
-  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
-    queryKey: queryKeys.upcomingTournaments(),
-    queryFn: () => ipc.listUpcomingTournaments(),
-    staleTime: 30 * 60 * 1000,
-    retry: 1,
-  });
-  const events = data ?? [];
-  return (
-    <section className="card">
-      <h2 className="mb-1 text-sm font-semibold" style={{ color: "var(--text)" }}>
-        {t("upcoming.title")}
-      </h2>
-      <p className="mb-3 text-[11px]" style={{ color: "var(--text-dim)" }}>
-        {t("upcoming.window")}
-      </p>
-      {isLoading && (
-        <p className="text-xs" style={{ color: "var(--text-dim)" }}>
-          {t("common.loading")}
-        </p>
-      )}
-      {isError && (
-        <div
-          className="flex flex-col gap-2 text-xs"
-          style={{ color: "var(--danger)" }}
-        >
-          <span>
-            {t("common.error_with_detail", {
-              detail: (error as Error)?.message ?? "unknown",
-            })}
-          </span>
-          <button
-            type="button"
-            className="btn-ghost self-start text-xs"
-            onClick={() => refetch()}
-            disabled={isFetching}
-          >
-            {t("common.retry")}
-          </button>
-        </div>
-      )}
-      {!isLoading && !isError && events.length === 0 && (
-        <p className="text-xs" style={{ color: "var(--text-dim)" }}>
-          {t("upcoming.empty")}
-        </p>
-      )}
-      {events.length > 0 && (
-        <ul className="divide-y divide-[var(--border)]">
-          {events.map((ev) => (
-            <li key={ev.id} className="flex items-center justify-between gap-3 py-2">
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium" style={{ color: "var(--text)" }}>
-                  {ev.name}
-                </div>
-                <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                  <span>{formatDate(ev.date, i18n.language)}</span>
-                  {ev.players != null && (
-                    <span> · {ev.players} {t("dashboard.players")}</span>
-                  )}
-                  {ev.region && <span> · {ev.region}</span>}
-                </div>
-              </div>
-              <button
-                className="btn-ghost shrink-0 text-xs"
-                onClick={() => openExternal(ev.url)}
-              >
-                <ExternalLink size={12} className="mr-1 inline" />
-                {t("upcoming.open")}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
   );
 }

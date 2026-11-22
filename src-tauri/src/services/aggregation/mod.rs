@@ -77,6 +77,9 @@ pub struct MergeOutcome {
 }
 
 const TOP_N: usize = 10;
+/// The regulation view needs item usage for the whole allow-list, so the
+/// format-wide item leaderboard is much larger than the per-species top lists.
+pub const ITEM_TOP_N: usize = 200;
 
 /// Merge every source into one snapshot body.
 ///
@@ -184,35 +187,76 @@ pub fn merge(snapshots: Vec<SourceSnapshot>) -> MergeOutcome {
         .collect();
 
     MergeOutcome {
-        top_items: merge_entries(&contributing, &weights, |s| &s.top_items),
-        top_moves: merge_entries(&contributing, &weights, |s| &s.top_moves),
-        top_abilities: merge_entries(&contributing, &weights, |s| &s.top_abilities),
-        top_tera: merge_entries(&contributing, &weights, |s| &s.top_tera),
+        top_items: merge_entries(&contributing, &weights, |s| &s.top_items, ITEM_TOP_N),
+        top_moves: merge_entries(&contributing, &weights, |s| &s.top_moves, 20),
+        top_abilities: merge_entries(&contributing, &weights, |s| &s.top_abilities, 10),
+        top_tera: merge_entries(&contributing, &weights, |s| &s.top_tera, 10),
         pokemon,
         sources,
     }
 }
 
+/// Canonical key used to merge entries that upstream sources spell differently
+/// (`Focus Sash` vs `Focussash`). Matches the frontend's `canonicalSpeciesId`.
+fn canonical_name_key(name: &str) -> String {
+    name.chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .map(|c| c.to_ascii_lowercase())
+        .collect()
+}
+
 /// Weighted merge of a format-wide breakdown list.
-fn merge_entries<F>(snapshots: &[SourceSnapshot], weights: &[f32], pick: F) -> Vec<UsageEntry>
+fn merge_entries<F>(
+    snapshots: &[SourceSnapshot],
+    weights: &[f32],
+    pick: F,
+    limit: usize,
+) -> Vec<UsageEntry>
 where
     F: Fn(&SourceSnapshot) -> &Vec<UsageEntry>,
 {
-    let mut acc: HashMap<String, (f32, u32)> = HashMap::new();
+    // key → (display name, weighted usage, count)
+    let mut acc: HashMap<String, (String, f32, u32)> = HashMap::new();
     for (snapshot, weight) in snapshots.iter().zip(weights.iter()) {
         for entry in pick(snapshot) {
-            let slot = acc.entry(entry.name.clone()).or_insert((0.0, 0));
-            slot.0 += entry.usage_percent * weight;
-            slot.1 += entry.count;
+            let key = canonical_name_key(&entry.name);
+            if key.is_empty() {
+                continue;
+            }
+            let slot = acc
+                .entry(key)
+                .or_insert_with(|| (entry.name.clone(), 0.0, 0));
+            if entry.name.contains(' ') && !slot.0.contains(' ') {
+                slot.0 = entry.name.clone();
+            }
+            slot.1 += entry.usage_percent * weight;
+            slot.2 += entry.count;
         }
     }
-    top_n(acc)
+    top_n_limit(acc, limit)
 }
 
 fn top_n(acc: HashMap<String, (f32, u32)>) -> Vec<UsageEntry> {
+    let mut keyed: HashMap<String, (String, f32, u32)> = HashMap::new();
+    for (name, (usage, count)) in acc {
+        let key = canonical_name_key(&name);
+        if key.is_empty() {
+            continue;
+        }
+        let slot = keyed.entry(key).or_insert_with(|| (name.clone(), 0.0, 0));
+        if name.contains(' ') && !slot.0.contains(' ') {
+            slot.0 = name;
+        }
+        slot.1 += usage;
+        slot.2 += count;
+    }
+    top_n_limit(keyed, TOP_N)
+}
+
+fn top_n_limit(acc: HashMap<String, (String, f32, u32)>, limit: usize) -> Vec<UsageEntry> {
     let mut out: Vec<UsageEntry> = acc
         .into_iter()
-        .map(|(name, (usage, count))| UsageEntry {
+        .map(|(_key, (name, usage, count))| UsageEntry {
             name,
             usage_percent: usage,
             count,
@@ -224,7 +268,7 @@ fn top_n(acc: HashMap<String, (f32, u32)>) -> Vec<UsageEntry> {
             .unwrap_or(std::cmp::Ordering::Equal)
             .then_with(|| a.name.cmp(&b.name))
     });
-    out.truncate(TOP_N);
+    out.truncate(limit);
     out
 }
 
@@ -734,5 +778,16 @@ mod tests {
             (usage - 30.0).abs() < 0.01,
             "expected an even split, got {usage}"
         );
+    }
+
+    #[test]
+    fn top_n_merges_spelling_variants_of_the_same_entry() {
+        let mut acc: HashMap<String, (f32, u32)> = HashMap::new();
+        acc.insert("Focus Sash".into(), (60.0, 10));
+        acc.insert("Focussash".into(), (2.5, 1));
+        let out = top_n(acc);
+        assert_eq!(out.len(), 1);
+        assert_eq!(out[0].name, "Focus Sash");
+        assert!((out[0].usage_percent - 62.5).abs() < 0.01);
     }
 }

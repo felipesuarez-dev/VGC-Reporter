@@ -21,6 +21,9 @@ impl SmogonClient {
     /// `fetch_chaos_for_format` which does slug + rating discovery.
     pub async fn fetch_chaos(&self, format: Format) -> Result<Option<ChaosStats>, AppError> {
         let now = Utc::now();
+        let Some(slug) = format.default_smogon_slug() else {
+            return Ok(None);
+        };
         for months_back in 0..3 {
             let (year, month) = rewind_month(now.year(), now.month() as i32, months_back);
             let url = format!(
@@ -28,7 +31,7 @@ impl SmogonClient {
                 config::SMOGON_STATS,
                 year,
                 month,
-                format.default_smogon_slug()
+                slug
             );
             match self
                 .http
@@ -59,13 +62,15 @@ impl SmogonClient {
         if let Some(s) = cached_slug {
             candidates.push(s);
         }
-        candidates.push(format.default_smogon_slug().to_string());
+        if let Some(slug) = format.default_smogon_slug() {
+            candidates.push(slug);
+        }
         // Smogon publishes the Champions ladders as `gen9championsvgc2026reg<x>`
         // plus a `bo3` sibling, and splits best-of-three into its own ladder.
         // Probe both, and keep the legacy `gen9vgc…` spellings last as a pure
         // safety net — every one of them 404s today, which is exactly why the
         // fallback silently produced nothing before the prefix was fixed.
-        if let Some(suffix) = champions_suffix(format) {
+        if let Some(suffix) = champions_suffix(&format) {
             candidates.push(format!("gen9championsvgc2026reg{suffix}bo3"));
             candidates.push(format!("gen9vgc2026reg{suffix}"));
         }
@@ -161,11 +166,9 @@ pub struct ChaosEntry {
 
 /// Lowercase regulation suffix used by Smogon's Champions ladder slugs
 /// (`gen9championsvgc2026reg<suffix>`). `None` for non-Champions formats.
-fn champions_suffix(format: Format) -> Option<&'static str> {
-    match format {
-        Format::RegulationMC => Some("mc"),
-        Format::RegulationMB => Some("mb"),
-        Format::RegulationMA => Some("ma"),
-        Format::RegulationI => None,
+fn champions_suffix(format: &Format) -> Option<String> {
+    if !format.as_str().starts_with("regulation-m-") {
+        return None;
     }
+    Some(format.code().to_ascii_lowercase().replace('-', ""))
 }

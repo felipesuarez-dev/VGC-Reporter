@@ -3,8 +3,21 @@ import type { Format, PokemonType, SourceId } from "./types";
 export const queryKeys = {
   // The source filter is part of the key: without it, switching sources would
   // serve the cached merged snapshot and look like nothing happened.
-  meta: (format: Format, tournamentCount?: number, source?: SourceId | null) =>
-    ["meta", format, tournamentCount ?? 0, source ?? "all"] as const,
+  meta: (
+    format: Format,
+    tournamentCount?: number,
+    source?: SourceId | null,
+    from?: string | null,
+    to?: string | null,
+  ) =>
+    [
+      "meta",
+      format,
+      tournamentCount ?? 0,
+      source ?? "all",
+      from ?? "auto",
+      to ?? "auto",
+    ] as const,
   pokedex: {
     all: ["pokedex", "all"] as const,
     search: (q?: string, t?: PokemonType) => ["pokedex", "search", q ?? "", t ?? ""] as const,
@@ -22,12 +35,24 @@ export const queryKeys = {
   pikalyticsEntry: (species: string, lang: string) =>
     ["pikalytics", species, lang] as const,
   sets: (species: string) => ["sets", species] as const,
-  championsReport: (format: Format, limit: number) =>
-    ["champions-report", format, limit] as const,
+  championsReport: (
+    format: Format,
+    limit: number,
+    from?: string | null,
+    to?: string | null,
+  ) =>
+    ["champions-report", format, limit, from ?? "auto", to ?? "auto"] as const,
   championsSearch: (format: Format, query: string) =>
     ["champions-search", format, query] as const,
   tournamentStandings: (id: string) => ["tournament-standings", id] as const,
-  upcomingTournaments: () => ["upcoming-tournaments"] as const,
+  upcomingTournaments: (country?: string) =>
+    ["upcoming-tournaments", country ?? "all"] as const,
+  officialEvent: (url: string) => ["official-event", url] as const,
+  regulations: ["regulations", "catalog"] as const,
+  regulationStatus: ["regulations", "status"] as const,
+  regulationNews: ["regulations", "news"] as const,
+  officialStream: ["regulations", "official-stream"] as const,
+  liveStreams: ["regulations", "live-streams"] as const,
   settings: ["settings"] as const,
   translationTable: () => ["translation-table"] as const,
   entityDescriptions: () => ["entity-descriptions"] as const,

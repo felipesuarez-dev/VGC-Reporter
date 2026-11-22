@@ -1,16 +1,19 @@
 import { create } from "zustand";
+import type { EntityUser } from "../lib/entityUsers";
 
 interface EntityDetailState {
   name: string | null;
-  open: (name: string) => void;
+  users: EntityUser[];
+  open: (name: string, users?: EntityUser[]) => void;
   close: () => void;
 }
 
 function createEntityDetailStore() {
   return create<EntityDetailState>((set) => ({
     name: null,
-    open: (name) => set({ name }),
-    close: () => set({ name: null }),
+    users: [],
+    open: (name, users = []) => set({ name, users }),
+    close: () => set({ name: null, users: [] }),
   }));
 }
 

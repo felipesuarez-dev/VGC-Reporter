@@ -12,6 +12,9 @@ pub struct ChampionsTournament {
     pub format: Option<String>,
     pub organizer_id: Option<String>,
     pub champion_name: Option<String>,
+    /// Champion's six-Pokémon decklist, when the organizer published it.
+    #[serde(default)]
+    pub champion_team: Vec<DecklistPokemon>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]

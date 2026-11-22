@@ -44,6 +44,12 @@ impl HttpClient {
         self.get_cached_with_headers(url, &[], ttl_seconds).await
     }
 
+    /// Drop a cached response so the next call fetches fresh. Used when an
+    /// upstream anti-bot page was cached by mistake.
+    pub fn remove_cached(&self, url: &str) -> Result<(), AppError> {
+        self.cache.remove(url)
+    }
+
     /// GET with SQLite cache and per-request headers. Needed for hosts that
     /// gate requests on Origin/Referer (labmaus). Headers are scoped to this
     /// call only so they never leak into requests to other hosts.

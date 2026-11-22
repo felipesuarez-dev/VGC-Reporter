@@ -37,8 +37,9 @@ export function MobileTopbar() {
           draggable={false}
           className="h-7 w-7 shrink-0 rounded-full object-cover ml-1"
         />
-        <span className="ml-2 flex-1 truncate text-sm font-bold tracking-tight">
-          VGC Reporter
+        <span className="ml-2 min-w-0 flex-1 truncate text-sm font-bold tracking-tight">
+          <span className="sm:hidden">VGC</span>
+          <span className="hidden sm:inline">VGC Reporter</span>
         </span>
 
         <button

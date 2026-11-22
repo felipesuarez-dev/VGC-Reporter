@@ -14,6 +14,91 @@ pub fn rolling_window(days: i64) -> (String, String) {
     )
 }
 
+/// Inclusive calendar range used by the meta pipeline. All dates are UTC
+/// calendar days, not instants: a season ending at `...T01:59Z` covers the
+/// previous day as its last full data day.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DateRange {
+    pub from: chrono::NaiveDate,
+    pub to: chrono::NaiveDate,
+}
+
+impl DateRange {
+    pub fn strings(self) -> (String, String) {
+        (
+            self.from.format("%Y-%m-%d").to_string(),
+            self.to.format("%Y-%m-%d").to_string(),
+        )
+    }
+}
+
+/// Parse the optional `from`/`to` pair sent by the Dashboard. Both must be
+/// present, because a half-open range would silently mean two different
+/// things depending on which side the UI forgot.
+pub fn optional_range(
+    from: Option<String>,
+    to: Option<String>,
+) -> Result<Option<DateRange>, crate::error::AppError> {
+    match (from, to) {
+        (None, None) => Ok(None),
+        (Some(f), Some(t)) => {
+            let from = chrono::NaiveDate::parse_from_str(f.trim(), "%Y-%m-%d").map_err(|_| {
+                crate::error::AppError::Validation(format!("invalid from date: {f}"))
+            })?;
+            let to = chrono::NaiveDate::parse_from_str(t.trim(), "%Y-%m-%d")
+                .map_err(|_| crate::error::AppError::Validation(format!("invalid to date: {t}")))?;
+            if from > to {
+                return Err(crate::error::AppError::Validation(
+                    "from date must be before to date".into(),
+                ));
+            }
+            Ok(Some(DateRange { from, to }))
+        }
+        _ => Err(crate::error::AppError::Validation(
+            "from and to must be provided together".into(),
+        )),
+    }
+}
+
+/// Effective range for a request. When the caller does not provide one, the
+/// active season is used; the result is always clamped to the regulation
+/// calendar and to today.
+pub fn effective_range(format: &Format, requested: Option<DateRange>) -> DateRange {
+    let today = chrono::Utc::now().date_naive();
+    let default = format
+        .default_data_range(chrono::Utc::now())
+        .map(|(from, to)| DateRange {
+            from,
+            to: to.min(today),
+        })
+        .unwrap_or_else(|| {
+            let (from, to) = window_for(format.clone());
+            let parse = |s: &str| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok();
+            DateRange {
+                from: parse(&from).unwrap_or(today - chrono::Duration::days(14)),
+                to: parse(&to).unwrap_or(today),
+            }
+        });
+    clamp_range(format, requested.unwrap_or(default))
+}
+
+/// Clamp a user-selected range to the regulation's own calendar. The UI may
+/// ask for a wider window to compare seasons; it can never read data outside
+/// the regulation.
+pub fn clamp_range(format: &Format, range: DateRange) -> DateRange {
+    let today = chrono::Utc::now().date_naive();
+    let (regulation_start, regulation_end) = match format.data_window() {
+        Some((start, end)) => (start, end.unwrap_or(today)),
+        None => (range.from, today),
+    };
+    let from = range.from.max(regulation_start);
+    let mut to = range.to.min(regulation_end).min(today);
+    if to < from {
+        to = from;
+    }
+    DateRange { from, to }
+}
+
 /// Canonical 14-day rolling window used as the fallback for formats with no
 /// fixed regulation range.
 pub fn default_window() -> (String, String) {
@@ -69,17 +154,11 @@ pub fn chunk_window(from: chrono::NaiveDate, to: chrono::NaiveDate) -> Vec<(Stri
     out
 }
 
-/// Same as [`window_for`], but split into labmaus-sized chunks.
+/// Same as [`window_for`], but split into labmaus-sized chunks and bounded to
+/// the active season when the catalog knows one.
 pub fn chunked_window_for(format: Format) -> Vec<(String, String)> {
-    let (from, to) = window_for(format);
-    let parse = |s: &str| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok();
-    match (parse(&from), parse(&to)) {
-        (Some(f), Some(t)) => chunk_window(f, t),
-        // window_for always formats valid dates, so this is unreachable in
-        // practice; degrade to the single un-chunked window rather than
-        // returning nothing and silently showing an empty meta.
-        _ => vec![(from, to)],
-    }
+    let range = effective_range(&format, None);
+    chunk_window(range.from, range.to)
 }
 
 #[cfg(test)]
@@ -91,7 +170,7 @@ mod tests {
         // M-A (closed M-2 season) is capped to its final fortnight because
         // labmaus times out for wider windows. Deterministic regardless of
         // "today" (any date past the end clamps to the end).
-        let (from, to) = window_for(Format::RegulationMA);
+        let (from, to) = window_for(Format::ma());
         assert_eq!(from, "2026-06-03");
         assert_eq!(to, "2026-06-16");
     }
@@ -99,7 +178,7 @@ mod tests {
     #[test]
     fn m_b_window_starts_at_its_launch_not_a_rolling_window() {
         // M-B is ongoing: starts at its launch date, ends today (>= launch).
-        let (from, to) = window_for(Format::RegulationMB);
+        let (from, to) = window_for(Format::mb());
         assert_eq!(from, "2026-06-17");
         assert!(to >= from, "to ({to}) should be >= from ({from})");
     }
@@ -175,8 +254,38 @@ mod tests {
 
     #[test]
     fn the_active_regulation_chunks_cover_its_window() {
-        let chunks = chunked_window_for(Format::RegulationMC);
+        let chunks = chunked_window_for(Format::mc());
         assert!(!chunks.is_empty());
         assert_eq!(chunks.first().unwrap().0, "2026-09-09");
+    }
+
+    #[test]
+    fn optional_range_requires_both_sides() {
+        assert!(optional_range(Some("2026-11-04".into()), None).is_err());
+        let range = optional_range(Some("2026-11-04".into()), Some("2026-11-21".into()))
+            .unwrap()
+            .unwrap();
+        assert_eq!(range.strings(), ("2026-11-04".into(), "2026-11-21".into()));
+    }
+
+    #[test]
+    fn clamp_keeps_the_request_inside_the_regulation() {
+        let d = |m, day| chrono::NaiveDate::from_ymd_opt(2026, m, day).unwrap();
+        let clamped = clamp_range(
+            &Format::ma(),
+            DateRange {
+                from: d(5, 1),
+                to: d(12, 20),
+            },
+        );
+        assert_eq!(clamped.from, d(6, 3));
+        assert_eq!(clamped.to, d(6, 16));
+    }
+
+    #[test]
+    fn effective_range_uses_the_regulation_when_no_catalog_is_loaded() {
+        let (from, to) = effective_range(&Format::ma(), None).strings();
+        assert_eq!(from, "2026-06-03");
+        assert_eq!(to, "2026-06-16");
     }
 }

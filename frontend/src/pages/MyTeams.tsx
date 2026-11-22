@@ -2,9 +2,13 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Download, Pencil, Trash2, Plus, Upload } from "lucide-react";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
+import { useRegulationCatalog } from "../hooks/useRegulationCatalog";
+import { regulationLabel } from "../lib/regulations";
+import type { RegulationInfo } from "../lib/types";
 import { MiniTeam, type MiniTeamMember } from "../components/pokemon/MiniTeam";
 import { ExportTeamsModal } from "../components/team/ExportTeamsModal";
 import { ImportTeamModal } from "../components/team/ImportTeamModal";
@@ -12,6 +16,7 @@ import { ImportTeamModal } from "../components/team/ImportTeamModal";
 export function MyTeams() {
   const { t } = useTranslation();
   const qc = useQueryClient();
+  const { regulations } = useRegulationCatalog();
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.teams.list,
     queryFn: () => ipc.listTeams(),
@@ -102,7 +107,7 @@ export function MyTeams() {
                         color: "var(--accent)",
                       }}
                     >
-                      {regulationBadge(team.format, t)}
+                      {regulationBadge(team.format, t, regulations)}
                     </span>
                     <span
                       className="rounded px-1.5 py-0.5 text-[10px]"
@@ -175,9 +180,11 @@ function spriteFor(species: string): string {
   return `https://play.pokemonshowdown.com/sprites/gen5/${slug}.png`;
 }
 
-function regulationBadge(format: string, t: (k: string) => string): string {
-  if (format === "regulation-m-c") return t("regulations.reg_mc_s1");
-  if (format === "regulation-m-b") return t("regulations.reg_mb_s1");
-  if (format === "regulation-m-a") return t("regulations.reg_ma_s2");
-  return format;
+function regulationBadge(
+  format: string,
+  t: TFunction,
+  regulations: RegulationInfo[],
+): string {
+  const info = regulations.find((r) => r.id === format);
+  return info ? regulationLabel(t, info) : format;
 }

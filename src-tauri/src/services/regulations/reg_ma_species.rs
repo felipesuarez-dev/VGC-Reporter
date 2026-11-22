@@ -134,7 +134,7 @@ pub const ALLOWED_SPECIES_MA: &[&str] = &[
     "Palafin",
     "Pangoro",
     "Passimian",
-    "Patrat",
+    "Watchog",
     "Pelipper",
     "Pidgeot",
     "Pikachu",

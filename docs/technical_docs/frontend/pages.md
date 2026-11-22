@@ -3,10 +3,13 @@
 `frontend/src/pages/`. Una página por ruta, named export.
 
 ## Dashboard.tsx
-Panel principal. Top Pokémon (chart + paginación), top items/moves/abilities/tera, trending, próximos torneos, Champions tournaments, links a fuentes externas (Labmaus, Limitless, Pikalytics).
+Panel principal con tres vistas: **Métricas**, **Regulación** y **Novedades**.
 
-- IPC: `getMetaStats`, `listChampionsTournaments`, `getTournamentStandings`, `getTrending`, `listUpcomingTournaments`.
-- Stores: `dashboardStore` (formato), `pokedexStore` (modal de detalle).
+- **Métricas**: rango de fechas con default de temporada, Top Pokémon (chart/grid/treemap/tier), top items/moves/abilities, trending, próximos torneos, Champions tournaments y links a fuentes.
+- **Regulación**: `RegulationInfoView` con roster y objetos legales, uso %, sprites, descripciones y modales.
+- **Novedades**: `RegulationFeed` con paneles drag-and-drop, live VGC, noticias y eventos.
+- IPC: `getMetaStats`, `listChampionsTournaments`, `getTournamentStandings`, `getTrending`, `listUpcomingTournaments`, `getAllowedSpecies`, `getAllowedItems`.
+- Stores: `dashboardStore` (formato, vista, filas/colapso del feed), `pokedexStore` (modal de detalle), `uiStore` (timezone/país de próximos).
 
 ## Pokedex.tsx
 Pokédex completa con filtros: búsqueda por nombre, tipo, ability, move, generación, weak/strong matchups. Sort por usage / generación / alfabético.
@@ -36,7 +39,7 @@ Calculadora de daño (`@smogon/calc` Gen 9) con clima, terreno y modificadores d
 - IPC: `listPokemon`, `listMovesForSpecies`, `listItems`.
 
 ## Settings.tsx
-Idioma, formato favorito, modal de "Acerca de", links externos.
+Idioma, tema, tamaño de fuente, zona horaria global, país local, URL del directo VGC, formato favorito, regulaciones y overrides avanzados.
 
-- IPC: `getSettings`, `setSetting`.
-- Stores: `dashboardStore` (favoriteFormat).
+- IPC: `getSettings`, `setSetting`, `getRegulations`, `refreshRegulations`, `getRegulationStatus`.
+- Stores: `dashboardStore` (favoriteFormat), `uiStore` (timeZone, homeCountry, fontSizePx).

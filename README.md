@@ -26,12 +26,14 @@
 
 Pokémon Champions launched on 8-Apr-2026 and instantly became the official VGC 2026 / Worlds platform. Usage data is scattered across Pikalytics, Pokemon-Zone, Porygon Labs, Champions Lab, Smogon chaos JSON and Limitless VGC standings. None of these sites share a unified API, and there is no offline-friendly way to browse the meta **and** build a team in the same place.
 
-VGC Reporter is the tool I wanted while team-building for Regulation M-A: one window, real tournament data, drill-down by Pokémon, and everything cached locally.
+VGC Reporter is the tool I wanted while team-building for Pokémon Champions: one window, real tournament data, a live regulation calendar, drill-down by Pokémon, and everything cached locally.
 
 ## Solution
 
 - **Real tournament data, not just ladder** — aggregates Limitless VGC standings into usage stats, with Smogon chaos as fallback when the format is too fresh. Recent Champions tournaments are listed with full decklists rendered inline.
-- **Format switcher with favorite** — Regulation M-A (Champions doubles), Champions Singles, Regulation I, Gen 9 OU. Pin one as favorite so it opens first every time.
+- **Dynamic regulation calendar** — the app discovers the active Champions regulation and season from the official Pokémon HOME notices, validates the eligible roster, and cross-checks live tournament sources. If TPC moves a date, the app follows the published date; if the notice is late, a source with real decklists can activate the set.
+- **The live scene in one place** — a draggable **Novedades** board with the official VGC stream, official news previews, upcoming local tournaments and source status. Every panel collapses and can be grouped or separated, and the layout is remembered.
+- **Regulation workspace** — eligible Pokémon and items with usage percentages, sprites, localized descriptions, detail modals and usage/alphabetical sorting, not just a plain allow-list.
 - **Offline-friendly by design** — SQLite-backed HTTP cache, all network I/O on the Rust side, zero CORS pain.
 
 ## Screenshots
@@ -60,28 +62,68 @@ VGC Reporter is the tool I wanted while team-building for Regulation M-A: one wi
   <tr>
     <td align="center">
       <img src="assets/screen-topteams.png" alt="Top Teams" width="420" /><br/>
-      <sub><b>Top Teams</b> — tournament-winning teams from Limitless, with filters and Markdown export</sub>
+      <sub><b>Top Teams</b> — real tournament-winning teams, with filters and Markdown export</sub>
     </td>
     <td align="center">
       <img src="assets/screen-damagecalc.png" alt="Damage Calc" width="420" /><br/>
       <sub><b>Damage Calc</b> — <code>@smogon/calc</code> Gen 9 with searchable inputs</sub>
     </td>
   </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/screen-feed.png" alt="Novedades feed" width="420" /><br/>
+      <sub><b>Novedades</b> — multi-screen VGC live wall, official news and local upcoming events</sub>
+    </td>
+    <td align="center">
+      <img src="assets/screen-regulation.png" alt="Regulation and allowed items" width="420" /><br/>
+      <sub><b>Regulación</b> — eligible roster plus searchable items with usage and their top Pokémon</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/screen-event.png" alt="Tournament detail with map" width="420" /><br/>
+      <sub><b>Event detail</b> — price badge, organizer/contact, category, premier event, map and .ics export; official data is read inside the app</sub>
+    </td>
+    <td align="center">
+      <img src="assets/screen-calendar.png" alt="Tournament calendar" width="420" /><br/>
+      <sub><b>Tournament calendar</b> — addresses per day, text/country/city search, personal events and .ics export</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="assets/screen-live-wall.png" alt="Full-screen TV wall of VGC live streams" width="840" /><br/>
+      <sub><b>Vitrina TV</b> — full-screen mosaic of the official broadcast and community screens (YukS VGC by default)</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="assets/screen-feed-layout.png" alt="Feed panels grouped in one row" width="840" /><br/>
+      <sub><b>Dynamic Feed</b> — group tournaments and news in one row, keep every panel separate, or collapse what you don't need</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="assets/screen-news.png" alt="Official news preview modal" width="840" /><br/>
+      <sub><b>Official news</b> — read the source inside the app, with "Open in browser" always available</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="assets/screen-settings.png" alt="Settings and dynamic regulations" width="840" /><br/>
+      <sub><b>Settings</b> — searchable timezone/country, live screens (up to 12), active regulation and source overrides</sub>
+    </td>
+  </tr>
 </table>
 
 ## Download
 
-Pre-built installers for the **`v0.4.2.20260921-beta`** release:
+Pre-built installers for the **`v0.5.0.20261121-beta`** release:
 
 | Platform | Installer | Notes |
 |---|---|---|
-| Windows 10/11 | `VGC.Reporter_0.4.2_x64_en-US.msi` | MSI installer (recommended) |
-| Windows 10/11 | `VGC.Reporter_0.4.2_x64-setup.exe` | NSIS installer (portable-friendly) — unsigned; SmartScreen → More info → Run anyway |
-| macOS 12+ (Apple Silicon) | `VGC.Reporter_0.4.2_aarch64.dmg` | Unsigned — right-click → Open the first time |
-| macOS 12+ (Intel) | `VGC.Reporter_0.4.2_x64.dmg` | Unsigned — right-click → Open the first time |
-| Linux (Debian/Ubuntu) | `vgc-reporter_0.4.2_amd64.deb` | Requires `webkit2gtk-4.1` |
-| Linux (any distro) | `vgc-reporter_0.4.2_amd64.AppImage` | `chmod +x` then run |
-| Android 7+ (arm64) | `VGC.Reporter_v0.4.2.20260921-beta_android.apk` | Sideload: enable "Unknown sources" first |
+| Windows 10/11 | `VGC.Reporter_0.5.0_x64_en-US.msi` | MSI installer — self-signed; SmartScreen → More info → Run anyway |
+| Linux (Debian/Ubuntu) | `VGC.Reporter_0.5.0_amd64.deb` | Requires `webkit2gtk-4.1` |
+| Android 7+ (arm64) | `VGC.Reporter_v0.5.0.20261121-beta_android.apk` | Sideload: enable "Unknown sources" first |
 
 **[→ Download from the latest GitHub Release](https://github.com/felipesuarez-dev/vgc-reporter/releases/latest)**
 
@@ -100,26 +142,35 @@ First launch downloads and caches Pokédex, moves, items, abilities and usage st
 
 | Area | What it does |
 |---|---|
-| **Dashboard** | Format selector with favorite star, top Pokémon with three switchable visualizations (bar chart, grid, **meta-share treemap**), Top Items / Moves / Abilities / Tera lists with click-through drill-down, recent Champions tournaments with **inline decklists** and search-by-player or by-Pokémon (backend-indexed), Twitter cards for `@VGCdata` / `@VGChampStats` |
+| **Dashboard** | Three views in the requested order — **Novedades** (default), **Métricas**, **Regulación** — with a dynamic format selector, live season label and season-aware date range. Top Pokémon with switchable bar chart / grid / **meta-share treemap** / tier list; Top Items / Moves / Abilities now show the **Pokémon that use each one most**; recent Champions tournaments show the **champion team only in the hover tooltip** (item, ability, Tera and moves) while the full team remains in the standings drawer, plus inline decklists and search-by-player or by-Pokémon; Twitter cards for `@VGCdata` / `@VGChampStats` |
+| **Novedades (Feed)** | Fully configurable panel stack: regulation summary, official **VGC** live broadcast, **tournaments + month calendar** and official news. The page waits behind a full loading state until live, events and news are ready, avoiding a stuck half-loaded view. Drag panels by the handle to reorder or group them into a shared row; drop on top/bottom edges to split rows. Every panel collapses, and the **Separados / Juntos** controls switch between one-per-row and all-in-one-row. Layout is persisted locally |
+| **Live broadcast** | A configurable **YouTube-style TV wall**: YukS VGC, Play! Pokémon, WolfeyVGC, CybertronVGC, James Baek, PokeAlex, Moxie2D, Pokémon Champions, Sekiam and Chilean channel **IRNemesis**, plus a live watch-party URL, come configured by default (up to 12; any channel/handle/video can be added, reordered or removed in Settings). The first live signal is the large left player and the rest sit in a small right-hand column; **Destacar** changes the main signal, and a toggle switches the small screens below. Every signal has an **eye** to hide it from the player while keeping it configured; it remains as an online badge with a closed eye and one click restores it. When nothing is live the panel stays visible, says so per channel and falls back to a **Últimas transmisiones** grid with each channel's latest past broadcast (never labelled live). **Vitrina TV** opens a full-screen mosaic, and each signal has **Subscribe** and **Open** shortcuts (subscription is confirmed on YouTube's own page). A full loading state holds the Feed until live, events and news are ready |
+| **Official news** | Pokémon Champions announcements paginated 6 at a time, always newest first. Banners use a shimmer/skeleton + fade-in while loading and a neutral fallback if an image 404s. Clicking an item opens an **in-app preview modal** rendering the official page, with "Open in browser" as the fallback |
+| **Upcoming tournaments** | Online Limitless events plus in-person League Challenges/Cups from the official Play! Pokémon locator. Defaults to **all countries**; country/city searchable comboboxes, a **free-text search** (name, venue or address, accent-insensitive), favorite-country star, and countries with real event data listed first. The list already shows each event's **full address**, venue and source. Each event opens a preview with **organizer, organizer phone/email, venue/organizer website, category, premier event, tournament ID, status, admission, registration window, full address, postal code**, **OpenStreetMap**, source badge, date/time, type and **add-to-calendar (.ics)**. Official Play! Pokémon pages block iframes, so the app **reads their structured data** and shows it in the card instead of an anti-bot notice; Limitless still renders embedded. A month calendar view shows the same events with dots per day, the full address on each row, and a quick **Export .ics** action. **Añadir evento** lets you create and keep **personal events** (title, date, time, place and notes) in the in-app calendar; those custom events are separate from the official/online feed |
+| **Regulación** | Active regulation and season with official local-time instants **and** the UTC data days used by metrics, eligible roster with sprites and **usage %** (full-width search), new Megas, and allowed items in a spacious full-width grid with their own **search**, **sprites, localized names, descriptions, usage % and the Pokémon that use each item most**. Opening an item modal shows the full top-user list; the same "most used by" badges apply to Top Moves and Top Abilities. Both lists sort by usage (high→low) or alphabetically, driven entirely by the active regulation/season |
 | **Pokédex** | Sortable by generation / alphabetical / meta usage; click any Pokémon for a large modal with curated competitive sets (Doubles & Singles tabs), live meta usage and **type matchups** (weak/strong against). Includes the **two Basculegion gendered forms** (distinct stats) and **AZ's Floette-Eternal** sprite as the canonical Floette |
 | **Team Builder** | 6 slots with searchable comboboxes for Pokémon / item / ability / nature / Tera / moves, EV sliders + **per-stat IV sliders**, level / gender / shiny / nickname fields. Pickers are filtered live by the active regulation (only legal species, items and moves shown), and Save runs full validation (completeness, EVs assigned, allow-list checks) surfacing issues in a modal |
 | **My Teams** | Local SQLite persistence with rename / duplicate / delete. **Multi-team Showdown paste** import and export — pick which teams to bundle, copy to clipboard or download as `.txt` |
-| **Top Teams** | Tournament-winning teams from Limitless rendered as mini-grids; same backend-indexed search-by-player/by-Pokémon as the Dashboard |
+| **Top Teams** | Real tournament-winning teams rendered as mini-grids; same backend-indexed search-by-player/by-Pokémon as the Dashboard |
 | **Search palette** | Global Ctrl+K palette with filter chips per kind (Pokémon / moves / items / abilities) — multi-select with a Clear button, also filters the recent-searches list |
 | **Damage Calc** | `@smogon/calc` Gen 9 with searchable inputs for every field, real items & moves loaded from Showdown |
+| **Settings** | Active regulation and season, last sync, eligible species count, automatic follow, archived visibility, source overrides with reset, language, theme, font size, global **timezone and home country** (searchable comboboxes), **live screens** (one YouTube URL per line, order = screen order, up to 12, with reset to the curated VGC list), About/version |
 | **External sources** | Quick-launch panel for Pikalytics / Pokebase / Pokemon-Zone / Champions Lab / Munchstats (no scraping — just links) |
 | **Localized data** | **5 languages** (ES / EN / PT / IT / FR) covering both the UI strings *and* ability / move / item names and descriptions from PokéAPI, with automatic fallback to English when an upstream string is missing |
-| **Themes** | Light / Dark + custom Sneasler accent palette |
-| **UX polish** | Window opens maximized, splash screen visible from the first frame, language and font size persisted locally, auto-update on desktop & Android |
+| **Themes** | Light / Dark + Gengar, Clefable, Incineroar, Tyranitar, Milotic and Sneasler palettes |
+| **UX polish** | Window opens maximized, splash screen visible from the first frame, language and font size persisted locally, auto-update on Windows & Android |
 
 ## Known Issues (beta)
 
 - **Top Teams "Show all"** can render 4000+ team cards in a single page. Performance is acceptable but expect 5–15s render on first display; the app shows progressive hints while loading.
-- **macOS bundles are unsigned**. Gatekeeper will block the first launch — right-click the app → Open → Open Anyway. Code signing is on the post-beta roadmap.
+- **Windows bundles are not CA-signed**. SmartScreen shows the warning; a self-signed Authenticode cert identifies PumaSoft as the publisher, but only a paid CA certificate removes it. macOS builds are no longer shipped; the supported targets are Windows, Linux and Android.
 - **Linux**: requires `webkit2gtk-4.1` (Ubuntu 22.04+ / Fedora 38+ ship it). Older distros need to install it manually.
-- **Android APK is unsigned** (sideload only). Play Store distribution is on the roadmap.
+- **Android APK is signed with the PumaSoft release key** but is not distributed through Play Store (sideload only).
 - **Android auto-update**: the app will notify you when a new version is available and guide you through the install. You still need "Install from unknown sources" enabled.
 - **First-run cache**: first launch needs internet. If a data source is down (Labmaus, Limitless), partial data is still rendered with a warning banner.
+- **Live stream**: the Feed resolves every configured YouTube screen and says which ones are offline. The official channel filters GO/TCG; community channels (YukS VGC by default) show their current live video. YouTube's page format is not a public API, so a channel can occasionally take up to 5 minutes to appear. Add or remove screens in Settings (one URL per line, up to 12). **Like/Subscribe cannot be performed inside an embedded player** (YouTube requires Google OAuth); the app provides one-click Subscribe/Open shortcuts that hand the action to YouTube.
+- **Item fallbacks**: item names/descriptions merge Showdown and PokéAPI; sprites try PokéAPI, Showdown and PokémonDB. A few brand-new items may still show a neutral icon until a mirror publishes the asset.
+- **Event previews**: official Play! Pokémon pages refuse to load inside iframes. The app reads their organizer/price/address data server-side, retries through a public reader when the site fingerprints the direct request, and shows the structured fields in the card; if both routes are unavailable, it keeps every field from the event locator. **Open in browser** is always available. Limitless pages still render embedded.
 - **Pikalytics breakdown** depends on Pikalytics being up; falls back to Showdown chaos data when unavailable.
 
 Found something else? [Open an issue](https://github.com/felipesuarez-dev/vgc-reporter/issues/new) — beta feedback is gold.
@@ -128,8 +179,21 @@ Found something else? [Open an issue](https://github.com/felipesuarez-dev/vgc-re
 
 | Source | Use | Notes |
 |---|---|---|
-| [Labmaus](https://labmaus.net) | Top teams, meta snapshot, trending, upcoming tournaments | **Primary** for the Champions sets (M-A / M-B) — requires Origin/Referer pinning, injected server-side so no CORS leaks |
+| [Official Pokémon HOME notices](https://champions-news.pokemon-home.com/en/list) | Regulation calendar, eligible roster, new Megas | **Source of truth** for the active set and season; parsed every hour |
+| [Labmaus](https://labmaus.net) | Top teams, meta snapshot, trending, source-validated regulations | **Primary tournament source** — requires Origin/Referer pinning, injected server-side so no CORS leaks |
 | [Limitless VGC API](https://play.limitlesstcg.com/api/) | Tournaments, standings, decklists | Authoritative for Champions standings — decklists rendered inline |
+| [Pokedata event locator mirror](https://pokedata.ovh/events/apiv2) | Upcoming in-person League Challenges / Cups | Mirrors the official Play! Pokémon Event Locator: country/city/venue, full address, coordinates for maps, contact, admission and registration window |
+| [Official Play! Pokémon event pages](https://www.pokemon.com/us/play-pokemon/pokemon-events/find-an-event/) | Organizer, phone, website, category, premier event, status and price enrichment | Read on demand when an event card opens (6h cache). Browser-like headers, a reader fallback when the site fingerprints the client, and structured parsing; if everything is blocked, the card keeps the locator data and the browser fallback |
+| [Jina Reader](https://r.jina.ai/) | Readable fallback for official event pages | Used only when the direct Pokémon request is blocked; it renders the same public page and returns organizer/category/venue fields |
+| [Play! Pokémon YouTube](https://www.youtube.com/@PlayPokemon) | Official VGC live broadcast | The app reads the channel `/streams` tab and keeps only a live VGC/Champions stream (never GO/TCG) |
+| [YukS VGC YouTube](https://www.youtube.com/@yuksvgc) | Community VGC live broadcast | First default screen; community channels are not title-filtered, so any current live video is shown |
+| [CybertronVGC YouTube](https://www.youtube.com/@CybertronVGC) | VGC caster live broadcast | Default screen, useful between official events |
+| [Sekiam YouTube](https://www.youtube.com/@Sekiam) | Spanish VGC caster | Default screen |
+| [IRNemesis YouTube](https://www.youtube.com/@IRNemesisTV) | Chilean VGC channel | Default screen; VGC Chile Invitational coverage |
+| [WolfeyVGC YouTube](https://www.youtube.com/@WolfeyVGC) | VGC caster | Default screen |
+| [PokeAlex YouTube](https://www.youtube.com/@PokeAlex) | Spanish VGC caster | Default screen |
+| [James Baek YouTube](https://www.youtube.com/@JamesBaek) | VGC caster | Default screen |
+| [PokéAPI sprites](https://github.com/PokeAPI/sprites) | Item sprites | Tries PokéAPI, Showdown item icons and PokémonDB before falling back to a neutral icon |
 | [Pokémon Showdown](https://play.pokemonshowdown.com/data/) | Pokédex, moves, items, abilities, sprites | Fetched on first run, cached 7 days |
 | [Smogon chaos JSON](https://www.smogon.com/stats/) | Ladder usage fallback | Slug auto-discovery + rating ladder rewind |
 | [pkmn/smogon data](https://data.pkmn.cc/) | Curated competitive sets | Doubles + Singles slugs per format |
@@ -210,7 +274,7 @@ cd src-tauri && cargo fmt && cargo clippy -- -D warnings
 bun run --cwd frontend build
 ```
 
-> **Package manager**: this project uses **Bun** exclusively. Do not use `npm`/`npx`/`package-lock.json`. See `CLAUDE.md` § Package manager for the npm→Bun mapping.
+> **Package manager**: this project uses **Bun** exclusively. Do not use `npm`/`npx`/`package-lock.json`; use `bun install`, `bun run`, and `bunx`.
 
 ## Project Structure
 
@@ -233,18 +297,17 @@ VGC-Reporter/
 │   │   ├── adapters/         HTTP clients
 │   │   ├── storage/          SQLite pool, migrations, repos
 │   │   └── commands/         Tauri IPC handlers
-│   ├── icons/                generated by ImageMagick
+│   ├── icons/                app and installer assets (PIL script)
 │   └── tauri.conf.json
 ├── assets/logo.png
-├── CLAUDE.md                 project-wide guide
 └── README.md
 ```
 
 ## Requirements
 
-- Node.js 20+
+- Bun 1.3.10+
 - Rust 1.80+ (stable)
-- **Desktop**: Windows 10/11, macOS 12+, or Linux with `webkit2gtk-4.1`
+- **Desktop**: Windows 10/11 or Linux with `webkit2gtk-4.1`
 - **Android**: Android Studio + SDK API 24+, NDK r25c, JDK 17–24, `ANDROID_HOME` / `NDK_HOME` set; run `rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android` first
 - First run needs internet access to populate the cache
 
@@ -263,7 +326,7 @@ VGC-Reporter/
 MIT © 2026 PumaSoft — see [LICENSE](LICENSE).
 
 <!-- Reference-style definitions -->
-[version-badge]: https://img.shields.io/badge/version-0.4.2.20260921--beta-2b86ff?style=flat-square&labelColor=0a0e14
+[version-badge]: https://img.shields.io/badge/version-0.5.0.20261121--beta-2b86ff?style=flat-square&labelColor=0a0e14
 [version-link]: #download
 [beta-badge]: https://img.shields.io/badge/release-beta-ff6b6b?style=flat-square&labelColor=0a0e14
 [tauri-badge]: https://img.shields.io/badge/Tauri-2.4-24c8db?style=flat-square&labelColor=0a0e14&logo=tauri

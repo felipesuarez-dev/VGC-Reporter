@@ -19,6 +19,9 @@ const FULL_RE = /^(\d+)\.(\d+)\.(\d+)\.(\d{8})-beta$/;
 
 const arg = process.argv[2];
 const checkOnly = arg === "--check";
+const tagIndex = process.argv.indexOf("--tag");
+const expectedTag =
+  tagIndex >= 0 ? process.argv[tagIndex + 1]?.replace(/^v/, "") : null;
 
 function readFull(): string {
   const src = readFileSync(join(ROOT, "frontend/src/lib/version.ts"), "utf8");
@@ -41,10 +44,16 @@ const RULES: Array<[string, RegExp, string]> = [
   ["package.json", /("version":\s*")([^"]+)(")/, semver],
   ["frontend/package.json", /("version":\s*")([^"]+)(")/, semver],
   ["frontend/src/lib/version.ts", /(APP_VERSION\s*=\s*")([^"]+)(")/, full],
-  ["CLAUDE.md", /(\*\*Versi[^:]*:\*\*\s*)([0-9][^\s]*)()/, full],
 ];
 
 let failed = false;
+
+if (checkOnly && expectedTag && full !== expectedTag) {
+  console.error(
+    `  MAL  tag ${expectedTag} != APP_VERSION ${full}. El tag y la versión deben coincidir.`,
+  );
+  failed = true;
+}
 
 for (const [rel, re, want] of RULES) {
   const path = join(ROOT, rel);

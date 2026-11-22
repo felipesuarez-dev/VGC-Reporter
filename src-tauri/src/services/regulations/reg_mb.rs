@@ -35,7 +35,7 @@ impl RegMbRules {
 }
 
 impl RegulationRules for RegMbRules {
-    fn code(&self) -> &'static str {
+    fn code(&self) -> &str {
         "regulation-m-b"
     }
 
@@ -108,10 +108,22 @@ mod tests {
         while members.len() < 6 {
             members.push(complete_member("Garchomp"));
         }
+        // Item Clause: filler members must not all hold Leftovers.
+        let items = [
+            "Leftovers",
+            "Choice Scarf",
+            "Focus Sash",
+            "Sitrus Berry",
+            "Black Belt",
+            "Charcoal",
+        ];
+        for (idx, member) in members.iter_mut().enumerate() {
+            member.item = Some(items[idx % items.len()].into());
+        }
         Team {
             id: None,
             name: "t".into(),
-            format: Format::RegulationMB,
+            format: Format::mb(),
             notes: None,
             members,
             created_at: None,

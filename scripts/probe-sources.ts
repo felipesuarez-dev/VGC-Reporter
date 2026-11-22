@@ -20,7 +20,7 @@
 // labmaus serves its certificate WITHOUT the Sectigo intermediate, and Bun
 // (like rustls) does not AIA-fetch the missing link, so a plain fetch fails
 // with "unable to verify the first certificate" — the same failure Regla 6 in
-// CLAUDE.md documents. The app bundles that intermediate for reqwest; hand Bun
+// the repo TLS note documents. The app bundles that intermediate for reqwest; hand Bun
 // the same file so this script sees what the app sees.
 // (NODE_EXTRA_CA_CERTS is read at process start, so setting it here is too
 // late — it has to go through the per-request `tls` option.)
@@ -154,10 +154,73 @@ async function probeChampteams() {
   else warn("declares no regulation; the merge treats it as out-of-period");
 }
 
+async function probeOfficialCalendar() {
+  console.log("\nofficial — regulation calendar + roster");
+  const listUrl = "https://champions-news.pokemon-home.com/en/json/list.json";
+  let list: {
+    data?: Array<{ title?: string; infoKind?: number; link?: string; pubAt?: number; stAt?: number }>;
+  };
+  try {
+    list = await (await fetch(listUrl, { signal: AbortSignal.timeout(45_000) })).json();
+  } catch (e) {
+    bad(`official news list unreachable: ${e}`);
+    return;
+  }
+  const items = list.data ?? [];
+  const latest = (a: { pubAt?: number; stAt?: number }, b: { pubAt?: number; stAt?: number }) =>
+    (a.pubAt ?? a.stAt ?? 0) - (b.pubAt ?? b.stAt ?? 0);
+  const reg = items
+    .filter((i) => i.infoKind === 12 && /Regulation Set M-[A-Z]/i.test(i.title ?? ""))
+    .sort(latest)
+    .at(-1);
+  const season = items
+    .filter((i) => i.infoKind === 11 && /Season M-\d+/i.test(i.title ?? ""))
+    .sort(latest)
+    .at(-1);
+  if (!reg?.link) {
+    bad("no official regulation notice found");
+    return;
+  }
+  ok(`latest regulation article: ${reg.title}`);
+  if (season?.title) ok(`latest season article: ${season.title}`);
+  const base = "https://champions-news.pokemon-home.com/en/";
+  const url = reg.link.startsWith("http") ? reg.link : base + reg.link;
+  let html: string;
+  try {
+    html = await (await fetch(url, { signal: AbortSignal.timeout(45_000) })).text();
+  } catch (e) {
+    bad(`official regulation page unreachable: ${e}`);
+    return;
+  }
+  const code = html.match(/Regulation Set (M-[A-Z])/i)?.[1];
+  if (!code) bad("regulation code missing from official page");
+  else ok(`regulation code: ${code}`);
+  const rosterUrl = html.match(
+    /href="(https:\/\/web-view\.app\.pokemonchampions\.jp\/[^"]*pokemon\.html)"/i,
+  )?.[1];
+  if (!rosterUrl) {
+    bad("eligible roster link missing from official page");
+    return;
+  }
+  try {
+    const roster = await (
+      await fetch(rosterUrl, { signal: AbortSignal.timeout(45_000) })
+    ).text();
+    const names = [...roster.matchAll(/\["\d{4}-\d{3}",\s*\d+,\s*"([^"]+)"\]/g)].map(
+      (m) => m[1],
+    );
+    if (names.length === 0) bad("official roster parsed empty");
+    else ok(`official roster: ${names.length} eligible entries`);
+  } catch (e) {
+    bad(`official roster unreachable: ${e}`);
+  }
+}
+
 console.log("Probing the live data sources against the identifiers in format.rs");
 await probeLabmaus();
 await probeSmogon();
 await probeChampteams();
+await probeOfficialCalendar();
 
 if (failures > 0) {
   console.error(`\n${failures} identifier(s) look wrong. Fix format.rs before tagging.`);

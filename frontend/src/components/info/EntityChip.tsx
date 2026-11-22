@@ -6,6 +6,8 @@ import { MoveCategoryIcon } from "../pokemon/MoveCategoryIcon";
 import { TypeBadge } from "../pokemon/TypeBadge";
 import { Tooltip } from "../ui/Tooltip";
 import { cn } from "../../lib/cn";
+import { prettifyItemName } from "../../lib/labels";
+import { ItemSprite } from "../items/ItemSprite";
 
 interface Props {
   kind: LocalizeKind;
@@ -19,7 +21,11 @@ export function EntityChip({ kind, name, className }: Props) {
   const describe = useDescribe();
   const moveSummary = useMoveSummary();
   if (!name) return null;
-  const label = localize(kind, name) || name;
+  const localized = localize(kind, name);
+  const label =
+    kind === "item" && localized === name
+      ? prettifyItemName(name)
+      : localized || name;
   const kindLabel = t(`entity.${kind}`);
   const description = describe(kind, name);
   const summary = kind === "move" ? moveSummary(name) : null;
@@ -30,6 +36,7 @@ export function EntityChip({ kind, name, className }: Props) {
         className="flex items-center gap-1.5 text-[11px] font-semibold"
         style={{ color: "var(--text)" }}
       >
+        {kind === "item" && <ItemSprite name={name} size={18} />}
         <span>{label}</span>
         {summary && <TypeBadge type={summary.type_} />}
         {summary && (
@@ -68,6 +75,13 @@ export function EntityChip({ kind, name, className }: Props) {
           className,
         )}
       >
+        {kind === "item" && (
+          <ItemSprite
+            name={name}
+            size={16}
+            className="mr-1 inline-block align-[-3px]"
+          />
+        )}
         {label}
       </span>
     </Tooltip>

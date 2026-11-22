@@ -2,7 +2,7 @@ import { Component, type ReactNode } from "react";
 
 /**
  * Catches render crashes below it so one malformed row cannot take the
- * whole app down (see Regla 1 in CLAUDE.md). Shows a retry card instead
+ * whole app down (see the app-level error boundary rule). Shows a retry card instead
  * of unmounting the tree into a white screen.
  */
 export class ErrorBoundary extends Component<

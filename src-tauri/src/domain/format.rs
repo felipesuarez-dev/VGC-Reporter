@@ -1,100 +1,159 @@
+use crate::domain::regulation;
+use chrono::Datelike;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-/// Competitive format. Multi-variant: frontend can switch freely.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize, TS)]
+/// Stable internal regulation ID (`regulation-m-c`, `regulation-m-d`, …).
+///
+/// The type is a string newtype rather than an enum so a regulation
+/// discovered from the official calendar at runtime does not require a new
+/// binary. Static M-A/M-B/M-C keep their verified metadata below; dynamic IDs
+/// read it from [`crate::domain::regulation`].
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
+#[serde(transparent)]
 #[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
-pub enum Format {
-    #[default]
-    #[serde(rename = "regulation-m-c")]
-    RegulationMC,
-    #[serde(rename = "regulation-m-b")]
-    RegulationMB,
-    #[serde(rename = "regulation-m-a")]
-    RegulationMA,
-    #[serde(rename = "regulation-i")]
-    RegulationI,
-}
+pub struct Format(String);
 
 impl Format {
-    /// Stable internal slug used as cache key. Never changes — decoupled from
-    /// upstream Limitless/Smogon naming.
-    pub fn cache_id(&self) -> &'static str {
-        match self {
-            Format::RegulationMC => "reg-m-c",
-            Format::RegulationMB => "reg-m-b",
-            Format::RegulationMA => "reg-m-a",
-            Format::RegulationI => "reg-i",
+    pub fn new(id: impl Into<String>) -> Self {
+        Self(id.into())
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Historical name used by cache keys. Kept as an alias so existing cache
+    /// values stay valid.
+    pub fn cache_id(&self) -> &str {
+        self.as_str()
+    }
+
+    pub fn ma() -> Self {
+        Self::new("regulation-m-a")
+    }
+    pub fn mb() -> Self {
+        Self::new("regulation-m-b")
+    }
+    pub fn mc() -> Self {
+        Self::new("regulation-m-c")
+    }
+    pub fn md() -> Self {
+        Self::new("regulation-m-d")
+    }
+    pub fn regulation_i() -> Self {
+        Self::new("regulation-i")
+    }
+
+    pub fn is_static(&self) -> bool {
+        matches!(
+            self.as_str(),
+            "regulation-m-a" | "regulation-m-b" | "regulation-m-c" | "regulation-i"
+        )
+    }
+
+    /// Regulation code as published upstream (`M-A`, `M-B`, …).
+    pub fn code(&self) -> String {
+        if let Some(snap) = regulation::snapshot(self.as_str()) {
+            return snap.info.code;
+        }
+        match self.as_str() {
+            "regulation-m-a" => "M-A".into(),
+            "regulation-m-b" => "M-B".into(),
+            "regulation-m-c" => "M-C".into(),
+            "regulation-m-d" => "M-D".into(),
+            "regulation-i" => "I".into(),
+            other => other
+                .strip_prefix("regulation-")
+                .map(|s| s.to_ascii_uppercase())
+                .unwrap_or_else(|| other.to_ascii_uppercase()),
         }
     }
 
     /// Codes verified against the live Limitless API: VGC uses `M-A` and the
     /// SV Reg I format reports as `SVI` — not `M2A` / `I` like older guesses.
-    pub fn limitless_code(&self) -> Option<&'static str> {
-        match self {
-            Format::RegulationMC => Some("M-C"),
-            Format::RegulationMB => Some("M-B"),
-            Format::RegulationMA => Some("M-A"),
-            Format::RegulationI => Some("SVI"),
+    pub fn limitless_code(&self) -> Option<String> {
+        if let Some(snap) = regulation::snapshot(self.as_str()) {
+            return snap.limitless_code;
+        }
+        match self.as_str() {
+            "regulation-m-c" => Some("M-C".into()),
+            "regulation-m-b" => Some("M-B".into()),
+            "regulation-m-a" => Some("M-A".into()),
+            "regulation-i" => Some("SVI".into()),
+            _ => Some(self.code()),
         }
     }
 
     /// Smogon publishes the Champions ladders under a `gen9champions…` prefix,
-    /// NOT the `gen9vgc…` one used by the mainline VGC ladders. Verified by
-    /// listing `smogon.com/stats/2026-08/chaos/`, which contains
-    /// `gen9championsvgc2026regmb` (and its `bo3` sibling) and no
-    /// `gen9vgc2026regmb` at all. The previous value 404'd on every request,
-    /// which is why the Smogon fallback never produced data for any Champions
-    /// set. Runtime override: `smogon_slug::<cache_id>` in SettingsRepo.
-    pub fn default_smogon_slug(&self) -> &'static str {
-        match self {
-            Format::RegulationMC => "gen9championsvgc2026regmc",
-            Format::RegulationMB => "gen9championsvgc2026regmb",
-            Format::RegulationMA => "gen9championsvgc2026regma",
-            Format::RegulationI => "gen9vgc2026regi",
+    /// NOT the `gen9vgc…` one used by the mainline VGC ladders.
+    pub fn default_smogon_slug(&self) -> Option<String> {
+        if let Some(snap) = regulation::snapshot(self.as_str()) {
+            return snap.smogon_slug;
+        }
+        match self.as_str() {
+            "regulation-m-c" => Some("gen9championsvgc2026regmc".into()),
+            "regulation-m-b" => Some("gen9championsvgc2026regmb".into()),
+            "regulation-m-a" => Some("gen9championsvgc2026regma".into()),
+            "regulation-i" => Some("gen9vgc2026regi".into()),
+            _ => {
+                let code = self.code().to_ascii_lowercase().replace('-', "");
+                let year = self
+                    .data_window()
+                    .map(|(start, _)| start.year())
+                    .unwrap_or_else(|| chrono::Utc::now().year());
+                Some(format!("gen9championsvgc{year}reg{code}"))
+            }
         }
     }
 
-    /// Labmaus regulation string used in the `?regulation=` query param of
-    /// `/api/discover_teams`. Runtime override lives at
-    /// `labmaus_name::<cache_id>` in SettingsRepo, so a new regulation can be
-    /// onboarded by seeding one settings row before its static default ships.
-    ///
-    /// The live catalogue is discoverable at `/api/completed_tournaments`,
-    /// where every row carries a `regulation` field — see
-    /// `LabmausClient::discover_regulations`. Never guess these strings: M-B
-    /// spent a season borrowing M-A's label as a workaround, and kept doing so
-    /// after labmaus published the real one.
-    pub fn default_labmaus_name(&self) -> Option<&'static str> {
-        match self {
-            Format::RegulationMC => Some("Regulation Set M-C"),
-            Format::RegulationMB => Some("Regulation Set M-B"),
-            Format::RegulationMA => Some("Regulation Set M-A"),
-            Format::RegulationI => None,
+    /// Labmaus regulation string used in the `?regulation=` query param.
+    /// Runtime override: `labmaus_name::<cache_id>` in SettingsRepo. A new
+    /// regulation can be onboarded by seeding one settings row before its
+    /// static default ships.
+    pub fn default_labmaus_name(&self) -> Option<String> {
+        if let Some(snap) = regulation::snapshot(self.as_str()) {
+            return snap.labmaus_name;
+        }
+        match self.as_str() {
+            "regulation-m-c" => Some("Regulation Set M-C".into()),
+            "regulation-m-b" => Some("Regulation Set M-B".into()),
+            "regulation-m-a" => Some("Regulation Set M-A".into()),
+            "regulation-i" => None,
+            _ => Some(format!("Regulation Set {}", self.code())),
         }
     }
 
     /// Inclusive date range of competitive data that belongs to this
-    /// regulation, used to bound the labmaus queries.
-    ///
-    /// Returns `(start, end)` where `end == None` means "ongoing" (the caller
-    /// clamps it to today). `None` overall means "no fixed range — use a
-    /// rolling window". The Champions windows are disjoint, so a tournament is
-    /// never counted under two regulations.
-    ///
-    /// M-A is capped to its final fortnight: labmaus `discover_teams` times
-    /// out server-side for windows wider than ~3 weeks, and the closing two
-    /// weeks are the most representative slice of a dead meta. M-B and M-C
-    /// carry their real calendars; anything wider than 21 days is split by
-    /// [`crate::services::date_window::chunk_window`].
+    /// regulation. `end == None` means "ongoing"; callers clamp it to today.
     pub fn data_window(&self) -> Option<(chrono::NaiveDate, Option<chrono::NaiveDate>)> {
-        let d = |y, m, day| chrono::NaiveDate::from_ymd_opt(y, m, day).expect("valid date");
-        match self {
-            Format::RegulationMC => Some((d(2026, 9, 9), None)),
-            Format::RegulationMB => Some((d(2026, 6, 17), Some(d(2026, 9, 8)))),
-            Format::RegulationMA => Some((d(2026, 6, 3), Some(d(2026, 6, 16)))),
-            Format::RegulationI => None,
+        if let Some(snap) = regulation::snapshot(self.as_str()) {
+            let parse = |s: &str| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok();
+            let start = snap.data_start.as_deref().and_then(parse);
+            let end = snap.data_end.as_deref().and_then(parse);
+            if let Some(start) = start {
+                return Some((start, end));
+            }
         }
+        let d = |y, m, day| chrono::NaiveDate::from_ymd_opt(y, m, day).expect("valid date");
+        match self.as_str() {
+            "regulation-m-c" => Some((d(2026, 9, 9), Some(d(2026, 12, 1)))),
+            "regulation-m-b" => Some((d(2026, 6, 17), Some(d(2026, 9, 8)))),
+            "regulation-m-a" => Some((d(2026, 6, 3), Some(d(2026, 6, 16)))),
+            "regulation-i" => None,
+            _ => None,
+        }
+    }
+
+    /// Default data window for the Dashboard: the season containing `at`, or
+    /// the latest started season for an archived regulation. Falls back to the
+    /// regulation's own calendar when the catalog has no seasons yet.
+    pub fn default_data_range(
+        &self,
+        at: chrono::DateTime<chrono::Utc>,
+    ) -> Option<(chrono::NaiveDate, chrono::NaiveDate)> {
+        let snap = regulation::snapshot(self.as_str())?;
+        regulation::season_for_at(&snap.info.seasons, at).and_then(|season| season.data_window())
     }
 
     /// Rating cutoffs to probe in order (high → low). VGC doubles ladder tiers.
@@ -108,22 +167,36 @@ impl Format {
         None
     }
 
-    pub fn label(&self) -> &'static str {
-        match self {
-            Format::RegulationMC => "Regulation M-C (M-6)",
-            Format::RegulationMB => "Regulation M-B (M-3)",
-            Format::RegulationMA => "Regulation M-A (M-2)",
-            Format::RegulationI => "Regulation I",
+    pub fn label(&self) -> String {
+        if let Some(snap) = regulation::snapshot(self.as_str()) {
+            return snap.info.label;
+        }
+        match self.as_str() {
+            "regulation-m-a" => "Regulation M-A".into(),
+            "regulation-m-b" => "Regulation M-B".into(),
+            "regulation-m-c" => "Regulation M-C".into(),
+            "regulation-m-d" => "Regulation M-D".into(),
+            "regulation-i" => "Regulation I".into(),
+            _ => format!("Regulation {}", self.code()),
         }
     }
 
+    /// All selectable IDs: the static Champions archive plus every dynamic
+    /// regulation discovered at runtime.
     pub fn all_active() -> Vec<Format> {
-        vec![
-            Format::RegulationMC,
-            Format::RegulationMB,
-            Format::RegulationMA,
-            Format::RegulationI,
-        ]
+        let mut out = vec![
+            Format::mc(),
+            Format::mb(),
+            Format::ma(),
+            Format::regulation_i(),
+        ];
+        for snap in regulation::snapshots() {
+            let f = Format::new(snap.info.id);
+            if !out.contains(&f) {
+                out.push(f);
+            }
+        }
+        out
     }
 }
 
@@ -140,25 +213,9 @@ mod tests {
 
     #[test]
     fn cache_ids_are_unique() {
-        let ids: HashSet<&str> = Format::all_active().iter().map(|f| f.cache_id()).collect();
-        assert_eq!(ids.len(), Format::all_active().len());
-    }
-
-    #[test]
-    fn all_active_is_doubles_only() {
-        let active = Format::all_active();
-        assert_eq!(
-            active,
-            vec![
-                Format::RegulationMC,
-                Format::RegulationMB,
-                Format::RegulationMA,
-                Format::RegulationI,
-            ]
-        );
-        for f in &active {
-            assert!(f.limitless_code().is_some());
-        }
+        let all = Format::all_active();
+        let ids: HashSet<&str> = all.iter().map(|f| f.cache_id()).collect();
+        assert_eq!(ids.len(), all.len());
     }
 
     #[test]
@@ -171,53 +228,49 @@ mod tests {
         }
     }
 
-    #[test]
-    fn default_is_the_active_regulation() {
-        assert_eq!(Format::default(), Format::RegulationMC);
-    }
-
     /// Guards the bug that kept the Smogon fallback dead for every Champions
     /// set: those ladders live under `gen9champions…`, never `gen9vgc2026reg…`.
     #[test]
     fn champions_smogon_slugs_use_the_champions_prefix() {
-        for f in [
-            Format::RegulationMC,
-            Format::RegulationMB,
-            Format::RegulationMA,
-        ] {
+        for f in [Format::mc(), Format::mb(), Format::ma()] {
             assert!(
-                f.default_smogon_slug().starts_with("gen9champions"),
-                "{:?} must use the gen9champions prefix, got {}",
-                f,
                 f.default_smogon_slug()
+                    .expect("static Champions slug")
+                    .starts_with("gen9champions"),
+                "{:?} must use the gen9champions prefix",
+                f
             );
         }
     }
 
-    /// Each Champions regulation must query its OWN labmaus label. M-B used to
-    /// borrow M-A's; labmaus has since published real M-B and M-C labels and
-    /// dropped M-A from its live catalogue.
     #[test]
     fn champions_labmaus_names_are_distinct() {
-        let names: HashSet<&str> = [
-            Format::RegulationMC,
-            Format::RegulationMB,
-            Format::RegulationMA,
-        ]
-        .iter()
-        .filter_map(|f| f.default_labmaus_name())
-        .collect();
+        let names: HashSet<String> = [Format::mc(), Format::mb(), Format::ma()]
+            .iter()
+            .filter_map(|f| f.default_labmaus_name())
+            .collect();
         assert_eq!(names.len(), 3, "labmaus labels must not be shared");
     }
 
     #[test]
     fn champions_windows_are_disjoint_and_ordered() {
-        let (_, mb_end) = Format::RegulationMB.data_window().unwrap();
-        let (mc_start, mc_end) = Format::RegulationMC.data_window().unwrap();
-        assert!(mc_end.is_none(), "M-C is the ongoing regulation");
+        let (_, mb_end) = Format::mb().data_window().unwrap();
+        let (mc_start, mc_end) = Format::mc().data_window().unwrap();
+        assert_eq!(mc_end, chrono::NaiveDate::from_ymd_opt(2026, 12, 1));
         assert!(
             mb_end.expect("M-B is closed") < mc_start,
             "M-B must close before M-C opens"
+        );
+    }
+
+    #[test]
+    fn dynamic_ids_derive_a_code_and_label() {
+        let f = Format::new("regulation-m-e");
+        assert_eq!(f.code(), "M-E");
+        assert_eq!(f.label(), "Regulation M-E");
+        assert_eq!(
+            f.default_labmaus_name().as_deref(),
+            Some("Regulation Set M-E")
         );
     }
 }

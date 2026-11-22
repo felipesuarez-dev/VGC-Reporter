@@ -45,7 +45,7 @@ pub fn init_pool(db_path: &Path) -> Result<DbPool, AppError> {
     }
 
     // Migration 006 reverts the Basculegion-M mapping that 004 introduced;
-    // it's UPDATE ... WHERE so naturally idempotent (Regla 2 del CLAUDE.md).
+    // it's UPDATE ... WHERE so naturally idempotent (idempotent on every boot).
     conn.execute_batch(MIGRATION_006)?;
     conn.execute_batch(MIGRATION_007)?;
 

@@ -146,13 +146,9 @@ impl TeamRepo {
 }
 
 fn parse_format(s: &str) -> Format {
-    match s {
-        "regulation-m-c" => Format::RegulationMC,
-        "regulation-m-b" => Format::RegulationMB,
-        "regulation-m-a" => Format::RegulationMA,
-        "regulation-i" => Format::RegulationI,
-        _ => Format::default(),
-    }
+    // Preserve unknown ids instead of silently moving a saved team to another
+    // regulation. Validation reports an explicit error if the id is unknown.
+    Format::new(s.to_string())
 }
 
 fn parse_dt(s: &str) -> Option<DateTime<Utc>> {

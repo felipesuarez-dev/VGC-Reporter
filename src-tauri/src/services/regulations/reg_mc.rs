@@ -57,7 +57,7 @@ impl RegMcRules {
 }
 
 impl RegulationRules for RegMcRules {
-    fn code(&self) -> &'static str {
+    fn code(&self) -> &str {
         "regulation-m-c"
     }
 
@@ -126,19 +126,20 @@ mod tests {
     /// A legal six-slot team whose first slot is the subject under test.
     fn team_with(species: &str, item: &str, moves: [&str; 4]) -> Team {
         let mut members = vec![member(species, item, moves)];
-        for filler in [
-            "Incineroar",
-            "Rillaboom",
-            "Sneasler",
-            "Dragonite",
-            "Farigiraf",
-        ] {
-            members.push(member(filler, "Leftovers", FILLER_MOVES));
+        let fillers = [
+            ("Incineroar", "Leftovers"),
+            ("Rillaboom", "Choice Scarf"),
+            ("Sneasler", "Focus Sash"),
+            ("Dragonite", "Sitrus Berry"),
+            ("Farigiraf", "Black Belt"),
+        ];
+        for (filler, filler_item) in fillers {
+            members.push(member(filler, filler_item, FILLER_MOVES));
         }
         Team {
             id: None,
             name: "t".into(),
-            format: Format::RegulationMC,
+            format: Format::mc(),
             notes: None,
             members,
             created_at: None,
@@ -245,6 +246,27 @@ mod tests {
     #[test]
     fn rejects_species_outside_every_roster() {
         assert!(!species_ok(&rules(), "Koraidon"));
+    }
+
+    /// The official M-C eligible roster contains Watchog, not Patrat. The
+    /// seed used to have the pre-evolution, which made a legal species fail
+    /// validation while an illegal one passed.
+    #[test]
+    fn official_m_c_roster_uses_watchog_not_patrat() {
+        let r = rules();
+        assert!(species_ok(&r, "Watchog"), "Watchog is legal in M-C");
+        assert!(!species_ok(&r, "Patrat"), "Patrat is not legal in M-C");
+    }
+
+    #[test]
+    fn duplicate_items_are_flagged() {
+        let r = rules();
+        let mut team = team_with("Incineroar", "Leftovers", FILLER_MOVES);
+        team.members[1].item = Some("Leftovers".into());
+        assert!(r
+            .validate_team(&team)
+            .iter()
+            .any(|v| matches!(v, Violation::DuplicateItem { .. })));
     }
 
     /// Life Orb is the single most used item in the tournament data, yet it

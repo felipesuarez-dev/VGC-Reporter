@@ -149,7 +149,7 @@ jobs:
             --exclude='Cargo.lock' \
             frontend src-tauri docs assets \
             package.json bun.lock bunfig.toml \
-            README.md CLAUDE.md LICENSE \
+            README.md LICENSE \
             .gitignore .gitattributes
           ls -lh "vgc-reporter-source-${{ needs.prepare.outputs.version }}.tar.gz"
 

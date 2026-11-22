@@ -11,4 +11,88 @@ pub struct UpcomingTournament {
     pub region: Option<String>,
     pub players: Option<u32>,
     pub source: String,
+    #[serde(default)]
+    pub time: Option<String>,
+    #[serde(default)]
+    pub kind: Option<String>,
+    #[serde(default)]
+    pub city: Option<String>,
+    #[serde(default)]
+    pub country: Option<String>,
+    #[serde(default)]
+    pub venue: Option<String>,
+    #[serde(default)]
+    pub street_address: Option<String>,
+    #[serde(default)]
+    pub state: Option<String>,
+    #[serde(default)]
+    pub postal_code: Option<String>,
+    #[serde(default)]
+    pub latitude: Option<f64>,
+    #[serde(default)]
+    pub longitude: Option<f64>,
+    #[serde(default)]
+    pub contact_email: Option<String>,
+    #[serde(default)]
+    pub contact_phone: Option<String>,
+    #[serde(default)]
+    pub details: Option<String>,
+    #[serde(default)]
+    pub registration_start: Option<String>,
+    #[serde(default)]
+    pub registration_end: Option<String>,
+    #[serde(default)]
+    pub admission: Option<String>,
+    #[serde(default)]
+    pub event_website: Option<String>,
+    #[serde(default)]
+    pub third_party_registration_website: Option<String>,
+}
+
+/// Extra fields read from the official Play! Pokémon event page. The mirror we
+/// use for the event list does not include the organizer, so this best-effort
+/// detail keeps the in-app card complete without embedding the anti-bot page.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
+pub struct OfficialEventDetails {
+    #[serde(default)]
+    pub tournament_id: Option<String>,
+    #[serde(default)]
+    pub category: Option<String>,
+    #[serde(default)]
+    pub premier_event: Option<String>,
+    #[serde(default)]
+    pub status: Option<String>,
+    #[serde(default)]
+    pub organizer_name: Option<String>,
+    #[serde(default)]
+    pub organizer_phone: Option<String>,
+    #[serde(default)]
+    pub organizer_email: Option<String>,
+    #[serde(default)]
+    pub venue: Option<String>,
+    #[serde(default)]
+    pub address_line1: Option<String>,
+    #[serde(default)]
+    pub address_line2: Option<String>,
+    #[serde(default)]
+    pub city: Option<String>,
+    #[serde(default)]
+    pub state: Option<String>,
+    #[serde(default)]
+    pub postal_code: Option<String>,
+    #[serde(default)]
+    pub country: Option<String>,
+    #[serde(default)]
+    pub website: Option<String>,
+    #[serde(default)]
+    pub admission: Option<String>,
+    #[serde(default)]
+    pub registration: Option<String>,
+    #[serde(default)]
+    pub details: Option<String>,
+    #[serde(default)]
+    pub latitude: Option<f64>,
+    #[serde(default)]
+    pub longitude: Option<f64>,
 }

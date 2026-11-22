@@ -1,3 +1,5 @@
+import { useUiStore } from "../stores/uiStore";
+
 const DATE_OPTIONS: Intl.DateTimeFormatOptions = {
   year: "numeric",
   month: "short",
@@ -13,6 +15,23 @@ const DATETIME_OPTIONS: Intl.DateTimeFormatOptions = {
 };
 
 const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Resolve the display timezone. `system` (the default) lets Intl use the
+ * device zone; any other value is an IANA zone saved from Settings. The
+ * timezone is global so the source tooltips, tournament lists and dates all
+ * agree.
+ */
+export function activeTimeZone(explicit?: string | null): string | undefined {
+  const setting =
+    explicit === undefined ? useUiStore.getState().timeZone : explicit;
+  if (!setting || setting === "system") return undefined;
+  return setting;
+}
+
+export function systemTimeZone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+}
 
 function parseDate(value: string | null | undefined): Date | null {
   if (!value) return null;
@@ -38,30 +57,45 @@ function normalizeLocale(locale: string | undefined): string | undefined {
   return locale;
 }
 
-export function formatDate(value: string | null | undefined, locale?: string): string {
-  const d = parseDate(value);
-  if (!d) return value ?? "";
-  return new Intl.DateTimeFormat(normalizeLocale(locale), DATE_OPTIONS).format(d);
+export function formatDate(
+  value: string | null | undefined,
+  locale?: string,
+  timeZone?: string | null,
+): string {
+  if (!value) return "";
+  const trimmed = value.trim();
+  const dateOnly = DATE_ONLY_RE.test(trimmed);
+  const d = parseDate(trimmed);
+  if (!d) return value;
+  const options: Intl.DateTimeFormatOptions = dateOnly
+    ? DATE_OPTIONS
+    : { ...DATE_OPTIONS, timeZone: activeTimeZone(timeZone) };
+  return new Intl.DateTimeFormat(normalizeLocale(locale), options).format(d);
 }
 
-export function formatDateTime(value: string | null | undefined, locale?: string): string {
+export function formatDateTime(
+  value: string | null | undefined,
+  locale?: string,
+  timeZone?: string | null,
+): string {
   if (!value) return "";
-  if (DATE_ONLY_RE.test(value.trim())) return formatDate(value, locale);
+  if (DATE_ONLY_RE.test(value.trim())) return formatDate(value, locale, timeZone);
   const d = parseDate(value);
   if (!d) return value;
-  return new Intl.DateTimeFormat(normalizeLocale(locale), DATETIME_OPTIONS).format(d);
+  return new Intl.DateTimeFormat(normalizeLocale(locale), {
+    ...DATETIME_OPTIONS,
+    timeZone: activeTimeZone(timeZone),
+  }).format(d);
 }
 
 export function formatDateRange(
   from: string | null | undefined,
   to: string | null | undefined,
   locale?: string,
+  timeZone?: string | null,
 ): string {
-  const a = parseDate(from);
-  const b = parseDate(to);
-  const fmt = new Intl.DateTimeFormat(normalizeLocale(locale), DATE_OPTIONS);
-  if (a && b) return `${fmt.format(a)} — ${fmt.format(b)}`;
-  if (a) return fmt.format(a);
-  if (b) return fmt.format(b);
-  return "";
+  const a = formatDate(from, locale, timeZone);
+  const b = formatDate(to, locale, timeZone);
+  if (a && b) return `${a} - ${b}`;
+  return a || b;
 }

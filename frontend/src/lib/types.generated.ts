@@ -6,7 +6,11 @@ export type ChampionsReport = { tournaments: Array<ChampionsTournament>, fetched
 
 export type ChampionsSearchHit = { tournament_id: string, tournament_name: string, tournament_date: string | null, kind: SearchHitKind, matched_text: string, player_name: string | null, player_placing: number | null, player_pokemon: Array<string>, };
 
-export type ChampionsTournament = { id: string, name: string, date: string | null, players: number | null, format: string | null, organizer_id: string | null, champion_name: string | null, };
+export type ChampionsTournament = { id: string, name: string, date: string | null, players: number | null, format: string | null, organizer_id: string | null, champion_name: string | null, 
+/**
+ * Champion's six-Pokémon decklist, when the organizer published it.
+ */
+champion_team: Array<DecklistPokemon>, };
 
 export type DecklistPokemon = { id: string | null, name: string, item: string | null, ability: string | null, tera_type: string | null, moves: Array<string>, sprite_url: string, sprite_fallback_url: string | null, home_sprite_url: string | null, };
 
@@ -17,15 +21,30 @@ export type EvSpread = { hp: number, atk: number, def: number, spa: number, spd:
 export type EvStatSpread = { hp: number, atk: number, def: number, spa: number, spd: number, spe: number, };
 
 /**
- * Competitive format. Multi-variant: frontend can switch freely.
+ * Stable internal regulation ID (`regulation-m-c`, `regulation-m-d`, …).
+ *
+ * The type is a string newtype rather than an enum so a regulation
+ * discovered from the official calendar at runtime does not require a new
+ * binary. Static M-A/M-B/M-C keep their verified metadata below; dynamic IDs
+ * read it from [`crate::domain::regulation`].
  */
-export type Format = "regulation-m-c" | "regulation-m-b" | "regulation-m-a" | "regulation-i";
+export type Format = string;
 
 export type Gender = "male" | "female" | "genderless";
 
 export type Item = { id: string, name: string, description: string, };
 
 export type IvSpread = { hp: number, atk: number, def: number, spa: number, spd: number, spe: number, };
+
+/**
+ * One configured live screen (official channel or a community channel).
+ * Offline screens keep their source URL so the UI can still offer the channel.
+ */
+export type LiveStreamScreen = { source_url: string, label: string, official: boolean, live: boolean, video_id: string | null, title: string | null, url: string | null, embed_url: string | null, thumbnail_url: string | null, 
+/**
+ * Most recent past broadcast for this source, used when nothing is live.
+ */
+recent: OfficialLiveStream | null, };
 
 export type LocalizedDescription = { en: string, es: string, pt: string, it: string, fr: string, };
 
@@ -49,6 +68,15 @@ export type MoveUsage = { name: string, usage_percent: number, };
 export type MovesetUsage = { moves: Array<string>, count: number, usage_percent: number, };
 
 export type Nature = "Hardy" | "Lonely" | "Brave" | "Adamant" | "Naughty" | "Bold" | "Docile" | "Relaxed" | "Impish" | "Lax" | "Timid" | "Hasty" | "Serious" | "Jolly" | "Naive" | "Modest" | "Mild" | "Quiet" | "Bashful" | "Rash" | "Calm" | "Gentle" | "Sassy" | "Careful" | "Quirky";
+
+/**
+ * Extra fields read from the official Play! Pokémon event page. The mirror we
+ * use for the event list does not include the organizer, so this best-effort
+ * detail keeps the in-app card complete without embedding the anti-bot page.
+ */
+export type OfficialEventDetails = { tournament_id: string | null, category: string | null, premier_event: string | null, status: string | null, organizer_name: string | null, organizer_phone: string | null, organizer_email: string | null, venue: string | null, address_line1: string | null, address_line2: string | null, city: string | null, state: string | null, postal_code: string | null, country: string | null, website: string | null, admission: string | null, registration: string | null, details: string | null, latitude: number | null, longitude: number | null, };
+
+export type OfficialLiveStream = { video_id: string, title: string, url: string, embed_url: string, thumbnail_url: string, live: boolean, };
 
 export type PikalyticsEntry = { species_id: string, species_display: string, sprite_url: string | null, usage_percent: number | null, common_items: Array<PikalyticsItem>, common_abilities: Array<PikalyticsItem>, common_moves: Array<PikalyticsItem>, common_teammates: Array<PikalyticsTeammate>, common_tera: Array<PikalyticsItem>, ev_spreads: Array<PikalyticsEvSpread>, source_url: string, };
 
@@ -126,7 +154,25 @@ meta_score: number | null, tier: Tier | null,
  */
 sources_covering: number, };
 
+export type RegulationConfidence = "high" | "medium" | "low";
+
+export type RegulationInfo = { id: string, label: string, code: string, start_at: string, end_at: string | null, status: RegulationStatus, origin: RegulationOrigin, confidence: RegulationConfidence, seasons: Array<SeasonInfo>, active_season: SeasonInfo | null, eligible_count: number, new_species: Array<string>, new_megas: Array<string>, new_items: Array<string>, new_moves: Array<string>, sources: Array<RegulationSourceState>, warnings: Array<RegulationWarning>, };
+
+export type RegulationNewsItem = { id: string, title: string, url: string, category: string, published_at: string | null, banner_url: string | null, important: boolean, };
+
+export type RegulationOrigin = "official" | "source_validated" | "seed_fallback";
+
+export type RegulationSourceState = { source: SourceId, configured: boolean, verified: boolean, override_active: boolean, detail: string | null, };
+
+export type RegulationStatus = "upcoming" | "active" | "archived";
+
+export type RegulationSyncStatus = { active_id: string | null, last_sync: string | null, calendar_pending: boolean, origin: RegulationOrigin | null, confidence: RegulationConfidence | null, official_roster: boolean, sources: Array<RegulationSourceState>, warnings: Array<RegulationWarning>, };
+
+export type RegulationWarning = { "kind": "official_roster_missing" } | { "kind": "calendar_pending" } | { "kind": "roster_shrank", from: number, to: number, } | { "kind": "source_not_verified", source: SourceId, } | { "kind": "source_override", source: SourceId, } | { "kind": "translation_pending", count: number, } | { "kind": "source_validated", source_count: number, teams: number, };
+
 export type SearchHitKind = "tournament" | "champion" | "player" | "pokemon";
+
+export type SeasonInfo = { name: string, start_at: string, end_at: string, active: boolean, };
 
 /**
  * Bundle of curated doubles sets for a Pokémon.
@@ -198,7 +244,7 @@ export type TrendingPokemon = { species: string, sprite_url: string, sprite_fall
 
 export type TrendingReport = { rising: Array<TrendingPokemon>, falling: Array<TrendingPokemon>, from_date: string | null, to_date: string | null, window_days: number, };
 
-export type UpcomingTournament = { id: string, name: string, date: string, url: string, region: string | null, players: number | null, source: string, };
+export type UpcomingTournament = { id: string, name: string, date: string, url: string, region: string | null, players: number | null, source: string, time: string | null, kind: string | null, city: string | null, country: string | null, venue: string | null, street_address: string | null, state: string | null, postal_code: string | null, latitude: number | null, longitude: number | null, contact_email: string | null, contact_phone: string | null, details: string | null, registration_start: string | null, registration_end: string | null, admission: string | null, event_website: string | null, third_party_registration_website: string | null, };
 
 export type UpdateInfo = { version: string, current_version: string, notes: string, android_url: string | null, };
 

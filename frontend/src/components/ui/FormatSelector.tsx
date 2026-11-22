@@ -1,13 +1,14 @@
 import { Check, ChevronDown, Star } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../lib/cn";
-import { ALL_FORMATS, type Format, type FormatOption } from "../../lib/types";
+import type { Format, FormatOption } from "../../lib/types";
 import { Tooltip } from "./Tooltip";
 
 interface Props {
   value: Format;
   favorite: Format;
+  options: FormatOption[];
   onChange: (f: Format) => void;
   onFavoriteChange: (f: Format) => void;
   className?: string;
@@ -16,6 +17,7 @@ interface Props {
 export function FormatSelector({
   value,
   favorite,
+  options,
   onChange,
   onFavoriteChange,
   className,
@@ -40,22 +42,20 @@ export function FormatSelector({
     };
   }, [open]);
 
-  const ordered = useMemo<FormatOption[]>(() => {
-    return [...ALL_FORMATS].sort((a, b) => {
-      const aKey = a.disabled ? 2 : a.value === favorite ? 0 : 1;
-      const bKey = b.disabled ? 2 : b.value === favorite ? 0 : 1;
-      return aKey - bKey;
-    });
-  }, [favorite]);
+  const ordered = [...options].sort((a, b) => {
+    const aKey = a.disabled ? 2 : a.value === favorite ? 0 : 1;
+    const bKey = b.disabled ? 2 : b.value === favorite ? 0 : 1;
+    return aKey - bKey;
+  });
 
   const currentLabel =
-    ALL_FORMATS.find((f) => f.value === value && !f.disabled)?.label ?? value;
+    options.find((f) => f.value === value && !f.disabled)?.label ?? value;
 
   return (
     <div ref={ref} className={cn("relative", className)}>
       <button
         type="button"
-        className="input flex h-9 items-center justify-between gap-2 text-left"
+        className="input flex h-10 items-center justify-between gap-2 text-left"
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -69,7 +69,7 @@ export function FormatSelector({
 
       {open && (
         <div
-          className="absolute right-0 z-50 mt-1 w-72 overflow-hidden rounded-lg border shadow-xl"
+          className="absolute right-0 z-50 mt-1 w-[min(18rem,calc(100vw-2rem))] overflow-hidden rounded-lg border shadow-xl"
           style={{
             backgroundColor: "var(--bg-elev)",
             borderColor: "var(--border)",

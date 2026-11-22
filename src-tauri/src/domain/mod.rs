@@ -8,6 +8,7 @@ pub mod move_;
 pub mod nature;
 pub mod pikalytics;
 pub mod pokemon;
+pub mod regulation;
 pub mod sets;
 pub mod source_stats;
 pub mod team;
@@ -28,13 +29,18 @@ pub use move_::{Move, MoveCategory, MoveSummary};
 pub use nature::Nature;
 pub use pikalytics::{PikalyticsEntry, PikalyticsEvSpread, PikalyticsItem, PikalyticsTeammate};
 pub use pokemon::{Pokemon, PokemonType, Stats};
+pub use regulation::{
+    LiveStreamScreen, OfficialLiveStream, RegulationConfidence, RegulationInfo, RegulationNewsItem,
+    RegulationOrigin, RegulationSourceState, RegulationStatus, RegulationSyncStatus,
+    RegulationWarning, SeasonInfo,
+};
 pub use sets::{PokemonSet, SetsBundle};
 pub use source_stats::{SourceId, SourceProvenance};
 pub use team::{Gender, Team, TeamMember, TeamValidationError};
 pub use tera_type::TeraType;
 pub use tier::Tier;
 pub use trending::{TrendingPokemon, TrendingReport};
-pub use upcoming::UpcomingTournament;
+pub use upcoming::{OfficialEventDetails, UpcomingTournament};
 pub use usage_stats::{
     MetaSnapshot, MoveUsage, PokemonUsage, TeammateUsage, TeraUsage, UsageEntry,
 };

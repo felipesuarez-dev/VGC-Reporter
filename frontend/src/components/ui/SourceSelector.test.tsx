@@ -56,12 +56,15 @@ describe("SourceSelector", () => {
 
   it("says so when the view is pinned to one source", () => {
     render(<SourceSelector value="smogon" onChange={vi.fn()} sources={[]} />);
-    expect(screen.getByText(/sources\.filtered_hint/)).toBeInTheDocument();
+    expect(screen.getByRole("combobox")).toHaveAttribute(
+      "title",
+      expect.stringContaining("sources.filtered_hint"),
+    );
   });
 
   it("stays quiet about filtering while merged", () => {
     render(<SourceSelector value={null} onChange={vi.fn()} sources={[]} />);
-    expect(screen.queryByText(/sources\.filtered_hint/)).not.toBeInTheDocument();
+    expect(screen.getByRole("combobox")).not.toHaveAttribute("title");
   });
 
   it("survives provenance with every optional field missing", () => {
@@ -82,6 +85,28 @@ describe("SourceSelector", () => {
         />,
       ),
     ).not.toThrow();
+  });
+
+  it("does not leak the Smogon slug into the option label", () => {
+    render(
+      <SourceSelector
+        value={null}
+        onChange={vi.fn()}
+        sources={[
+          provenance({
+            source: "smogon",
+            declared_regulation: "gen9championsvgc2026regmc",
+            teams: 277,
+            tournaments: 0,
+          }),
+        ]}
+      />,
+    );
+    expect(
+      screen
+        .getAllByRole("option")
+        .some((option) => option.textContent?.includes("gen9championsvgc2026regmc")),
+    ).toBe(false);
   });
 });
 

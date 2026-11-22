@@ -96,6 +96,7 @@ impl OpenRoster {
         }
 
         let mut seen_species: HashSet<String> = HashSet::new();
+        let mut seen_items: HashSet<String> = HashSet::new();
 
         for (idx, m) in team.members.iter().enumerate() {
             let raw = m.species.trim();
@@ -120,6 +121,11 @@ impl OpenRoster {
             match &m.item {
                 Some(item) if !item.trim().is_empty() => {
                     let item_str = item.trim();
+                    if !seen_items.insert(canonical(item_str)) {
+                        out.push(Violation::DuplicateItem {
+                            item: item_str.to_string(),
+                        });
+                    }
                     if !Self::matches(&self.items, item_str) {
                         out.push(Violation::ItemNotAllowed {
                             slot,

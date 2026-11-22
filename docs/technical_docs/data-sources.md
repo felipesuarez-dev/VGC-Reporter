@@ -6,7 +6,9 @@ Todo el fetching pasa por `HttpClient::get_cached` (`src-tauri/src/adapters/http
 
 | Fuente | Host | TTL | Headers especiales | Uso |
 |---|---|---|---|---|
-| Labmaus | `https://labmaus.net` | 2h top teams · 24h tournaments · 4h trending · 24h catalog | **Origin + Referer obligatorios** (`https://labmaus.net`) | Top Teams, Top Pokémon, Trending, próximos torneos |
+| Pokémon HOME (oficial) | `https://champions-news.pokemon-home.com/en/json/list.json` | 1h | — | Calendario de regulación/temporada, nuevas Megas, link al roster |
+| Roster oficial | `https://web-view.app.pokemonchampions.jp/.../pokemon.html` | 1h | — | Especies elegibles de la regulación |
+| Labmaus | `https://labmaus.net` | 2h top teams · 24h tournaments · 4h trending · 24h catalog | **Origin + Referer obligatorios** (`https://labmaus.net`) | Top Teams, Top Pokémon, Trending, próximos torneos, detección por fuentes |
 | Limitless VGC | `https://play.limitlesstcg.com/api` | 1h listas · 24h detalle | — | Champions tournaments, standings, decklists, fallback de meta |
 | Pokémon Showdown | `https://play.pokemonshowdown.com/data` | 7d | — | Pokédex base, moves, items, abilities, sprites |
 | Smogon chaos | `https://www.smogon.com/stats` | 24h | — | Fallback de usage cuando el formato es muy nuevo |
@@ -14,6 +16,9 @@ Todo el fetching pasa por `HttpClient::get_cached` (`src-tauri/src/adapters/http
 | Pikalytics | `https://www.pikalytics.com/pokedex/championstournaments/<id>` | 24h | — | Detalle por especie: items, abilities, moves, Tera, EVs, compañeros |
 | Pokepaste | `https://pokepast.es/<hash>/raw` | 30d (immutable) | `Accept: text/plain` | Resolución de decklists desde Labmaus |
 | PokéAPI CSV | `https://pokeapi.co/...` + mirror | 30d | — | Nombres y flavor text bilingüe (EN/ES) |
+| Pokedata event locator | `https://pokedata.ovh/events/apiv2` | 6h | UA de navegador | Próximos League Challenges/Cups presenciales: dirección, coordenadas, contacto, entrada e inscripción (espejo del localizador oficial) |
+| Play! Pokémon YouTube | `https://www.youtube.com/@PlayPokemon` | 5 min | `Accept-Language: en-US` | Detecta el stream **VGC** en vivo desde la pestaña `/streams` (nunca GO/TCG) |
+| Item sprites | PokéAPI sprites / Showdown itemicons / PokémonDB | cache HTTP | — | Cadena de fallback para los sprites de objetos |
 
 ## Notas
 
@@ -21,10 +26,16 @@ Todo el fetching pasa por `HttpClient::get_cached` (`src-tauri/src/adapters/http
 - **Pokepaste cacheado a 30 días**: los pastes son inmutables (URL = hash del contenido).
 - **Sprite resolution**: `src-tauri/src/adapters/sprite_resolver.rs` decide URL primaria (Showdown), fallback (Showdown HD) y opcional Home (PokéAPI) por especie.
 - **Sin `reqwest::Client::new()` directo**: cualquier fetch nuevo debe usar `HttpClient::get_cached`.
+- **Pokedata** devuelve un warning PHP antes del JSON; el parser recorta al primer `{`. El modo "todos los países" omite `_country` y pagina con `/_page/N`.
+- **YouTube** no es una API estable: se lee la pestaña `/streams` y se filtra `watching` + título `VGC`/`Pokémon Champions`. Un video configurado explícitamente se valida contra `videoDetails.isLive`.
 
 ## Fallbacks por dominio
 
+- **Regulación activa**: aviso oficial + roster → detección por etiquetas/decklists de Labmaus → semilla estática M-C.
 - **Meta snapshot**: Labmaus → Limitless `list_tournaments_by_format` → Smogon chaos.
 - **Top Teams**: Labmaus discover_teams → Limitless top standings.
 - **Trending**: Labmaus discover_teams en dos ventanas de 7 días.
 - **Pokédex**: Showdown → heurísticas de sprite resolver.
+- **Próximos torneos**: Limitless online + Pokedata presencial; si una fuente falla se muestra la otra. El detalle del evento incluye dirección, mapa, contacto, entrada, inscripción y `.ics`.
+- **Stream en vivo**: `/streams` VGC → `/live` VGC → `None` (el panel se colapsa). Nunca se usa un stream GO/TCG.
+- **Nombres/descripciones de objetos**: Showdown EN + PokéAPI EN/localizado; cada locale cae a EN; el nombre cae a `prettifyItemName`. Sprites: PokéAPI → Showdown → PokémonDB → icono.

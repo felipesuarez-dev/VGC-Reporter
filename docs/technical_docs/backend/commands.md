@@ -35,6 +35,15 @@ Handlers `#[tauri::command]` en `src-tauri/src/commands/`. Cada uno extrae `Stat
 - `export_team_to_showdown(team) -> String` — `showdown_text::format_team`.
 - `validate_team(team, regulation) -> Vec<Violation>` — `regulations::rules_for_code`.
 
+### `regulations.rs`
+- `get_regulations() -> Vec<RegulationInfo>` — refresca el catálogo oficial/fuentes y devuelve la lista.
+- `get_regulation_status() -> RegulationSyncStatus` — regulación activa, última sincronización, fuentes y warnings.
+- `refresh_regulations(force?) -> Vec<RegulationInfo>` — refresco forzado; `force` ignora la caché HTTP.
+- `get_allowed_species/items/moves(format) -> Vec<String>` — allow-lists del catálogo (estáticas o dinámicas).
+- `get_regulation_news(force?) -> Vec<RegulationNewsItem>` — avisos oficiales de Pokémon Champions.
+- `get_official_live_stream(force?) -> Option<OfficialLiveStream>` — directo VGC oficial; `None` si no hay.
+- `validate_team` usa `rules_for_code`, que resuelve reglas dinámicas desde el catálogo.
+
 ### `trending.rs`
 - `get_trending(format) -> TrendingReport` — `TrendingService::get_trending`.
 
@@ -46,7 +55,7 @@ Handlers `#[tauri::command]` en `src-tauri/src/commands/`. Cada uno extrae `Stat
 - `set_setting(key, value) -> ()` — `SettingsRepo::set`.
 
 ### `upcoming.rs`
-- `list_upcoming_tournaments() -> Vec<UpcomingTournament>` — `UpcomingTournamentsService::list_upcoming`.
+- `list_upcoming_tournaments(country?) -> Vec<UpcomingTournament>` — `country` es un ISO de 2 letras o `None` para todos los países. Mezcla Limitless online + Pokedata presencial.
 
 ## Registro
 

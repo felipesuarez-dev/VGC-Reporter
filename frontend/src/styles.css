@@ -383,3 +383,16 @@ img[data-sprite="true"] {
 .font-size-slider:focus-visible::-moz-range-thumb {
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
+
+@keyframes news-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.news-shimmer {
+  animation: news-shimmer 1.4s ease-in-out infinite;
+}

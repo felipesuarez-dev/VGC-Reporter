@@ -1,4 +1,7 @@
 import { EntityChip } from "../info/EntityChip";
+import { EntityUsers } from "../info/EntityUsers";
+import { canonicalSpeciesId } from "../../lib/types";
+import type { EntityUser } from "../../lib/entityUsers";
 
 interface TopListItem {
   name: string;
@@ -16,6 +19,8 @@ interface Props {
    * precedence over `labelFor`.
    */
   entityKind?: "item" | "move" | "ability";
+  /** Top Pokémon using each entity, keyed by canonical entity name. */
+  users?: Map<string, EntityUser[]>;
 }
 
 export function TopList({
@@ -24,6 +29,7 @@ export function TopList({
   emptyLabel = "—",
   labelFor,
   entityKind,
+  users,
 }: Props) {
   const items = data.slice(0, limit);
   if (items.length === 0) {
@@ -64,6 +70,10 @@ export function TopList({
                 style={{ width: `${width}%`, backgroundColor: "var(--accent)" }}
               />
             </div>
+            <EntityUsers
+              users={users?.get(canonicalSpeciesId(item.name)) ?? []}
+              className="mt-1"
+            />
           </li>
         );
       })}

@@ -25,6 +25,6 @@ La Pokédex es el catálogo completo de Pokémon, filtrable y ordenable.
 - **Stats, tipos, abilities, sprites**: de Pokémon Showdown.
 - **Sets y datos detallados de meta** (items, EVs, compañeros): de Pikalytics, página Champions Tournaments.
 - **Nombres y descripciones bilingües (ES/EN)**: de PokéAPI.
-- **Tier de moves**: calculado a partir del meta actual de torneos Champions M-A.
+- **Tier de moves**: calculado a partir del meta actual de torneos Champions (M-C).
 
 Todo se cachea localmente para que la próxima visita sea instantánea.

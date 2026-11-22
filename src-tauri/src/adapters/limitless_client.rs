@@ -2,6 +2,7 @@ use crate::adapters::HttpClient;
 use crate::config;
 use crate::domain::format::Format;
 use crate::error::AppError;
+use chrono::NaiveDate;
 use serde::Deserialize;
 
 #[derive(Clone)]
@@ -62,27 +63,41 @@ impl LimitlessClient {
         format: Format,
         limit: usize,
     ) -> Result<Vec<LimitlessTournamentSummary>, AppError> {
-        let filtered = match format {
-            // Champions sets (M-A / M-B / M-C): limitless tags EVERY Champions
-            // tournament with `format=M-A`, so a server-side `&format=M-B` or
-            // `&format=M-C` filter returns nothing (verified: 0 results). Fetch
-            // a wide unfiltered VGC slice, keep only tournaments inside the
-            // regulation's own date window, then rescue the Champions ones by
-            // name/format. The date filter is what makes the recent list match
-            // the selected regulation: M-A shows its closing fortnight, M-B its
-            // 06-17→09-08 season, M-C from 09-09 on.
-            //
-            // The limit is 400, not 300: 300 only reached ~6 weeks back, which
-            // stopped covering a full season once M-B closed and M-C opened.
-            Format::RegulationMA | Format::RegulationMB | Format::RegulationMC => {
-                let all = self.list_all_vgc(400).await?;
-                let in_window = filter_by_window(all, format);
-                filter_champions(in_window, limit)
-            }
-            _ => {
-                let all = exclude_non_vgc(self.list_tournaments(format, 100).await?);
-                all.into_iter().take(limit).collect()
-            }
+        self.list_tournaments_in_range(format, None, limit).await
+    }
+
+    /// Same as [`Self::list_tournaments_by_format`], but with an explicit
+    /// calendar range instead of the regulation's full window. `None` keeps
+    /// the historical behaviour. The adapter deliberately takes plain dates,
+    /// not a service type, to preserve the domain ← adapters dependency.
+    pub async fn list_tournaments_in_range(
+        &self,
+        format: Format,
+        range: Option<(NaiveDate, NaiveDate)>,
+        limit: usize,
+    ) -> Result<Vec<LimitlessTournamentSummary>, AppError> {
+        // Champions sets (M-A, M-B, M-C, M-D, …): Limitless tags every
+        // Champions tournament with `format=M-A`, so a server-side
+        // `&format=M-B`/`&format=M-D` filter returns nothing. Fetch a wide
+        // unfiltered VGC slice and keep only the tournaments inside the
+        // requested range. The date filter is the source of truth; the format
+        // tag is only a rescue heuristic.
+        let champions_like =
+            format.as_str().starts_with("regulation-m-") || format.code().starts_with('M');
+        let filtered = if champions_like {
+            let all = self.list_all_vgc(400).await?;
+            let in_window = match range {
+                Some(range) => filter_by_dates(all, range),
+                None => filter_by_window(all, format),
+            };
+            filter_champions(in_window, limit)
+        } else {
+            let all = self.list_tournaments(format, 100).await?;
+            let in_range = match range {
+                Some(range) => filter_by_dates(all, range),
+                None => all,
+            };
+            exclude_non_vgc(in_range).into_iter().take(limit).collect()
         };
         Ok(filtered)
     }
@@ -139,6 +154,21 @@ fn filter_by_window(
                 .as_deref()
                 .and_then(parse_tournament_date)
                 .map(|d| d >= start && d <= end)
+                .unwrap_or(false)
+        })
+        .collect()
+}
+
+fn filter_by_dates(
+    list: Vec<LimitlessTournamentSummary>,
+    (from, to): (NaiveDate, NaiveDate),
+) -> Vec<LimitlessTournamentSummary> {
+    list.into_iter()
+        .filter(|t| {
+            t.date
+                .as_deref()
+                .and_then(parse_tournament_date)
+                .map(|d| d >= from && d <= to)
                 .unwrap_or(false)
         })
         .collect()
@@ -476,8 +506,31 @@ mod tests {
             mk("edge", "2026-06-16T23:00:00.000Z"),   // M-A last day
             mk("m_b", "2026-06-18T10:00:00.000Z"),    // M-B era, excluded for M-A
         ];
-        let kept = filter_by_window(list, Format::RegulationMA);
+        let kept = filter_by_window(list, Format::ma());
         let ids: Vec<&str> = kept.iter().map(|t| t.id.as_str()).collect();
         assert_eq!(ids, vec!["in_a", "edge"]);
+    }
+
+    #[test]
+    fn filter_by_dates_uses_the_requested_range() {
+        let mk = |id: &str, date: &str| LimitlessTournamentSummary {
+            id: id.into(),
+            name: "Champions".into(),
+            date: Some(date.into()),
+            players: Some(50),
+            format: Some("M-C".into()),
+            organizer_id: None,
+            game: None,
+        };
+        let from = chrono::NaiveDate::from_ymd_opt(2026, 11, 4).unwrap();
+        let to = chrono::NaiveDate::from_ymd_opt(2026, 11, 21).unwrap();
+        let list = vec![
+            mk("before", "2026-11-03T23:00:00.000Z"),
+            mk("inside", "2026-11-10T10:00:00.000Z"),
+            mk("after", "2026-11-22T10:00:00.000Z"),
+        ];
+        let kept = filter_by_dates(list, (from, to));
+        let ids: Vec<&str> = kept.iter().map(|t| t.id.as_str()).collect();
+        assert_eq!(ids, vec!["inside"]);
     }
 }

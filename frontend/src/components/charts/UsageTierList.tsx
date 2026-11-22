@@ -15,7 +15,7 @@ interface Props {
  * Deliberately plain DOM rather than Recharts: the tier list is a grid of
  * sprites grouped into rows, so an SVG renderer buys nothing and costs the
  * class of crash that took the Dashboard down when the treemap was added
- * (see Regla 1 in CLAUDE.md).
+ * (see the app-level error boundary rule).
  *
  * The tier itself is computed in Rust and arrives on the payload. The frontend
  * never derives it, so the Panel and any other consumer cannot disagree.

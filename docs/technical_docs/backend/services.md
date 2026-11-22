@@ -22,6 +22,7 @@ Genera el `MetaSnapshot` (Top Pokémon, top items/moves/abilities/tera, common m
 
 ## TrendingService (`trending_service.rs`)
 - Resuelve nombre Labmaus desde `SettingsRepo` o default del `Format`.
+- **`regulation_service.rs`** — construye el catálogo estático M-A/M-B/M-C, consulta el calendario oficial y detecta una regulación nueva por fuentes si la oficial aún no está publicada. Publica snapshots en `domain::regulation`; `Format` y `DynamicRules` los consumen.
 - Divide ventana en dos mitades de 7 días (`prev` vs `curr`).
 - Pesos por placement: top 8 → 3.0, 9–32 → 2.0, resto → 1.0.
 - Score: delta porcentual + log-ratio momentum con shrinkage Bayesiano (`config::TRENDING_BAYES_K`).
@@ -29,7 +30,8 @@ Genera el `MetaSnapshot` (Top Pokémon, top items/moves/abilities/tera, common m
 
 ## PokedexService (`pokedex_service.rs`)
 - Carga Showdown pokedex.json + descripciones.
-- Merge con PokéAPI CSV bilingüe (ES/EN).
+- Merge con PokéAPI CSV bilingüe (ES/EN). El merge parte de la unión de ambas fuentes: Showdown aporta el inglés corto de moves/abilities, PokéAPI aporta inglés/localizado de items y los locales que falten; cada locale cae a EN.
+- Ítems: `top_items` global devuelve hasta 200 entradas y normaliza variantes (`Focus Sash`/`Focussash`) por clave canónica.
 - API pública: `all`, `search`, `get`, `list_items`, `list_moves`, `list_moves_for_species`, `get_entity_descriptions`, `learnsets_index`, `move_catalog`, `sprite_urls_for`.
 
 ## PikalyticsService (`pikalytics_service.rs`)
@@ -46,7 +48,9 @@ Genera el `MetaSnapshot` (Top Pokémon, top items/moves/abilities/tera, common m
 - Carga CSVs de PokéAPI (abilities, moves, items) y los cachea como tabla bilingüe.
 
 ## UpcomingTournamentsService (`upcoming_tournaments_service.rs`)
-- Limitless `list_all_vgc(100)` filtrado por ventana 14 días hacia adelante.
+- Limitless `list_all_vgc(100)` filtrado por ventana de 30 días hacia adelante.
+- Suma eventos presenciales de Pokedata: por país (`_country/XX`) o global (sin `_country`, 2 páginas) cuando el filtro es "Todos".
+- Ordena por fecha/hora/nombre, deduplica por id y recorta a 60.
 
 ## Utilidades
 

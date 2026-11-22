@@ -387,7 +387,7 @@ mod tests {
             entry("iron-hands"),
             entry("Amoonguss"),
         ])]];
-        let snap = aggregate(Format::RegulationMA, standings);
+        let snap = aggregate(Format::ma(), standings);
 
         let flutter = snap
             .pokemon
@@ -421,7 +421,7 @@ mod tests {
             entry("Heat-Rotom"),
             entry("Amoonguss"),
         ])]];
-        let snap = aggregate(Format::RegulationMA, standings);
+        let snap = aggregate(Format::ma(), standings);
 
         let species: Vec<&str> = snap.pokemon.iter().map(|p| p.species.as_str()).collect();
 
@@ -451,7 +451,7 @@ mod tests {
             entry("Wash-Rotom"),
             entry("Amoonguss"),
         ])]];
-        let snap = aggregate(Format::RegulationMA, standings);
+        let snap = aggregate(Format::ma(), standings);
         let rotom = snap
             .pokemon
             .iter()
@@ -475,7 +475,7 @@ mod tests {
             entry("Amoonguss"),
             entry("Incineroar"),
         ])]];
-        let snap = aggregate(Format::RegulationMA, standings);
+        let snap = aggregate(Format::ma(), standings);
         let amoonguss = snap
             .pokemon
             .iter()
@@ -556,7 +556,7 @@ mod tests {
                 &["Draco Meteor"],
             ),
         ];
-        let snap = aggregate(Format::RegulationMA, vec![vec![standing(deck)]]);
+        let snap = aggregate(Format::ma(), vec![vec![standing(deck)]]);
 
         let goggles = snap
             .top_items
@@ -628,10 +628,7 @@ mod tests {
             loaded_entry("Dondozo", "Assault Vest", "Unaware", &["Wave Crash"]),
             loaded_entry("Tatsugiri", "Assault Vest", "Commander", &["Draco Meteor"]),
         ];
-        let snap = aggregate(
-            Format::RegulationMA,
-            vec![vec![standing(deck_a), standing(deck_b)]],
-        );
+        let snap = aggregate(Format::ma(), vec![vec![standing(deck_a), standing(deck_b)]]);
 
         let goggles = snap
             .top_items
@@ -667,7 +664,7 @@ mod tests {
             entry("Dondozo"),
             entry("Tatsugiri"),
         ];
-        let snap = aggregate(Format::RegulationMA, vec![vec![standing(deck)]]);
+        let snap = aggregate(Format::ma(), vec![vec![standing(deck)]]);
         let inc = snap
             .pokemon
             .iter()

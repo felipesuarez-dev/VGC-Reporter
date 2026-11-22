@@ -7,6 +7,8 @@ interface Props {
   children: ReactNode;
   className?: string;
   placement?: "top" | "bottom";
+  /** Maximum tooltip width in px. Defaults to 240. */
+  maxWidth?: number;
 }
 
 export function Tooltip({
@@ -14,6 +16,7 @@ export function Tooltip({
   children,
   className,
   placement = "top",
+  maxWidth = 240,
 }: Props) {
   const triggerRef = useRef<HTMLSpanElement | null>(null);
   const tooltipRef = useRef<HTMLSpanElement | null>(null);
@@ -70,9 +73,20 @@ export function Tooltip({
     } else if (box.right > window.innerWidth - margin) {
       newLeft = coords.left - (box.right - (window.innerWidth - margin));
     }
-    if (Math.abs(newLeft - coords.left) >= 1) {
+    let newTop = coords.top;
+    if (box.top < margin) {
+      newTop = coords.top + (margin - box.top);
+    } else if (box.bottom > window.innerHeight - margin) {
+      newTop = coords.top - (box.bottom - (window.innerHeight - margin));
+    }
+    if (
+      Math.abs(newLeft - coords.left) >= 1 ||
+      Math.abs(newTop - coords.top) >= 1
+    ) {
       clampsRef.current += 1;
-      setCoords((prev) => (prev ? { ...prev, left: newLeft } : null));
+      setCoords((prev) =>
+        prev ? { ...prev, left: newLeft, top: newTop } : null,
+      );
     }
   }, [open, coords]);
 
@@ -93,12 +107,13 @@ export function Tooltip({
             ref={tooltipRef}
             role="tooltip"
             className={cn(
-              "pointer-events-none fixed z-[60] w-max max-w-[240px] -translate-x-1/2 whitespace-normal rounded-md border px-2 py-1 text-[11px] leading-snug shadow-lg",
+              "pointer-events-none fixed z-[60] w-max -translate-x-1/2 whitespace-normal rounded-md border px-2 py-1 text-[11px] leading-snug shadow-lg",
               effectivePlacement === "top" ? "-translate-y-full" : "",
             )}
             style={{
               top: coords.top,
               left: coords.left,
+              maxWidth,
               backgroundColor: "var(--bg-elev-strong)",
               borderColor: "var(--border)",
               color: "var(--text)",

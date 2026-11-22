@@ -20,6 +20,7 @@ import { formatDateTime } from "../lib/formatDate";
 import { formatLabel } from "../lib/labels";
 import { useUiStore } from "../stores/uiStore";
 import { useDashboardStore } from "../stores/dashboardStore";
+import { useRegulationCatalog } from "../hooks/useRegulationCatalog";
 import { useLongLoadingHint } from "../hooks/useLoadingHint";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { usePullToRefresh } from "../hooks/usePullToRefresh";
@@ -58,6 +59,9 @@ export function TopTeams() {
   // Top Teams used to be pinned to a hardcoded regulation, so it silently
   // disagreed with the Dashboard selector. It now follows the same store.
   const FORMAT: Format = useDashboardStore((s) => s.format);
+  // Keep the active regulation in sync even when this is the first page the
+  // user opens after a launch.
+  useRegulationCatalog();
   const qc = useQueryClient();
   const [selectedTournament, setSelectedTournament] =
     useState<ChampionsTournament | null>(null);

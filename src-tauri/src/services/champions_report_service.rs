@@ -33,10 +33,11 @@ impl ChampionsReportService {
         &self,
         format: Format,
         limit: usize,
+        range: Option<(chrono::NaiveDate, chrono::NaiveDate)>,
     ) -> Result<ChampionsReport, AppError> {
         let raw = self
             .limitless
-            .list_tournaments_by_format(format, limit.saturating_mul(3))
+            .list_tournaments_in_range(format, range, limit.saturating_mul(3))
             .await?;
 
         let fetches = raw
@@ -45,12 +46,13 @@ impl ChampionsReportService {
             .collect::<Vec<_>>();
         let results = join_all(fetches).await;
 
-        let mut kept: Vec<ChampionsTournament> = Vec::with_capacity(raw.len());
+        let mut kept: Vec<(ChampionsTournament, Option<LimitlessStanding>)> =
+            Vec::with_capacity(raw.len());
         for (t, res) in raw.into_iter().zip(results) {
-            let (has_any, champion_name) = match res {
+            let (has_any, champion) = match res {
                 Ok(standings) => {
-                    let champ = extract_champion_name(&standings);
-                    (has_any_decklist(&standings), champ)
+                    let champion = extract_champion(&standings);
+                    (has_any_decklist(&standings), champion)
                 }
                 Err(e) => {
                     tracing::warn!("standings fetch failed for {}: {}", t.id, e);
@@ -58,15 +60,39 @@ impl ChampionsReportService {
                 }
             };
             if has_any {
-                kept.push(into_tournament(t, champion_name));
+                let champion_name = champion
+                    .as_ref()
+                    .and_then(|s| s.name.clone())
+                    .map(|n| n.trim().to_string())
+                    .filter(|n| !n.is_empty());
+                kept.push((into_tournament(t, champion_name), champion));
                 if kept.len() >= limit {
                     break;
                 }
             }
         }
 
+        // Resolve the champion sprites in one batch. This is at most
+        // `limit * 6` names, not the full standings table.
+        let champions = kept
+            .iter()
+            .filter_map(|(_, champion)| champion.clone())
+            .collect::<Vec<_>>();
+        let sprites = self.resolve_sprites(&champions).await;
+        for (tournament, champion) in &mut kept {
+            if let Some(champion) = champion {
+                tournament.champion_team = champion
+                    .decklist
+                    .clone()
+                    .unwrap_or_default()
+                    .into_iter()
+                    .filter_map(|entry| into_decklist_pokemon(entry, &sprites))
+                    .collect();
+            }
+        }
+
         Ok(ChampionsReport {
-            tournaments: kept,
+            tournaments: kept.into_iter().map(|(t, _)| t).collect(),
             fetched_at: Utc::now(),
         })
     }
@@ -253,17 +279,16 @@ fn into_tournament(
         format: t.format,
         organizer_id: t.organizer_id,
         champion_name,
+        champion_team: Vec::new(),
     }
 }
 
-fn extract_champion_name(standings: &[LimitlessStanding]) -> Option<String> {
+fn extract_champion(standings: &[LimitlessStanding]) -> Option<LimitlessStanding> {
     standings
         .iter()
         .find(|s| s.placing == Some(1))
         .or_else(|| standings.first())
-        .and_then(|s| s.name.clone())
-        .map(|n| n.trim().to_string())
-        .filter(|n| !n.is_empty())
+        .cloned()
 }
 
 fn decklist_display_name(e: &LimitlessDecklistEntry) -> Option<String> {

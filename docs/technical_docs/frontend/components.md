@@ -5,7 +5,7 @@
 ## layout/
 - `AppShell.tsx` — wrapper principal. Desktop: sidebar colapsable con resize drag + `Titlebar`. Mobile: sidebar overlay drawer + `MobileTopbar`. Detecta `isMobile` via `matchMedia("(max-width: 767px)")`. Aplica safe-area insets en sidebar header/footer y `<main>`.
 - `Titlebar.tsx` — header desktop con branding, búsqueda, tema/idioma y controles de ventana.
-- `MobileTopbar.tsx` — barra superior para Android: hamburguesa, logo, título, búsqueda, tema/idioma. Incluye `paddingTop: env(safe-area-inset-top)` para respetar la barra de estado del sistema.
+- `MobileTopbar.tsx` — barra superior para Android: hamburguesa, logo, título compacto **VGC** en pantallas estrechas, búsqueda, tema/idioma. Incluye `paddingTop: env(safe-area-inset-top)` para respetar la barra de estado del sistema.
 - `LanguageToggle.tsx` — toggle ES/EN.
 - `ThemeProvider.tsx` — provee variables CSS según tema.
 - `ThemeSelect.tsx` — selector de tema (system, Gengar, Clefable, Incineroar, Tyranitar). Variante `titlebar` muestra Palette + bolita bicolor del tema activo.
@@ -13,6 +13,11 @@
 - `UpdaterModal.tsx` — modal de actualización disponible/descarga. Sólo se renderiza en desktop (`!isMobile`).
 - `UpdaterErrorBanner.tsx` — banner de error del updater. Sólo se renderiza en desktop.
 - `SourcesChip.tsx` — badge linkable a fuentes externas.
+- `TimeZoneSelect.tsx` — selector global de zona horaria con `SearchSelect` (muchas zonas IANA).
+- `CountrySelect.tsx` — selector de país de Settings con `SearchSelect`.
+- `CountryFilterSelect.tsx` — selector de país para próximos torneos; incluye "Todos los países" (`null`), buscador, países con datos primero y favorito con estrella.
+- `CityFilterSelect.tsx` — selector de ciudad alimentado por los eventos visibles; clave compuesta `country|city` para no mezclar ciudades homónimas.
+- `UpcomingFilters.tsx` — buscador de texto + país + ciudad compartido por la lista y el calendario; maneja el reset de ciudad al cambiar de país y la estrella de favorito. El buscador ignora tildes y busca también en la dirección.
 
 ## pokemon/
 - `PokemonCard.tsx` — card con sprite, stats, tipo, usage %.
@@ -42,22 +47,38 @@
 
 ## tournament/
 - `TournamentStandingsDrawer.tsx` — drawer/modal con standings completos + decklists. Incluye filtros de jugador, país y Pokémon. Usa `useModalBack` para el botón Atrás de Android.
+- `ChampionTeam.tsx` — etiqueta "Equipo campeón" en la fila del torneo; el equipo y el detalle de objeto/habilidad/Tera/movimientos aparecen sólo en el tooltip al hover. El detalle completo sigue en el drawer.
 
 ## dashboard/
 - `XCard.tsx` — wrapper de embed de Twitter/X.
+- `DashboardViewTabs.tsx` — tabs en orden **Novedades / Métricas / Regulación** + pin de vista inicial. En mobile hacen wrap para no cortar etiquetas.
+- `FeedSummaryCard.tsx` — resumen de regulación/temporada con instantes locales y días de datos UTC.
+- `RegulationFeed.tsx` — stack de filas drag-and-drop. Usa pointer events (no HTML5 DnD) para que funcione en WebView2 y touch: lado = misma fila, arriba/abajo = fila nueva. Incluye collapse y el ghost que sigue al cursor. Mientras live/eventos/noticias cargan, muestra `FeedLoading` (spinner + skeletons) y evita renderizar una vista a medio cargar.
+- `LiveStreamCard.tsx` — vitrina de pantallas de YouTube (`useLiveStreams`): 11 pantallas VGC por defecto (YukS, Play! Pokémon, WolfeyVGC, CybertronVGC, James Baek, PokeAlex, Moxie2D, Pokémon Champions, Sekiam, IRNemesis y un watch party); estados de carga con spinner/skeletons, señales en vivo con badges EN VIVO / canal / Oficial **debajo del video**, canales offline visibles y botón **Vitrina TV**. La primera señal viva es la grande de la izquierda y las demás van en columna a la derecha; **Destacar** cambia la principal, un toggle permite pasarlas abajo (`side`/`below`) y el ojo oculta/restaura cada señal sin borrarla. Si no hay ninguna en vivo, muestra **Últimas transmisiones** con el último directo de cada canal. El oficial filtra VGC; los canales de comunidad muestran su directo actual. Cada señal tiene Suscribirse/Abrir.
+- `LiveWall.tsx` — overlay a pantalla completa con las señales en vivo en mosaico (1–6), badges al pie y botón de cierre/Escape.
+- `lib/youtube.ts` — construye la URL `?sub_confirmation=1` de un canal; el "Me gusta" real requiere OAuth de Google y no se intenta desde el iframe.
+- `RegulationNews.tsx` — noticias oficiales paginadas 6 por página; click abre `NewsDetailModal`. Las miniaturas usan `NewsThumbnail` (skeleton/shimmer + fade-in y fallback).
+- `NewsDetailModal.tsx` — iframe de la noticia oficial + "Abrir en el navegador" y `useModalBack`.
+- `NewsThumbnail.tsx` — banner 96×56 con shimmer mientras carga, fade/scale al terminar y placeholder si falla.
+- `FeedSidePanel.tsx` — tabs Próximos / Calendario. La pestaña de Fuentes se eliminó; la información de fuentes vive en Regulación y Ajustes.
+- `FeedCalendar.tsx` — calendario mensual con puntos por día (torneos + eventos personales), lista del día seleccionado con dirección completa, filtros país/ciudad, **Exportar .ics** y **Añadir evento** (evento personal persistido).
+- `CustomEventModal.tsx` — formulario de evento personal (título, fecha, hora, lugar, notas) guardado en `customEventsStore`.
+- `UpcomingTournamentsSection.tsx` — eventos online + presenciales; filtros país/ciudad, fuente visible y modal de detalle.
+- `EventSourceBadge.tsx` — badge Play! Pokémon vs Limitless para cada evento.
+- `TournamentDetailModal.tsx` — ficha con organizador, teléfono/email, local, dirección completa, código postal, contacto, web, entrada (badge junto al título), inscripción, categoría, evento premier, estado, ID, mapa OpenStreetMap, **Exportar .ics** y "Abrir en el navegador". Para Play! Pokémon consulta `get_official_event_details`; si el sitio bloquea la petición, usa el lector público de respaldo y muestra los datos estructurados (sin iframe ni aviso anti-bot). Limitless conserva la vista embebida.
 
-## info/
-- `EntityChip.tsx` — chip con tooltip para ability/move/item.
+## items/
+- `ItemSprite.tsx` — sprite de objeto con cadena de fallback PokéAPI → Showdown itemicons → PokémonDB → icono neutro. El intento se resetea al cambiar de objeto sin `useEffect`.
 
 ## ui/
 - `Tooltip.tsx` — tooltip flotante via portal. Dos fases: fase 1 calcula posición desde el trigger; fase 2 mide el rect real del tooltip y desplaza `left` para que ambos bordes queden a ≥ 8 px del viewport (crítico en mobile con pantallas estrechas).
-- `SearchSelect.tsx` — combo-box con autocompletado.
+- `SearchSelect.tsx` — combo-box con autocompletado. `triggerClassName` permite igualar la altura de los inputs de Settings; `allowClear` distingue filtros obligatorios (país) de filtros con "Todos"; `favorite`/`onFavoriteChange` añaden la estrella de favorito (mismo patrón que `FormatSelector`).
 - `FormatSelector.tsx` — dropdown de regulación.
 - `MultiTypeSelect.tsx` — multiselect de tipos.
 - `ScrollToTop.tsx` — botón ancla.
 
 ## info/
-- `EntityChip.tsx` — chip con `Tooltip` para ability/move/item. El tooltip incluye nombre localizado, tipo, categoría (para moves) y descripción de PokéAPI.
+- `EntityChip.tsx` — chip con `Tooltip` para ability/move/item. El tooltip incluye nombre localizado, tipo, categoría (para moves) y descripción de PokéAPI. Los items muestran sprite inline y, si falta el nombre localizado, `prettifyItemName` evita ids concatenados.
 - `MoveDetailModal.tsx` — modal de detalle de movimiento (z-[55]). Usa `useModalBack`.
-- `ItemDetailModal.tsx` — modal de detalle de objeto. Usa `useModalBack`.
+- `ItemDetailModal.tsx` — modal de detalle de objeto con sprite, nombre, tipo "Objeto" y sección de efecto. Usa `useModalBack` y cae a "Sin descripción disponible" sólo si todas las fuentes fallan.
 - `AbilityDetailModal.tsx` — modal de detalle de habilidad. Usa `useModalBack`.

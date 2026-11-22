@@ -150,7 +150,7 @@ impl RegMaRules {
 }
 
 impl RegulationRules for RegMaRules {
-    fn code(&self) -> &'static str {
+    fn code(&self) -> &str {
         "regulation-m-a"
     }
 
@@ -179,6 +179,7 @@ impl RegulationRules for RegMaRules {
         }
 
         let mut seen_species: HashSet<String> = HashSet::new();
+        let mut seen_items: HashSet<String> = HashSet::new();
         let mut restricted_count: u8 = 0;
 
         for (idx, m) in team.members.iter().enumerate() {
@@ -213,6 +214,11 @@ impl RegulationRules for RegMaRules {
                 }),
                 Some(item) if !item.trim().is_empty() => {
                     let item_str = item.trim();
+                    if !seen_items.insert(canonical(item_str)) {
+                        out.push(Violation::DuplicateItem {
+                            item: item_str.to_string(),
+                        });
+                    }
                     if !self.matches(&self.allowed_items, item_str) {
                         out.push(Violation::ItemNotAllowed {
                             slot,
@@ -339,10 +345,22 @@ mod tests {
         while members.len() < 6 {
             members.push(complete_member("Garchomp"));
         }
+        // Item Clause: filler members must not all hold Leftovers.
+        let items = [
+            "Leftovers",
+            "Choice Scarf",
+            "Focus Sash",
+            "Sitrus Berry",
+            "Black Belt",
+            "Charcoal",
+        ];
+        for (idx, member) in members.iter_mut().enumerate() {
+            member.item = Some(items[idx % items.len()].into());
+        }
         Team {
             id: None,
             name: "t".into(),
-            format: Format::RegulationMA,
+            format: Format::ma(),
             notes: None,
             members,
             created_at: None,
@@ -358,7 +376,7 @@ mod tests {
         Team {
             id: None,
             name: "t".into(),
-            format: Format::RegulationMA,
+            format: Format::ma(),
             notes: None,
             members,
             created_at: None,

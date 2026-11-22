@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { Calculator, X } from "lucide-react";
+import { ArrowUp, BarChart3, Calculator, Shield, Swords, X } from "lucide-react";
 import { useModalBack } from "../../hooks/useModalBack";
 import { ipc } from "../../lib/ipc";
 import { queryKeys } from "../../lib/queryKeys";
@@ -35,11 +35,19 @@ export function PokemonDetailModal() {
   const close = usePokedexStore((s) => s.closeDetail);
   const format = useDashboardStore((s) => s.format);
   const [calcMenuOpen, setCalcMenuOpen] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   useModalBack(Boolean(id), close);
 
   useEffect(() => {
     if (!id) setCalcMenuOpen(false);
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    scrollRef.current?.scrollTo({ top: 0 });
+    setShowScrollTop(false);
   }, [id]);
 
   useEffect(() => {
@@ -87,14 +95,14 @@ export function PokemonDetailModal() {
       onClick={close}
     >
       <div
-        className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl border p-5 shadow-2xl"
+        className="relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl border shadow-2xl"
         style={{
           backgroundColor: "var(--bg-elev)",
           borderColor: "var(--border)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="absolute right-3 top-3 flex items-center gap-1">
+        <div className="absolute right-3 top-3 z-20 flex items-center gap-1">
           {pokemon.data && (
             <div className="relative">
               <button
@@ -143,6 +151,11 @@ export function PokemonDetailModal() {
           </button>
         </div>
 
+        <div
+          ref={scrollRef}
+          onScroll={(e) => setShowScrollTop(e.currentTarget.scrollTop > 320)}
+          className="overflow-y-auto p-5 pt-12"
+        >
         {pokemon.isLoading && (
           <div style={{ color: "var(--text-muted)" }}>{t("common.loading")}</div>
         )}
@@ -173,7 +186,61 @@ export function PokemonDetailModal() {
             topTeams={topTeams.data ?? null}
           />
         )}
+        </div>
+
+        {showScrollTop && (
+          <button
+            type="button"
+            onClick={() =>
+              scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })
+            }
+            className="absolute bottom-4 right-4 z-20 flex h-9 w-9 items-center justify-center rounded-full border shadow-lg transition-colors hover:bg-[var(--bg-elev-strong)]"
+            style={{
+              backgroundColor: "var(--bg-elev)",
+              borderColor: "var(--border)",
+              color: "var(--accent)",
+            }}
+            aria-label={t("common.scroll_to_top")}
+            title={t("common.scroll_to_top")}
+          >
+            <ArrowUp size={16} />
+          </button>
+        )}
       </div>
+    </div>
+  );
+}
+
+function SectionTitle({
+  icon,
+  children,
+  compact = false,
+}: {
+  icon: ReactNode;
+  children: ReactNode;
+  compact?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <span
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+        style={{
+          backgroundColor: "var(--accent-soft)",
+          color: "var(--accent)",
+        }}
+      >
+        {icon}
+      </span>
+      <h3
+        className={compact ? "text-sm font-semibold" : "text-[15px] font-semibold"}
+        style={{ color: "var(--text)" }}
+      >
+        {children}
+      </h3>
+      <span
+        className="h-px flex-1"
+        style={{ backgroundColor: "var(--border)" }}
+      />
     </div>
   );
 }
@@ -300,12 +367,9 @@ function ModalBody({
 
       {(myUsage || naturesEntries.length > 0) && (
         <section className="mb-4 space-y-2">
-          <h3
-            className="text-xs font-semibold uppercase tracking-wide"
-            style={{ color: "var(--text-muted)" }}
-          >
+          <SectionTitle icon={<BarChart3 size={14} />}>
             {t("pokemon_detail.meta_usage")}
-          </h3>
+          </SectionTitle>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {myUsage && (
               <>
@@ -319,12 +383,11 @@ function ModalBody({
           </div>
           {myUsage && myUsage.common_movesets && myUsage.common_movesets.length > 0 && (
             <div className="mt-2">
-              <h4
-                className="mb-2 text-[10px] font-semibold uppercase tracking-wide"
-                style={{ color: "var(--text-muted)" }}
-              >
-                {t("drawer.top_movesets")}
-              </h4>
+              <div className="mb-2">
+                <SectionTitle compact icon={<Swords size={13} />}>
+                  {t("drawer.top_movesets")}
+                </SectionTitle>
+              </div>
               <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                 {myUsage.common_movesets.slice(0, 5).map((ms, idx) => (
                   <MovesetTierCard key={idx} moveset={ms} rank={idx} />
@@ -338,12 +401,9 @@ function ModalBody({
       <PikalyticsSection species={pokemon.name} />
 
       <section className="space-y-2">
-        <h3
-          className="text-xs font-semibold uppercase tracking-wide"
-          style={{ color: "var(--text-muted)" }}
-        >
+        <SectionTitle icon={<Shield size={14} />}>
           {t("pokemon_detail.matchups")}
-        </h3>
+        </SectionTitle>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <div
             className="rounded-lg border p-3"

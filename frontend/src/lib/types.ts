@@ -26,6 +26,9 @@ export type {
   MoveUsage,
   MovesetUsage,
   Nature,
+  LiveStreamScreen,
+  OfficialEventDetails,
+  OfficialLiveStream,
   PikalyticsEntry,
   PikalyticsEvSpread,
   PikalyticsItem,
@@ -34,6 +37,15 @@ export type {
   PokemonSet,
   PokemonType,
   PokemonUsage,
+  RegulationConfidence,
+  RegulationInfo,
+  RegulationNewsItem,
+  RegulationOrigin,
+  RegulationSourceState,
+  RegulationStatus,
+  RegulationSyncStatus,
+  RegulationWarning,
+  SeasonInfo,
   SetsBundle,
   SourceId,
   SourceProvenance,
@@ -76,10 +88,14 @@ export interface FormatOption {
   disabledTooltipParams?: Record<string, string>;
 }
 
-export const ALL_FORMATS: FormatOption[] = [
-  { value: "regulation-m-c", label: "Regulation M-C (M-6)" },
-  { value: "regulation-m-b", label: "Regulation M-B (M-3)" },
-  { value: "regulation-m-a", label: "Regulation M-A (M-2)" },
+/**
+ * Offline fallback only. The live list comes from `useRegulationCatalog`;
+ * this constant keeps the app usable if the backend catalog cannot load.
+ */
+export const FALLBACK_FORMATS: FormatOption[] = [
+  { value: "regulation-m-c", label: "Regulation M-C" },
+  { value: "regulation-m-b", label: "Regulation M-B" },
+  { value: "regulation-m-a", label: "Regulation M-A" },
 ];
 
 /**

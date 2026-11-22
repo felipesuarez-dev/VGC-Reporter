@@ -3,9 +3,13 @@ pub mod gen9_supplement;
 pub mod http_client;
 pub mod labmaus_client;
 pub mod limitless_client;
+pub mod official_event_client;
+pub mod official_regulation_client;
+pub mod official_stream_client;
 pub mod pikalytics_client;
 pub mod pkmn_data_client;
 pub mod pokeapi_client;
+pub mod pokedata_client;
 pub mod pokepaste_client;
 pub mod showdown_client;
 pub mod smogon_client;
@@ -20,9 +24,13 @@ pub use limitless_client::{
     LimitlessClient, LimitlessDecklistEntry, LimitlessRecord, LimitlessStanding,
     LimitlessTournamentSummary,
 };
+pub use official_event_client::OfficialEventClient;
+pub use official_regulation_client::OfficialRegulationClient;
+pub use official_stream_client::OfficialStreamClient;
 pub use pikalytics_client::PikalyticsClient;
 pub use pkmn_data_client::PkmnDataClient;
 pub use pokeapi_client::{LocalizedDescription, LocalizedName, PokeApiClient, TranslationTable};
+pub use pokedata_client::{PokedataClient, PokedataEvent};
 pub use pokepaste_client::{parse_pokepaste_export, PokepasteClient, ShowdownEntry, StatSpread};
 pub use showdown_client::{ShowdownClient, ShowdownDescriptionMaps, ShowdownPokedex};
 pub use smogon_client::SmogonClient;

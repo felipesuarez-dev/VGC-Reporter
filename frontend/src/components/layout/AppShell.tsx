@@ -5,8 +5,8 @@ import { useTranslation } from "react-i18next";
 import {
   LayoutDashboard,
   BookOpen,
-  Wrench,
-  Users,
+  Blocks,
+  UsersRound,
   Trophy,
   Calculator,
   Settings as SettingsIcon,
@@ -15,7 +15,7 @@ import { cn } from "../../lib/cn";
 import { Titlebar } from "./Titlebar";
 import { MobileTopbar } from "./MobileTopbar";
 import { ScrollToTop } from "../ui/ScrollToTop";
-import { useUiStore } from "../../stores/uiStore";
+import { useUiStore, SIDEBAR_WIDTH_DEFAULT } from "../../stores/uiStore";
 import { APP_VERSION, shortVersion } from "../../lib/version";
 import { useNavHistorySync } from "../../hooks/useNavHistorySync";
 import { useAutoUpdate } from "../../hooks/useAutoUpdate";
@@ -70,7 +70,7 @@ export function AppShell() {
     document.addEventListener("mouseup", onUp);
     const prevCursor = document.body.style.cursor;
     const prevUserSelect = document.body.style.userSelect;
-    document.body.style.cursor = "col-resize";
+    document.body.style.cursor = "ew-resize";
     document.body.style.userSelect = "none";
     return () => {
       document.removeEventListener("mousemove", onMove);
@@ -80,11 +80,13 @@ export function AppShell() {
     };
   }, [isResizing, setSidebarWidthPx]);
 
+  // Single source of truth for the sidebar icons. Swapping the icon set is a
+  // one-line change per item; labels/tooltips come from i18n.
   const navItems = [
     { to: "/dashboard", icon: LayoutDashboard, label: t("nav.dashboard") },
     { to: "/pokedex", icon: BookOpen, label: t("nav.pokedex") },
-    { to: "/team-builder", icon: Wrench, label: t("nav.team_builder") },
-    { to: "/my-teams", icon: Users, label: t("nav.my_teams") },
+    { to: "/team-builder", icon: Blocks, label: t("nav.team_builder") },
+    { to: "/my-teams", icon: UsersRound, label: t("nav.my_teams") },
     { to: "/top-teams", icon: Trophy, label: t("nav.top_teams") },
     { to: "/damage-calc", icon: Calculator, label: t("nav.damage_calc") },
     { to: "/settings", icon: SettingsIcon, label: t("nav.settings") },
@@ -124,54 +126,90 @@ export function AppShell() {
       >
         <div
           className={cn(
-            "flex items-center gap-3 border-b px-3 py-4",
+            "relative flex items-center gap-3 border-b px-4 py-4",
             collapsed && "justify-center px-2",
           )}
           style={{
             borderColor: "var(--border)",
             paddingTop: isMobile ? "max(env(safe-area-inset-top, 0px), 1rem)" : undefined,
+            background:
+              "linear-gradient(180deg, color-mix(in srgb, var(--accent-soft) 38%, transparent), transparent)",
           }}
         >
-          <img
-            src="/logo.png"
-            alt="PumaSoft"
-            className="h-9 w-9 shrink-0 rounded-full object-cover"
-          />
-          {!collapsed && (
-            <div className="flex min-w-0 flex-col">
-              <span className="text-lg font-bold leading-tight tracking-tight">
-                {t("app.name")}
-              </span>
+          <div className="relative shrink-0">
+            <img
+              src="/logo.png"
+              alt="PumaSoft"
+              className="h-10 w-10 rounded-full object-cover ring-1 ring-[var(--border)]"
+            />
+            {!collapsed && (
               <span
-                className="whitespace-normal break-words text-[11px] leading-tight"
+                className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2"
+                style={{
+                  backgroundColor: "var(--success)",
+                  borderColor: "var(--bg-elev)",
+                }}
+              />
+            )}
+          </div>
+          {!collapsed && (
+            <div className="min-w-0 flex-1 pr-1">
+              <div className="truncate text-[1.05rem] font-bold leading-tight tracking-tight">
+                {t("app.name")}
+              </div>
+              <div
+                className="mt-1 line-clamp-2 text-[10.5px] leading-snug"
                 style={{ color: "var(--text-muted)" }}
+                title={t("app.tagline")}
               >
                 {t("app.tagline")}
-              </span>
+              </div>
             </div>
           )}
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-2 py-2">
+        <nav className="flex-1 overflow-y-auto px-2.5 py-3">
           <ul className="space-y-1">
             {navItems.map((item) => (
               <li key={item.to}>
                 <NavLink
                   to={item.to}
                   title={collapsed ? item.label : undefined}
+                  aria-label={collapsed ? item.label : undefined}
                   onClick={isMobile ? () => useUiStore.getState().setSidebarCollapsed(true) : undefined}
                   className={({ isActive }) =>
                     cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                      "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[0.82rem] font-medium transition-all duration-150",
                       collapsed && "justify-center px-2",
                       isActive
-                        ? "bg-[var(--accent-soft)] text-[var(--accent)]"
-                        : "text-[var(--text)] hover:bg-[var(--bg-elev-strong)]",
+                        ? "bg-[var(--accent-soft)] text-[var(--accent)] ring-1 ring-[var(--accent-soft)]"
+                        : "text-[var(--text-muted)] hover:bg-[var(--bg-elev-strong)] hover:text-[var(--text)]",
                     )
                   }
                 >
-                  <item.icon size={18} />
-                  {!collapsed && <span>{item.label}</span>}
+                  {({ isActive }) => (
+                    <>
+                      <span
+                        className={cn(
+                          "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors",
+                          isActive
+                            ? "bg-[var(--accent)] text-[var(--bg)] shadow-[0_6px_16px_-8px_var(--accent)]"
+                            : "bg-[var(--bg-elev-strong)] text-[var(--text-muted)] group-hover:text-[var(--text)]",
+                        )}
+                      >
+                        <item.icon
+                          size={17}
+                          strokeWidth={1.9}
+                          aria-hidden
+                        />
+                      </span>
+                      {!collapsed && (
+                        <span className="min-w-0 whitespace-normal break-words leading-snug">
+                          {item.label}
+                        </span>
+                      )}
+                    </>
+                  )}
                 </NavLink>
               </li>
             ))}
@@ -179,25 +217,59 @@ export function AppShell() {
         </nav>
 
         <div
-          className={cn(
-            "border-t text-xs",
-            collapsed ? "px-2 py-2 text-center text-[10px]" : "px-3 py-3",
-          )}
+          className={cn("border-t px-3 py-3", collapsed && "px-2 py-2")}
           style={{
             borderColor: "var(--border)",
-            color: "var(--text-muted)",
-            paddingBottom: isMobile ? "env(safe-area-inset-bottom, 0px)" : undefined,
+            paddingBottom: isMobile
+              ? "max(env(safe-area-inset-bottom, 0px), 0.75rem)"
+              : undefined,
           }}
         >
           {collapsed ? (
-            <span title={APP_VERSION}>{shortVersion(APP_VERSION)}</span>
+            <div
+              className="truncate text-center text-[10px] font-semibold"
+              style={{ color: "var(--text-muted)" }}
+              title={APP_VERSION}
+            >
+              {shortVersion(APP_VERSION)}
+            </div>
           ) : (
-            <>
-              <div>
-                {t("app.version")} {APP_VERSION}
+            <div
+              className="rounded-xl px-3 py-2"
+              style={{ backgroundColor: "var(--bg-elev-strong)" }}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span
+                  className="text-[10px] uppercase tracking-wider"
+                  style={{ color: "var(--text-dim)" }}
+                >
+                  {t("app.version")}
+                </span>
+                {APP_VERSION.includes("beta") && (
+                  <span
+                    className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
+                    style={{
+                      backgroundColor: "var(--accent-soft)",
+                      color: "var(--accent)",
+                    }}
+                  >
+                    beta
+                  </span>
+                )}
               </div>
-              <div className="mt-0.5">{t("app.by")} PumaSoft</div>
-            </>
+              <div
+                className="mt-0.5 break-all text-[10px] font-semibold leading-tight"
+                title={APP_VERSION}
+              >
+                {APP_VERSION}
+              </div>
+              <div
+                className="mt-0.5 text-[10px]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {t("app.by")} PumaSoft
+              </div>
+            </div>
           )}
         </div>
         {!isMobile && (
@@ -205,6 +277,7 @@ export function AppShell() {
             role="separator"
             aria-orientation="vertical"
             aria-label={t("ui.resize_sidebar")}
+            title={t("ui.resize_sidebar")}
             onMouseDown={(e) => {
               e.preventDefault();
               setIsResizing(true);
@@ -213,14 +286,20 @@ export function AppShell() {
             onMouseLeave={() => setHoverHandle(false)}
             onDoubleClick={() => {
               useUiStore.getState().setSidebarCollapsed(false);
-              setSidebarWidthPx(240);
+              setSidebarWidthPx(SIDEBAR_WIDTH_DEFAULT);
             }}
-            className={`absolute right-0 top-0 z-10 h-full w-1.5 transition-opacity ${collapsed ? "cursor-e-resize" : "cursor-col-resize"}`}
-            style={{
-              backgroundColor: "var(--accent)",
-              opacity: isResizing ? 0.6 : hoverHandle ? 0.35 : 0,
-            }}
-          />
+            className={cn(
+              "group absolute -right-1 top-0 z-30 flex h-full w-4 cursor-ew-resize items-center justify-center",
+            )}
+          >
+            <span
+              className="h-16 w-[3px] rounded-full transition-opacity"
+              style={{
+                backgroundColor: "var(--accent)",
+                opacity: isResizing ? 0.9 : hoverHandle ? 0.55 : 0,
+              }}
+            />
+          </div>
         )}
       </aside>
       <main id="app-main" className="flex-1 overflow-y-auto" style={{ paddingBottom: isMobile ? "env(safe-area-inset-bottom, 0px)" : undefined }}>

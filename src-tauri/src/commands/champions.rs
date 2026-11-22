@@ -1,6 +1,7 @@
 use crate::domain::champions::{ChampionsReport, ChampionsSearchHit, TournamentStanding};
 use crate::domain::format::Format;
 use crate::error::AppError;
+use crate::services::date_window::optional_range;
 use crate::state::AppState;
 use tauri::State;
 
@@ -10,10 +11,13 @@ pub async fn list_champions_tournaments(
     state: State<'_, AppState>,
     format: Option<Format>,
     limit: Option<usize>,
+    from: Option<String>,
+    to: Option<String>,
 ) -> Result<ChampionsReport, AppError> {
-    let format = format.unwrap_or_default();
+    let format = format.unwrap_or_else(Format::mc);
     let limit = limit.unwrap_or(10).clamp(1, 50);
-    state.champions.list_recent(format, limit).await
+    let range = optional_range(from, to)?.map(|r| (r.from, r.to));
+    state.champions.list_recent(format, limit, range).await
 }
 
 #[tauri::command]
@@ -33,7 +37,7 @@ pub async fn search_champions(
     format: Option<Format>,
     limit: Option<usize>,
 ) -> Result<Vec<ChampionsSearchHit>, AppError> {
-    let format = format.unwrap_or_default();
+    let format = format.unwrap_or_else(Format::mc);
     let limit = limit.unwrap_or(40).clamp(1, 200);
     state.champions.search(format, &query, limit).await
 }

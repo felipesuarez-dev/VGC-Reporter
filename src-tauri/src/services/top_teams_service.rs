@@ -136,8 +136,11 @@ impl TopTeamsService {
 
         // PRIMARY: labmaus discover_teams + pokepast.es (any format with a
         // labmaus regulation name, i.e. the Champions sets M-A / M-B).
-        if format.default_labmaus_name().is_some() {
-            match self.build_from_labmaus(format, limit).await {
+        if let Some(regulation) = format.default_labmaus_name() {
+            match self
+                .build_from_labmaus(format.clone(), &regulation, limit)
+                .await
+            {
                 Ok(report) if !report.teams.is_empty() => {
                     tracing::info!(
                         source = "labmaus",
@@ -168,12 +171,10 @@ impl TopTeamsService {
     async fn build_from_labmaus(
         &self,
         format: Format,
+        regulation: &str,
         limit: usize,
     ) -> Result<TopTeamsReport, AppError> {
         let (from, to) = window_for(format);
-        let regulation = format
-            .default_labmaus_name()
-            .unwrap_or(config::REGULATION_MA_LABMAUS);
         let teams = self
             .labmaus
             .get_discover_teams(&from, &to, regulation)

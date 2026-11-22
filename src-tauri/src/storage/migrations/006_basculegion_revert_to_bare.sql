@@ -10,5 +10,5 @@
 -- Revert any team_members.species rows that 004 wrote back to the bare name
 -- so they match the corrected allow-list and resolve to a valid sprite URL.
 -- 'UPDATE ... WHERE' is idempotent — repeated runs on subsequent boots are
--- no-ops, no Rust-level guard needed (Regla 2 del CLAUDE.md raíz).
+-- no-ops, no Rust-level guard needed (idempotent on every boot).
 UPDATE team_members SET species = 'Basculegion' WHERE species = 'Basculegion-M';

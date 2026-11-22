@@ -7,9 +7,10 @@
 Inventario:
 
 - **Meta / trends**: `getMetaStats`, `getTrending`.
+- **Regulaciones**: `getRegulations`, `getRegulationStatus`, `refreshRegulations`, `getAllowedSpecies`, `getAllowedItems`, `getAllowedMoves`, `getRegulationNews`, `getOfficialLiveStream`, `getLiveStreams` (todas las pantallas configuradas, incluidas las offline).
 - **Pokédex**: `listPokemon`, `searchPokemon`, `getPokemon`, `getEntityDescriptions`, `getLearnsetsIndex`, `getMoveCatalog`, `getPokemonSets`, `getPikalyticsEntry`, `listItems`, `listMoves`, `listMovesForSpecies`.
 - **Teams**: `saveTeam`, `listTeams`, `getTeam`, `deleteTeam`, `importShowdownText`, `exportTeamToShowdown`, `validateTeam`.
-- **Tournaments**: `getTopTeams`, `listChampionsTournaments`, `getTournamentStandings`, `listUpcomingTournaments`.
+- **Tournaments**: `getTopTeams`, `listChampionsTournaments`, `getTournamentStandings`, `listUpcomingTournaments(country?)` (`null` = todos), `getOfficialEventDetails(url)` (organizador/precio, best-effort).
 - **Settings**: `getSettings`, `setSetting`, `getTranslationTable`.
 
 Regla: si necesitas un command nuevo, añádelo primero en Rust, regenera bindings y luego expón el método aquí.
@@ -20,16 +21,18 @@ Regla: si necesitas un command nuevo, añádelo primero en Rust, regenera bindin
 
 Claves típicas:
 
-- `meta(format, tournamentCount)`
+- `meta(format, tournamentCount, source, from, to)` — incluye filtro de fuente y rango.
 - `pokedex.all`, `pokedex.search(query, type)`, `pokedex.detail(id)`
 - `teams.list`, `teams.detail(id)`
 - `topTeams(format, limit)`
 - `championsReport(format, limit)`, `tournamentStandings(id)`
 - `trending(format)`
+- `regulations`, `regulationStatus`, `regulationNews`, `officialStream`, `liveStreams`, `officialEvent(url)`
+- `allowedSpecies(format)`, `allowedItems(format)`, `allowedMoves(format)`
 - `pikalyticsEntry(species, lang)`
 - `sets(species)`
 - `learnsetsIndex`, `moveCatalog`, `entityDescriptions`
-- `upcomingTournaments`, `settings`, `translationTable`
+- `upcomingTournaments(country?)`, `settings`, `translationTable`
 
 ## ts-rs
 

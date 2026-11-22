@@ -5,10 +5,9 @@ import { ipc } from "../lib/ipc";
 
 export type CheckOutcome = "available" | "up_to_date" | "error";
 
-function isMobileEnv(): boolean {
+function isAndroid(): boolean {
   return (
-    typeof window !== "undefined" &&
-    window.matchMedia("(max-width: 767px)").matches
+    typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent)
   );
 }
 
@@ -49,7 +48,7 @@ export async function runUpdateCheck(): Promise<CheckOutcome> {
   store.setChecking(true);
   store.setError(null);
   try {
-    return isMobileEnv() ? await runMobileCheck() : await runDesktopCheck();
+    return isAndroid() ? await runMobileCheck() : await runDesktopCheck();
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     store.setError(msg);

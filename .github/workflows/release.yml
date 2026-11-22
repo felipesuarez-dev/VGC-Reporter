@@ -24,6 +24,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.10
+
       - name: Resolve tag (push → ref_name, dispatch → input)
         id: resolve
         env:
@@ -38,81 +42,82 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Resolved tag: $TAG"
 
+      - name: Version and tag consistency
+        env:
+          TAG: ${{ steps.resolve.outputs.tag }}
+        run: bun scripts/bump-version.ts --check --tag "$TAG"
+
       - name: Generate release body from git log
         id: notes
         env:
           TAG: ${{ steps.resolve.outputs.tag }}
         run: |
-          PREV_TAG=$(git for-each-ref --sort=-creatordate --format='%(refname:short)' refs/tags \
-            | grep -E '^v[0-9]' | grep -v "^${TAG}$" | head -1 || true)
-          if [ -n "$PREV_TAG" ]; then
-            RANGE="${PREV_TAG}..${TAG}"
-          else
-            RANGE="$TAG"
-          fi
-          echo "Range: $RANGE"
-
-          clean_subject() {
-            local s="$1"
-            s=$(echo "$s" | sed -E 's/^\[[^]]+\][[:space:]]*//')
-            local first rest
-            first=$(printf '%s' "${s:0:1}" | tr '[:lower:]' '[:upper:]')
-            rest="${s:1}"
-            printf '%s%s' "$first" "$rest"
-          }
-
-          CHANGES=""
-          FIXES=""
-          while IFS= read -r line; do
-            [ -z "$line" ] && continue
-            case "$line" in
-              \[release\]*|\[ci\]*) continue ;;
-            esac
-            is_fix=0
-            if echo "$line" | grep -iqE '\bfix(es|ed)?\b|\bbug\b|\bhotfix\b|\bresolve[sd]?\b'; then
-              is_fix=1
-            fi
-            cleaned=$(clean_subject "$line")
-            if [ "$is_fix" -eq 1 ]; then
-              FIXES="${FIXES}- ${cleaned}"$'\n'
-            else
-              CHANGES="${CHANGES}- ${cleaned}"$'\n'
-            fi
-          done < <(git log --pretty='%s' "$RANGE")
-
-          BODY=""
-          if [ -n "$CHANGES" ]; then
-            BODY="## Changes"$'\n\n'"${CHANGES}"$'\n'
-          fi
-          if [ -n "$FIXES" ]; then
-            BODY="${BODY}## Fixes"$'\n\n'"${FIXES}"
-          fi
-          if [ -z "$BODY" ]; then
-            BODY="## Changes"$'\n\n'"- ${TAG} release"$'\n'
-          fi
-
+          bun scripts/release-notes.ts --tag "$TAG" > /tmp/release-body.md
           DELIM="EOF_$(openssl rand -hex 8)"
           {
             echo "body<<${DELIM}"
-            printf '%s' "$BODY"
+            cat /tmp/release-body.md
             echo
             echo "${DELIM}"
           } >> "$GITHUB_OUTPUT"
-
           echo "----- generated body -----"
-          printf '%s' "$BODY"
+          cat /tmp/release-body.md
           echo "--------------------------"
 
+  # Gate that was missing until v0.5.0: the release build was the first thing
+  # to compile a tag, and a broken migration or frontend runtime shipped in
+  # v0.4.2. Run the same checks as CI before creating the draft.
+  verify:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libsoup-3.0-dev \
+            libjavascriptcoregtk-4.1-dev librsvg2-dev patchelf libayatana-appindicator3-dev
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: release-verify-${{ hashFiles('src-tauri/Cargo.toml') }}
+      - run: cd src-tauri && cargo fmt --check
+      - run: cd src-tauri && cargo clippy --all-targets -- -D warnings
+      - run: cd src-tauri && cargo test
+      - name: Fail if ts-rs bindings drifted
+        run: |
+          if ! git diff --exit-code frontend/src/lib/types.generated.ts; then
+            echo "::error::types.generated.ts está desactualizado."
+            exit 1
+          fi
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.10
+      - run: bun install --frozen-lockfile
+      - run: bun run --cwd frontend build
+      - run: bun run --cwd frontend test
+      - run: bun scripts/check-locales.ts
+      - run: bun run test:scripts
+      - run: python3 -m unittest discover -s scripts -p 'test_*.py'
+
   # Single-runner job that creates (or reuses) the draft release BEFORE any
-  # matrix build kicks off. Eliminates the race condition where the four
-  # parallel `build` jobs each tried to create the same draft via tauri-action
+  # matrix build kicks off. Eliminates the race condition where the parallel
+  # `build` jobs each tried to create the same draft via tauri-action
   # and one of them silently hung after "Looking for a draft release with
   # tag ..." (observed on the v0.2.2 Windows job — log truncated, no error,
   # job marked failed). Subsequent build jobs just upload assets to the
   # release id this step produces.
   create-release:
-    needs: prepare
+    needs: [prepare, verify]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       release_id: ${{ steps.upsert.outputs.release_id }}
     permissions:
@@ -149,27 +154,25 @@ jobs:
           echo "release_id=$existing" >> "$GITHUB_OUTPUT"
 
   build:
-    needs: [prepare, create-release]
+    needs: [prepare, verify, create-release]
+    timeout-minutes: 75
     strategy:
       fail-fast: false
-      # max-parallel: 1 serializes the 4 platform jobs. tauri-action's
+      # max-parallel: 1 serializes the two desktop jobs. tauri-action's
       # latest.json update is read-modify-write: it downloads the existing
       # JSON, adds its platform key, uploads back. Parallel matrix jobs race
-      # there (last writer wins, earlier platforms drop out — that's how the
-      # v0.2.2 latest.json ended up missing windows-x86_64). Running one at
-      # a time guarantees each platform's key sticks. Cost: ~4x slower total
-      # wall time, ~40min instead of ~12min. Worth it for release reliability.
+      # there (last writer wins, earlier platforms drop out). Running one at
+      # a time guarantees each platform's key sticks. macOS is intentionally
+      # not built to keep the free Actions budget for Windows/Linux/Android.
       max-parallel: 1
       matrix:
         include:
           - platform: ubuntu-22.04
-            args: ''
-          - platform: macos-latest
-            args: '--target aarch64-apple-darwin'
-          - platform: macos-latest
-            args: '--target x86_64-apple-darwin'
+            args: '--bundles deb'
+            asset_name_pattern: ''
           - platform: windows-2025
-            args: ''
+            args: '--bundles msi'
+            asset_name_pattern: ''
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v5
@@ -179,8 +182,6 @@ jobs:
           bun-version: 1.3.10
 
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Cache Cargo registry & target
         uses: actions/cache@v5
@@ -204,7 +205,7 @@ jobs:
       # tauri-action), because createUpdaterArtifacts generates the minisign
       # .sig over the final bytes — signing the binary afterwards would
       # invalidate every updater signature. We feed Tauri a `--config` overlay
-      # with the imported cert thumbprint so the bundler signs the MSI/NSIS and
+      # with the imported cert thumbprint so the bundler signs the MSI and
       # THEN computes the .sig. If the cert secret is absent the build proceeds
       # UNSIGNED (no failure) — self-signed today, swap the secret for a real
       # CA cert later with no workflow change. signtool ships with the Windows
@@ -227,7 +228,7 @@ jobs:
           $sec = ConvertTo-SecureString $env:WINDOWS_CERT_PASSWORD -AsPlainText -Force
           $cert = Import-PfxCertificate -FilePath $pfx -CertStoreLocation Cert:\CurrentUser\My -Password $sec
           Write-Host "Imported signing cert, thumbprint $($cert.Thumbprint)"
-          $cfg = @{ bundle = @{ windows = @{ certificateThumbprint = $cert.Thumbprint; digestAlgorithm = "sha256"; timestampUrl = "http://timestamp.digicert.com" } } } | ConvertTo-Json -Depth 6 -Compress
+          $cfg = @{ bundle = @{ windows = @{ certificateThumbprint = $cert.Thumbprint; digestAlgorithm = "sha256" } } } | ConvertTo-Json -Depth 6 -Compress
           $cfgPath = Join-Path $env:RUNNER_TEMP "winsign.conf.json"
           [IO.File]::WriteAllText($cfgPath, $cfg)
           "config_arg=--config $cfgPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
@@ -244,23 +245,23 @@ jobs:
           projectPath: "."
           # releaseId targets the draft created by the create-release job.
           # Skips tauri-action's own create-or-find logic which raced when
-          # four matrix jobs hit it at once on v0.2.1/v0.2.2.
+          # matrix jobs hit it at once on v0.2.1/v0.2.2.
           releaseId: ${{ needs.create-release.outputs.release_id }}
           includeUpdaterJson: true
           updaterJsonPreferNsis: false
           retryAttempts: 3
+          assetNamePattern: ${{ matrix.asset_name_pattern }}
           args: ${{ matrix.args }} ${{ steps.winsign.outputs.config_arg }}
 
-      # Defensive belt-and-suspenders for the Windows MSI / NSIS upload —
+      # Defensive belt-and-suspenders for the Windows MSI / Linux DEB upload —
       # tauri-action v0.6 reported success for the v0.2.2 Windows job but the
       # bundles never appeared on the release (likely a sig-priority matching
       # quirk or a silently swallowed upload error). Re-upload every bundle
       # this platform produced with --clobber so the release always ends up
       # with the expected set even if tauri-action's per-job upload misses
       # something. paths from src-tauri/target/.../release/bundle/ map to:
-      #   windows: msi/*.msi(.sig), nsis/*-setup.exe(.sig), zips
-      #   macos:   dmg/*.dmg(.sig), macos/*.app.tar.gz(.sig)
-      #   linux:   deb/*.deb(.sig), rpm/*.rpm(.sig), appimage/*.AppImage(.sig)
+      #   windows: msi/*.msi(.sig)
+      #   linux:   deb/*.deb(.sig)
       - name: Re-upload platform bundles (defensive)
         shell: bash
         env:
@@ -273,13 +274,7 @@ jobs:
           for bdir in $BUNDLE_DIRS; do
             find "$bdir" -type f \( \
               -name '*.msi' -o -name '*.msi.sig' -o -name '*.msi.zip' -o -name '*.msi.zip.sig' \
-              -o -name '*-setup.exe' -o -name '*-setup.exe.sig' \
-              -o -name '*-setup.nsis.zip' -o -name '*-setup.nsis.zip.sig' \
-              -o -name '*.dmg' -o -name '*.dmg.sig' \
-              -o -name '*.app.tar.gz' -o -name '*.app.tar.gz.sig' \
               -o -name '*.deb' -o -name '*.deb.sig' \
-              -o -name '*.rpm' -o -name '*.rpm.sig' \
-              -o -name '*.AppImage' -o -name '*.AppImage.sig' \
             \) -print0 | while IFS= read -r -d '' f; do
               echo "Uploading: $f"
               gh release upload "$TAG" "$f" --clobber || echo "  (upload failed, continuing)"
@@ -288,10 +283,11 @@ jobs:
 
   android:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     # Depends on `prepare` for outputs.tag (works on both tag push and
-    # workflow_dispatch) and on `build` so the desktop bundles land in the
-    # draft before the APK joins them.
-    needs: [prepare, build]
+    # workflow_dispatch), on `verify` for the test gate, and on `build` so the
+    # desktop bundles land in the draft before the APK joins them.
+    needs: [prepare, verify, build]
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v5
@@ -361,11 +357,13 @@ jobs:
           for i in 1 2 3 4 5; do
             if gh release upload "${{ needs.prepare.outputs.tag }}" "VGC.Reporter_${{ needs.prepare.outputs.tag }}_android.apk" --clobber; then
               echo "APK uploaded"
-              break
+              exit 0
             fi
             echo "Retry $i/5 in 30s..."
             sleep 30
           done
+          echo "::error::APK upload failed after 5 attempts"
+          exit 1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -394,7 +392,7 @@ jobs:
   # matrix never publishes a desktop-incomplete latest.json.
   finalize-latest-json:
     needs: [prepare, build, android]
-    if: ${{ always() && needs.prepare.result == 'success' && needs.build.result == 'success' }}
+    if: ${{ always() && needs.prepare.result == 'success' && needs.build.result == 'success' && needs.android.result == 'success' }}
     permissions:
       contents: write
     uses: ./.github/workflows/regenerate-latest-json.yml
@@ -411,6 +409,7 @@ jobs:
     needs: [prepare, finalize-latest-json]
     if: ${{ always() && needs.finalize-latest-json.result == 'success' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:

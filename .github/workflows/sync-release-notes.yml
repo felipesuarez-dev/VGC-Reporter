@@ -34,7 +34,7 @@ jobs:
           elif [ -n "$INPUT_TAG" ]; then
             TAG="$INPUT_TAG"
           else
-            TAG=$(gh release list --repo "$REPO" --limit 1 --json tagName -q '.[0].tagName')
+            TAG=$(gh release list --repo "$REPO" --exclude-drafts --limit 1 --json tagName -q '.[0].tagName')
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Resolved tag: $TAG"

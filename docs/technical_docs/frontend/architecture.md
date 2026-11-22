@@ -1,6 +1,6 @@
 # Frontend — Arquitectura
 
-React 19 + TypeScript + Vite + TailwindCSS sobre Tauri 2.10. El mismo codebase compila para desktop (Windows, macOS, Linux) y Android (API 24+).
+React 19 + TypeScript + Vite + TailwindCSS sobre Tauri 2.10. El mismo codebase compila para desktop (Windows y Linux) y Android (API 24+).
 
 ## Reglas duras
 
@@ -84,4 +84,4 @@ Proteger con `!isMobile` o con `#[cfg(desktop)]` en Rust:
 - `bun run tauri android build --apk` — APK de producción.
 - `bun run --cwd frontend build` — type-check + build (`tsc --noEmit && vite build`).
 
-> Este proyecto usa **Bun** exclusivamente. Nada de `npm`/`npx`. Ver [CLAUDE.md raíz § Package manager](../../../CLAUDE.md).
+> Este proyecto usa **Bun** exclusivamente: `bun install`, `bun run`, `bunx`. Nada de `npm`/`npx`.

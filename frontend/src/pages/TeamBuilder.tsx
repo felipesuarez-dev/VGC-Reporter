@@ -11,7 +11,8 @@ import {
 import { ipc, AppError } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
 import type { Format, Violation } from "../lib/types";
-import { ALL_FORMATS, canonicalSpeciesId, isAllowedName } from "../lib/types";
+import { FALLBACK_FORMATS, canonicalSpeciesId, isAllowedName } from "../lib/types";
+import { useRegulationCatalog } from "../hooks/useRegulationCatalog";
 import { useTeamBuilder } from "../stores/teamBuilderStore";
 import { TeamMemberForm } from "../components/team/TeamMemberForm";
 import { ImportCompletionModal } from "../components/team/ImportCompletionModal";
@@ -31,6 +32,14 @@ export function TeamBuilder() {
   const [importError, setImportError] = useState<string | null>(null);
   const [violations, setViolations] = useState<Violation[] | null>(null);
   const [importMissing, setImportMissing] = useState<string[] | null>(null);
+  const { options: regulationOptions, active: activeRegulation } =
+    useRegulationCatalog();
+  const formatOptions =
+    regulationOptions.length > 0 ? regulationOptions : FALLBACK_FORMATS;
+  // A blank team starts on the active regulation. The guard makes it a
+  // one-time default: after the user picks a format (or an import provides
+  // one) the catalog must not keep changing it.
+  const formatInitializedRef = useRef(false);
 
   const { data: pokedexAll = [] } = useQuery({
     queryKey: queryKeys.pokedex.all,
@@ -102,6 +111,19 @@ export function TeamBuilder() {
   useEffect(() => {
     if (teamId !== null && loaded) setTeam(loaded);
   }, [teamId, loaded, setTeam]);
+
+  useEffect(() => {
+    if (teamId !== null || !activeRegulation || formatInitializedRef.current) return;
+    formatInitializedRef.current = true;
+    const blank = team.members.every((m) => !m.species);
+    if (
+      blank &&
+      team.format === "regulation-m-c" &&
+      activeRegulation.id !== team.format
+    ) {
+      setTeam({ ...team, format: activeRegulation.id });
+    }
+  }, [teamId, activeRegulation, team, setTeam]);
 
   // StrictMode dev-mode runs mount effects as setup → cleanup → setup. Without
   // this latch the second setup saw pendingImport already cleared and called
@@ -202,12 +224,13 @@ export function TeamBuilder() {
           <select
             className="input mt-1"
             value={team.format}
-            onChange={(e) =>
-              setTeam({ ...team, format: e.target.value as Format })
-            }
+            onChange={(e) => {
+              formatInitializedRef.current = true;
+              setTeam({ ...team, format: e.target.value as Format });
+            }}
           >
-            {ALL_FORMATS.map((f) => (
-              <option key={f.value} value={f.value}>
+            {formatOptions.map((f) => (
+              <option key={f.value} value={f.value} disabled={f.disabled}>
                 {f.label}
               </option>
             ))}

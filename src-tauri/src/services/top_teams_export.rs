@@ -348,7 +348,7 @@ mod tests {
                 to_date: Some("2026-04-19".into()),
             },
         };
-        let md = build_markdown(&report, 2, Format::RegulationMA);
+        let md = build_markdown(&report, 2, Format::ma());
         assert!(md.starts_with("# Top 2 Teams"));
         assert!(md.contains("Regulation M-A"));
         assert!(md.contains("Sources: 23 tournaments analyzed (2026-03-20 – 2026-04-19)"));
@@ -386,7 +386,7 @@ mod tests {
                 to_date: None,
             },
         };
-        let md = build_markdown(&report, 2, Format::RegulationMA);
+        let md = build_markdown(&report, 2, Format::ma());
         assert!(md.contains("# Top 2 Teams"));
         assert_eq!(md.matches("## #").count(), 2);
     }

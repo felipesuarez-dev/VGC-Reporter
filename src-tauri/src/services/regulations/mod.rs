@@ -1,4 +1,5 @@
 pub mod common;
+pub mod dynamic;
 pub mod reg_ma;
 mod reg_ma_items;
 mod reg_ma_moves;
@@ -87,7 +88,7 @@ pub enum Violation {
 }
 
 pub trait RegulationRules: Send + Sync {
-    fn code(&self) -> &'static str;
+    fn code(&self) -> &str;
     fn validate_team(&self, team: &Team) -> Vec<Violation>;
     fn allowed_species(&self) -> Vec<String>;
     fn allowed_items(&self) -> Vec<String>;
@@ -99,6 +100,6 @@ pub fn rules_for_code(code: &str) -> Option<Box<dyn RegulationRules>> {
         "regulation-m-c" | "reg-m-c" | "RegulationMC" => Some(Box::new(RegMcRules::current())),
         "regulation-m-b" | "reg-m-b" | "RegulationMB" => Some(Box::new(RegMbRules::current())),
         "regulation-m-a" | "reg-m-a" | "RegulationMA" => Some(Box::new(RegMaRules::current())),
-        _ => None,
+        _ => dynamic::from_code(code).map(|r| Box::new(r) as Box<dyn RegulationRules>),
     }
 }

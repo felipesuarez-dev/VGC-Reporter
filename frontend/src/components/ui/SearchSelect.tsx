@@ -1,5 +1,5 @@
 import { Command } from "cmdk";
-import { Check, ChevronsUpDown, X } from "lucide-react";
+import { Check, ChevronsUpDown, Star, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../lib/cn";
@@ -16,6 +16,11 @@ export interface SearchSelectProps<T> {
   allowClear?: boolean;
   disabled?: boolean;
   className?: string;
+  triggerClassName?: string;
+  /** Optional favorite/pinned option rendered with a star. */
+  favorite?: T | null;
+  onFavoriteChange?: (option: T) => void;
+  favoriteTitle?: string;
 }
 
 export function SearchSelect<T>({
@@ -30,6 +35,10 @@ export function SearchSelect<T>({
   allowClear = true,
   disabled = false,
   className,
+  triggerClassName,
+  favorite = null,
+  onFavoriteChange,
+  favoriteTitle,
 }: SearchSelectProps<T>) {
   const { t } = useTranslation();
   const resolvedPlaceholder = placeholder ?? t("common.search_placeholder");
@@ -66,6 +75,7 @@ export function SearchSelect<T>({
         className={cn(
           "input flex items-center justify-between gap-2 text-left",
           disabled && "cursor-not-allowed opacity-60",
+          triggerClassName,
         )}
         style={!display ? { color: "var(--text-dim)" } : undefined}
         aria-haspopup="listbox"
@@ -120,6 +130,7 @@ export function SearchSelect<T>({
                 const label = getOptionLabel(opt);
                 const k = keyOf(opt);
                 const selected = value !== null && keyOf(value) === k;
+                const isFavorite = favorite !== null && keyOf(favorite) === k;
                 return (
                   <Command.Item
                     key={k}
@@ -129,21 +140,49 @@ export function SearchSelect<T>({
                       setOpen(false);
                     }}
                     className={cn(
-                      "flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-sm",
+                      "flex cursor-pointer items-center gap-1 px-2 py-1.5 text-sm",
                       "text-[var(--text)] aria-selected:bg-[var(--bg-elev-strong)]",
                     )}
                   >
-                    {renderOption ? (
-                      renderOption(opt, selected)
-                    ) : (
-                      <span className="truncate">{label}</span>
+                    {onFavoriteChange && (
+                      <button
+                        type="button"
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded hover:text-amber-300"
+                        style={{ color: "var(--text-muted)" }}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onMouseDown={(event) => event.stopPropagation()}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          onFavoriteChange(opt);
+                        }}
+                        title={favoriteTitle ?? t("dashboard.format_favorite")}
+                        aria-label={
+                          favoriteTitle ?? t("dashboard.format_favorite")
+                        }
+                        aria-pressed={isFavorite}
+                      >
+                        <Star
+                          className={cn(
+                            "h-3.5 w-3.5",
+                            isFavorite && "fill-amber-300 text-amber-300",
+                          )}
+                        />
+                      </button>
                     )}
-                    {selected && (
-                      <Check
-                        className="h-4 w-4 shrink-0"
-                        style={{ color: "var(--accent)" }}
-                      />
-                    )}
+                    <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                      {renderOption ? (
+                        renderOption(opt, selected)
+                      ) : (
+                        <span className="truncate">{label}</span>
+                      )}
+                      {selected && (
+                        <Check
+                          className="h-4 w-4 shrink-0"
+                          style={{ color: "var(--accent)" }}
+                        />
+                      )}
+                    </span>
                   </Command.Item>
                 );
               })}

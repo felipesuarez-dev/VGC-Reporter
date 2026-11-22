@@ -14,7 +14,7 @@ use crate::domain::usage_stats::{MetaSnapshot, PokemonUsage, TeammateUsage, Usag
 use crate::error::AppError;
 use crate::services::aggregation::records::RecordTally;
 use crate::services::aggregation::{self, SourceEntry, SourceSnapshot};
-use crate::services::date_window::chunked_window_for;
+use crate::services::date_window::{chunk_window, effective_range, DateRange};
 use crate::services::pokedex_service::PokedexService;
 use crate::services::usage_aggregator::{self, top_n_normalized};
 use crate::storage::{CacheRepo, SettingsRepo};
@@ -114,12 +114,16 @@ impl MetaService {
         format: Format,
         tournament_count: Option<usize>,
         source: Option<SourceId>,
+        requested_range: Option<DateRange>,
     ) -> Result<MetaSnapshot, AppError> {
         let count = tournament_count.unwrap_or(config::TOURNAMENTS_PER_SNAPSHOT);
-        // The filter is part of the key: without it, picking a single source
-        // would serve the cached merged snapshot and look like it did nothing.
+        let range = effective_range(&format, requested_range);
+        let (from_date, to_date) = range.strings();
+        // The filter and the effective range are part of the key: without them,
+        // selecting a season/date window would serve the cached full-regulation
+        // snapshot and look like the selector did nothing.
         let cache_key = format!(
-            "meta-snapshot-v13::{}::{}::{}",
+            "meta-snapshot-v14::{}::{}::{}::{from_date}::{to_date}",
             format.cache_id(),
             count,
             source.map(|s| s.as_str()).unwrap_or("all")
@@ -134,7 +138,7 @@ impl MetaService {
         let mut snapshots: Vec<SourceSnapshot> = Vec::new();
 
         if wanted(SourceId::Labmaus) {
-            match self.labmaus_source(format).await {
+            match self.labmaus_source(format.clone(), range).await {
                 Ok(Some(s)) => snapshots.push(s),
                 Ok(None) => tracing::info!(source = "labmaus", "no data for format"),
                 Err(e) => tracing::warn!(
@@ -145,7 +149,7 @@ impl MetaService {
             }
         }
         if wanted(SourceId::Limitless) {
-            match self.limitless_source(format, count).await {
+            match self.limitless_source(format.clone(), count, range).await {
                 Ok(Some(s)) => snapshots.push(s),
                 Ok(None) => tracing::info!(source = "limitless", "no data for format"),
                 Err(e) => tracing::warn!(
@@ -156,7 +160,7 @@ impl MetaService {
             }
         }
         if wanted(SourceId::Champteams) {
-            match self.champteams_source(format).await {
+            match self.champteams_source(format.clone()).await {
                 Ok(Some(s)) => snapshots.push(s),
                 Ok(None) => tracing::info!(source = "champteams", "no data for format"),
                 Err(e) => tracing::warn!(
@@ -167,7 +171,7 @@ impl MetaService {
             }
         }
         if wanted(SourceId::Smogon) {
-            match self.smogon_source(format).await {
+            match self.smogon_source(format.clone()).await {
                 Ok(Some(s)) => snapshots.push(s),
                 Ok(None) => tracing::info!(source = "smogon", "no data for format"),
                 Err(e) => tracing::warn!(
@@ -190,7 +194,17 @@ impl MetaService {
             );
         }
 
-        let final_snap = self.assemble(format, snapshots);
+        // A source that is still describing another regulation must not move
+        // the numbers for the current one. Keep it visible in provenance with
+        // weight 0 so the UI can say "this is M-B, not M-C".
+        let (current, stale): (Vec<_>, Vec<_>) = snapshots
+            .into_iter()
+            .partition(|s| s.provenance.matches_active_format);
+        let mut final_snap = self.assemble(format.clone(), current, range);
+        for mut s in stale {
+            s.provenance.weight = 0.0;
+            final_snap.sources.push(s.provenance);
+        }
 
         tracing::info!(
             format = %format,
@@ -213,7 +227,12 @@ impl MetaService {
     }
 
     /// Turn merged sources into the snapshot the frontend consumes.
-    fn assemble(&self, format: Format, snapshots: Vec<SourceSnapshot>) -> MetaSnapshot {
+    fn assemble(
+        &self,
+        format: Format,
+        snapshots: Vec<SourceSnapshot>,
+        range: DateRange,
+    ) -> MetaSnapshot {
         if snapshots.is_empty() {
             tracing::warn!(format = %format, "meta snapshot empty: no source produced data");
             return MetaSnapshot::empty(format);
@@ -227,14 +246,10 @@ impl MetaService {
             .max()
             .unwrap_or(0);
         let total_entries = snapshots.iter().map(|s| s.provenance.teams).sum();
-        let from_date = snapshots
-            .iter()
-            .filter_map(|s| s.provenance.from_date.clone())
-            .min();
-        let to_date = snapshots
-            .iter()
-            .filter_map(|s| s.provenance.to_date.clone())
-            .max();
+        // The header must describe the requested window, even if one source
+        // only contributed data for a subset of it. Otherwise the UI shows a
+        // date that changes depending on which source won the merge.
+        let (from_date, to_date) = range.strings();
         let label = snapshots
             .iter()
             .map(|s| s.provenance.source.as_str())
@@ -255,8 +270,8 @@ impl MetaService {
             top_moves: merged.top_moves,
             top_abilities: merged.top_abilities,
             top_tera: merged.top_tera,
-            from_date,
-            to_date,
+            from_date: Some(from_date),
+            to_date: Some(to_date),
             sources: merged.sources,
         }
     }
@@ -268,11 +283,15 @@ impl MetaService {
     /// three weeks, and a regulation runs for months. Chunks are fetched
     /// concurrently and de-duplicated by team URL, since the same paste can
     /// appear in more than one tournament listing.
-    async fn labmaus_source(&self, format: Format) -> Result<Option<SourceSnapshot>, AppError> {
+    async fn labmaus_source(
+        &self,
+        format: Format,
+        range: DateRange,
+    ) -> Result<Option<SourceSnapshot>, AppError> {
         let Some(regulation) = format.default_labmaus_name() else {
             return Ok(None);
         };
-        let chunks = chunked_window_for(format);
+        let chunks = chunk_window(range.from, range.to);
         if chunks.is_empty() {
             return Ok(None);
         }
@@ -282,8 +301,9 @@ impl MetaService {
             .map(|(from, to)| {
                 let labmaus = self.labmaus.clone();
                 let (from, to) = (from.clone(), to.clone());
+                let regulation = regulation.clone();
                 async move {
-                    match labmaus.get_discover_teams(&from, &to, regulation).await {
+                    match labmaus.get_discover_teams(&from, &to, &regulation).await {
                         Ok(teams) => teams,
                         Err(e) => {
                             // One chunk failing must not lose the others: a
@@ -323,7 +343,7 @@ impl MetaService {
         let resolved = resolve_pokepastes(&self.pokepaste, &teams).await;
         let records = tally_records(&teams, &resolved);
         let standings = standings_from_labmaus(&teams, &resolved);
-        let snap = usage_aggregator::aggregate(format, vec![standings]);
+        let snap = usage_aggregator::aggregate(format.clone(), vec![standings]);
 
         let tournaments = teams
             .iter()
@@ -354,13 +374,14 @@ impl MetaService {
         &self,
         format: Format,
         count: usize,
+        range: DateRange,
     ) -> Result<Option<SourceSnapshot>, AppError> {
         if format.limitless_code().is_none() {
             return Ok(None);
         }
         let tournaments = self
             .limitless
-            .list_tournaments_by_format(format, count)
+            .list_tournaments_in_range(format.clone(), Some((range.from, range.to)), count)
             .await
             .unwrap_or_default();
         if tournaments.is_empty() {
@@ -383,11 +404,11 @@ impl MetaService {
 
         let mut dates: Vec<String> = tournaments.iter().filter_map(|t| t.date.clone()).collect();
         dates.sort();
-        let snap = usage_aggregator::aggregate(format, all_standings);
+        let snap = usage_aggregator::aggregate(format.clone(), all_standings);
 
         let provenance = SourceProvenance {
             source: SourceId::Limitless,
-            declared_regulation: format.limitless_code().map(|c| c.to_string()),
+            declared_regulation: format.limitless_code(),
             // The client already filters the tournament list to this
             // regulation own date window before it gets here.
             matches_active_format: true,
@@ -418,7 +439,7 @@ impl MetaService {
         let declared = list.declared_regulation();
         let matches = declared
             .as_deref()
-            .map(|d| format.label().contains(d))
+            .map(|d| format.code() == d)
             .unwrap_or(false);
         let range = list.data_range.clone();
 
@@ -476,7 +497,7 @@ impl MetaService {
     async fn smogon_source(&self, format: Format) -> Result<Option<SourceSnapshot>, AppError> {
         let Some((slug, chaos)) = self
             .smogon
-            .fetch_chaos_for_format(format, &self.settings)
+            .fetch_chaos_for_format(format.clone(), &self.settings)
             .await?
         else {
             return Ok(None);
@@ -754,7 +775,7 @@ pub(crate) fn snapshot_from_smogon(
         total_entries: species_count,
         battles_analyzed: 0,
         pokemon,
-        top_items: top_n_normalized(&global_items, 15),
+        top_items: top_n_normalized(&global_items, aggregation::ITEM_TOP_N),
         top_moves: top_n_normalized(&global_moves, 20),
         top_abilities: top_n_normalized(&global_abilities, 10),
         top_tera: Vec::new(),
@@ -834,7 +855,7 @@ mod tests {
         );
         let chaos = ChaosStats { data };
         let sprites = SpriteMap::new();
-        let snap = snapshot_from_smogon(Format::RegulationI, chaos, "gen9vgc2026regi", &sprites);
+        let snap = snapshot_from_smogon(Format::regulation_i(), chaos, "gen9vgc2026regi", &sprites);
         assert!(!snap.top_items.is_empty(), "top_items should be populated");
         assert!(!snap.top_moves.is_empty(), "top_moves should be populated");
         assert!(

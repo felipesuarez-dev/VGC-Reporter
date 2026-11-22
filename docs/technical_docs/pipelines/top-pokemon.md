@@ -6,7 +6,7 @@ Delegado a `MetaService::get_meta` — `services/meta_service.rs`.
 
 ## Cadena de fuentes
 
-### 1. Primario — Labmaus (Regulation M-A)
+### 1. Primario — Labmaus (regulación activa)
 `MetaService::build_from_labmaus`:
 
 - `LabmausClient::get_discover_teams(from, to, regulation)` con ventana de **14 días rolling** (`config::LABMAUS_WINDOW_DAYS=14`, `services/date_window.rs::default_window`).
@@ -39,7 +39,7 @@ Delegado a `MetaService::get_meta` — `services/meta_service.rs`.
 | **Pikalytics** | Showdown ladder (miles de batallas/día) | Métrica fundamentalmente distinta: ladder ≠ torneo. |
 | **Labmaus dashboard** | Puede usar otra ventana (mensual) o filtros distintos | Mismo dataset que nosotros, pero ventana diferente. |
 | **Limitless web** | Todos los torneos VGC | Incluye regulations viejas y formatos no-Champions. |
-| **VGC-Reporter** | Champions M-A, ventana 14d, top-cut con decklist | Subset estrictamente más pequeño. |
+| **VGC-Reporter** | Champions (M-C), ventana 14d, top-cut con decklist | Subset estrictamente más pequeño. |
 
 **Conclusión**: el cálculo es correcto dentro de su definición. Las diferencias son por scope de fuente y ventana, no por bug.
 

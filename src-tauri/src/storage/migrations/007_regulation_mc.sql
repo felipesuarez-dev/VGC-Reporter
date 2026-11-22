@@ -5,7 +5,7 @@
 -- Move anyone still pinned to a closed Champions set onto the active one.
 --
 -- Idempotent by construction (UPDATE ... WHERE / DELETE ... WHERE), so it
--- survives the re-run that db.rs does on every launch. See CLAUDE.md Regla 2.
+-- survives the re-run that db.rs does on every launch. Migrations must be idempotent on every boot.
 UPDATE settings
    SET value = 'regulation-m-c'
  WHERE key = 'active_format'

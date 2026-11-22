@@ -7,9 +7,15 @@ import type {
   Format,
   MetaSnapshot,
   MoveSummary,
+  LiveStreamScreen,
+  OfficialEventDetails,
+  OfficialLiveStream,
   PikalyticsEntry,
   Pokemon,
   PokemonType,
+  RegulationInfo,
+  RegulationNewsItem,
+  RegulationSyncStatus,
   SetsBundle,
   Team,
   TopTeamsReport,
@@ -51,6 +57,8 @@ export const ipc = {
     format: Format,
     tournamentCount?: number,
     source?: SourceId | null,
+    from?: string | null,
+    to?: string | null,
   ) =>
     call<MetaSnapshot>("get_meta_stats", {
       format,
@@ -58,6 +66,8 @@ export const ipc = {
       // undefined would be dropped by the IPC bridge; null reaches Rust as the
       // None that means "merge every source".
       source: source ?? null,
+      from: from ?? null,
+      to: to ?? null,
     }),
   openLogsFolder: () => call<void>("open_logs_folder"),
   listPokemon: () => call<Pokemon[]>("list_pokemon"),
@@ -74,6 +84,16 @@ export const ipc = {
     call<string>("export_team_to_showdown", { team }),
   validateTeam: (team: Team, regulation: string) =>
     call<Violation[]>("validate_team", { team, regulation }),
+  getRegulations: () => call<RegulationInfo[]>("get_regulations"),
+  getRegulationStatus: () => call<RegulationSyncStatus>("get_regulation_status"),
+  getRegulationNews: (force = false) =>
+    call<RegulationNewsItem[]>("get_regulation_news", { force }),
+  getOfficialLiveStream: (force = false) =>
+    call<OfficialLiveStream | null>("get_official_live_stream", { force }),
+  getLiveStreams: (force = false) =>
+    call<LiveStreamScreen[]>("get_live_streams", { force }),
+  refreshRegulations: (force = true) =>
+    call<RegulationInfo[]>("refresh_regulations", { force }),
   getAllowedSpecies: (format: Format) =>
     call<string[]>("get_allowed_species", { format }),
   getAllowedItems: (format: Format) =>
@@ -99,14 +119,28 @@ export const ipc = {
     call<Record<string, MoveSummary>>("get_move_catalog"),
   getPikalyticsEntry: (species: string, lang: string) =>
     call<PikalyticsEntry>("get_pikalytics_entry", { species, lang }),
-  listChampionsTournaments: (format?: Format, limit?: number) =>
-    call<ChampionsReport>("list_champions_tournaments", { format, limit }),
+  listChampionsTournaments: (
+    format?: Format,
+    limit?: number,
+    from?: string | null,
+    to?: string | null,
+  ) =>
+    call<ChampionsReport>("list_champions_tournaments", {
+      format,
+      limit,
+      from: from ?? null,
+      to: to ?? null,
+    }),
   getTournamentStandings: (id: string) =>
     call<TournamentStanding[]>("get_tournament_standings", { id }),
   searchChampions: (query: string, format?: Format, limit?: number) =>
     call<ChampionsSearchHit[]>("search_champions", { query, format, limit }),
-  listUpcomingTournaments: () =>
-    call<UpcomingTournament[]>("list_upcoming_tournaments"),
+  listUpcomingTournaments: (country?: string | null) =>
+    call<UpcomingTournament[]>("list_upcoming_tournaments", {
+      country: country ?? null,
+    }),
+  getOfficialEventDetails: (url: string) =>
+    call<OfficialEventDetails>("get_official_event_details", { url }),
   getSettings: () => call<Record<string, string>>("get_settings"),
   setSetting: (key: string, value: string) =>
     call<void>("set_setting", { key, value }),

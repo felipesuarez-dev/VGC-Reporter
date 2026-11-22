@@ -51,7 +51,7 @@ impl TrendingService {
             }
         }
 
-        let Some(regulation_name) = self.resolve_labmaus_name(format) else {
+        let Some(regulation_name) = self.resolve_labmaus_name(format.clone()) else {
             let empty = TrendingReport::empty();
             let bytes = serde_json::to_vec(&empty)?;
             self.cache.put(&key, &bytes, config::TTL_LABMAUS_TRENDING)?;
@@ -71,7 +71,7 @@ impl TrendingService {
 
         let (report, weighted_total) = self
             .build_report_for(
-                format,
+                format.clone(),
                 &regulation_name,
                 &catalog,
                 config::LABMAUS_TRENDING_WINDOW_DAYS,
@@ -119,7 +119,7 @@ impl TrendingService {
                 return Some(v);
             }
         }
-        format.default_labmaus_name().map(|s| s.to_string())
+        format.default_labmaus_name()
     }
 
     /// Fetches a single `2 × half_window_days` slice of labmaus teams (same

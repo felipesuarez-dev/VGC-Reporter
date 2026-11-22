@@ -80,5 +80,11 @@ jobs:
       - name: Locale key parity
         run: bun scripts/check-locales.ts
 
+      - name: Script tests
+        run: bun run test:scripts
+
+      - name: latest.json tests
+        run: python3 -m unittest discover -s scripts -p 'test_*.py'
+
       - name: Version consistency
         run: bun scripts/bump-version.ts --check

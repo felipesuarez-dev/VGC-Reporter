@@ -55,6 +55,16 @@ pub const TTL_LABMAUS_TRENDING: i64 = 4 * 60 * 60; // 4h
 pub const TTL_LABMAUS_CATALOG: i64 = 24 * 60 * 60; // 24h (id→name map, rarely changes)
 pub const TTL_POKEPASTE: i64 = 30 * 24 * 60 * 60; // 30d (pastes are immutable)
 pub const TTL_CHAMPTEAMS: i64 = 12 * 60 * 60; // 12h (see CHAMPTEAMS_BASE)
+/// Official regulation calendar. Short enough that a moved date is picked up
+/// within the hour even without pressing "refresh".
+pub const TTL_REGULATION_OFFICIAL: i64 = 60 * 60; // 1h
+pub const TTL_REGULATION_CATALOG: i64 = 6 * 60 * 60; // 6h in-memory refresh
+pub const TTL_OFFICIAL_STREAM: i64 = 5 * 60; // 5 min
+pub const TTL_POKEDATA: i64 = 6 * 60 * 60; // 6h official event locator mirror
+pub const TTL_OFFICIAL_EVENT: i64 = 6 * 60 * 60; // 6h official event page detail
+
+pub const SETTING_OFFICIAL_STREAM: &str = "official_stream_url";
+pub const SETTING_LIVE_STREAMS: &str = "live_stream_urls";
 
 // Dataset sizing
 pub const TOURNAMENTS_PER_SNAPSHOT: usize = 25;
