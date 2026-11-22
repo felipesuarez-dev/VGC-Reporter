@@ -26,19 +26,20 @@ workflow de release ejecuta esta comprobación antes de crear el draft.
 - paridad de claves de los 5 locales
 - tests de scripts (`bun run test:scripts`) y de `latest.json` (Python)
 
-El draft solo se crea si `verify` pasa. `build` y `android` dependen de él.
+En CI, el draft solo se crea si `verify` pasa; `build` y `android` dependen
+de él. El harness local ejecuta la comprobación de versión y compila los assets
+por su cuenta.
 
 ## Assets
 
 | Plataforma | Nombre |
 |---|---|
 | Windows MSI | `VGC.Reporter_0.5.0_x64_en-US.msi` |
-| Linux DEB | `VGC.Reporter_0.5.0_amd64.deb` |
 | Android | `VGC.Reporter_v0.5.0.20261121-beta_android.apk` |
 
-El release compila solo **MSI** en Windows y solo **DEB** en Linux, además del
-APK. macOS ya no se compila: el objetivo es Windows + Linux + Android y no
-gastar minutos de Actions en plataformas o formatos que no se distribuyen.
+El release distribuye **MSI** y **APK**. macOS y Linux ya no se compilan: el
+objetivo es Windows + Android y no gastar minutos de Actions en plataformas que
+no se distribuyen.
 
 ## Instaladores
 
@@ -49,7 +50,11 @@ gastar minutos de Actions en plataformas o formatos que no se distribuyen.
 ## Firma
 
 - **Updater**: `TAURI_SIGNING_PRIVATE_KEY` y
-  `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. Cada bundle produce un `.sig`.
+  `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. Cada bundle produce un `.sig`. La llave
+  pública correspondiente vive en `plugins.updater.pubkey` de
+  `src-tauri/tauri.conf.json`; si se rota la llave, hay que actualizar ese valor
+  y reconstruir los instaladores. Las instalaciones firmadas con la llave
+  anterior no aceptan el `latest.json` nuevo y requieren reinstalación manual.
 - **Windows Authenticode**: `WINDOWS_CERT_PFX_BASE64` y
   `WINDOWS_CERT_PASSWORD` (certificado self-signed PumaSoft, vigente hasta
   2029-11-21). El workflow importa el PFX en el runner y pasa un `--config`
@@ -57,6 +62,8 @@ gastar minutos de Actions en plataformas o formatos que no se distribuyen.
   Sin los secretos el build continúa sin firmar.
 - Un certificado self-signed identifica al publisher, pero no elimina
   SmartScreen; solo un certificado de CA pago lo hace.
+- El harness local no aplica Authenticode: el MSI sale **unsigned**. La firma
+  del updater sí se genera con la llave local.
 
 ## latest.json
 
@@ -64,7 +71,6 @@ gastar minutos de Actions en plataformas o formatos que no se distribuyen.
 `.sig` del release y genera las claves de plataforma:
 
 - `windows-x86_64` y `windows-x86_64-msi` (MSI)
-- `linux-x86_64-deb` (DEB)
 - `android` (APK)
 
 El script conserva el mapeo `darwin-*` por compatibilidad con releases
@@ -79,8 +85,34 @@ release queda en draft.
 - `workflow_dispatch` acepta un tag existente.
 - `.github/workflows/regenerate-latest-json.yml` reconstruye `latest.json` a
   partir de los assets de un release ya publicado.
-- GitHub Actions es obligatorio para el release completo: un build local en
-  Windows no produce Linux ni el APK de Android.
+- Si Actions no está disponible (por ejemplo, bloqueo de facturación de la
+  cuenta), el release se publica desde Windows con el harness local
+  `scripts/release-local.ps1`: compila el MSI y el APK, firma los assets, crea
+  el draft, sube todo, genera `latest.json` y publica.
+- El harness necesita JDK 21, Android SDK/NDK 25, los targets Rust de Android y
+  las llaves de firma locales. Linux no se compila en Windows, por eso queda
+  fuera del release.
+
+### Harness local
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/release-local.ps1 `
+  -Tag v0.5.0.20261121-beta -NoPublish
+```
+
+Sin `-NoPublish` publica el release al terminar. El script:
+
+1. Verifica que el tag coincida con la versión de la app.
+2. Compila el frontend y el MSI con firma de updater.
+3. Compila el APK universal, lo firma con el keystore y le agrega la firma de
+   updater.
+4. Reúne los assets, genera `latest.json` y crea o actualiza el draft.
+5. Sube todo y publica si no se pasó `-NoPublish`.
+
+Las llaves viven fuera del repo, en `%LOCALAPPDATA%\vgc-reporter`:
+`updater.key`, `updater-password.txt` y `android-keystore.txt`. El keystore
+Android está en la raíz del repo y está cubierto por `*.keystore` en
+`.gitignore`; nunca se versiona.
 
 ## Checklist antes de taggear
 
@@ -89,6 +121,7 @@ release queda en draft.
 3. `bun scripts/probe-sources.ts` (identificadores vivos)
 4. `cargo fmt --check`, `cargo clippy`, `cargo test`
 5. `bun run --cwd frontend build && bun run --cwd frontend test`
-6. `bun run tauri:build` y validación local del instalador
-7. Capturas del README actualizadas
-8. Confirmación de Felipe; recién entonces commit `[release] ...`, tag y push
+6. `bun run tauri:build -- --bundles msi` y validación local del instalador
+7. `bun x tauri android build --apk`, firmar y verificar el APK
+8. Capturas del README actualizadas
+9. Confirmación de Felipe; recién entonces commit `[release] ...`, tag y push

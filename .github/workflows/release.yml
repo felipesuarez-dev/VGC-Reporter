@@ -158,18 +158,12 @@ jobs:
     timeout-minutes: 75
     strategy:
       fail-fast: false
-      # max-parallel: 1 serializes the two desktop jobs. tauri-action's
-      # latest.json update is read-modify-write: it downloads the existing
-      # JSON, adds its platform key, uploads back. Parallel matrix jobs race
-      # there (last writer wins, earlier platforms drop out). Running one at
-      # a time guarantees each platform's key sticks. macOS is intentionally
-      # not built to keep the free Actions budget for Windows/Linux/Android.
-      max-parallel: 1
+      # Only Windows is built. tauri-action's latest.json update is
+      # read-modify-write, and the finalize job rebuilds it from .sig files
+      # anyway. macOS and Linux are intentionally not built to keep the free
+      # Actions budget focused on the targets that are actually distributed.
       matrix:
         include:
-          - platform: ubuntu-22.04
-            args: '--bundles deb'
-            asset_name_pattern: ''
           - platform: windows-2025
             args: '--bundles msi'
             asset_name_pattern: ''
@@ -191,12 +185,6 @@ jobs:
             ~/.cargo/git
             src-tauri/target
           key: ${{ matrix.platform }}-cargo-${{ hashFiles('src-tauri/Cargo.toml') }}
-
-      - name: Install Linux dependencies
-        if: matrix.platform == 'ubuntu-22.04'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev librsvg2-dev patchelf libayatana-appindicator3-dev xdg-utils
 
       - name: Install dependencies (Bun)
         run: bun install --frozen-lockfile
@@ -253,7 +241,7 @@ jobs:
           assetNamePattern: ${{ matrix.asset_name_pattern }}
           args: ${{ matrix.args }} ${{ steps.winsign.outputs.config_arg }}
 
-      # Defensive belt-and-suspenders for the Windows MSI / Linux DEB upload —
+      # Defensive belt-and-suspenders for the Windows MSI upload —
       # tauri-action v0.6 reported success for the v0.2.2 Windows job but the
       # bundles never appeared on the release (likely a sig-priority matching
       # quirk or a silently swallowed upload error). Re-upload every bundle
@@ -261,7 +249,6 @@ jobs:
       # with the expected set even if tauri-action's per-job upload misses
       # something. paths from src-tauri/target/.../release/bundle/ map to:
       #   windows: msi/*.msi(.sig)
-      #   linux:   deb/*.deb(.sig)
       - name: Re-upload platform bundles (defensive)
         shell: bash
         env:
@@ -274,7 +261,6 @@ jobs:
           for bdir in $BUNDLE_DIRS; do
             find "$bdir" -type f \( \
               -name '*.msi' -o -name '*.msi.sig' -o -name '*.msi.zip' -o -name '*.msi.zip.sig' \
-              -o -name '*.deb' -o -name '*.deb.sig' \
             \) -print0 | while IFS= read -r -d '' f; do
               echo "Uploading: $f"
               gh release upload "$TAG" "$f" --clobber || echo "  (upload failed, continuing)"

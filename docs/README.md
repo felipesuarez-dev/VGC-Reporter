@@ -1,6 +1,6 @@
 # Documentación VGC-Reporter
 
-Aplicación nativa (Tauri 2 + Rust + React) para estadísticas de Pokémon VGC Champions (regulación activa) y construcción de equipos. Disponible en **desktop** (Windows y Linux) y **Android** (APK, API 24+).
+Aplicación nativa (Tauri 2 + Rust + React) para estadísticas de Pokémon VGC Champions (regulación activa) y construcción de equipos. Disponible en **desktop** (Windows) y **Android** (APK, API 24+).
 
 Esta carpeta tiene dos secciones:
 

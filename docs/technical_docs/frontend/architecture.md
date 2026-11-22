@@ -1,6 +1,6 @@
 # Frontend — Arquitectura
 
-React 19 + TypeScript + Vite + TailwindCSS sobre Tauri 2.10. El mismo codebase compila para desktop (Windows y Linux) y Android (API 24+).
+React 19 + TypeScript + Vite + TailwindCSS sobre Tauri 2.10. El mismo codebase compila para desktop (Windows) y Android (API 24+).
 
 ## Reglas duras
 

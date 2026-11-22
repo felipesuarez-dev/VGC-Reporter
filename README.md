@@ -121,11 +121,12 @@ Pre-built installers for the **`v0.5.0.20261121-beta`** release:
 
 | Platform | Installer | Notes |
 |---|---|---|
-| Windows 10/11 | `VGC.Reporter_0.5.0_x64_en-US.msi` | MSI installer — self-signed; SmartScreen → More info → Run anyway |
-| Linux (Debian/Ubuntu) | `VGC.Reporter_0.5.0_amd64.deb` | Requires `webkit2gtk-4.1` |
+| Windows 10/11 | `VGC.Reporter_0.5.0_x64_en-US.msi` | MSI installer — unsigned; SmartScreen → More info → Run anyway |
 | Android 7+ (arm64) | `VGC.Reporter_v0.5.0.20261121-beta_android.apk` | Sideload: enable "Unknown sources" first |
 
 **[→ Download from the latest GitHub Release](https://github.com/felipesuarez-dev/vgc-reporter/releases/latest)**
+
+> **v0.5.0 signing change:** this release uses a new updater key. If an older installation does not offer the update automatically, install the MSI or APK manually. On Android, uninstall the previous app if the signature mismatch blocks the install.
 
 First launch downloads ~10 MB of Pokédex / moves / items / abilities and caches them locally; subsequent launches work offline until caches expire.
 
@@ -163,8 +164,7 @@ First launch downloads and caches Pokédex, moves, items, abilities and usage st
 ## Known Issues (beta)
 
 - **Top Teams "Show all"** can render 4000+ team cards in a single page. Performance is acceptable but expect 5–15s render on first display; the app shows progressive hints while loading.
-- **Windows bundles are not CA-signed**. SmartScreen shows the warning; a self-signed Authenticode cert identifies PumaSoft as the publisher, but only a paid CA certificate removes it. macOS builds are no longer shipped; the supported targets are Windows, Linux and Android.
-- **Linux**: requires `webkit2gtk-4.1` (Ubuntu 22.04+ / Fedora 38+ ship it). Older distros need to install it manually.
+- **Windows bundles are not CA-signed**. The local release build is unsigned, so SmartScreen shows the warning; only a paid CA certificate removes it. macOS and Linux builds are no longer shipped; the supported release targets are Windows and Android.
 - **Android APK is signed with the PumaSoft release key** but is not distributed through Play Store (sideload only).
 - **Android auto-update**: the app will notify you when a new version is available and guide you through the install. You still need "Install from unknown sources" enabled.
 - **First-run cache**: first launch needs internet. If a data source is down (Labmaus, Limitless), partial data is still rendered with a warning banner.
@@ -307,7 +307,7 @@ VGC-Reporter/
 
 - Bun 1.3.10+
 - Rust 1.80+ (stable)
-- **Desktop**: Windows 10/11 or Linux with `webkit2gtk-4.1`
+- **Desktop**: Windows 10/11
 - **Android**: Android Studio + SDK API 24+, NDK r25c, JDK 17–24, `ANDROID_HOME` / `NDK_HOME` set; run `rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android` first
 - First run needs internet access to populate the cache
 
