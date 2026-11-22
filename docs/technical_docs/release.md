@@ -64,6 +64,11 @@ no se distribuyen.
   SmartScreen; solo un certificado de CA pago lo hace.
 - El harness local no aplica Authenticode: el MSI sale **unsigned**. La firma
   del updater sí se genera con la llave local.
+- Si se vuelve a usar GitHub Actions después de rotar llaves, hay que
+  actualizar los secrets `TAURI_SIGNING_PRIVATE_KEY`,
+  `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, `ANDROID_KEYSTORE_BASE64`,
+  `ANDROID_KEY_ALIAS`, `ANDROID_KEYSTORE_PASSWORD` y `ANDROID_KEY_PASSWORD`
+  con las llaves nuevas. El workflow no puede leer las llaves locales.
 
 ## latest.json
 
