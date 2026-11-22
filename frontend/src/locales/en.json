@@ -199,7 +199,9 @@
     "entity_user_hint": "{{name}} uses it in {{percent}}% of its sets",
     "champion_team": "Champion team",
     "no_item": "No item",
-    "entity_user_share_hint": "{{name}} contributes {{share}}% of all teams; {{percent}}% of its sets carry it"
+    "entity_user_share_hint": "{{name}} contributes {{share}}% of all teams; {{percent}}% of its sets carry it",
+    "panel_top_entities": "Top items, moves and abilities",
+    "panel_trending": "Meta trends"
   },
   "tournament": {
     "standings": "Standings",
@@ -612,7 +614,10 @@
     "theme_sneasler": "Sneasler",
     "timezone_system": "System ({{zone}})",
     "theme_umbreon": "Umbreon (true black)",
-    "theme_zekrom": "Zekrom (high contrast)"
+    "theme_zekrom": "Zekrom (high contrast)",
+    "drag_panel": "Drag panel",
+    "move_panel_up": "Move panel up",
+    "move_panel_down": "Move panel down"
   },
   "ptr": {
     "pull": "Pull to refresh",

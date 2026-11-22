@@ -78,3 +78,7 @@ muestra todos.
 - `typeLabStore`: apertura y pestaña del TypeLab.
 - `learnProgress` se guarda directamente en localStorage junto con la racha del quiz.
 
+
+## Stores 0.6.0 (PanelBoard)
+
+- `dashboardStore` v23 añade `metricsOrder` y `regulationOrder` para Métricas y Regulación, con `normalizePanelOrder` para reparar ids desconocidos/duplicados y añadir paneles nuevos.

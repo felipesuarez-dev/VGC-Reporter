@@ -204,7 +204,9 @@
     "entity_user_hint": "{{name}} l'utilise dans {{percent}}% de ses sets",
     "champion_team": "Équipe championne",
     "no_item": "Sans objet",
-    "entity_user_share_hint": "{{name}} contribue à {{share}}% de toutes les équipes ; {{percent}}% de ses sets le portent"
+    "entity_user_share_hint": "{{name}} contribue à {{share}}% de toutes les équipes ; {{percent}}% de ses sets le portent",
+    "panel_top_entities": "Top objets, attaques et talents",
+    "panel_trending": "Tendances du méta"
   },
   "tournament": {
     "standings": "Classements",
@@ -617,7 +619,10 @@
     "theme_sneasler": "Farfurex",
     "timezone_system": "Système ({{zone}})",
     "theme_umbreon": "Umbreon (noir total)",
-    "theme_zekrom": "Zekrom (fort contraste)"
+    "theme_zekrom": "Zekrom (fort contraste)",
+    "drag_panel": "Déplacer le panneau",
+    "move_panel_up": "Monter le panneau",
+    "move_panel_down": "Descendre le panneau"
   },
   "ptr": {
     "pull": "Tirez pour actualiser",

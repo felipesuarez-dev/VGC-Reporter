@@ -1,77 +1,36 @@
 import { describe, expect, it } from "vitest";
 import {
-  DEFAULT_FEED_ROWS,
-  feedLayoutMode,
-  normalizeFeedPanels,
-  normalizeFeedRows,
-  placeLiveBelowSummary,
+  METRICS_PANEL_IDS,
+  REGULATION_PANEL_IDS,
+  normalizePanelOrder,
 } from "./dashboardStore";
 
-describe("feed rows", () => {
-  it("keeps horizontal groups and repairs duplicates or missing panels", () => {
-    expect(normalizeFeedRows(DEFAULT_FEED_ROWS)).toEqual(DEFAULT_FEED_ROWS);
-    expect(
-      normalizeFeedRows([["news", "events", "news"], ["live"], ["nope"]]),
-    ).toEqual([["news", "events"], ["live"], ["summary"]]);
-  });
-
-  it("accepts the old flat order as one panel per row", () => {
-    expect(normalizeFeedRows(["live", "news", "events"])).toEqual([
-      ["live"],
-      ["news"],
-      ["events"],
-      ["summary"],
+describe("normalizePanelOrder", () => {
+  it("keeps a valid custom order", () => {
+    expect(normalizePanelOrder(["trending", "top_pokemon"], METRICS_PANEL_IDS)).toEqual([
+      "trending",
+      "top_pokemon",
+      ...METRICS_PANEL_IDS.filter((id) => id !== "trending" && id !== "top_pokemon"),
     ]);
   });
 
-  it("puts live below regulation and keeps the other groups", () => {
-    expect(
-      placeLiveBelowSummary([["summary", "live", "events", "news"]]),
-    ).toEqual([["summary"], ["live"], ["events", "news"]]);
-    expect(
-      placeLiveBelowSummary([["summary"], ["events", "news"], ["live"]]),
-    ).toEqual([["summary"], ["live"], ["events", "news"]]);
-    expect(
-      placeLiveBelowSummary([["summary", "events", "news"], ["live"]]),
-    ).toEqual([["summary"], ["live"], ["events", "news"]]);
-    expect(placeLiveBelowSummary([["live"], ["summary"], ["news"]])).toEqual([
-      ["summary"],
-      ["live"],
-      ["news"],
+  it("drops unknown and duplicate ids and appends missing panels", () => {
+    const normalized = normalizePanelOrder(
+      ["roster", "unknown", "roster", 42],
+      REGULATION_PANEL_IDS,
+    );
+    expect(normalized).toEqual(["roster", "items", "megas"]);
+    expect(new Set(normalized).size).toBe(normalized.length);
+  });
+
+  it("falls back to the full default order for malformed state", () => {
+    expect(normalizePanelOrder(null, REGULATION_PANEL_IDS)).toEqual([
+      "roster",
+      "items",
+      "megas",
     ]);
-  });
-
-  it("detects vertical, horizontal and custom layouts", () => {
-    expect(
-      feedLayoutMode([["summary"], ["live"], ["events"], ["news"]]),
-    ).toBe("vertical");
-    expect(
-      feedLayoutMode([["summary", "live", "events", "news"]]),
-    ).toBe("horizontal");
-    expect(
-      feedLayoutMode([["summary"], ["live", "events"], ["news"]]),
-    ).toBe("custom");
-  });
-});
-
-describe("feed panel preferences", () => {
-  it("defaults to expanded and normalizes persisted collapses", () => {
-    expect(normalizeFeedPanels(undefined)).toEqual({
-      summary: { collapsed: false },
-      live: { collapsed: false },
-      events: { collapsed: false },
-      news: { collapsed: false },
-    });
-    expect(
-      normalizeFeedPanels({
-        live: { collapsed: true, orientation: "horizontal" },
-        news: { collapsed: "yes" },
-      }),
-    ).toEqual({
-      summary: { collapsed: false },
-      live: { collapsed: true },
-      events: { collapsed: false },
-      news: { collapsed: false },
-    });
+    expect(normalizePanelOrder({ nope: true }, METRICS_PANEL_IDS)).toEqual([
+      ...METRICS_PANEL_IDS,
+    ]);
   });
 });

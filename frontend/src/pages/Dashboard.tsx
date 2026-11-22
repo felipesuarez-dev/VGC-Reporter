@@ -42,7 +42,12 @@ import { SourcesChip } from "../components/layout/SourcesChip";
 import { SearchTextInput } from "../components/filters/SearchTextInput";
 import { CountryFilter } from "../components/filters/CountryFilter";
 import { countryFlag } from "../lib/countryFlag";
-import { useDashboardStore, type DashboardView } from "../stores/dashboardStore";
+import {
+  useDashboardStore,
+  type DashboardView,
+  type MetricsPanelId,
+  type RegulationPanelId,
+} from "../stores/dashboardStore";
 import { useRegulationCatalog, useRegulationStatus } from "../hooks/useRegulationCatalog";
 import { usePokedexStore } from "../stores/pokedexStore";
 import { useLongLoadingHint } from "../hooks/useLoadingHint";
@@ -53,6 +58,7 @@ import { DashboardViewTabs } from "../components/dashboard/DashboardViewTabs";
 import { RegulationFeed } from "../components/dashboard/RegulationFeed";
 import { RegulationInfoView } from "../components/dashboard/RegulationInfoView";
 import { UpcomingTournamentsSection } from "../components/dashboard/UpcomingTournamentsSection";
+import { PanelOrder, PanelOrderGroup } from "../components/layout/PanelBoard";
 
 function canonicalSpeciesId(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -80,6 +86,10 @@ export function Dashboard() {
   const favoriteSource = useDashboardStore((s) => s.favoriteSource);
   const setFavoriteSource = useDashboardStore((s) => s.setFavoriteSource);
   const setTopPokemonView = useDashboardStore((s) => s.setTopPokemonView);
+  const metricsOrder = useDashboardStore((s) => s.metricsOrder);
+  const setMetricsOrder = useDashboardStore((s) => s.setMetricsOrder);
+  const regulationOrder = useDashboardStore((s) => s.regulationOrder);
+  const setRegulationOrder = useDashboardStore((s) => s.setRegulationOrder);
   const openDetail = usePokedexStore((s) => s.openDetail);
   const openSpecies = (species: string) => openDetail(canonicalSpeciesId(species));
   const dashboardView = useDashboardStore((s) => s.dashboardView);
@@ -564,8 +574,13 @@ const POKE_INITIAL = 10;
         </div>
       )}
 
+      <PanelOrderGroup
+        order={metricsOrder}
+        onOrderChange={(order) => setMetricsOrder(order as MetricsPanelId[])}
+      >
       {data && data.pokemon.length > 0 && (
         <>
+          <PanelOrder id="top_pokemon" label={t("dashboard.top_pokemon")}>
           <section className="card">
             {(data?.sources?.length ?? 0) > 0 && (
               <div className="mb-2">
@@ -670,9 +685,13 @@ const POKE_INITIAL = 10;
               </div>
             )}
           </section>
+          </PanelOrder>
 
-          <TrendingCard format={format} />
+          <PanelOrder id="trending" label={t("dashboard.panel_trending")}>
+            <TrendingCard format={format} />
+          </PanelOrder>
 
+          <PanelOrder id="top_entities" label={t("dashboard.panel_top_entities")}>
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div className="card">
               <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
@@ -708,10 +727,19 @@ const POKE_INITIAL = 10;
               />
             </div>
           </section>
+          </PanelOrder>
 
         </>
       )}
 
+      <PanelOrder
+        id="recent_tournaments"
+        label={
+          format === "regulation-i"
+            ? t("dashboard.recent_tournaments")
+            : t("dashboard.champions_report")
+        }
+      >
       <section className="card">
         <h2 className="mb-1 text-sm font-semibold" style={{ color: "var(--text)" }}>
           {format === "regulation-i"
@@ -828,9 +856,13 @@ const POKE_INITIAL = 10;
           </div>
         )}
       </section>
+      </PanelOrder>
 
-      <UpcomingTournamentsSection />
+      <PanelOrder id="upcoming" label={t("upcoming.title")}>
+        <UpcomingTournamentsSection />
+      </PanelOrder>
 
+      <PanelOrder id="external_sources" label={t("dashboard.external_sources")}>
       <section className="card">
         <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
           {t("dashboard.external_sources")}
@@ -853,9 +885,18 @@ const POKE_INITIAL = 10;
           ))}
         </div>
       </section>
+      </PanelOrder>
+      </PanelOrderGroup>
         </>
       ) : view === "regulation" ? (
-        <RegulationInfoView format={format} info={selectedRegulation} />
+        <RegulationInfoView
+          format={format}
+          info={selectedRegulation}
+          panelOrder={regulationOrder}
+          onPanelOrderChange={(order) =>
+            setRegulationOrder(order as RegulationPanelId[])
+          }
+        />
       ) : (
         <RegulationFeed format={format} info={selectedRegulation} />
       )}

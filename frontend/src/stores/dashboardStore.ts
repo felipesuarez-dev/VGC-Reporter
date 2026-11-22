@@ -6,6 +6,29 @@ export type TopPokemonView = "bar" | "grid" | "treemap" | "tier";
 export type DashboardView = "metrics" | "regulation" | "feed";
 export type FeedPanelId = "summary" | "live" | "events" | "news";
 export type FeedLayoutMode = "vertical" | "horizontal" | "custom";
+export type MetricsPanelId =
+  | "top_pokemon"
+  | "trending"
+  | "top_entities"
+  | "recent_tournaments"
+  | "upcoming"
+  | "external_sources";
+export type RegulationPanelId = "roster" | "items" | "megas";
+
+export const METRICS_PANEL_IDS: readonly MetricsPanelId[] = [
+  "top_pokemon",
+  "trending",
+  "top_entities",
+  "recent_tournaments",
+  "upcoming",
+  "external_sources",
+];
+
+export const REGULATION_PANEL_IDS: readonly RegulationPanelId[] = [
+  "roster",
+  "items",
+  "megas",
+];
 
 export interface FeedPanelPrefs {
   collapsed: boolean;
@@ -120,6 +143,34 @@ export function feedLayoutMode(rows: FeedPanelId[][]): FeedLayoutMode {
   return "custom";
 }
 
+/**
+ * Repair a persisted panel order: drop unknown/duplicate ids and append any
+ * panel added in a newer version, so a layout never hides content silently.
+ */
+export function normalizePanelOrder<T extends string>(
+  raw: unknown,
+  ids: readonly T[],
+): T[] {
+  const seen = new Set<T>();
+  const out: T[] = [];
+  if (Array.isArray(raw)) {
+    for (const value of raw) {
+      if (
+        typeof value === "string" &&
+        ids.includes(value as T) &&
+        !seen.has(value as T)
+      ) {
+        seen.add(value as T);
+        out.push(value as T);
+      }
+    }
+  }
+  for (const id of ids) {
+    if (!seen.has(id)) out.push(id);
+  }
+  return out;
+}
+
 const VIEWS: readonly TopPokemonView[] = ["bar", "grid", "treemap", "tier"];
 
 interface DashboardState {
@@ -132,6 +183,8 @@ interface DashboardState {
   dashboardView: DashboardView;
   feedRows: FeedPanelId[][];
   feedPanels: Record<FeedPanelId, FeedPanelPrefs>;
+  metricsOrder: MetricsPanelId[];
+  regulationOrder: RegulationPanelId[];
   /** `null` merges every source; a value pins the view to one provider. */
   sourceFilter: SourceId | null;
   /** Starred source. `null` means "all sources". */
@@ -147,6 +200,9 @@ interface DashboardState {
   setFeedCollapsed: (id: FeedPanelId, collapsed: boolean) => void;
   setAllFeedCollapsed: (collapsed: boolean) => void;
   resetFeedLayout: () => void;
+  setMetricsOrder: (order: MetricsPanelId[]) => void;
+  setRegulationOrder: (order: RegulationPanelId[]) => void;
+  resetPanelOrders: () => void;
   followActive: (format: Format) => void;
   setTopPokemonView: (view: TopPokemonView) => void;
   setSourceFilter: (source: SourceId | null) => void;
@@ -186,6 +242,11 @@ export const useDashboardStore = create<DashboardState>()(
       dashboardView: "feed",
       feedRows: normalizeFeedRows(DEFAULT_FEED_ROWS),
       feedPanels: normalizeFeedPanels(DEFAULT_FEED_PANELS),
+      metricsOrder: normalizePanelOrder(METRICS_PANEL_IDS, METRICS_PANEL_IDS),
+      regulationOrder: normalizePanelOrder(
+        REGULATION_PANEL_IDS,
+        REGULATION_PANEL_IDS,
+      ),
       sourceFilter: null,
       favoriteSource: null,
       dateRanges: {},
@@ -228,6 +289,22 @@ export const useDashboardStore = create<DashboardState>()(
           feedRows: normalizeFeedRows(DEFAULT_FEED_ROWS),
           feedPanels: normalizeFeedPanels(DEFAULT_FEED_PANELS),
         }),
+      setMetricsOrder: (metricsOrder) =>
+        set({
+          metricsOrder: normalizePanelOrder(metricsOrder, METRICS_PANEL_IDS),
+        }),
+      setRegulationOrder: (regulationOrder) =>
+        set({
+          regulationOrder: normalizePanelOrder(
+            regulationOrder,
+            REGULATION_PANEL_IDS,
+          ),
+        }),
+      resetPanelOrders: () =>
+        set({
+          metricsOrder: [...METRICS_PANEL_IDS],
+          regulationOrder: [...REGULATION_PANEL_IDS],
+        }),
       followActive: (format) => {
         if (get().formatPinned) return;
         set({ format, favoriteFormat: format });
@@ -246,7 +323,7 @@ export const useDashboardStore = create<DashboardState>()(
     }),
     {
       name: "vgc-dashboard",
-      version: 22,
+      version: 23,
       migrate: (persisted: unknown, version: number) => {
         const prior = (persisted ?? {}) as Record<string, unknown>;
         if (!(version >= 11)) {
@@ -259,6 +336,8 @@ export const useDashboardStore = create<DashboardState>()(
             dashboardView: "feed",
             feedRows: normalizeFeedRows(DEFAULT_FEED_ROWS),
             feedPanels: normalizeFeedPanels(DEFAULT_FEED_PANELS),
+            metricsOrder: [...METRICS_PANEL_IDS],
+            regulationOrder: [...REGULATION_PANEL_IDS],
             sourceFilter: null,
             favoriteSource: null,
             dateRanges: {},
@@ -276,6 +355,14 @@ export const useDashboardStore = create<DashboardState>()(
           feedRows:
             version < 20 ? placeLiveBelowSummary(savedRows) : savedRows,
           feedPanels: normalizeFeedPanels(prior.feedPanels),
+          metricsOrder: normalizePanelOrder(
+            version >= 23 ? prior.metricsOrder : [],
+            METRICS_PANEL_IDS,
+          ),
+          regulationOrder: normalizePanelOrder(
+            version >= 23 ? prior.regulationOrder : [],
+            REGULATION_PANEL_IDS,
+          ),
           sourceFilter: normalizeSource(prior.sourceFilter),
           favoriteSource:
             version >= 22 ? normalizeSource(prior.favoriteSource) : null,

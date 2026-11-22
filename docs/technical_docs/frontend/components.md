@@ -93,3 +93,7 @@
 - dashboard/EventSourceBadge.tsx - badge diferenciado Play! Pokémon / Limitless.
 - team/StatPointSliders.tsx - 66 SP y 32 por stat.
 - pages/Learn.tsx - guías, práctica, starters, amenazas y glosario.
+
+## PanelBoard 0.6.0
+
+- `layout/PanelBoard.tsx` - `PanelOrderGroup` + `PanelOrder`. Reordena paneles de Métricas y Regulación con pointer events (WebView2/touch) y botones subir/bajar como alternativa accesible. El orden visual usa CSS `order`, así que los paneles no se desmontan ni pierden estado al arrastrar. Persistido en `dashboardStore` v23 (`metricsOrder`, `regulationOrder`).

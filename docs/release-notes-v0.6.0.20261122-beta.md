@@ -14,7 +14,7 @@
 - **Métricas**: treemap con sprites y tooltip rico; selector de fuentes propio con favorito; rango de fechas compartido con Top Equipos.
 - **Top Equipos**: filtros por rango de fechas, proveedor, origen, país y Pokémon.
 - **Calendario**: anclado en Novedades o widget flotante en esquina/libre, configurable en Ajustes.
-- **UI**: coherencia visual entre Novedades, Métricas y Regulación; X de modales fija; aviso antes de abrir enlaces externos; título móvil completo.
+- **UI**: coherencia visual entre Novedades, Métricas y Regulación; drag & drop persistente en Métricas y Regulación (arrastrar o subir/bajar paneles); X de modales fija; aviso antes de abrir enlaces externos; título móvil completo.
 - **Android**: barra de navegación inmersiva con swipe para mostrarla; descarga del APK y apertura del instalador del sistema.
 - **Instalador**: MSI con licencia/descargo legal bilingüe, icono de acceso directo corregido y recursos de marca más legibles.
 - **Temas**: Umbreon (negro total) y Zekrom (alto contraste).
@@ -41,4 +41,5 @@
 Esta versión usa la llave de updater de 0.5.0. Si una instalación anterior no ofrece la actualización automática, instala el MSI o APK manualmente. En Android, desinstala la versión previa si la firma no coincide.
 
 El MSI no está firmado con Authenticode; Windows puede mostrar SmartScreen. Usa “Más información” → “Ejecutar de todas formas”.
+
 
