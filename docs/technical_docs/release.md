@@ -77,7 +77,12 @@ no se distribuyen.
 `.sig` del release y genera las claves de plataforma:
 
 - `windows-x86_64` y `windows-x86_64-msi` (MSI)
-- `android` (APK)
+- `android` (APK), con `size` y `sha256` calculados desde el APK descargado
+
+`regenerate-latest-json.yml` descarga `*_android.apk` junto con los `.sig` y pasa
+`--assets-dir` al script. Sin `size`/`sha256`, el updater Android rechaza el
+manifiesto en vez de instalar un archivo sin verificar. El APK también se
+comprueba en Android contra la firma de la app instalada.
 
 El script conserva el mapeo `darwin-*` por compatibilidad con releases
 antiguos, pero el workflow actual no genera assets de macOS.

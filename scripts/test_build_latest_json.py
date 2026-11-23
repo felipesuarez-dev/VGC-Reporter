@@ -1,3 +1,4 @@
+import hashlib
 import os
 import sys
 import tempfile
@@ -48,6 +49,27 @@ class BuildLatestJsonTest(unittest.TestCase):
         self.assertIn("linux-x86_64-deb", data["platforms"])
         self.assertIn("linux-x86_64-rpm", data["platforms"])
         self.assertIn("android", data["platforms"])
+
+    def test_android_manifest_carries_apk_size_and_sha256(self):
+        self.sig("VGC.Reporter_v0.6.2_android.apk.sig")
+        asset = os.path.join(self.sigs, "VGC.Reporter_v0.6.2_android.apk")
+        with open(asset, "wb") as handle:
+            handle.write(b"apk-bytes")
+        data = build(
+            self.sigs,
+            "v0.6.2.20261122-beta",
+            "notes",
+            "https://example.test/repo",
+            "2026-11-22T00:00:00.000Z",
+            self.sigs,
+        )
+        android = data["platforms"]["android"]
+        self.assertEqual(android["size"], len(b"apk-bytes"))
+        self.assertEqual(
+            android["sha256"],
+            hashlib.sha256(b"apk-bytes").hexdigest(),
+        )
+        self.assertIn("VGC.Reporter_v0.6.2_android.apk", android["url"])
 
     def test_signature_is_not_double_encoded(self):
         self.sig("VGC.Reporter_0.5.0_x64_en-US.msi.sig", "abc123")

@@ -1,17 +1,24 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
+import { ChevronDown, Download, ExternalLink, X } from "lucide-react";
 import { check } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
-import { openPath } from "@tauri-apps/plugin-opener";
+import { listen } from "@tauri-apps/api/event";
 import { openExternal } from "../../lib/openExternal";
 import { ipc } from "../../lib/ipc";
+import { desktopPlatformMeta, shortSignature } from "../../lib/updater";
+import type { AndroidUpdateProgress } from "../../lib/types";
 import { useUpdaterStore } from "../../stores/updaterStore";
 import { APP_VERSION } from "../../lib/version";
+
 function isMacOS(): boolean {
   const p = typeof navigator !== "undefined" ? navigator.platform : "";
   const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
   return /Mac|iPhone|iPad|iPod/i.test(p) || /Mac OS X/i.test(ua);
+}
+
+function isAndroid(): boolean {
+  return typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
 }
 
 const RELEASES_PAGE_URL =
@@ -25,11 +32,43 @@ export function UpdaterModal() {
   const setProgress = useUpdaterStore((s) => s.setProgress);
   const dismiss = useUpdaterStore((s) => s.dismiss);
   const [isInstalling, setIsInstalling] = useState(false);
+  const [stage, setStage] = useState<"idle" | "downloading" | "installing">("idle");
+  const [requestId, setRequestId] = useState<string | null>(null);
   const [installError, setInstallError] = useState<string | null>(null);
-  const isAndroid =
-    typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
+  const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
+  const [desktop, setDesktop] = useState<{
+    version: string;
+    currentVersion: string;
+    url: string | null;
+    signature: string | null;
+  } | null>(null);
 
   if (!available || dismissed) return null;
+
+  const android = isAndroid();
+  const mac = isMacOS();
+  const downloadUrl = android ? available.downloadUrl : available.desktopUrl;
+  const signature = android
+    ? available.signature
+    : available.desktopSignature ?? desktop?.signature;
+  const shownUrl = downloadUrl ?? desktop?.url ?? null;
+
+  const mapInstallError = (error: unknown): string => {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes("install_permission_required")) {
+      return t("updater.android_permission_required");
+    }
+    if (message.includes("signature_mismatch")) {
+      return t("updater.android_signature_mismatch");
+    }
+    if (message.includes("installer_unavailable")) {
+      return t("updater.android_installer_unavailable");
+    }
+    if (message.includes("cancelled")) {
+      return t("updater.cancel_done");
+    }
+    return message;
+  };
 
   const installNow = async () => {
     setIsInstalling(true);
@@ -37,6 +76,13 @@ export function UpdaterModal() {
     try {
       const upd = await check();
       if (!upd) return;
+      const platform = desktopPlatformMeta(upd.rawJson);
+      setDesktop({
+        version: upd.version,
+        currentVersion: upd.currentVersion,
+        url: platform.url,
+        signature: platform.signature,
+      });
       let downloaded = 0;
       let total = 0;
       await upd.downloadAndInstall((event) => {
@@ -54,39 +100,68 @@ export function UpdaterModal() {
       });
       await relaunch();
     } catch (e) {
-      setInstallError(e instanceof Error ? e.message : String(e));
+      setInstallError(mapInstallError(e));
     } finally {
       setIsInstalling(false);
     }
+  };
+
+  const installAndroid = async () => {
+    if (!downloadUrl) {
+      void openExternal(RELEASES_PAGE_URL);
+      return;
+    }
+    if (!available.size || !available.sha256) {
+      setInstallError(t("updater.android_manifest_incomplete"));
+      return;
+    }
+    const requestIdValue =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    setIsInstalling(true);
+    setStage("downloading");
+    setRequestId(requestIdValue);
+    setInstallError(null);
+    setProgress(0);
+    let unlisten: (() => void) | undefined;
+    try {
+      unlisten = await listen<AndroidUpdateProgress>(
+        "android-update-progress",
+        (event) => {
+          if (event.payload.request_id !== requestIdValue) return;
+          setProgress(event.payload.pct);
+          if (event.payload.error) setInstallError(event.payload.error);
+        },
+      );
+      const path = await ipc.downloadAndroidUpdate(
+        requestIdValue,
+        downloadUrl,
+        available.size,
+        available.sha256,
+      );
+      setStage("installing");
+      await ipc.installAndroidUpdate(path);
+      dismiss();
+    } catch (e) {
+      setInstallError(mapInstallError(e));
+    } finally {
+      unlisten?.();
+      setRequestId(null);
+      setStage("idle");
+      setIsInstalling(false);
+    }
+  };
+
+  const cancelAndroidDownload = async () => {
+    if (!requestId) return;
+    await ipc.cancelAndroidUpdate(requestId);
+    setInstallError(t("updater.cancel_requested"));
   };
 
   const downloadManual = (target: string) => {
     void openExternal(target);
-    dismiss();
   };
-
-  const installAndroid = async () => {
-    const url = available.downloadUrl ?? null;
-    if (!url) {
-      downloadManual(RELEASES_PAGE_URL);
-      return;
-    }
-    setIsInstalling(true);
-    setInstallError(null);
-    try {
-      const path = await ipc.downloadAndroidUpdate(url);
-      await openPath(path);
-      dismiss();
-    } catch (error) {
-      setInstallError(error instanceof Error ? error.message : String(error));
-      // If the system refuses the file URI, leave the browser fallback.
-      downloadManual(url);
-    } finally {
-      setIsInstalling(false);
-    }
-  };
-
-  const mac = isMacOS();
 
   return (
     <div
@@ -101,7 +176,7 @@ export function UpdaterModal() {
           backgroundColor: "var(--bg-elev)",
           borderColor: "var(--border)",
         }}
-        onClick={(e) => e.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
       >
         <button
           type="button"
@@ -134,8 +209,13 @@ export function UpdaterModal() {
         )}
         {progress !== null && (
           <div className="mt-3">
-            <div className="text-xs" style={{ color: "var(--text-muted)" }}>
-              {t("updater.downloading", { pct: progress })}
+            <div className="flex items-center justify-between text-xs" style={{ color: "var(--text-muted)" }}>
+              <span>
+                {stage === "installing"
+                  ? t("updater.installing")
+                  : t("updater.downloading", { pct: progress })}
+              </span>
+              <span className="font-mono">{progress}%</span>
             </div>
             <div
               className="mt-1 h-2 overflow-hidden rounded"
@@ -152,11 +232,11 @@ export function UpdaterModal() {
           </div>
         )}
         {installError && (
-          <p className="mt-3 text-xs" style={{ color: "var(--danger)" }}>
+          <p className="mt-3 break-all text-xs" style={{ color: "var(--danger)" }}>
             {installError}
           </p>
         )}
-        <div className="mt-4 flex justify-end gap-2">
+        <div className="mt-4 flex flex-wrap justify-end gap-2">
           <button
             type="button"
             className="btn-ghost text-xs"
@@ -165,7 +245,15 @@ export function UpdaterModal() {
           >
             {t("updater.later")}
           </button>
-          {isAndroid ? (
+          {android && stage === "downloading" ? (
+            <button
+              type="button"
+              className="btn-ghost text-xs"
+              onClick={() => void cancelAndroidDownload()}
+            >
+              {t("updater.cancel_download")}
+            </button>
+          ) : android ? (
             <button
               type="button"
               className="btn-primary text-xs"
@@ -180,7 +268,7 @@ export function UpdaterModal() {
             <button
               type="button"
               className="btn-primary text-xs"
-              onClick={() => void downloadManual(RELEASES_PAGE_URL)}
+              onClick={() => downloadManual(RELEASES_PAGE_URL)}
             >
               {t("updater.download_manual")}
             </button>
@@ -188,7 +276,7 @@ export function UpdaterModal() {
             <button
               type="button"
               className="btn-primary text-xs"
-              onClick={installNow}
+              onClick={() => void installNow()}
               disabled={isInstalling}
             >
               {isInstalling
@@ -197,6 +285,85 @@ export function UpdaterModal() {
             </button>
           )}
         </div>
+        {android && (
+          <button
+            type="button"
+            className="btn-ghost mt-2 w-full justify-center text-[11px]"
+            onClick={() => openExternal(RELEASES_PAGE_URL)}
+          >
+            <ExternalLink size={12} className="mr-1" />
+            {t("updater.open_github_secondary")}
+          </button>
+        )}
+        <button
+          type="button"
+          className="mt-3 inline-flex items-center gap-1 text-[10px]"
+          style={{ color: "var(--text-dim)" }}
+          onClick={() => setDiagnosticsOpen((value) => !value)}
+        >
+          <ChevronDown
+            size={12}
+            style={{ transform: diagnosticsOpen ? "rotate(180deg)" : undefined }}
+          />
+          {t("updater.diagnostics")}
+        </button>
+        {diagnosticsOpen && (
+          <dl
+            className="mt-2 space-y-1 rounded-lg border p-2 font-mono text-[9px]"
+            style={{
+              borderColor: "var(--border)",
+              backgroundColor: "var(--bg)",
+              color: "var(--text-muted)",
+            }}
+          >
+            <div className="flex justify-between gap-2">
+              <dt>{t("updater.current_version")}</dt>
+              <dd>{desktop?.currentVersion ?? APP_VERSION}</dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt>{t("updater.remote_version")}</dt>
+              <dd>{desktop?.version ?? available.version}</dd>
+            </div>
+            <div>
+              <dt>{t("updater.download_url")}</dt>
+              <dd className="break-all">{shownUrl ?? "—"}</dd>
+            </div>
+            <div>
+              <dt>{t("updater.signature")}</dt>
+              <dd className="break-all">{shortSignature(signature)}</dd>
+            </div>
+            {android && (
+              <>
+                <div className="flex justify-between gap-2">
+                  <dt>{t("updater.size")}</dt>
+                  <dd>{available.size ?? "—"}</dd>
+                </div>
+                <div>
+                  <dt>{t("updater.sha256")}</dt>
+                  <dd className="break-all">{available.sha256 ?? "—"}</dd>
+                </div>
+              </>
+            )}
+            {installError && (
+              <div>
+                <dt>{t("updater.exact_error")}</dt>
+                <dd className="break-all" style={{ color: "var(--danger)" }}>
+                  {installError}
+                </dd>
+              </div>
+            )}
+          </dl>
+        )}
+        {!android && (
+          <button
+            type="button"
+            className="btn-ghost mt-2 w-full justify-center text-[11px]"
+            onClick={() => downloadManual(shownUrl ?? RELEASES_PAGE_URL)}
+          >
+            <Download size={12} className="mr-1" />
+            {t("updater.download_msi")}
+          </button>
+        )}
       </div>
     </div>
   );

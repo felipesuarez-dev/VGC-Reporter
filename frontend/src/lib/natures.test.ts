@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { NATURE_BOOSTS, NATURE_EFFECTS, naturesForBoost } from "./natures";
+import {
+  NATURE_BOOSTS,
+  NATURE_EFFECTS,
+  naturesForBoost,
+  naturesForStat,
+} from "./natures";
 
 describe("nature table", () => {
   it("contains all 25 natures exactly once", () => {
@@ -12,6 +17,15 @@ describe("nature table", () => {
     for (const stat of NATURE_BOOSTS) {
       expect(naturesForBoost(stat)).toHaveLength(4);
     }
+  });
+
+  it("filters natures that modify a stat in either direction", () => {
+    const attack = naturesForStat("atk");
+    expect(attack.some((entry) => entry.nature === "Adamant")).toBe(true);
+    expect(attack.some((entry) => entry.nature === "Bold")).toBe(true);
+    expect(attack.every((entry) => entry.up === "atk" || entry.down === "atk")).toBe(
+      true,
+    );
   });
 
   it("keeps the documented Adamant and Timid effects", () => {

@@ -59,6 +59,8 @@ export const queryKeys = {
   championsSearch: (format: Format, query: string) =>
     ["champions-search", format, query] as const,
   tournamentStandings: (id: string) => ["tournament-standings", id] as const,
+  officialStandings: (url: string, start: number, size: number) =>
+    ["official-standings", url, start, size] as const,
   upcomingTournaments: (country?: string) =>
     ["upcoming-tournaments", country ?? "all"] as const,
   officialEvent: (url: string) => ["official-event", url] as const,

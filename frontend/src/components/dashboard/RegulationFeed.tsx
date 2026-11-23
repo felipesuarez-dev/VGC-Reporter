@@ -15,22 +15,17 @@ import {
   ChevronsUpDown,
   Columns3,
   GripVertical,
-  Loader2,
   Newspaper,
   PanelsTopLeft,
   Radio,
   RotateCcw,
   Rows3,
+  Trophy,
   type LucideIcon,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import type { Format, RegulationInfo } from "../../lib/types";
 import { cn } from "../../lib/cn";
-import { ipc } from "../../lib/ipc";
-import { queryKeys } from "../../lib/queryKeys";
-import { useUpcomingTournaments } from "../../hooks/useUpcomingTournaments";
-import { useUiStore } from "../../stores/uiStore";
 import {
   DEFAULT_FEED_ROWS,
   FEED_PANEL_IDS,
@@ -43,6 +38,8 @@ import { FeedSummaryCard } from "./FeedSummaryCard";
 import { LiveStreamCard } from "./LiveStreamCard";
 import { RegulationNews } from "./RegulationNews";
 import { FeedSidePanel } from "./FeedSidePanel";
+import { RecentTournamentsSection } from "./RecentTournamentsSection";
+import { PanelLoading } from "../ui/PanelLoading";
 
 interface Props {
   format: Format;
@@ -55,53 +52,9 @@ const PANEL_META: Record<FeedPanelId, { icon: LucideIcon; labelKey: string }> = 
   summary: { icon: CalendarRange, labelKey: "feed.panel_summary" },
   live: { icon: Radio, labelKey: "feed.panel_live" },
   events: { icon: CalendarClock, labelKey: "feed.panel_events" },
+  recent: { icon: Trophy, labelKey: "feed.panel_recent" },
   news: { icon: Newspaper, labelKey: "feed.panel_news" },
 };
-
-function FeedLoading() {
-  const { t } = useTranslation();
-  return (
-    <div className="space-y-3" aria-busy="true" aria-live="polite">
-      <div className="card flex items-center gap-3 p-5">
-        <span
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-          style={{
-            backgroundColor: "var(--accent-soft)",
-            color: "var(--accent)",
-          }}
-        >
-          <Loader2 size={20} className="animate-spin" />
-        </span>
-        <div>
-          <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>
-            {t("feed.loading_feed")}
-          </p>
-          <p className="text-[11px]" style={{ color: "var(--text-dim)" }}>
-            {t("feed.loading_feed_hint")}
-          </p>
-        </div>
-      </div>
-      <div
-        className="card h-28 animate-pulse"
-        style={{ backgroundColor: "var(--bg-elev)" }}
-      />
-      <div
-        className="card h-72 animate-pulse"
-        style={{ backgroundColor: "var(--bg-elev)" }}
-      />
-      <div className="grid gap-3 lg:grid-cols-2">
-        <div
-          className="card h-64 animate-pulse"
-          style={{ backgroundColor: "var(--bg-elev)" }}
-        />
-        <div
-          className="card h-64 animate-pulse"
-          style={{ backgroundColor: "var(--bg-elev)" }}
-        />
-      </div>
-    </div>
-  );
-}
 
 function rowClass(length: number): string {
   if (length <= 1) return "";
@@ -120,7 +73,7 @@ function rowClass(length: number): string {
  * The layout is persisted as rows, so "news + events together", "all three
  * together" and "everything separate" are all just different row shapes.
  */
-export function RegulationFeed({ info }: Props) {
+export function RegulationFeed({ format, info }: Props) {
   const { t } = useTranslation();
   const feedRows = useDashboardStore((s) => s.feedRows);
   const feedPanels = useDashboardStore((s) => s.feedPanels);
@@ -130,17 +83,6 @@ export function RegulationFeed({ info }: Props) {
   const setAllFeedCollapsed = useDashboardStore((s) => s.setAllFeedCollapsed);
   const resetFeedLayout = useDashboardStore((s) => s.resetFeedLayout);
   const live = useLiveStreams();
-  const upcomingCountry = useUiStore((s) => s.upcomingCountry);
-  const upcoming = useUpcomingTournaments(upcomingCountry);
-  const news = useQuery({
-    queryKey: queryKeys.regulationNews,
-    queryFn: () => ipc.getRegulationNews(),
-    staleTime: 15 * 60 * 1000,
-    refetchInterval: 30 * 60 * 1000,
-    retry: 1,
-  });
-  const feedLoading =
-    live.isLoading || upcoming.isLoading || news.isLoading;
   const liveIsOn = live.data?.some((screen) => screen.live) ?? false;
   const [dragId, setDragId] = useState<FeedPanelId | null>(null);
   const [dragPoint, setDragPoint] = useState<{ x: number; y: number } | null>(
@@ -307,9 +249,7 @@ export function RegulationFeed({ info }: Props) {
   if (!info) {
     return (
       <section className="card">
-        <p className="text-sm" style={{ color: "var(--text-dim)" }}>
-          {t("common.loading")}
-        </p>
+        <PanelLoading variant="chart" rows={6} />
       </section>
     );
   }
@@ -334,10 +274,6 @@ export function RegulationFeed({ info }: Props) {
     next.splice(target, 0, row);
     setFeedRows(next);
   };
-
-  if (feedLoading) {
-    return <FeedLoading />;
-  }
 
   return (
     <div className={cn("space-y-3", dragId && "select-none")}>
@@ -587,6 +523,9 @@ export function RegulationFeed({ info }: Props) {
                         )}
                         {panelId === "events" && (
                           <FeedSidePanel info={info} />
+                        )}
+                        {panelId === "recent" && (
+                          <RecentTournamentsSection format={format} />
                         )}
                         {panelId === "news" && (
                           <RegulationNews compact={row.length > 1} />

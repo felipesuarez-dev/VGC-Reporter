@@ -34,14 +34,6 @@ Muestra el "estado del meta" de la regulación activa en un vistazo.
   y abre una ficha con dirección, mapa, contacto, entrada, inscripción,
   categoría, evento premier, estado, ID del torneo, código postal, web del local
   y **Exportar .ics** multi-día. El precio y el premio se muestran como badges.
-- **Torneos recientes**: separados en **Campeonatos oficiales** y **Torneos de
-  comunidad**, cada uno con su badge. Los oficiales muestran fecha, sede,
-  jugadores, campeón Masters, premio en efectivo cuando existe y un enlace a
-  los resultados oficiales. Los comunitarios conservan standings/decklists; la
-  fila muestra **Equipo campeón** y el tooltip con los seis Pokémon (objeto,
-  habilidad, Tera y movimientos). Click en **Ver clasificación** abre el cajón
-  lateral completo. Un major en curso (por ejemplo LAIC el domingo) aparece en
-  recientes ese mismo fin de semana.
 - **Calendario**: los majors oficiales se expanden a todos sus días y se
   destacan con borde/punto dorado. La hora de cada evento respeta la **zona
   horaria configurada** en Ajustes; las fechas de solo día no se desplazan.
@@ -76,7 +68,7 @@ ambos rangos para que no parezca un error.
 
 ## Novedades (Feed)
 
-Es la superficie de "qué está pasando ahora". Tiene cuatro paneles:
+Es la superficie de "qué está pasando ahora". Tiene cinco paneles:
 
 1. **Regulación**: resumen de la temporada, instantes oficiales y días de datos.
 2. **Transmisión en vivo**: una vitrina de pantallas de YouTube. Por defecto
@@ -90,15 +82,16 @@ Es la superficie de "qué está pasando ahora". Tiene cuatro paneles:
    pequeñas abajo. Cada señal tiene un **ojo** para ocultarla sin borrarla de
    la lista: queda como badge EN VIVO con el ojo cerrado y se restaura con un
    click. Si un canal no está en directo, el panel sigue visible y lo indica en
-   vez de colapsarse. Si **ningún** canal está en vivo, muestra una sección
-   **Últimas transmisiones** con los últimos directos de cada canal (nunca los
-   etiqueta como en vivo). **Vitrina TV** abre una vista a pantalla completa con
-   todas las señales. Cada pantalla tiene accesos **Suscribirse** y **Abrir**,
+   vez de colapsarse. Los canales que no están en vivo muestran su **última
+   transmisión** con los badges “Última transmisión” y “No está en vivo”; si el
+   canal está oculto con el ojo, la última transmisión sigue visible con el
+   indicador de canal oculto. **Vitrina TV** abre una vista a pantalla completa
+   con todas las señales. Cada pantalla tiene accesos **Suscribirse** y **Abrir**,
    con los badges EN VIVO / canal / Oficial debajo del video.
    YouTube no permite dar "Me gusta" ni suscribirse dentro de un reproductor
    embebido sin una cuenta de Google, así que esas acciones se confirman en
-   YouTube. La página **Novedades** espera con un spinner y skeletons hasta que
-   live, torneos y noticias están listos.
+   YouTube. Cada panel de Novedades carga por su cuenta con spinner y skeleton;
+   un panel lento ya no bloquea los demás.
 3. **Torneos**: próximos eventos con filtros de país/ciudad, favorito con
    estrella, buscador de texto (nombre, local o dirección, sin importar
    tildes) y fuente visible. La pestaña **Oficiales** separa los **campeonatos
@@ -112,8 +105,16 @@ Es la superficie de "qué está pasando ahora". Tiene cuatro paneles:
    muestran dentro de la ficha; como esa página bloquea los iframes, la app no
    la embebe y mantiene **Abrir en el navegador** como respaldo. La pestaña
    **Calendario** muestra esos mismos eventos en un calendario mensual, con los
-   días de campeonato destacados y las horas en la zona horaria configurada.
-4. **Noticias oficiales**: avisos de Pokémon Champions paginados de 6 en 6.
+   días de campeonato destacados y las horas en la zona horaria configurada. La
+   tercera pestaña, **Tablas**, embebe las tablas rápidas de Tipos y Naturalezas.
+4. **Torneos recientes**: oficiales y comunidad, con grupos colapsables igual
+   que los paneles del Panel Principal. Los oficiales abren un **modal interno**
+   con resumen, fecha/rango, sede, premio, campeón, standings oficiales
+   paginados, “Lista no publicada” cuando el feed no la publica, equipo campeón
+   solo si la fuente lo entrega y “Abrir en el navegador”. Los comunitarios
+   conservan standings/decklists y el cajón completo. Un major en curso aparece
+   ese mismo fin de semana.
+5. **Noticias oficiales**: avisos de Pokémon Champions paginados de 6 en 6.
    Las imágenes usan un skeleton con brillo y aparecen con un fade; si una
    imagen falla se muestra un placeholder limpio. Al hacer click se abre un
    **modal dentro de la app** que renderiza la página oficial; "Abrir en el
@@ -122,8 +123,13 @@ Es la superficie de "qué está pasando ahora". Tiene cuatro paneles:
 ### Calendario de torneos
 
 - Navega mes a mes con las flechas o vuelve a **Hoy**.
-- Los días con eventos tienen un punto; al tocar un día se listan sus torneos
-  con la dirección completa, y puedes abrir su ficha.
+- El día actual se marca siempre, aunque esté seleccionado otro día.
+- Los días con eventos tienen un punto por categoría (oficial, comunidad,
+  personal); el tooltip resume los eventos.
+- Al tocar un día se agrupan **Oficiales**, **Comunidad** y **Personales**, con
+  su dirección completa y ficha.
+- El filtro de ciudad solo se aplica a oficiales locales: comunidad y majors
+  siguen visibles.
 - **Añadir evento** crea un evento **personal** (título, fecha, hora, lugar y
   notas) que queda guardado en el calendario de la app. Estos eventos llevan el
   badge **Personal** y se pueden eliminar.

@@ -10,6 +10,7 @@ import type {
   LiveStreamScreen,
   OfficialEventDetails,
   OfficialLiveStream,
+  OfficialStandingsPage,
   PikalyticsEntry,
   Pokemon,
   PokemonType,
@@ -22,6 +23,7 @@ import type {
   SyncBundle,
   SyncImportResult,
   SyncSession,
+  SyncSessionStatus,
   TournamentStanding,
   TranslationTable,
   TrendingReport,
@@ -156,6 +158,12 @@ export const ipc = {
     }),
   getOfficialEventDetails: (url: string) =>
     call<OfficialEventDetails>("get_official_event_details", { url }),
+  getOfficialTournamentStandings: (url: string, start = 0, size = 32) =>
+    call<OfficialStandingsPage>("get_official_tournament_standings", {
+      url,
+      start,
+      size,
+    }),
   getSettings: () => call<Record<string, string>>("get_settings"),
   setSetting: (key: string, value: string) =>
     call<void>("set_setting", { key, value }),
@@ -164,13 +172,31 @@ export const ipc = {
     call<TrendingReport>("get_trending", { format }),
   checkForAppUpdate: () =>
     call<UpdateInfo | null>("check_for_app_update"),
-  downloadAndroidUpdate: (url: string) =>
-    call<string>("download_android_update", { url }),
+  downloadAndroidUpdate: (
+    requestId: string,
+    url: string,
+    expectedSize: number,
+    expectedSha256: string,
+  ) =>
+    call<string>("download_android_update", {
+      requestId,
+      url,
+      expectedSize,
+      expectedSha256,
+    }),
+  cancelAndroidUpdate: (requestId: string) =>
+    call<boolean>("cancel_android_update", { requestId }),
+  installAndroidUpdate: (path: string) =>
+    call<void>("install_android_update", { path }),
   syncStartSend: (uiJson: string) =>
     call<SyncSession>("sync_start_send", { uiJson }),
-  syncFetch: (url: string) => call<SyncBundle>("sync_fetch", { url }),
+  syncSessionStatus: (code: string) =>
+    call<SyncSessionStatus>("sync_session_status", { code }),
+  syncCancel: (code: string) =>
+    call<SyncSessionStatus>("sync_cancel", { code }),
+  syncFetch: (ticket: string) => call<SyncBundle>("sync_fetch", { ticket }),
   syncFetchByCode: (code: string) =>
     call<SyncBundle>("sync_fetch_by_code", { code }),
-  syncImport: (bundle: SyncBundle) =>
-    call<SyncImportResult>("sync_import", { bundle }),
+  syncImport: (bundle: SyncBundle, code?: string | null) =>
+    call<SyncImportResult>("sync_import", { bundle, code: code ?? null }),
 };

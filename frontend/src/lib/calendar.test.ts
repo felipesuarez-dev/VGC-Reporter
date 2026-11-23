@@ -9,6 +9,8 @@ const event: UpcomingTournament = {
   url: "https://www.pokemon.com/event",
   region: null,
   players: null,
+  champion_name: null,
+  champion_country: null,
   source: "play-pokemon",
   end_date: null,
   tier: "local",

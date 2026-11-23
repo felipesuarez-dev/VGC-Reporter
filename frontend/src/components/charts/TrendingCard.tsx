@@ -6,6 +6,7 @@ import { ipc } from "../../lib/ipc";
 import { queryKeys } from "../../lib/queryKeys";
 import { type Format, type TrendingPokemon } from "../../lib/types";
 import { PokemonSprite } from "../pokemon/PokemonSprite";
+import { PanelLoading } from "../ui/PanelLoading";
 import { usePokedexStore } from "../../stores/pokedexStore";
 
 const INITIAL_ROWS = 8;
@@ -33,9 +34,7 @@ export function TrendingCard({ format }: { format: Format }) {
         <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
           {title}
         </h2>
-        <p className="text-xs" style={{ color: "var(--text-dim)" }}>
-          {t("common.loading")}
-        </p>
+        <PanelLoading variant="list" rows={6} compact />
       </section>
     );
   }

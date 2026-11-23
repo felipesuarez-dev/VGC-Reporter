@@ -5,10 +5,10 @@
 | Store | Estado | Persistencia |
 |---|---|---|
 | `teamBuilderStore` | `team` (draft), `pendingImport`, `pendingImportMissing` | en memoria |
-| `dashboardStore` | `format`, `favoriteFormat`, `formatPinned`, `showArchived`, `topPokemonView`, `dashboardView`, `feedRows`, `feedPanels`, `sourceFilter` | `localStorage` (versión 21) |
+| `dashboardStore` | `format`, `favoriteFormat`, `formatPinned`, `showArchived`, `topPokemonView`, `dashboardView`, `feedRows`, `feedPanels`, `metricsOrder`, `regulationOrder`, `sourceFilter` | `localStorage` (versión 24) |
 | `pokedexStore` | `sort` (generation/alphabetical/usage), `selectedPokemonId` (modal target), `scrollY`, filtros | parcial en `localStorage` |
 | `filtersStore` | `query`, `typeFilter` | — |
-| `uiStore` | `theme`, `timeZone`, `homeCountry`, `upcomingCountry`, `favoriteUpcomingCountry`, `upcomingCity`, `sidebarCollapsed`, `sidebarWidthPx`, `fontSizePx`, `hiddenLiveScreens` | `localStorage` (versión 12) |
+| `uiStore` | `theme`, `timeZone`, `homeCountry`, `upcomingCountry`, `favoriteUpcomingCountry`, `upcomingCity`, `sidebarCollapsed`, `sidebarWidthPx`, `fontSizePx`, `hiddenLiveScreens`, calendario, `quickTablesMode/Placement/Corner/Position`, `pokedexQuickTables`, `quickTablesDefaultTab` | `localStorage` (versión 15) |
 | `customEventsStore` | `events[]` de eventos personales del calendario | `localStorage` (versión 1) |
 | `navHistoryStore` | `entries[]`, `index` (back/forward) | en memoria |
 
@@ -21,20 +21,23 @@ regulación elegida por el usuario. `useRegulationCatalog` llama a
 El Feed no guarda un simple orden de paneles. Guarda **filas**:
 
 ```ts
-type FeedPanelId = "summary" | "live" | "events" | "news";
+type FeedPanelId = "summary" | "live" | "events" | "recent" | "news";
 type FeedRows = FeedPanelId[][];
 ```
 
-- `[["summary"], ["live"], ["events"], ["news"]]` → todo separado.
-- `[["summary"], ["live", "events", "news"]]` → los tres paneles de contenido
+- `[["summary"], ["live"], ["events"], ["recent"], ["news"]]` → todo separado.
+- `[["summary"], ["live", "events", "recent", "news"]]` → los paneles de contenido
   comparten una fila.
-- `[["summary", "live", "events", "news"]]` → todo junto.
+- `[["summary", "live", "events", "recent", "news"]]` → todo junto.
 
 `normalizeFeedRows` repara datos persistidos (ids desconocidos, duplicados o
 faltantes) y acepta el formato antiguo plano. `feedLayoutMode(rows)` deriva
 `vertical`, `horizontal` o `custom` para los botones **Separados / Juntos**.
 La migración a la versión 20 usa `placeLiveBelowSummary` para garantizar que
 Live quede en su propia fila justo debajo de Regulación en layouts antiguos.
+La versión 24 usa `placeRecentAfterEvents` para mover Torneos recientes de
+Métricas a Novedades sin duplicar el panel; `recent_tournaments` ya no existe en
+`MetricsPanelId` y `normalizePanelOrder` lo descarta de layouts persistidos.
 
 `feedPanels` guarda sólo `{ collapsed }` por panel. El panel de live ya **no** se
 colapsa automáticamente cuando no hay stream: muestra el estado offline.
@@ -87,3 +90,9 @@ muestra todos.
 
 - `uiStore` v14 añade `pokedexQuickTables` y `quickTablesDefaultTab`; también guarda calendario, temas y pantallas.
 - `typeLabStore` incluye la pestaña `natures`.
+
+## Stores 0.6.2
+
+- `dashboardStore` v24: `recent` entra en `FeedPanelId` y `DEFAULT_FEED_ROWS`; `recent_tournaments` sale de Métricas.
+- `uiStore` v15: `quickTablesMode` (`panel`/`floating`), `quickTablesPlacement`, `quickTablesCorner` y `quickTablesPosition`.
+- `Learn` guarda práctica por fecha (`vgc-learn-practice-YYYY-MM-DD`), racha (`vgc-learn-streak`) y progreso de guías (`vgc-learn-progress`).

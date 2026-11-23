@@ -161,6 +161,7 @@ python scripts/build_latest_json.py `
     --tag $Tag `
     --body-file $NotesFile `
     --repo-url "https://github.com/felipesuarez-dev/VGC-Reporter" `
+    --assets-dir $Assets `
     --out (Join-Path $Assets "latest.json")
 if ($LASTEXITCODE -ne 0) { throw "build_latest_json.py fallo" }
 Remove-Item -Recurse -Force $Sigs

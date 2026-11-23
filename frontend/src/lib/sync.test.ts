@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { SyncBundle, Team } from "./types";
 import { emptyTeamMember } from "./types";
-import { normalizeTeamName, prepareImport } from "../components/settings/SyncSettings";
+import { normalizeTeamName, prepareImport } from "./sync";
 
 function team(id: number | null, name: string): Team {
   return {

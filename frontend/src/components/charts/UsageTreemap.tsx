@@ -4,6 +4,10 @@ import { ResponsiveContainer, Tooltip, Treemap } from "recharts";
 import { ipc } from "../../lib/ipc";
 import { queryKeys } from "../../lib/queryKeys";
 import { canonicalSpeciesId, type PokemonType } from "../../lib/types";
+import {
+  treemapLabelLayout,
+  treemapTextColor,
+} from "../../lib/treemap";
 import { PokemonSprite } from "../pokemon/PokemonSprite";
 import type { UsageBarItem } from "./UsageBarChart";
 
@@ -87,13 +91,13 @@ function TreemapCell(props: CellProps) {
   const entry = readEntry(props);
   if (!entry) return null;
   const usagePercent = entry.item?.usage_percent ?? 0;
-  const showLabel = width > 54 && height > 24;
-  const showSprite = width >= 96 && height >= 62 && Boolean(entry.item?.sprite_url);
-  const maxChars = Math.max(6, Math.floor((width - 12) / 6.2));
-  const label =
-    entry.name.length > maxChars
-      ? `${entry.name.slice(0, Math.max(1, maxChars - 1))}…`
-      : entry.name;
+  const sprite =
+    entry.item?.sprite_url ||
+    entry.item?.sprite_fallback_url ||
+    entry.item?.home_sprite_url ||
+    "";
+  const layout = treemapLabelLayout(width, height, Boolean(sprite));
+  const textColor = treemapTextColor(entry.color);
   return (
     <g
       onClick={() => onClick?.(entry.item)}
@@ -108,43 +112,80 @@ function TreemapCell(props: CellProps) {
         width={width}
         height={height}
         fill={entry.color}
-        fillOpacity={0.78}
+        fillOpacity={0.82}
         stroke="var(--bg-elev)"
         strokeWidth={1}
       />
-      {showSprite && (
-        <image
-          href={entry.item.sprite_url}
-          x={x + 5}
-          y={y + 5}
-          width={Math.min(32, height - 20)}
-          height={Math.min(32, height - 20)}
-          preserveAspectRatio="xMidYMid meet"
-          style={{ pointerEvents: "none", imageRendering: "pixelated" }}
-        />
-      )}
-      {showLabel && (
-        <>
-          <text
-            x={x + (showSprite ? 42 : 6)}
-            y={y + 16}
-            fill="#ffffff"
-            fontSize={11}
-            fontWeight={600}
-            style={{ pointerEvents: "none" }}
+      {layout.showLabel && (
+        <foreignObject
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          style={{ pointerEvents: "none", overflow: "hidden" }}
+        >
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              boxSizing: "border-box",
+              padding: width >= 90 ? "6px 7px" : "4px 5px",
+              display: "flex",
+              flexDirection: layout.showSprite ? "row" : "column",
+              alignItems: layout.showSprite ? "flex-start" : "stretch",
+              justifyContent: "space-between",
+              gap: "4px",
+              color: textColor,
+              overflow: "hidden",
+              textShadow:
+                textColor === "#ffffff"
+                  ? "0 1px 2px rgba(0,0,0,0.65)"
+                  : "0 1px 1px rgba(255,255,255,0.35)",
+            }}
           >
-            {label}
-          </text>
-          <text
-            x={x + (showSprite ? 42 : 6)}
-            y={showSprite ? y + 32 : y + height - 6}
-            fill="#ffffffd0"
-            fontSize={10}
-            style={{ pointerEvents: "none" }}
-          >
-            {usagePercent.toFixed(1)}%
-          </text>
-        </>
+            {layout.showSprite && (
+              <img
+                src={sprite}
+                alt=""
+                draggable={false}
+                style={{
+                  width: Math.min(34, Math.max(20, height - 18)),
+                  height: Math.min(34, Math.max(20, height - 18)),
+                  objectFit: "contain",
+                  imageRendering: "pixelated",
+                  flexShrink: 0,
+                }}
+              />
+            )}
+            <div style={{ minWidth: 0, flex: 1, overflow: "hidden" }}>
+              <div
+                style={{
+                  fontSize: width >= 100 ? 12 : 11,
+                  fontWeight: 700,
+                  lineHeight: 1.15,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {entry.name}
+              </div>
+              {layout.showPercent && (
+                <div
+                  style={{
+                    marginTop: 1,
+                    fontSize: 10,
+                    fontWeight: 600,
+                    opacity: 0.85,
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {usagePercent.toFixed(1)}%
+                </div>
+              )}
+            </div>
+          </div>
+        </foreignObject>
       )}
     </g>
   );

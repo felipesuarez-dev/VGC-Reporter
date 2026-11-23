@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import glob
+import hashlib
 import json
 import os
 import re
@@ -30,15 +31,45 @@ def url_for(repo_url: str, tag: str, asset: str) -> str:
     )
 
 
-def build(sigs_dir: str, tag: str, body: str, repo_url: str, pub_date: str | None = None) -> dict:
+def file_sha256(path: str) -> str:
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def apk_asset(assets_dir: str | None) -> str | None:
+    if not assets_dir:
+        return None
+    matches = [
+        path
+        for path in glob.glob(os.path.join(assets_dir, "*android*.apk"))
+        if not path.endswith(".sig")
+    ]
+    return sorted(matches)[0] if matches else None
+
+
+def build(
+    sigs_dir: str,
+    tag: str,
+    body: str,
+    repo_url: str,
+    pub_date: str | None = None,
+    assets_dir: str | None = None,
+) -> dict:
     version = tag[1:] if tag.startswith("v") else tag
     semver = re.match(r"^\d+\.\d+\.\d+", version)
     version = semver.group(0) if semver else version
     pub_date = pub_date or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-    platforms: dict[str, dict[str, str]] = {}
+    platforms: dict[str, dict[str, str | int]] = {}
 
-    def add(key: str, path: str) -> None:
-        binary = os.path.basename(path)[:-4]
+    def add(key: str, path: str, asset_path: str | None = None) -> None:
+        binary = (
+            os.path.basename(asset_path)
+            if asset_path
+            else os.path.basename(path)[:-4]
+        )
         platforms[key] = {
             "signature": sig_text(path),
             "url": url_for(repo_url, tag, binary),
@@ -86,7 +117,13 @@ def build(sigs_dir: str, tag: str, body: str, repo_url: str, pub_date: str | Non
 
     apk = sorted(glob.glob(os.path.join(sigs_dir, "*android*.apk.sig")))
     if apk:
-        add("android", apk[0])
+        asset = apk_asset(assets_dir)
+        add("android", apk[0], asset)
+        # Android's updater downloads the APK itself, so the manifest carries
+        # the exact size and SHA-256 to verify before launching the installer.
+        if asset:
+            platforms["android"]["size"] = os.path.getsize(asset)
+            platforms["android"]["sha256"] = file_sha256(asset)
 
     if not platforms:
         raise SystemExit("No platform .sig files found — refusing to upload an empty latest.json")
@@ -106,10 +143,22 @@ def main() -> None:
     parser.add_argument("--repo-url", required=True)
     parser.add_argument("--out", required=True)
     parser.add_argument("--pub-date", default=None)
+    parser.add_argument(
+        "--assets-dir",
+        default=None,
+        help="Directory with release binaries; attaches APK size/sha256.",
+    )
     args = parser.parse_args()
     with open(args.body_file, "r", encoding="utf-8") as handle:
         body = handle.read()
-    data = build(args.sigs_dir, args.tag, body, args.repo_url, args.pub_date)
+    data = build(
+        args.sigs_dir,
+        args.tag,
+        body,
+        args.repo_url,
+        args.pub_date,
+        args.assets_dir,
+    )
     with open(args.out, "w", encoding="utf-8") as handle:
         json.dump(data, handle, indent=2)
     print(f"latest.json built — platforms: {sorted(data['platforms'])}")

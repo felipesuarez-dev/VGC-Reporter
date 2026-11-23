@@ -51,6 +51,38 @@ pub struct ChampionsReport {
     pub fetched_at: DateTime<Utc>,
 }
 
+/// One row from the official Championship Series results endpoint. The
+/// official feed publishes placement and match record but no decklists, so
+/// `decklist` is intentionally absent.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
+pub struct OfficialStanding {
+    pub place: Option<u32>,
+    pub player_name: String,
+    #[serde(default)]
+    pub country: Option<String>,
+    #[serde(default)]
+    pub wins: u32,
+    #[serde(default)]
+    pub losses: u32,
+    #[serde(default)]
+    pub ties: u32,
+    #[serde(default)]
+    pub record: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
+pub struct OfficialStandingsPage {
+    pub standings: Vec<OfficialStanding>,
+    #[serde(default)]
+    pub total_count: Option<u32>,
+    pub start: u32,
+    pub size: u32,
+    pub results_available: bool,
+    pub decklists_available: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
 pub struct TournamentStanding {

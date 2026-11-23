@@ -236,8 +236,8 @@ export function TeamBuilder() {
       >
         {(
           [
-            ["classic", t("team_builder.classic")],
             ["champions", t("team_builder.champions")],
+            ["classic", t("team_builder.classic")],
           ] as const
         ).map(([mode, label]) => (
           <button

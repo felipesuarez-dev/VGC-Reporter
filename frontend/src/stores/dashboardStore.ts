@@ -4,13 +4,12 @@ import type { Format, SourceId } from "../lib/types";
 
 export type TopPokemonView = "bar" | "grid" | "treemap" | "tier";
 export type DashboardView = "metrics" | "regulation" | "feed";
-export type FeedPanelId = "summary" | "live" | "events" | "news";
+export type FeedPanelId = "summary" | "live" | "events" | "recent" | "news";
 export type FeedLayoutMode = "vertical" | "horizontal" | "custom";
 export type MetricsPanelId =
   | "top_pokemon"
   | "trending"
   | "top_entities"
-  | "recent_tournaments"
   | "upcoming"
   | "external_sources";
 export type RegulationPanelId = "roster" | "items" | "megas";
@@ -19,7 +18,6 @@ export const METRICS_PANEL_IDS: readonly MetricsPanelId[] = [
   "top_pokemon",
   "trending",
   "top_entities",
-  "recent_tournaments",
   "upcoming",
   "external_sources",
 ];
@@ -38,6 +36,7 @@ export const FEED_PANEL_IDS: readonly FeedPanelId[] = [
   "summary",
   "live",
   "events",
+  "recent",
   "news",
 ];
 
@@ -49,6 +48,7 @@ export const DEFAULT_FEED_ROWS: FeedPanelId[][] = [
   ["summary"],
   ["live"],
   ["events"],
+  ["recent"],
   ["news"],
 ];
 
@@ -56,6 +56,7 @@ export const DEFAULT_FEED_PANELS: Record<FeedPanelId, FeedPanelPrefs> = {
   summary: { collapsed: false },
   live: { collapsed: false },
   events: { collapsed: false },
+  recent: { collapsed: false },
   news: { collapsed: false },
 };
 
@@ -97,6 +98,22 @@ export function normalizeFeedRows(raw: unknown): FeedPanelId[][] {
  * below the regulation summary, never beside or above it. Other groups
  * (events + news) are kept.
  */
+/**
+ * One-time move for layouts saved before 0.6.2: recent tournaments leave
+ * Metrics and become a Feed panel right after the events panel. The helper
+ * never duplicates the panel when the layout is already migrated.
+ */
+export function placeRecentAfterEvents(
+  rows: FeedPanelId[][],
+): FeedPanelId[][] {
+  if (rows.some((row) => row.includes("recent"))) return rows;
+  const next = rows.map((row) => [...row]);
+  const events = next.findIndex((row) => row.includes("events"));
+  if (events >= 0) next.splice(events + 1, 0, ["recent"]);
+  else next.push(["recent"]);
+  return normalizeFeedRows(next);
+}
+
 export function placeLiveBelowSummary(
   rows: FeedPanelId[][],
 ): FeedPanelId[][] {
@@ -323,7 +340,7 @@ export const useDashboardStore = create<DashboardState>()(
     }),
     {
       name: "vgc-dashboard",
-      version: 23,
+      version: 24,
       migrate: (persisted: unknown, version: number) => {
         const prior = (persisted ?? {}) as Record<string, unknown>;
         if (!(version >= 11)) {
@@ -353,7 +370,11 @@ export const useDashboardStore = create<DashboardState>()(
           dashboardView:
             prior.dashboardView === "regulation" ? "regulation" : "feed",
           feedRows:
-            version < 20 ? placeLiveBelowSummary(savedRows) : savedRows,
+            version < 20
+              ? placeRecentAfterEvents(placeLiveBelowSummary(savedRows))
+              : version < 24
+                ? placeRecentAfterEvents(savedRows)
+                : savedRows,
           feedPanels: normalizeFeedPanels(prior.feedPanels),
           metricsOrder: normalizePanelOrder(
             version >= 23 ? prior.metricsOrder : [],

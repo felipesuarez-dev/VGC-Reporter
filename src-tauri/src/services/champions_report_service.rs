@@ -156,7 +156,7 @@ impl ChampionsReportService {
         if events.is_empty() {
             return Vec::new();
         }
-        events.sort_by(|a, b| b.start_date.cmp(&a.start_date));
+        events.sort_by_key(|event| std::cmp::Reverse(event.start_date));
         let mut seen = HashSet::new();
         events.retain(|event| seen.insert(event.url.clone()));
         let mut selected = events

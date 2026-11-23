@@ -33,15 +33,20 @@ VGC Reporter is the tool I wanted while team-building for Pokémon Champions: on
 - **Real tournament data, not just ladder** - aggregates Limitless VGC standings into usage stats, with Smogon chaos as fallback when the format is too fresh. Recent tournaments are split into **official championships** (LAIC, NAIC, EUIC, Regionals, Specials, Worlds) and **Limitless community** events, each with its own badge; official rows link to their results page and show the published cash prize pool.
 - **Dynamic regulation calendar** — the app discovers the active Champions regulation and season from the official Pokémon HOME notices, validates the eligible roster, and cross-checks live tournament sources. If TPC moves a date, the app follows the published date; if the notice is late, a source with real decklists can activate the set.
 - **The live scene in one place** — a draggable **Novedades** board with the official VGC stream, official news previews, upcoming local tournaments and source status. Every panel collapses and can be grouped or separated, and the layout is remembered.
-- **Regulation workspace** — eligible Pokémon and items with usage percentages, sprites, localized descriptions, detail modals and usage/alphabetical sorting, not just a plain allow-list.
-- **Offline-friendly by design** — SQLite-backed HTTP cache, all network I/O on the Rust side, zero CORS pain.
+- **Regulation workspace** - eligible Pokémon and items with usage percentages, sprites, localized descriptions, detail modals and usage/alphabetical sorting, not just a plain allow-list.
+- **Official tournament results** - past majors open an in-app sheet with summary, venue, prize, Masters champion and paginated official standings. Missing decklists say so instead of inventing one.
+- **Calendar that respects context** - today is always marked, selected days are grouped into Official/Community/Personal, and the city filter only applies to local official events.
+- **Quick tables widget** - Types can select attacker/defender by row/column/cell; Natures use a nature × stat grid. Anchored to Novedades, floating, or a collapsible Pokédex card, with a large-screen landscape mode.
+- **Sync and Android updater** - versioned QR pairing ticket over local Wi-Fi, 5-minute one-use sessions, visible states and conflict handling. Android downloads in-app with progress/cancel, verifies size/SHA-256/signature and opens the system installer through FileProvider.
+- **Learn 2.0** - 12 guides, 10 daily generated questions, expanded trivia, 80+ glossary terms, 11 core archetypes and six sample-aware meta insights.
+- **Offline-friendly by design** - SQLite-backed HTTP cache, all network I/O on the Rust side, zero CORS pain.
 
 ## Screenshots
 
 <table>
   <tr>
     <td align="center">
-      <img src="assets/screen-dashboard.png" alt="Dashboard" width="420" /><br/>
+      <img src="assets/screen-app-0.6.2.png" alt="Dashboard" width="420" /><br/>
       <sub><b>Dashboard</b> — meta snapshot, top usage, recent tournaments</sub>
     </td>
     <td align="center">
@@ -71,7 +76,7 @@ VGC Reporter is the tool I wanted while team-building for Pokémon Champions: on
   </tr>
   <tr>
     <td align="center">
-      <img src="assets/screen-feed.png" alt="Novedades feed" width="420" /><br/>
+      <img src="assets/screen-feed-0.6.2.png" alt="Novedades feed" width="420" /><br/>
       <sub><b>Novedades</b> — multi-screen VGC live wall, official news and local upcoming events</sub>
     </td>
     <td align="center">
@@ -85,7 +90,7 @@ VGC Reporter is the tool I wanted while team-building for Pokémon Champions: on
       <sub><b>Event detail</b> — price badge, organizer/contact, category, premier event, map and .ics export; official data is read inside the app</sub>
     </td>
     <td align="center">
-      <img src="assets/screen-calendar.png" alt="Tournament calendar" width="420" /><br/>
+      <img src="assets/screen-calendar-0.6.2.png" alt="Tournament calendar" width="420" /><br/>
       <sub><b>Tournament calendar</b> - multi-day official majors highlighted per day, configured-timezone schedule, text/country/city search, personal events and .ics export</sub>
     </td>
   </tr>
@@ -115,24 +120,70 @@ VGC Reporter is the tool I wanted while team-building for Pokémon Champions: on
   </tr>
   <tr>
     <td align="center" colspan="2">
-      <img src="assets/screen-settings.png" alt="Settings and dynamic regulations" width="840" /><br/>
+      <img src="assets/screen-settings-0.6.2.png" alt="Settings and dynamic regulations" width="840" /><br/>
       <sub><b>Settings</b> — searchable timezone/country, live screens (up to 12), active regulation and source overrides</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/screen-recent-tournaments-0.6.2.png" alt="Recent tournaments with collapsible official and community groups" width="420" /><br/>
+      <sub><b>Recent tournaments</b> — official results modal, community standings and collapsible groups</sub>
+    </td>
+    <td align="center">
+      <img src="assets/screen-official-modal-0.6.2.png" alt="Official tournament results modal" width="420" /><br/>
+      <sub><b>Official results</b> — champion, venue, prize, official standings and “List not published”</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/screen-tables-landscape-0.6.2.png" alt="Quick type tables in landscape mode" width="420" /><br/>
+      <sub><b>Quick tables</b> — attacker/defender selection, natures grid and landscape mode</sub>
+    </td>
+    <td align="center">
+      <img src="assets/screen-learn-0.6.2.png" alt="Learn 2.0" width="420" /><br/>
+      <sub><b>Learn 2.0</b> — guides, daily practice, cores and sample-aware insights</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/screen-glossary-modal-0.6.2.png" alt="Competitive glossary modal" width="420" /><br/>
+      <sub><b>Glossary</b> — 80+ terms, categories, search and alphabetical index</sub>
+    </td>
+    <td align="center">
+      <img src="assets/screen-treemap-0.6.2.png" alt="Usage treemap" width="420" /><br/>
+      <sub><b>Treemap</b> — responsive labels, sprites and contrast-aware text</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/screen-sync-0.6.2.png" alt="LAN sync panel" width="420" /><br/>
+      <sub><b>Sync</b> — send/receive teams and settings over local Wi-Fi</sub>
+    </td>
+    <td align="center">
+      <img src="assets/screen-qr-0.6.2.png" alt="Sync QR and 8-character code" width="420" /><br/>
+      <sub><b>QR + code</b> — versioned ticket, 5-minute one-use session and manual fallback</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="assets/screen-mobile-navbar-0.6.2.png" alt="Mobile navbar" width="390" /><br/>
+      <sub><b>Mobile navbar</b> — back/forward history, translated route title, theme and language controls at 360 px</sub>
     </td>
   </tr>
 </table>
 
 ## Download
 
-Pre-built installers for the **`v0.6.1.20261122-beta`** release:
+Pre-built installers for the **`v0.6.2.20261122-beta`** release:
 
 | Platform | Installer | Notes |
 |---|---|---|
-| Windows 10/11 | `VGC.Reporter_0.6.1_x64_en-US.msi` | MSI installer — unsigned; SmartScreen → More info → Run anyway |
-| Android 7+ (arm64) | `VGC.Reporter_v0.6.1.20261122-beta_android.apk` | Sideload: enable "Unknown sources" first |
+| Windows 10/11 | `VGC.Reporter_0.6.2_x64_en-US.msi` | MSI installer — unsigned; SmartScreen → More info → Run anyway |
+| Android 7+ (arm64) | `VGC.Reporter_v0.6.2.20261122-beta_android.apk` | Sideload or in-app updater; enable "Unknown sources" first |
 
 **[→ Download from the latest GitHub Release](https://github.com/felipesuarez-dev/vgc-reporter/releases/latest)**
 
-> **v0.6.1 signing note:** this release uses the 0.5.0 updater key. If an older installation does not offer the update automatically, install the MSI or APK manually. On Android, uninstall the previous app if the signature mismatch blocks the install.
+> **v0.6.2 signing note:** this release uses the same updater key as 0.5.0/0.6.1. If an older installation does not offer the update automatically, install the MSI or APK manually. Android verifies the APK signature against the installed app before launching the package installer.
 
 First launch downloads ~10 MB of Pokédex / moves / items / abilities and caches them locally; subsequent launches work offline until caches expire.
 
@@ -323,7 +374,7 @@ VGC-Reporter/
 MIT © 2026 PumaSoft — see [LICENSE](LICENSE).
 
 <!-- Reference-style definitions -->
-[version-badge]: https://img.shields.io/badge/version-0.6.1.20261122--beta-2b86ff?style=flat-square&labelColor=0a0e14
+[version-badge]: https://img.shields.io/badge/version-0.6.2.20261122--beta-2b86ff?style=flat-square&labelColor=0a0e14
 [version-link]: #download
 [beta-badge]: https://img.shields.io/badge/release-beta-ff6b6b?style=flat-square&labelColor=0a0e14
 [tauri-badge]: https://img.shields.io/badge/Tauri-2.4-24c8db?style=flat-square&labelColor=0a0e14&logo=tauri

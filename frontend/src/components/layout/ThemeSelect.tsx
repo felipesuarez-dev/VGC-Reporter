@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, Palette } from "lucide-react";
+import { ChevronDown, Palette } from "lucide-react";
 import { ALL_THEMES, useUiStore, type Theme } from "../../stores/uiStore";
 import { cn } from "../../lib/cn";
-import { Tooltip } from "../ui/Tooltip";
+import { SelectionMenu, type SelectionOption } from "./SelectionMenu";
 
 const SWATCH: Record<Theme, { bg: string; accent: string }> = {
   system: { bg: "linear-gradient(135deg, #0b0a14 50%, #fff5f7 50%)", accent: "#8b5cf6" },
@@ -20,116 +19,70 @@ const SWATCH: Record<Theme, { bg: string; accent: string }> = {
 
 interface Props {
   variant?: "default" | "titlebar";
+  /** Tighter trigger used by the mobile topbar so controls fit at 360 px. */
+  compact?: boolean;
 }
 
-export function ThemeSelect({ variant = "default" }: Props) {
+export function ThemeSelect({ variant = "default", compact = false }: Props) {
   const { t } = useTranslation();
   const theme = useUiStore((s) => s.theme);
   const setTheme = useUiStore((s) => s.setTheme);
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, [open]);
-
+  const isTitlebar = variant === "titlebar";
   const label = t(`ui.theme_${theme}`);
   const hint = t(`ui.theme_${theme}_hint`);
-  const isTitlebar = variant === "titlebar";
   const iconColor =
     theme === "system" ? "var(--text-muted)" : SWATCH[theme].accent;
   const triggerSwatchBg =
     theme === "system"
       ? SWATCH.system.bg
       : `linear-gradient(135deg, ${SWATCH[theme].bg} 50%, ${SWATCH[theme].accent} 50%)`;
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        className={cn(
-          "btn-ghost flex items-center gap-1",
-          isTitlebar ? "h-7 px-2 py-0" : "p-1.5",
-        )}
-        onClick={() => setOpen((o) => !o)}
-        aria-label={`${label}: ${hint}`}
-        title={`${label} — ${hint}`}
-      >
-        <Palette size={14} style={{ color: iconColor }} />
+  const options: SelectionOption[] = ALL_THEMES.map((entry) => {
+    const swatchBg =
+      entry === "system"
+        ? SWATCH.system.bg
+        : `linear-gradient(135deg, ${SWATCH[entry].bg} 50%, ${SWATCH[entry].accent} 50%)`;
+    return {
+      id: entry,
+      label: t(`ui.theme_${entry}`),
+      description: t(`ui.theme_${entry}_hint`),
+      leading: (
         <span
           aria-hidden
-          className="inline-block h-2.5 w-2.5 shrink-0 rounded-full border"
-          style={{
-            background: triggerSwatchBg,
-            borderColor: "var(--border)",
-          }}
+          className="inline-block h-4 w-4 shrink-0 rounded-full border"
+          style={{ background: swatchBg, borderColor: "var(--border)" }}
         />
-      </button>
-      {open && (
-        <div
-          className={cn(
-            "absolute z-30 flex w-40 flex-col rounded-md border py-1 shadow-lg",
-            isTitlebar
-              ? "right-0 top-full mt-1"
-              : "right-0 bottom-full mb-1",
+      ),
+    };
+  });
+  return (
+    <SelectionMenu
+      label={`${label}: ${hint}`}
+      trigger={
+        <>
+          <Palette size={compact ? 16 : 14} style={{ color: iconColor }} />
+          {!compact && (
+            <span
+              aria-hidden
+              className="inline-block h-2.5 w-2.5 shrink-0 rounded-full border"
+              style={{ background: triggerSwatchBg, borderColor: "var(--border)" }}
+            />
           )}
-          style={{
-            backgroundColor: "var(--bg-elev-strong)",
-            borderColor: "var(--border)",
-          }}
-        >
-          {ALL_THEMES.map((th) => {
-            const active = theme === th;
-            const swatchBg =
-              th === "system"
-                ? SWATCH.system.bg
-                : `linear-gradient(135deg, ${SWATCH[th].bg} 50%, ${SWATCH[th].accent} 50%)`;
-            const name = t(`ui.theme_${th}`);
-            const description = t(`ui.theme_${th}_hint`);
-            return (
-              <Tooltip
-                key={th}
-                content={description}
-                placement="top"
-                maxWidth={260}
-                className="block"
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTheme(th);
-                    setOpen(false);
-                  }}
-                  title={description}
-                  aria-label={`${name}: ${description}`}
-                  className={cn(
-                    "flex w-full items-center gap-2 px-2 py-1 text-left text-xs hover:bg-[var(--bg-elev)]",
-                    active && "font-semibold",
-                  )}
-                  style={{ color: "var(--text)" }}
-                >
-                  <span
-                    aria-hidden
-                    className="inline-block h-3.5 w-3.5 shrink-0 rounded-full border"
-                    style={{
-                      background: swatchBg,
-                      borderColor: "var(--border)",
-                    }}
-                  />
-                  <span className="flex-1 truncate">{name}</span>
-                  {active && (
-                    <Check size={12} style={{ color: "var(--accent)" }} />
-                  )}
-                </button>
-              </Tooltip>
-            );
-          })}
-        </div>
+          {!compact && (
+            <ChevronDown size={11} style={{ color: "var(--text-dim)" }} />
+          )}
+        </>
+      }
+      triggerClassName={cn(
+        compact
+          ? "h-8 w-8 justify-center rounded-lg p-0"
+          : isTitlebar
+            ? "h-7 px-2 py-0"
+            : "p-1.5",
       )}
-    </div>
+      options={options}
+      selectedId={theme}
+      onSelect={(id) => setTheme(id as Theme)}
+      openUp={!isTitlebar}
+    />
   );
 }

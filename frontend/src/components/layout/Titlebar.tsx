@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { matchPath, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   ChevronLeft,
@@ -19,28 +19,9 @@ import { useUiStore } from "../../stores/uiStore";
 import { useTypeLabStore } from "../../stores/typeLabStore";
 import { LanguageCombobox } from "./LanguageCombobox";
 import { ThemeSelect } from "./ThemeSelect";
+import { routeLabel } from "../../lib/routes";
 
 const TITLE = "VGC Reporter";
-
-const ROUTE_I18N: { pattern: string; key: string }[] = [
-  { pattern: "/dashboard", key: "nav.dashboard" },
-  { pattern: "/learn", key: "nav.learn" },
-  { pattern: "/pokedex", key: "nav.pokedex" },
-  { pattern: "/team-builder", key: "nav.team_builder" },
-  { pattern: "/team-builder/:id", key: "nav.team_builder" },
-  { pattern: "/my-teams", key: "nav.my_teams" },
-  { pattern: "/top-teams", key: "nav.top_teams" },
-  { pattern: "/damage-calc", key: "nav.damage_calc" },
-  { pattern: "/settings", key: "nav.settings" },
-];
-
-function routeLabel(path: string | undefined): string | null {
-  if (!path) return null;
-  for (const { pattern, key } of ROUTE_I18N) {
-    if (matchPath({ path: pattern, end: true }, path)) return key;
-  }
-  return null;
-}
 
 export function Titlebar() {
   const [maximized, setMaximized] = useState(false);

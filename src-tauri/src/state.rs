@@ -8,7 +8,7 @@ use crate::error::AppError;
 use crate::services::meta_service::MetaServiceDeps;
 use crate::services::{
     ChampionsReportService, MetaService, PikalyticsService, PokedexService, RegulationService,
-    SetsService, TeamService, TopTeamsService, TranslationsService, TrendingService,
+    SetsService, SyncManager, TeamService, TopTeamsService, TranslationsService, TrendingService,
     UpcomingTournamentsService, UpdaterService,
 };
 use crate::storage::{init_pool, CacheRepo, DbPool, SettingsRepo, TeamRepo};
@@ -30,6 +30,7 @@ pub struct AppState {
     pub updater: UpdaterService,
     pub regulations: RegulationService,
     pub settings: Arc<SettingsRepo>,
+    pub sync: SyncManager,
 }
 
 impl AppState {
@@ -111,6 +112,7 @@ impl AppState {
             updater,
             regulations,
             settings,
+            sync: SyncManager::new(),
         })
     }
 }

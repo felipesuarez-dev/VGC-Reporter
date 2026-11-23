@@ -410,6 +410,63 @@
     background-color: color-mix(in srgb, var(--bg-elev) 85%, transparent);
     border: 1px solid var(--border);
   }
+  .card-hero {
+    background:
+      radial-gradient(
+        900px 320px at 100% 0%,
+        color-mix(in srgb, var(--accent) 15%, transparent),
+        transparent 60%
+      ),
+      linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--accent-soft) 70%, transparent),
+        transparent 55%
+      ),
+      color-mix(in srgb, var(--bg-elev) 88%, transparent);
+  }
+  .quick-table-scroll {
+    max-width: 100%;
+    overflow: auto;
+    overscroll-behavior-x: contain;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    background-color: var(--bg-elev);
+    box-shadow:
+      inset -12px 0 14px -18px rgba(0, 0, 0, 0.8),
+      inset 12px 0 14px -18px rgba(0, 0, 0, 0.8);
+  }
+  .quick-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  .quick-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .quick-table tbody tr:nth-child(even) {
+    background-color: color-mix(in srgb, var(--bg-elev-strong) 55%, transparent);
+  }
+  .quick-table th,
+  .quick-table td {
+    min-width: 2.15rem;
+  }
+  .quick-table button {
+    min-height: 2rem;
+    touch-action: manipulation;
+  }
+  .quick-table--landscape th,
+  .quick-table--landscape td {
+    min-width: 3.1rem;
+    font-size: 13px;
+  }
+  .quick-table--landscape button {
+    min-height: 2.6rem;
+  }
+  .quick-table-scroll--landscape {
+    border-radius: 0.5rem;
+  }
   .btn {
     @apply inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50;
   }

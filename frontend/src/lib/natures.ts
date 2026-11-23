@@ -44,3 +44,10 @@ export function naturesForBoost(stat: NatureStat | "neutral"): NatureEffect[] {
     stat === "neutral" ? entry.up === null : entry.up === stat,
   );
 }
+
+/** Natures that modify a stat in either direction (used by the grid filter). */
+export function naturesForStat(stat: NatureStat): NatureEffect[] {
+  return NATURE_EFFECTS.filter(
+    (entry) => entry.up === stat || entry.down === stat,
+  );
+}

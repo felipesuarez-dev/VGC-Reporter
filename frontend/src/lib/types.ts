@@ -8,6 +8,7 @@
 
 export type {
   Ability,
+  AndroidUpdateProgress,
   BuildMode,
   StatPointSpread,
   ChampionsReport,
@@ -31,6 +32,8 @@ export type {
   LiveStreamScreen,
   OfficialEventDetails,
   OfficialLiveStream,
+  OfficialStanding,
+  OfficialStandingsPage,
   PikalyticsEntry,
   PikalyticsEvSpread,
   PikalyticsItem,
@@ -54,6 +57,9 @@ export type {
   SyncBundle,
   SyncImportResult,
   SyncSession,
+  SyncSessionStatus,
+  SyncState,
+  SyncTicket,
   Tier,
   Stats,
   Team,

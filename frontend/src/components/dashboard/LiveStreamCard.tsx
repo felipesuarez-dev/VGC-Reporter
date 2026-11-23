@@ -74,16 +74,22 @@ export function LiveStreamCard({
   const visibleScreens = screens.filter(
     (screen) => !hiddenScreens.includes(screen.source_url),
   );
-  const allLive = screens.filter((screen) => screen.live);
   const live = visibleScreens.filter((screen) => screen.live);
   const hiddenLive = screens.filter(
     (screen) =>
       screen.live && hiddenScreens.includes(screen.source_url),
   );
+  // Offline channels keep their latest broadcast. This includes channels the
+  // user hid with the eye: the channel is not live, so hiding its tile must
+  // not hide the recorded stream that explains what happened last.
   const recentStreams = screens
     .filter((screen) => !screen.live && screen.recent)
-    .map((screen) => ({ screen, stream: screen.recent! }));
-  const showRecent = allLive.length === 0 && recentStreams.length > 0;
+    .map((screen) => ({
+      screen,
+      stream: screen.recent!,
+      hidden: hiddenScreens.includes(screen.source_url),
+    }));
+  const showRecent = recentStreams.length > 0;
   const featured =
     featuredView === "featured" && live.length > 1
       ? (live.find((screen) => screen.source_url === featuredUrl) ?? live[0])
@@ -279,11 +285,12 @@ export function LiveStreamCard({
 
           {showRecent && (
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {recentStreams.slice(0, 6).map(({ screen, stream }) => (
+              {recentStreams.slice(0, 6).map(({ screen, stream, hidden }) => (
                 <RecentStream
                   key={`${screen.source_url}-${stream.video_id}`}
                   screen={screen}
                   stream={stream}
+                  hidden={hidden}
                 />
               ))}
             </div>
@@ -300,7 +307,7 @@ export function LiveStreamCard({
                 />
               ))}
               {screens
-                .filter((screen) => !screen.live)
+                .filter((screen) => !screen.live && !screen.recent)
                 .map((screen) => (
                   <OffscreenChannel key={screen.source_url} screen={screen} />
                 ))}
@@ -418,8 +425,41 @@ export function LiveStreamCard({
           })}
         </div>
 
+        {recentStreams.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <History size={12} style={{ color: "var(--accent)" }} />
+              <h3
+                className="text-[11px] font-semibold uppercase tracking-wide"
+                style={{ color: "var(--text)" }}
+              >
+                {t("feed.recent_streams")}
+              </h3>
+              <span
+                className="rounded-full px-1.5 py-0.5 text-[9px] font-medium"
+                style={{
+                  backgroundColor: "var(--bg-elev-strong)",
+                  color: "var(--text-muted)",
+                }}
+              >
+                {t("feed.not_live")}
+              </span>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {recentStreams.slice(0, 6).map(({ screen, stream, hidden }) => (
+                <RecentStream
+                  key={`${screen.source_url}-${stream.video_id}`}
+                  screen={screen}
+                  stream={stream}
+                  hidden={hidden}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {(hiddenLive.length > 0 ||
-          screens.some((screen) => !screen.live)) && (
+          screens.some((screen) => !screen.live && !screen.recent)) && (
           <div className="flex flex-wrap items-center gap-1.5">
             {hiddenLive.map((screen) => (
               <HiddenLiveChannel
@@ -429,7 +469,7 @@ export function LiveStreamCard({
               />
             ))}
             {screens
-              .filter((screen) => !screen.live)
+              .filter((screen) => !screen.live && !screen.recent)
               .map((screen) => (
                 <OffscreenChannel key={screen.source_url} screen={screen} />
               ))}
@@ -738,9 +778,11 @@ function LiveLoading({ className = "card" }: { className?: string }) {
 function RecentStream({
   screen,
   stream,
+  hidden = false,
 }: {
   screen: LiveStreamScreen;
   stream: OfficialLiveStream;
+  hidden?: boolean;
 }) {
   const { t } = useTranslation();
   const url = stream.url ?? screen.source_url;
@@ -749,7 +791,8 @@ function RecentStream({
       type="button"
       className="group min-w-0 text-left"
       onClick={() => openExternal(url)}
-      title={`${stream.title} · ${screen.label}`}
+      title={`${stream.title} · ${screen.label} · ${t("feed.not_live")}`}
+      aria-label={`${stream.title} · ${screen.label} · ${t("feed.last_stream")} · ${t("feed.not_live")}`}
     >
       <div
         className="relative aspect-video overflow-hidden rounded-lg border"
@@ -778,6 +821,28 @@ function RecentStream({
         >
           {t("feed.last_stream")}
         </span>
+        <span
+          className="absolute bottom-1.5 left-1.5 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide"
+          style={{
+            backgroundColor: "rgba(0,0,0,0.62)",
+            color: "#ffffff",
+          }}
+        >
+          <Radio size={9} />
+          {t("feed.not_live")}
+        </span>
+        {hidden && (
+          <span
+            className="absolute bottom-1.5 right-1.5 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide"
+            style={{
+              backgroundColor: "rgba(0,0,0,0.62)",
+              color: "#ffffff",
+            }}
+            title={t("feed.hidden_last_stream")}
+          >
+            <EyeOff size={9} />
+          </span>
+        )}
       </div>
       <p
         className="mt-1 line-clamp-2 text-[11px] font-medium"

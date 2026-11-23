@@ -21,6 +21,7 @@ import { UpcomingFilters } from "../layout/UpcomingFilters";
 import { EventSourceBadge } from "./EventSourceBadge";
 import { TournamentDetailModal } from "./TournamentDetailModal";
 import { TournamentTierBadge } from "./TournamentTierBadge";
+import { PanelLoading } from "../ui/PanelLoading";
 import { cn } from "../../lib/cn";
 
 type UpcomingTab = "official" | "limitless";
@@ -187,6 +188,16 @@ export function UpcomingTournamentsSection({
                   · {event.players} {t("dashboard.players")}
                 </span>
               )}
+              {event.champion_name && (
+                <span>
+                  {" "}
+                  · {t("upcoming.champion")}:{" "}
+                  {event.champion_country
+                    ? `${countryFlag(event.champion_country)} `
+                    : ""}
+                  {event.champion_name}
+                </span>
+              )}
               {event.registrations != null && (
                 <span>
                   {" "}
@@ -215,12 +226,13 @@ export function UpcomingTournamentsSection({
               </div>
             )}
           </div>
-          <Eye
-            size={13}
-            className="mt-1 shrink-0"
+          <span
+            className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
             style={{ color: "var(--text-dim)" }}
             aria-hidden
-          />
+          >
+            <Eye size={14} />
+          </span>
         </button>
       </li>
     );
@@ -329,11 +341,7 @@ export function UpcomingTournamentsSection({
         </p>
       )}
 
-      {isLoading && (
-        <p className="text-xs" style={{ color: "var(--text-dim)" }}>
-          {t("common.loading")}
-        </p>
-      )}
+      {isLoading && <PanelLoading variant="list" rows={4} compact />}
       {isError && (
         <div
           className="flex flex-col gap-2 text-xs"

@@ -47,6 +47,17 @@ impl UpcomingTournamentsService {
         self.official_event.details(url).await
     }
 
+    /// Official Masters standings for a Championship Series event. The feed
+    /// publishes placement and match record but no decklists.
+    pub async fn official_standings(
+        &self,
+        url: &str,
+        start: u32,
+        size: u32,
+    ) -> Result<crate::domain::champions::OfficialStandingsPage, AppError> {
+        self.championships.standings(url, start, size).await
+    }
+
     pub async fn list_upcoming(
         &self,
         country: Option<String>,
@@ -157,6 +168,8 @@ fn to_upcoming(
         url: format!("{}/{}", LIMITLESS_TOURNAMENT_URL, t.id),
         region: t.format,
         players: t.players,
+        champion_name: None,
+        champion_country: None,
         source: LIMITLESS_SOURCE.to_string(),
         end_date: None,
         tier: Some("community".to_string()),
@@ -202,6 +215,8 @@ fn to_limitless_upcoming(
         url: event.url,
         region: event.region,
         players: None,
+        champion_name: None,
+        champion_country: None,
         source: LIMITLESS_SOURCE.to_string(),
         end_date: None,
         tier: Some("community".to_string()),
@@ -247,6 +262,8 @@ fn to_pokedata_upcoming(
             .unwrap_or_else(|| "https://events.pokemon.com/en-us/events?filters=vg".to_string()),
         region: None,
         players: None,
+        champion_name: None,
+        champion_country: None,
         source: POKEDATA_SOURCE.to_string(),
         end_date: None,
         tier: Some("local".to_string()),
@@ -283,6 +300,8 @@ fn to_official_major(event: ChampionshipEvent) -> UpcomingTournament {
         url: url.clone(),
         region: None,
         players: event.players,
+        champion_name: event.winner_name,
+        champion_country: event.winner_country,
         source: POKEDATA_SOURCE.to_string(),
         end_date: Some(event.end_date.to_string()),
         tier: Some(event.type_code),

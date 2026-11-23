@@ -30,7 +30,7 @@ export function FeedSummaryCard({ info }: Props) {
   );
 
   return (
-    <section className="card">
+    <section className="card card-hero">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">

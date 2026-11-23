@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { check } from "@tauri-apps/plugin-updater";
 import { useUpdaterStore } from "../stores/updaterStore";
 import { ipc } from "../lib/ipc";
+import { desktopPlatformMeta } from "../lib/updater";
 
 export type CheckOutcome = "available" | "up_to_date" | "error";
 
@@ -23,6 +24,11 @@ async function runMobileCheck(): Promise<CheckOutcome> {
     version: info.version,
     notes: info.notes.length > 0 ? info.notes : null,
     downloadUrl: info.android_url,
+    size: info.android_size,
+    sha256: info.android_sha256,
+    signature: info.android_signature,
+    desktopUrl: info.desktop_url,
+    desktopSignature: info.desktop_signature,
   });
   return "available";
 }
@@ -32,10 +38,14 @@ async function runDesktopCheck(): Promise<CheckOutcome> {
   const upd = await check();
   store.recordCheck();
   if (upd) {
+    const platform = desktopPlatformMeta(upd.rawJson);
     store.setAvailable({
       version: upd.version,
       notes: upd.body ?? null,
       downloadUrl: null,
+      signature: platform.signature,
+      desktopUrl: platform.url,
+      desktopSignature: platform.signature,
     });
     return "available";
   }

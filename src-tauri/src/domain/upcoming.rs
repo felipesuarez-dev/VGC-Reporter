@@ -10,6 +10,11 @@ pub struct UpcomingTournament {
     pub url: String,
     pub region: Option<String>,
     pub players: Option<u32>,
+    /// Masters winner when the official results endpoint already published it.
+    #[serde(default)]
+    pub champion_name: Option<String>,
+    #[serde(default)]
+    pub champion_country: Option<String>,
     pub source: String,
     /// Last day of multi-day events (official majors). `None` for single-day
     /// local/online tournaments. The calendar expands the whole range.

@@ -94,6 +94,13 @@ export function Settings() {
   const setPokedexQuickTables = useUiStore((s) => s.setPokedexQuickTables);
   const quickTablesDefaultTab = useUiStore((s) => s.quickTablesDefaultTab);
   const setQuickTablesDefaultTab = useUiStore((s) => s.setQuickTablesDefaultTab);
+  const quickTablesMode = useUiStore((s) => s.quickTablesMode);
+  const setQuickTablesMode = useUiStore((s) => s.setQuickTablesMode);
+  const quickTablesPlacement = useUiStore((s) => s.quickTablesPlacement);
+  const setQuickTablesPlacement = useUiStore((s) => s.setQuickTablesPlacement);
+  const quickTablesCorner = useUiStore((s) => s.quickTablesCorner);
+  const setQuickTablesCorner = useUiStore((s) => s.setQuickTablesCorner);
+  const setQuickTablesPosition = useUiStore((s) => s.setQuickTablesPosition);
   const videoContinuity = usePlaybackStore((s) => s.continuity);
   const setVideoContinuity = usePlaybackStore((s) => s.setContinuity);
   const [aboutOpen, setAboutOpen] = useState(false);
@@ -345,6 +352,76 @@ export function Settings() {
             </p>
           </div>
         </div>
+        <div>
+          <div className="mb-1 text-[10px] uppercase tracking-wide" style={{ color: "var(--text-dim)" }}>
+            {t("settings.quick_tables_mode")}
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                name="quick-tables-mode"
+                checked={quickTablesMode === "panel"}
+                onChange={() => setQuickTablesMode("panel")}
+              />
+              {t("settings.quick_tables_panel")}
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                name="quick-tables-mode"
+                checked={quickTablesMode === "floating"}
+                onChange={() => setQuickTablesMode("floating")}
+              />
+              {t("settings.quick_tables_floating")}
+            </label>
+          </div>
+        </div>
+        {quickTablesMode === "floating" && (
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-3">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="quick-tables-placement"
+                  checked={quickTablesPlacement === "corner"}
+                  onChange={() => setQuickTablesPlacement("corner")}
+                />
+                {t("settings.calendar_corner")}
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="quick-tables-placement"
+                  checked={quickTablesPlacement === "free"}
+                  onChange={() => setQuickTablesPlacement("free")}
+                />
+                {t("settings.calendar_free")}
+              </label>
+            </div>
+            {quickTablesPlacement === "corner" && (
+              <select
+                className="input h-9 w-full sm:w-64"
+                value={quickTablesCorner}
+                onChange={(event) =>
+                  setQuickTablesCorner(
+                    event.target.value as "bottom-right" | "bottom-left",
+                  )
+                }
+              >
+                <option value="bottom-right">{t("settings.calendar_bottom_right")}</option>
+                <option value="bottom-left">{t("settings.calendar_bottom_left")}</option>
+              </select>
+            )}
+            <button
+              type="button"
+              className="btn-ghost h-8 text-[10px]"
+              onClick={() => setQuickTablesPosition(null)}
+            >
+              {t("settings.quick_tables_reset_position")}
+            </button>
+          </div>
+        )}
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"

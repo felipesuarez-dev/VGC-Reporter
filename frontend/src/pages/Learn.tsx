@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -42,12 +42,25 @@ import type {
 import { ALL_TYPES, ALL_NATURES, canonicalSpeciesId, emptyTeamMember } from "../lib/types";
 import { evsToStatPoints, statPointsToEvs } from "../lib/champions";
 import {
+  GLOSSARY_CATEGORIES,
+  LEARN_CORE_ARCHETYPES,
   LEARN_GUIDES,
   LEARN_GLOSSARY,
   LEARN_TRIVIA,
   learnLanguage,
+  type GlossaryCategory,
   type LearnGuide,
 } from "../lib/learnContent";
+import { computeMetaInsights } from "../lib/learn/insights";
+import {
+  ArchetypeCores,
+  DailyPractice,
+  GlossaryModal,
+  MetaInsights,
+  TriviaPanel,
+} from "../components/learn/LearnSections";
+import { SectionTitle } from "../components/learn/SectionTitle";
+import { PanelLoading } from "../components/ui/PanelLoading";
 import { useDashboardStore } from "../stores/dashboardStore";
 import { useTeamBuilder } from "../stores/teamBuilderStore";
 import { useModalBack } from "../hooks/useModalBack";
@@ -95,15 +108,6 @@ function asTeam(top: TopTeam, format: Format): Team {
   };
 }
 
-function daySeed(): number {
-  const now = new Date();
-  return Number(
-    `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(
-      now.getDate(),
-    ).padStart(2, "0")}`,
-  );
-}
-
 export function Learn() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -113,9 +117,15 @@ export function Learn() {
   const lang = learnLanguage(i18n.language);
   const guides = LEARN_GUIDES[lang];
   const glossary = LEARN_GLOSSARY[lang];
+  const trivia = LEARN_TRIVIA[lang];
+  const archetypes = LEARN_CORE_ARCHETYPES[lang];
   const setPendingImport = useTeamBuilder((s) => s.setPendingImport);
   const [selectedGuide, setSelectedGuide] = useState<LearnGuide | null>(null);
-  const [query, setQuery] = useState("");
+  const [glossaryQuery, setGlossaryQuery] = useState("");
+  const [glossaryCategory, setGlossaryCategory] = useState<
+    GlossaryCategory | "all"
+  >("all");
+  const [glossaryOpen, setGlossaryOpen] = useState(false);
   const [starterVisible, setStarterVisible] = useState(3);
   const [done, setDone] = useState<Record<string, boolean>>(() => {
     try {
@@ -148,6 +158,11 @@ export function Learn() {
     queryFn: () => ipc.getTopTeams(format, 30),
     staleTime: 30 * 60 * 1000,
   });
+  const trending = useQuery({
+    queryKey: queryKeys.trending(format),
+    queryFn: () => ipc.getTrending(format),
+    staleTime: 30 * 60 * 1000,
+  });
   const bySpecies = useMemo(() => {
     const map = new Map<string, NonNullable<typeof pokedex.data>[number]>();
     for (const pokemon of pokedex.data ?? []) {
@@ -160,7 +175,6 @@ export function Learn() {
     (team) => team.members.filter((member) => member.species).length >= 4,
   );
   const shownStarters = starters.slice(0, starterVisible);
-  const threats = (meta.data?.pokemon ?? []).slice(0, 5);
 
   const usageById = useMemo(() => {
     const map = new Map<string, PokemonUsage>();
@@ -199,28 +213,24 @@ export function Learn() {
     return out;
   }, [meta.data, usageById]);
 
-  const insights = useMemo(() => {
-    const pokemon = meta.data?.pokemon ?? [];
-    const bestWin =
-      [...pokemon]
-        .filter((entry) => entry.win_rate != null && entry.count >= 20)
-        .sort((a, b) => (b.win_rate ?? 0) - (a.win_rate ?? 0))[0] ?? null;
-    const speedMove =
-      (meta.data?.top_moves ?? []).find((move) =>
-        /tailwind|trick room|icy wind|electroweb/i.test(move.name),
-      ) ?? null;
-    const topItem = meta.data?.top_items?.[0] ?? null;
-    return { bestWin, speedMove, topItem };
-  }, [meta.data]);
+  const insights = useMemo(
+    () => computeMetaInsights(meta.data, trending.data),
+    [meta.data, trending.data],
+  );
 
-  const filteredGlossary = glossary.filter((entry) => {
-    const needle = query.trim().toLowerCase();
-    if (!needle) return true;
-    return (
-      entry.term.toLowerCase().includes(needle) ||
-      entry.definition.toLowerCase().includes(needle)
-    );
-  });
+  const filteredGlossary = useMemo(() => {
+    const needle = glossaryQuery.trim().toLowerCase();
+    return glossary.filter((entry) => {
+      if (glossaryCategory !== "all" && entry.category !== glossaryCategory) {
+        return false;
+      }
+      if (!needle) return true;
+      return (
+        entry.term.toLowerCase().includes(needle) ||
+        entry.definition.toLowerCase().includes(needle)
+      );
+    });
+  }, [glossary, glossaryCategory, glossaryQuery]);
 
   const loadStarter = (team: TopTeam) => {
     setPendingImport(asTeam(team, format));
@@ -312,7 +322,7 @@ export function Learn() {
                 }}
               >
                 <Layers size={11} />
-                {t("learn.cores_count", { count: cores.length })}
+                {t("learn.cores_count", { count: cores.length + archetypes.length })}
               </span>
             </div>
             <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
@@ -363,7 +373,7 @@ export function Learn() {
             <div className="mt-5 flex flex-wrap gap-2 text-[10px]">
               <HeroChip icon={<BookOpen size={11} />} label={t("learn.guides_count", { count: guides.length })} />
               <HeroChip icon={<Trophy size={11} />} label={t("learn.starters_count", { count: starters.length })} />
-              <HeroChip icon={<Layers size={11} />} label={t("learn.cores_count", { count: cores.length })} />
+              <HeroChip icon={<Layers size={11} />} label={t("learn.cores_count", { count: cores.length + archetypes.length })} />
             </div>
           </div>
           <div
@@ -455,7 +465,7 @@ export function Learn() {
 
       <section>
         <SectionTitle icon={<Trophy size={15} />} title={t("learn.starters_title")} hint={t("learn.starters_hint")} />
-        {topTeams.isLoading && <p className="text-xs" style={{ color: "var(--text-dim)" }}>{t("common.loading")}</p>}
+        {topTeams.isLoading && <PanelLoading variant="cards" rows={3} />}
         {!topTeams.isLoading && starters.length === 0 && (
           <p className="text-xs" style={{ color: "var(--text-dim)" }}>{t("learn.starters_empty")}</p>
         )}
@@ -527,13 +537,26 @@ export function Learn() {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <DailyQuiz
-          threats={threats}
-          bySpecies={bySpecies}
-          onStreakChange={setStreak}
-        />
+        <div className="space-y-4">
+          <DailyPractice
+            meta={meta.data?.pokemon ?? []}
+            pokedex={pokedex.data ?? []}
+            onStreakChange={setStreak}
+          />
+          <TriviaPanel items={trivia} />
+        </div>
         <MetaCores cores={cores} onLoadCore={loadCore} />
       </section>
+
+      <ArchetypeCores
+        archetypes={archetypes}
+        meta={meta.data?.pokemon ?? []}
+        pokedex={pokedex.data ?? []}
+        onTry={(team) => {
+          setPendingImport(team);
+          navigate("/team-builder");
+        }}
+      />
 
       <MetaInsights insights={insights} localize={localize} />
 
@@ -564,25 +587,74 @@ export function Learn() {
       </section>
 
       <section className="card">
-        <SectionTitle icon={<Sparkles size={15} />} title={t("learn.glossary_title")} hint={t("learn.glossary_hint")} />
-        <div className="relative mb-3">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <SectionTitle icon={<Sparkles size={15} />} title={t("learn.glossary_title")} hint={t("learn.glossary_hint")} />
+          <span
+            className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+            style={{ backgroundColor: "var(--accent-soft)", color: "var(--accent)" }}
+          >
+            {glossary.length}
+          </span>
+        </div>
+        <div className="relative mb-2">
           <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: "var(--text-dim)" }} />
           <input
             className="input h-9 w-full pl-8 text-xs"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            value={glossaryQuery}
+            onChange={(event) => setGlossaryQuery(event.target.value)}
             placeholder={t("learn.search_glossary")}
           />
         </div>
+        <div className="mb-3 flex flex-wrap gap-1">
+          {(["all", ...GLOSSARY_CATEGORIES] as const).map((category) => (
+            <button
+              key={category}
+              type="button"
+              className="rounded-full border px-2 py-0.5 text-[10px] font-medium"
+              style={{
+                borderColor:
+                  glossaryCategory === category ? "var(--accent)" : "var(--border)",
+                backgroundColor:
+                  glossaryCategory === category ? "var(--accent-soft)" : "transparent",
+                color:
+                  glossaryCategory === category ? "var(--accent)" : "var(--text-muted)",
+              }}
+              onClick={() => setGlossaryCategory(category)}
+            >
+              {category === "all"
+                ? t("learn.glossary_category_all")
+                : t(`learn.glossary_category_${category}`)}
+            </button>
+          ))}
+        </div>
         <div className="grid gap-2 md:grid-cols-2">
-          {filteredGlossary.map((entry) => (
-            <div key={entry.term} className="rounded-lg border p-2" style={{ borderColor: "var(--border)" }}>
-              <div className="text-xs font-semibold">{entry.term}</div>
+          {filteredGlossary.slice(0, 6).map((entry) => (
+            <div key={entry.id} className="rounded-lg border p-2" style={{ borderColor: "var(--border)" }}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="text-xs font-semibold">{entry.term}</div>
+                <span className="shrink-0 text-[8px] uppercase tracking-wide" style={{ color: "var(--text-dim)" }}>
+                  {t(`learn.glossary_category_${entry.category}`)}
+                </span>
+              </div>
               <p className="mt-0.5 text-[11px]" style={{ color: "var(--text-muted)" }}>{entry.definition}</p>
             </div>
           ))}
         </div>
+        <button
+          type="button"
+          className="btn-ghost mt-3 w-full justify-center text-xs"
+          onClick={() => setGlossaryOpen(true)}
+        >
+          <BookOpen size={12} className="mr-1" />
+          {t("learn.glossary_view_all", { count: filteredGlossary.length })}
+        </button>
       </section>
+
+      <GlossaryModal
+        entries={glossary}
+        open={glossaryOpen}
+        onClose={() => setGlossaryOpen(false)}
+      />
 
       <section>
         <SectionTitle icon={<GraduationCap size={15} />} title={t("learn.tools_title")} hint={t("learn.tools_hint")} />
@@ -600,19 +672,6 @@ export function Learn() {
   );
 }
 
-function SectionTitle({ icon, title, hint }: { icon: React.ReactNode; title: string; hint: string }) {
-  return (
-    <div className="mb-3 flex items-center gap-2">
-      <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ backgroundColor: "var(--accent-soft)", color: "var(--accent)" }}>
-        {icon}
-      </span>
-      <div>
-        <h2 className="text-sm font-semibold">{title}</h2>
-        <p className="text-[10px]" style={{ color: "var(--text-dim)" }}>{hint}</p>
-      </div>
-    </div>
-  );
-}
 
 function ToolButton({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
   return (
@@ -773,430 +832,13 @@ function MetaCores({
   );
 }
 
-function MetaInsights({
-  insights,
-  localize,
-}: {
-  insights: {
-    bestWin: PokemonUsage | null;
-    speedMove: UsageEntry | null;
-    topItem: UsageEntry | null;
-  };
-  localize: (kind: "ability" | "move" | "item", name: string) => string;
-}) {
-  const { t } = useTranslation();
-  const cards = [
-    {
-      id: "winrate",
-      icon: <Trophy size={15} />,
-      label: t("learn.insight_winrate"),
-      value: insights.bestWin?.species ?? "—",
-      detail: insights.bestWin
-        ? t("learn.insight_winrate_detail", {
-            win: (insights.bestWin.win_rate ?? 0).toFixed(1),
-            usage: insights.bestWin.usage_percent.toFixed(1),
-          })
-        : t("learn.insight_no_data"),
-    },
-    {
-      id: "speed",
-      icon: <Zap size={15} />,
-      label: t("learn.insight_speed"),
-      value: insights.speedMove
-        ? localize("move", insights.speedMove.name)
-        : "—",
-      detail: insights.speedMove
-        ? t("learn.insight_speed_detail", {
-            percent: insights.speedMove.usage_percent.toFixed(1),
-          })
-        : t("learn.insight_no_data"),
-    },
-    {
-      id: "item",
-      icon: <Package size={15} />,
-      label: t("learn.insight_item"),
-      value: insights.topItem
-        ? localize("item", insights.topItem.name)
-        : "—",
-      detail: insights.topItem
-        ? t("learn.insight_item_detail", {
-            percent: insights.topItem.usage_percent.toFixed(1),
-          })
-        : t("learn.insight_no_data"),
-    },
-  ];
-  return (
-    <section>
-      <SectionTitle
-        icon={<TrendingUp size={15} />}
-        title={t("learn.insights_title")}
-        hint={t("learn.insights_hint")}
-      />
-      <div className="grid gap-3 sm:grid-cols-3">
-        {cards.map((card) => (
-          <div key={card.id} className="card relative overflow-hidden">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -right-2 -top-3 opacity-10"
-              style={{ color: "var(--accent)" }}
-            >
-              <span className="[&>svg]:h-16 [&>svg]:w-16">{card.icon}</span>
-            </div>
-            <div
-              className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide"
-              style={{ color: "var(--text-dim)" }}
-            >
-              <span style={{ color: "var(--accent)" }}>{card.icon}</span>
-              {card.label}
-            </div>
-            <div className="mt-2 truncate text-base font-bold">{card.value}</div>
-            <p className="mt-1 text-[10px]" style={{ color: "var(--text-muted)" }}>
-              {card.detail}
-            </p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function DailyQuiz({
-  threats,
-  bySpecies,
-  onStreakChange,
-}: {
-  threats: { species: string; usage_percent: number }[];
-  bySpecies: Map<string, Pokemon>;
-  onStreakChange: (value: number) => void;
-}) {
-  const { t, i18n } = useTranslation();
-  const seed = daySeed();
-  const [mode, setMode] = useState<"type" | "speed" | "lead">("type");
-  const [answer, setAnswer] = useState<string | null>(null);
-  const [triviaAnswers, setTriviaAnswers] = useState<Record<string, boolean>>({});
-  const [streak, setStreak] = useState(() =>
-    Number(localStorage.getItem("vgc-learn-streak") ?? "0"),
-  );
-
-  const typeQuestion = useMemo(() => {
-    const types = ALL_TYPES.filter((type) => type !== "Stellar");
-    const defender = types[seed % types.length];
-    const correct = types.filter((type) => defensiveMultiplier([defender], type) >= 2);
-    const wrong = types.filter((type) => defensiveMultiplier([defender], type) < 2);
-    const correctType = correct[(seed >> 2) % Math.max(1, correct.length)] ?? types[0];
-    const options = [
-      correctType,
-      ...wrong.slice((seed >> 3) % Math.max(1, wrong.length - 2), (seed >> 3) % Math.max(1, wrong.length - 2) + 3),
-    ].filter((value, index, all) => all.indexOf(value) === index).slice(0, 4);
-    while (options.length < 4) {
-      const candidate = types[(seed + options.length * 7) % types.length];
-      if (!options.includes(candidate)) options.push(candidate);
-    }
-    return {
-      prompt: t("learn.quiz_question", { type: typeLabel(t, defender) }),
-      correct: correctType,
-      correctLabel: typeLabel(t, correctType),
-      options: options.map((type) => ({ value: type, label: typeLabel(t, type) })),
-      hint: null as string | null,
-    };
-  }, [seed, t]);
-
-  const speedQuestion = useMemo(() => {
-    const known = threats
-      .map((threat) => bySpecies.get(canonicalSpeciesId(threat.species)))
-      .filter((pokemon): pokemon is Pokemon => Boolean(pokemon?.base_stats));
-    const unique = known.filter(
-      (pokemon, index) => known.findIndex((entry) => entry.id === pokemon.id) === index,
-    );
-    if (unique.length < 2) return null;
-    let first = unique[seed % unique.length];
-    let second = unique[(seed + 3) % unique.length];
-    if (first.id === second.id) second = unique[(unique.indexOf(first) + 1) % unique.length];
-    if (first.id === second.id || first.base_stats.spe === second.base_stats.spe) {
-      const pair = unique
-        .flatMap((a, i) => unique.slice(i + 1).map((b) => [a, b] as const))
-        .find(([a, b]) => a.base_stats.spe !== b.base_stats.spe);
-      if (!pair) return null;
-      [first, second] = pair;
-    }
-    const faster = first.base_stats.spe > second.base_stats.spe ? first : second;
-    return {
-      prompt: t("learn.quiz_speed_question", { a: first.name, b: second.name }),
-      correct: faster.name,
-      correctLabel: faster.name,
-      options: [
-        { value: first.name, label: first.name },
-        { value: second.name, label: second.name },
-      ],
-      hint: t("learn.quiz_speed_hint", {
-        a: first.name,
-        aSpeed: first.base_stats.spe,
-        b: second.name,
-        bSpeed: second.base_stats.spe,
-      }),
-    };
-  }, [bySpecies, seed, t, threats]);
-
-  const leadQuestion = useMemo(() => {
-    const known = threats
-      .map((threat) => bySpecies.get(canonicalSpeciesId(threat.species)))
-      .filter((pokemon): pokemon is Pokemon => Boolean(pokemon?.types?.length));
-    const unique = known.filter(
-      (pokemon, index) => known.findIndex((entry) => entry.id === pokemon.id) === index,
-    );
-    if (unique.length < 4) return null;
-    const threat = unique[seed % unique.length];
-    const pool = unique.filter((pokemon) => pokemon.id !== threat.id);
-    const picks: Pokemon[] = [];
-    for (let offset = 0; picks.length < 3 && offset < pool.length; offset += 1) {
-      const candidate = pool[(seed + offset * 2 + 1) % pool.length];
-      if (!picks.some((entry) => entry.id === candidate.id)) picks.push(candidate);
-    }
-    if (picks.length < 3) return null;
-    const score = (candidate: Pokemon) =>
-      threat.types.reduce(
-        (total, attacking) => total + defensiveMultiplier(candidate.types, attacking),
-        0,
-      );
-    const winner = [...picks].sort(
-      (a, b) => score(a) - score(b) || b.base_stats.spe - a.base_stats.spe,
-    )[0];
-    return {
-      prompt: t("learn.quiz_lead_question", { threat: threat.name }),
-      correct: winner.name,
-      correctLabel: winner.name,
-      options: picks.map((pokemon) => ({ value: pokemon.name, label: pokemon.name })),
-      hint: t("learn.quiz_lead_hint", {
-        answer: winner.name,
-        threat: threat.name,
-        types: threat.types.map((type) => typeLabel(t, type)).join(" / "),
-      }),
-    };
-  }, [bySpecies, seed, t, threats]);
-
-  const question =
-    mode === "type" ? typeQuestion : mode === "speed" ? speedQuestion : leadQuestion;
-  const result = answer && question ? answer === question.correct : null;
-
-  const trivia = useMemo(() => {
-    const pool = LEARN_TRIVIA[learnLanguage(i18n.language)];
-    return [
-      pool[seed % pool.length],
-      pool[(seed + 2) % pool.length],
-      pool[(seed + 4) % pool.length],
-    ];
-  }, [i18n.language, seed]);
-
-  const pick = (value: string) => {
-    if (answer || !question) return;
-    setAnswer(value);
-    if (value === question.correct) {
-      const next = streak + 1;
-      setStreak(next);
-      onStreakChange(next);
-      localStorage.setItem("vgc-learn-streak", String(next));
-    } else {
-      setStreak(0);
-      onStreakChange(0);
-      localStorage.setItem("vgc-learn-streak", "0");
-    }
-  };
-
-  const chooseMode = (next: "type" | "speed" | "lead") => {
-    setMode(next);
-    setAnswer(null);
-  };
-
-  return (
-    <section className="card flex h-full flex-col">
-      <SectionTitle icon={<Sparkles size={15} />} title={t("learn.quiz_title")} hint={t("learn.quiz_hint")} />
-      <div className="mb-3 flex flex-wrap gap-1">
-        {(["type", "speed", "lead"] as const).map((entry) => (
-          <button
-            key={entry}
-            type="button"
-            className="rounded-md px-2 py-1 text-[10px] font-medium"
-            style={{
-              backgroundColor: mode === entry ? "var(--accent-soft)" : "transparent",
-              color: mode === entry ? "var(--accent)" : "var(--text-muted)",
-            }}
-            onClick={() => chooseMode(entry)}
-          >
-            {t(`learn.quiz_mode_${entry}`)}
-          </button>
-        ))}
-      </div>
-      {!question ? (
-        <p className="text-xs" style={{ color: "var(--text-dim)" }}>
-          {t("learn.quiz_not_enough")}
-        </p>
-      ) : (
-        <>
-          <p className="text-sm">{question.prompt}</p>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            {question.options.map((option) => {
-              const isCorrect = answer && option.value === question.correct;
-              const isWrong = answer === option.value && option.value !== question.correct;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => pick(option.value)}
-                  className="rounded-lg border px-2 py-2 text-xs font-medium"
-                  style={{
-                    borderColor: isCorrect ? "var(--success)" : isWrong ? "var(--danger)" : "var(--border)",
-                    backgroundColor: isCorrect
-                      ? "color-mix(in srgb, var(--success) 15%, transparent)"
-                      : isWrong
-                        ? "color-mix(in srgb, var(--danger) 15%, transparent)"
-                        : "var(--bg)",
-                    color: "var(--text)",
-                  }}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
-          {answer && (
-            <p className="mt-3 text-xs" style={{ color: result ? "var(--success)" : "var(--danger)" }}>
-              {result
-                ? t("learn.quiz_correct")
-                : t("learn.quiz_wrong_answer", { answer: question.correctLabel })}
-              {" · "}
-              {t("learn.streak", { count: streak })}
-            </p>
-          )}
-          {answer && question.hint && (
-            <p className="mt-1 text-[10px]" style={{ color: "var(--text-dim)" }}>
-              {question.hint}
-            </p>
-          )}
-        </>
-      )}
-      <div
-        className="mt-4 border-t pt-3"
-        style={{ borderColor: "var(--border)" }}
-      >
-        <div className="flex flex-wrap items-center justify-between gap-1">
-          <span
-            className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide"
-            style={{ color: "var(--text-dim)" }}
-          >
-            <Sparkles size={11} style={{ color: "var(--accent)" }} />
-            {t("learn.trivia_title")}
-          </span>
-          <span className="text-[9px]" style={{ color: "var(--text-dim)" }}>
-            {t("learn.trivia_hint")}
-          </span>
-        </div>
-        <div className="mt-2 space-y-1.5">
-          {trivia.map((item) => {
-            const answered = triviaAnswers[item.id];
-            const isCorrect = answered === item.answer;
-            return (
-              <div
-                key={item.id}
-                className="rounded-lg border px-2 py-1.5"
-                style={{ borderColor: "var(--border)", backgroundColor: "var(--bg)" }}
-              >
-                <p className="text-[11px] leading-snug">{item.statement}</p>
-                <div className="mt-1 flex flex-wrap items-center gap-1">
-                  {[true, false].map((value) => {
-                    const chosen = answered === value;
-                    const good = chosen && value === item.answer;
-                    const bad = chosen && value !== item.answer;
-                    return (
-                      <button
-                        key={String(value)}
-                        type="button"
-                        disabled={answered !== undefined}
-                        onClick={() =>
-                          setTriviaAnswers((current) => ({
-                            ...current,
-                            [item.id]: value,
-                          }))
-                        }
-                        className="rounded-md border px-2 py-0.5 text-[9px] font-medium disabled:cursor-default"
-                        style={{
-                          borderColor: good
-                            ? "var(--success)"
-                            : bad
-                              ? "var(--danger)"
-                              : "var(--border)",
-                          backgroundColor: good
-                            ? "color-mix(in srgb, var(--success) 16%, transparent)"
-                            : bad
-                              ? "color-mix(in srgb, var(--danger) 16%, transparent)"
-                              : "transparent",
-                          color: good
-                            ? "var(--success)"
-                            : bad
-                              ? "var(--danger)"
-                              : "var(--text-muted)",
-                        }}
-                      >
-                        {value ? t("learn.trivia_true") : t("learn.trivia_false")}
-                      </button>
-                    );
-                  })}
-                  {answered !== undefined && (
-                    <span
-                      className="text-[9px] font-medium"
-                      style={{
-                        color: isCorrect ? "var(--success)" : "var(--danger)",
-                      }}
-                    >
-                      {isCorrect
-                        ? t("learn.trivia_correct")
-                        : t("learn.trivia_wrong")}
-                    </span>
-                  )}
-                </div>
-                {answered !== undefined && (
-                  <p
-                    className="mt-1 text-[9px] leading-snug"
-                    style={{ color: "var(--text-dim)" }}
-                  >
-                    {item.explanation}
-                  </p>
-                )}
-              </div>
-            );
-          })}
-        </div>
-        <div
-          className="mt-3 flex items-start gap-2 rounded-lg border px-2.5 py-2"
-          style={{
-            borderColor: "var(--border)",
-            backgroundColor: "var(--bg-elev-strong)",
-          }}
-        >
-          <Lightbulb
-            size={13}
-            className="mt-0.5 shrink-0"
-            style={{ color: "var(--accent)" }}
-          />
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-dim)" }}>
-              {t("learn.tip_title")}
-            </p>
-            <p className="mt-0.5 text-[10px] leading-snug" style={{ color: "var(--text-muted)" }}>
-              {t("learn.tip_body")}
-            </p>
-          </div>
-        </div>
-      </div>
-      <p className="mt-2 text-[10px]" style={{ color: "var(--text-dim)" }}>
-        {new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium" }).format(new Date())}
-      </p>
-    </section>
-  );
-}
-
 function GuideModal({ guide, onClose }: { guide: LearnGuide | null; onClose: () => void }) {
   const { t } = useTranslation();
+  const [checks, setChecks] = useState<Record<number, boolean>>({});
   useModalBack(Boolean(guide), onClose);
+  useEffect(() => {
+    setChecks({});
+  }, [guide?.id]);
   if (!guide) return null;
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-3" onClick={onClose}>
@@ -1226,6 +868,32 @@ function GuideModal({ guide, onClose }: { guide: LearnGuide | null; onClose: () 
               <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>{section.body}</p>
             </div>
           ))}
+        </div>
+        <div
+          className="mt-5 rounded-xl border p-3"
+          style={{ borderColor: "var(--border)", backgroundColor: "var(--bg)" }}
+        >
+          <h3 className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--accent)" }}>
+            {t("learn.guide_exercise")}
+          </h3>
+          <p className="mt-1 text-[11px]" style={{ color: "var(--text-muted)" }}>
+            {t("learn.guide_exercise_body")}
+          </p>
+          <div className="mt-2 space-y-1.5">
+            {guide.sections.slice(0, 3).map((section, index) => (
+              <label key={section.heading} className="flex items-start gap-2 text-[11px]">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={Boolean(checks[index])}
+                  onChange={() =>
+                    setChecks((current) => ({ ...current, [index]: !current[index] }))
+                  }
+                />
+                <span>{section.heading}</span>
+              </label>
+            ))}
+          </div>
         </div>
       </div>
     </div>

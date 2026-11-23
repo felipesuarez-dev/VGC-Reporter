@@ -38,6 +38,14 @@ interface Props {
   info: RegulationInfo;
 }
 
+type CalendarCategory = "official" | "community" | "personal";
+
+const CATEGORY_COLORS: Record<CalendarCategory, string> = {
+  official: "#f5c542",
+  community: "#2b86ff",
+  personal: "var(--accent)",
+};
+
 function pad(value: number): string {
   return String(value).padStart(2, "0");
 }
@@ -97,10 +105,14 @@ export function FeedCalendar({ info }: Props) {
     () =>
       countryEvents
         .filter((event) => matchesUpcomingQuery(event, query))
-        .filter((event) =>
-          isMajorEvent(event) ||
-          matchesCity(event.city, event.country, upcomingCity),
-        ),
+        // The city filter belongs to official local events. Community
+        // tournaments have no city, and majors are global; neither may be
+        // hidden when the user filters their local scene.
+        .filter((event) => {
+          const localOfficial =
+            event.source === "play-pokemon" && !isMajorEvent(event);
+          return !localOfficial || matchesCity(event.city, event.country, upcomingCity);
+        }),
     [countryEvents, query, upcomingCity],
   );
   const eventsByDate = useMemo(() => {
@@ -146,6 +158,23 @@ export function FeedCalendar({ info }: Props) {
     return map;
   }, [customEvents]);
 
+  const categoriesByDate = useMemo(() => {
+    const map = new Map<string, Set<CalendarCategory>>();
+    for (const [day, list] of eventsByDate) {
+      const categories = map.get(day) ?? new Set<CalendarCategory>();
+      for (const event of list) {
+        categories.add(event.source === "play-pokemon" ? "official" : "community");
+      }
+      map.set(day, categories);
+    }
+    for (const day of customByDate.keys()) {
+      const categories = map.get(day) ?? new Set<CalendarCategory>();
+      categories.add("personal");
+      map.set(day, categories);
+    }
+    return map;
+  }, [customByDate, eventsByDate]);
+
   useEffect(() => {
     if (!upcomingCity || isLoading) return;
     const exists = countryEvents.some((event) =>
@@ -182,6 +211,13 @@ export function FeedCalendar({ info }: Props) {
   }).format(month);
   const selectedEvents = eventsByDate.get(selectedDay) ?? [];
   const selectedCustom = customByDate.get(selectedDay) ?? [];
+  const todayKey = dayKey(new Date());
+  const selectedOfficial = selectedEvents.filter(
+    (event) => event.source === "play-pokemon",
+  );
+  const selectedCommunity = selectedEvents.filter(
+    (event) => event.source !== "play-pokemon",
+  );
   const season = info.active_season ?? info.seasons[info.seasons.length - 1];
 
   useEffect(() => {
@@ -202,6 +238,71 @@ export function FeedCalendar({ info }: Props) {
     source === "play-pokemon"
       ? t("upcoming.source_official")
       : t("upcoming.source_limitless");
+
+  const renderEventRow = (event: UpcomingTournament) => {
+    const address = eventAddress(event);
+    return (
+      <li
+        key={event.id}
+        className="flex items-start justify-between gap-2 rounded-md border px-2 py-1.5"
+        style={{ borderColor: "var(--border)" }}
+      >
+        <button
+          type="button"
+          onClick={() => setSelectedEvent(event)}
+          title={t("upcoming.preview")}
+          className="min-w-0 flex-1 text-left"
+        >
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="truncate text-[11px] font-medium" style={{ color: "var(--text)" }}>
+              {event.name}
+            </span>
+            <EventSourceBadge source={event.source} />
+            <TournamentTierBadge tier={event.tier} />
+          </div>
+          <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>
+            {event.starts_at || event.time
+              ? `${formatTime(event.starts_at ?? event.time, i18n.language, timeZone)} · `
+              : ""}
+            {event.kind ? `${event.kind} · ` : ""}
+            {event.end_date && event.end_date !== event.date
+              ? `${formatEventDateRange(event.date, event.end_date, i18n.language)} · `
+              : ""}
+            {event.city ?? event.venue ?? ""}
+          </div>
+          {event.champion_name && (
+            <div className="mt-0.5 text-[9px]" style={{ color: "var(--text-muted)" }}>
+              {t("upcoming.champion")}: {event.champion_name}
+            </div>
+          )}
+          {event.prize_pool && (
+            <div
+              className="mt-0.5 inline-flex items-center gap-1 text-[9px] font-semibold"
+              style={{ color: "#f5c542" }}
+              title={t("upcoming.prize_pool")}
+            >
+              <Trophy size={9} />
+              {event.prize_pool}
+            </div>
+          )}
+          {address && !isMajorEvent(event) && (
+            <div className="mt-0.5 line-clamp-2 text-[9px]" style={{ color: "var(--text-dim)" }} title={address}>
+              {address}
+            </div>
+          )}
+        </button>
+        <button
+          type="button"
+          className="btn-ghost h-7 w-7 shrink-0 p-0"
+          onClick={() => downloadIcs(event, sourceLabel(event.source), i18n.language)}
+          title={t("upcoming.export_ics")}
+          aria-label={t("upcoming.export_ics")}
+        >
+          <CalendarPlus size={13} />
+        </button>
+      </li>
+    );
+  };
 
   const moveMonth = (delta: number) => {
     const next = new Date(year, monthIndex + delta, 1);
@@ -272,7 +373,18 @@ export function FeedCalendar({ info }: Props) {
       <div className="mt-1 grid grid-cols-7 gap-1">
         {cells.map((cell) => {
           const selected = cell.key === selectedDay;
+          const isToday = cell.key === todayKey;
           const hasMajor = majorDays.has(cell.key);
+          const categories = categoriesByDate.get(cell.key) ?? new Set();
+          const tooltip = [
+            ...(eventsByDate.get(cell.key) ?? []).map(
+              (event) =>
+                `${event.source === "play-pokemon" ? t("upcoming.source_official") : t("upcoming.source_limitless")}: ${event.name}`,
+            ),
+            ...(customByDate.get(cell.key) ?? []).map(
+              (event) => `${t("calendar.personal")}: ${event.title}`,
+            ),
+          ].join(" · ");
           return (
             <button
               key={cell.key}
@@ -282,7 +394,7 @@ export function FeedCalendar({ info }: Props) {
                 setDayTouched(true);
                 if (!cell.inMonth) setMonth(startOfMonth(cell.date));
               }}
-              className="relative flex h-8 flex-col items-center justify-center rounded-md text-[10px] transition-colors hover:bg-[var(--bg-elev-strong)]"
+              className="relative flex h-9 flex-col items-center justify-center rounded-md text-[10px] transition-colors hover:bg-[var(--bg-elev-strong)]"
               style={{
                 backgroundColor: selected
                   ? "var(--accent-soft)"
@@ -293,31 +405,35 @@ export function FeedCalendar({ info }: Props) {
                       : "transparent",
                 color: cell.inMonth ? "var(--text)" : "var(--text-dim)",
                 border: selected
-                  ? "1px solid var(--accent)"
-                  : hasMajor
-                    ? "1px solid color-mix(in srgb, #f5c542 55%, transparent)"
-                    : "1px solid transparent",
+                  ? "2px solid var(--accent)"
+                  : isToday
+                    ? "1px solid var(--accent)"
+                    : hasMajor
+                      ? "1px solid color-mix(in srgb, #f5c542 55%, transparent)"
+                      : "1px solid transparent",
               }}
-              aria-label={formatDate(cell.key, i18n.language)}
-              title={
-                hasMajor
-                  ? (eventsByDate.get(cell.key) ?? [])
-                      .filter(isMajorEvent)
-                      .map((event) => event.name)
-                      .join(" · ")
-                  : undefined
-              }
+              aria-label={`${formatDate(cell.key, i18n.language)}${tooltip ? `: ${tooltip}` : ""}`}
+              aria-current={isToday ? "date" : undefined}
+              title={tooltip || undefined}
               data-major={hasMajor ? "true" : undefined}
+              data-today={isToday ? "true" : undefined}
             >
-              {cell.date.getDate()}
+              <span className={isToday ? "font-bold" : undefined}>
+                {cell.date.getDate()}
+              </span>
               {cell.count > 0 && (
-                <span
-                  className="absolute bottom-0.5 h-1 w-1 rounded-full"
-                  style={{
-                    backgroundColor: hasMajor ? "#f5c542" : "var(--accent)",
-                  }}
-                  aria-hidden
-                />
+                <span className="absolute bottom-0.5 flex items-center gap-0.5">
+                  {(["official", "community", "personal"] as const)
+                    .filter((category) => categories.has(category))
+                    .map((category) => (
+                      <span
+                        key={category}
+                        className="h-1 w-1 rounded-full"
+                        style={{ backgroundColor: CATEGORY_COLORS[category] }}
+                        aria-hidden
+                      />
+                    ))}
+                </span>
               )}
             </button>
           );
@@ -365,140 +481,87 @@ export function FeedCalendar({ info }: Props) {
             {t("upcoming.no_events_day")}
           </p>
         ) : (
-          <ul className="space-y-1">
-            {selectedCustom.map((event) => (
-              <li
-                key={event.id}
-                className="flex items-start justify-between gap-2 rounded-md border px-2 py-1.5"
-                style={{
-                  borderColor: "color-mix(in srgb, var(--accent) 45%, var(--border))",
-                  backgroundColor:
-                    "color-mix(in srgb, var(--accent-soft) 35%, transparent)",
-                }}
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span
-                      className="truncate text-[11px] font-medium"
-                      style={{ color: "var(--text)" }}
-                    >
-                      {event.title}
-                    </span>
-                    <span
-                      className="rounded-full px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide"
+          <div className="space-y-3">
+            {selectedOfficial.length > 0 && (
+              <section>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: CATEGORY_COLORS.official }} />
+                  <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                    {t("upcoming.source_official")}
+                  </span>
+                  <span className="text-[9px]" style={{ color: "var(--text-dim)" }}>{selectedOfficial.length}</span>
+                </div>
+                <ul className="space-y-1">{selectedOfficial.map(renderEventRow)}</ul>
+              </section>
+            )}
+            {selectedCommunity.length > 0 && (
+              <section>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: CATEGORY_COLORS.community }} />
+                  <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                    {t("upcoming.source_limitless")}
+                  </span>
+                  <span className="text-[9px]" style={{ color: "var(--text-dim)" }}>{selectedCommunity.length}</span>
+                </div>
+                <ul className="space-y-1">{selectedCommunity.map(renderEventRow)}</ul>
+              </section>
+            )}
+            {selectedCustom.length > 0 && (
+              <section>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: CATEGORY_COLORS.personal }} />
+                  <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                    {t("calendar.personal")}
+                  </span>
+                  <span className="text-[9px]" style={{ color: "var(--text-dim)" }}>{selectedCustom.length}</span>
+                </div>
+                <ul className="space-y-1">
+                  {selectedCustom.map((event) => (
+                    <li
+                      key={event.id}
+                      className="flex items-start justify-between gap-2 rounded-md border px-2 py-1.5"
                       style={{
-                        backgroundColor: "var(--accent-soft)",
-                        color: "var(--accent)",
+                        borderColor: "color-mix(in srgb, var(--accent) 45%, var(--border))",
+                        backgroundColor: "color-mix(in srgb, var(--accent-soft) 35%, transparent)",
                       }}
                     >
-                      {t("calendar.personal")}
-                    </span>
-                  </div>
-                  <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                    {event.time ? `${event.time} · ` : ""}
-                    {event.location ?? ""}
-                  </div>
-                  {event.notes && (
-                    <div
-                      className="mt-0.5 line-clamp-2 text-[9px]"
-                      style={{ color: "var(--text-dim)" }}
-                    >
-                      {event.notes}
-                    </div>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  className="btn-ghost h-7 w-7 shrink-0 p-0"
-                  onClick={() => removeCustomEvent(event.id)}
-                  title={t("calendar.delete_event")}
-                  aria-label={t("calendar.delete_event")}
-                >
-                  <Trash2 size={12} />
-                </button>
-              </li>
-            ))}
-            {selectedEvents.map((event) => {
-              const address = eventAddress(event);
-              return (
-                <li
-                  key={event.id}
-                  className="flex items-start justify-between gap-2 rounded-md border px-2 py-1.5"
-                  style={{ borderColor: "var(--border)" }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setSelectedEvent(event)}
-                    title={t("upcoming.preview")}
-                    className="min-w-0 flex-1 text-left"
-                  >
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span
-                        className="truncate text-[11px] font-medium"
-                        style={{ color: "var(--text)" }}
-                      >
-                        {event.name}
-                      </span>
-                      <EventSourceBadge source={event.source} />
-                      <TournamentTierBadge tier={event.tier} />
-                    </div>
-                    <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                      {event.starts_at || event.time
-                        ? `${formatTime(
-                            event.starts_at ?? event.time,
-                            i18n.language,
-                            timeZone,
-                          )} · `
-                        : ""}
-                      {event.kind ? `${event.kind} · ` : ""}
-                      {event.end_date && event.end_date !== event.date
-                        ? `${formatEventDateRange(
-                            event.date,
-                            event.end_date,
-                            i18n.language,
-                          )} · `
-                        : ""}
-                      {event.city ?? event.venue ?? ""}
-                    </div>
-                    {event.prize_pool && (
-                      <div
-                        className="mt-0.5 inline-flex items-center gap-1 text-[9px] font-semibold"
-                        style={{ color: "#f5c542" }}
-                        title={t("upcoming.prize_pool")}
-                      >
-                        <Trophy size={9} />
-                        {event.prize_pool}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="truncate text-[11px] font-medium" style={{ color: "var(--text)" }}>
+                            {event.title}
+                          </span>
+                          <span
+                            className="rounded-full px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide"
+                            style={{ backgroundColor: "var(--accent-soft)", color: "var(--accent)" }}
+                          >
+                            {t("calendar.personal")}
+                          </span>
+                        </div>
+                        <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>
+                          {event.time ? `${event.time} · ` : ""}
+                          {event.location ?? ""}
+                        </div>
+                        {event.notes && (
+                          <div className="mt-0.5 line-clamp-2 text-[9px]" style={{ color: "var(--text-dim)" }}>
+                            {event.notes}
+                          </div>
+                        )}
                       </div>
-                    )}
-                    {address && !isMajorEvent(event) && (
-                      <div
-                        className="mt-0.5 line-clamp-2 text-[9px]"
-                        style={{ color: "var(--text-dim)" }}
-                        title={address}
+                      <button
+                        type="button"
+                        className="btn-ghost h-7 w-7 shrink-0 p-0"
+                        onClick={() => removeCustomEvent(event.id)}
+                        title={t("calendar.delete_event")}
+                        aria-label={t("calendar.delete_event")}
                       >
-                        {address}
-                      </div>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-ghost h-7 w-7 shrink-0 p-0"
-                    onClick={() =>
-                      downloadIcs(
-                        event,
-                        sourceLabel(event.source),
-                        i18n.language,
-                      )
-                    }
-                    title={t("upcoming.export_ics")}
-                    aria-label={t("upcoming.export_ics")}
-                  >
-                    <CalendarPlus size={13} />
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+                        <Trash2 size={12} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </div>
         )}
       </div>
 

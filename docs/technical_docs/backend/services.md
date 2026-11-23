@@ -54,6 +54,20 @@ Genera el `MetaSnapshot` (Top Pokémon, top items/moves/abilities/tera, common m
 - Suma el calendario oficial de Championship Series con ventana de 365 días: LAIC, NAIC, EUIC, Regionales, Especiales y Worlds. Los majors son globales y no se ocultan con el filtro país/ciudad; solo los eventos locales lo respetan.
 - Enriquece en paralelo los majors dentro de 120 días con premio en efectivo y campeón/resultados; los más lejanos se muestran con fecha y sede sin bloquear la carga.
 - Ordena por fecha/hora/nombre, deduplica por id y recorta a 200.
+- `official_standings(url, start, size)` — standings Masters del endpoint oficial; el feed no incluye decklists.
+
+## SyncManager (`sync_service.rs`)
+- Sin dependencias de Tauri: recibe un `SyncEventSink` opcional desde el command.
+- Genera código con alfabeto sin ambigüedades, token de 128 bits y ticket versionado.
+- Servidor HTTP temporal de 300 s, un solo uso, token obligatorio, límite de 8 MiB.
+- Mantiene el estado por sesión y expone `status`, `cancel` y `mark_imported`.
+- Descubrimiento UDP en 47823 como fallback al QR.
+
+## UpdaterService (`updater_service.rs`)
+
+- `check()` lee `latest.json`, compara semver y extrae URL/firma/tamaño/SHA-256.
+- `download_android_apk()` descarga en streaming a `.part`, informa progreso, atiende cancelación y solo renombra tras validar tamaño y SHA-256.
+- El registro de descargas activas vive en el service; el command traduce el progreso a eventos Tauri.
 
 ## Utilidades
 

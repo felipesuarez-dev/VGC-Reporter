@@ -29,6 +29,7 @@ import { ItemDetailModal } from "../info/ItemDetailModal";
 import { AbilityDetailModal } from "../info/AbilityDetailModal";
 import { ExternalLinkDialog } from "./ExternalLinkDialog";
 import { TypeLabModal } from "../ui/TypeLabModal";
+import { QuickTablesWidget } from "../ui/QuickTablesWidget";
 import { CalendarWidget } from "../dashboard/CalendarWidget";
 import { MiniPlayback, PlaybackProvider } from "../playback/PlaybackProvider";
 import { useTypeLabStore } from "../../stores/typeLabStore";
@@ -122,7 +123,7 @@ export function AppShell() {
   return (
     <PlaybackProvider>
     <div
-      className="flex h-screen w-screen flex-col"
+      className="flex h-[100dvh] w-full flex-col overflow-hidden"
       style={{ backgroundColor: "var(--bg)", color: "var(--text)" }}
     >
       {isMobile ? <MobileTopbar /> : <Titlebar />}
@@ -330,7 +331,21 @@ export function AppShell() {
           </div>
         )}
       </aside>
-      <main id="app-main" className="flex-1 overflow-y-auto" style={{ paddingBottom: isMobile ? "env(safe-area-inset-bottom, 0px)" : undefined }}>
+      <main
+        id="app-main"
+        className="min-h-0 flex-1 overflow-y-auto"
+        style={{
+          paddingBottom: isMobile
+            ? "max(env(safe-area-inset-bottom, 0px), 0px)"
+            : undefined,
+          paddingLeft: isMobile
+            ? "env(safe-area-inset-left, 0px)"
+            : undefined,
+          paddingRight: isMobile
+            ? "env(safe-area-inset-right, 0px)"
+            : undefined,
+        }}
+      >
         <div className="mx-auto max-w-7xl px-3 py-4 md:px-6 md:py-6">
           <Outlet />
         </div>
@@ -345,6 +360,7 @@ export function AppShell() {
       <UpdaterModal />
       <ExternalLinkDialog />
       <TypeLabModal />
+      <QuickTablesWidget />
       <CalendarWidget />
       <MiniPlayback />
     </div>

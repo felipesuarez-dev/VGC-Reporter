@@ -2,6 +2,7 @@ import { ExternalLink, Eye, Newspaper, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { PanelLoading } from "../ui/PanelLoading";
 import { ipc } from "../../lib/ipc";
 import { queryKeys } from "../../lib/queryKeys";
 import { formatDate } from "../../lib/formatDate";
@@ -76,11 +77,7 @@ export function RegulationNews({ className = "card", compact = false }: Props) {
         </button>
       </div>
 
-      {news.isLoading && (
-        <p className="text-xs" style={{ color: "var(--text-dim)" }}>
-          {t("common.loading")}
-        </p>
-      )}
+      {news.isLoading && <PanelLoading variant="list" rows={5} compact />}
       {news.isError && (
         <div className="flex flex-col gap-2 text-xs" style={{ color: "var(--danger)" }}>
           <span>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { PanelLoading } from "../ui/PanelLoading";
 import {
   ArrowDownAZ,
   ArrowDownWideNarrow,
@@ -183,9 +184,7 @@ export function RegulationInfoView({
   if (!info) {
     return (
       <section className="card">
-        <p className="text-sm" style={{ color: "var(--text-dim)" }}>
-          {t("common.loading")}
-        </p>
+        <PanelLoading variant="cards" rows={3} />
       </section>
     );
   }
@@ -217,14 +216,7 @@ export function RegulationInfoView({
 
   return (
     <div className="space-y-4">
-      <header
-        className="relative overflow-hidden rounded-xl border p-5"
-        style={{
-          borderColor: "var(--border)",
-          background:
-            "linear-gradient(135deg, color-mix(in srgb, var(--accent-soft) 75%, transparent), transparent 62%)",
-        }}
-      >
+      <header className="card card-hero relative overflow-hidden p-5">
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">

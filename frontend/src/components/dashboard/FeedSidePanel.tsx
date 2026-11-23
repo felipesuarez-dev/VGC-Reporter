@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { CalendarClock, CalendarDays } from "lucide-react";
+import { CalendarClock, CalendarDays, Table2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { RegulationInfo } from "../../lib/types";
+import { useUiStore } from "../../stores/uiStore";
+import { QuickTables } from "../ui/QuickTables";
 import { UpcomingTournamentsSection } from "./UpcomingTournamentsSection";
 import { FeedCalendar } from "./FeedCalendar";
 
-type FeedTab = "upcoming" | "calendar";
+type FeedTab = "upcoming" | "calendar" | "tables";
 
 interface Props {
   info: RegulationInfo;
@@ -18,10 +20,12 @@ interface Props {
  */
 export function FeedSidePanel({ info }: Props) {
   const { t } = useTranslation();
+  const quickTablesDefaultTab = useUiStore((s) => s.quickTablesDefaultTab);
   const [tab, setTab] = useState<FeedTab>("upcoming");
   const tabs: { id: FeedTab; label: string; icon: typeof CalendarClock }[] = [
     { id: "upcoming", label: t("feed.tab_upcoming"), icon: CalendarClock },
     { id: "calendar", label: t("feed.tab_calendar"), icon: CalendarDays },
+    { id: "tables", label: t("feed.tab_tables"), icon: Table2 },
   ];
 
   return (
@@ -66,6 +70,9 @@ export function FeedSidePanel({ info }: Props) {
           />
         )}
         {tab === "calendar" && <FeedCalendar info={info} />}
+        {tab === "tables" && (
+          <QuickTables embedded defaultTab={quickTablesDefaultTab} />
+        )}
       </div>
     </section>
   );

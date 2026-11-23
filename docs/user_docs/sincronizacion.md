@@ -4,18 +4,22 @@ Ajustes → **Sincronización** pasa equipos, configuración y preferencias entr
 
 ## Enviar
 
-1. Pulsa **Enviar** y luego **Mostrar QR para el otro dispositivo**.
-2. Se crea una sesión temporal de 2 minutos con un QR y un código de 8 caracteres.
+1. Pulsa **Enviar todo**. La app muestra cuántos equipos, ajustes y preferencias se van a transferir.
+2. Se crea una sesión de **5 minutos** con un QR y un código de 8 caracteres.
 3. En el otro dispositivo, escanea el QR (Android) o escribe el código (desktop).
 
-El QR **no contiene tus equipos**: solo abre una conexión temporal. Los datos viajan directamente por tu Wi-Fi.
+El QR es un **ticket de emparejamiento**, no tus equipos: solo abre una conexión temporal. Los datos viajan directamente por tu Wi-Fi y la sesión se cierra después de la primera transferencia.
 
 ## Recibir
 
 1. Pulsa **Recibir**.
-2. En Android, escanea el QR con la cámara.
-3. En desktop, escribe el **código de 8 caracteres** que muestra el otro dispositivo y pulsa **Conectar**.
-4. Si el QR o el código no funcionan, abre **Si el QR o el código no funcionan** y pega el enlace temporal.
+2. En Android, la app pide permiso de cámara antes de abrir el escáner a pantalla completa. Si el permiso está bloqueado, **Abrir Ajustes** te lleva a la pantalla de permisos de Android.
+3. En desktop, escribe el **código de 8 caracteres** y pulsa **Conectar**.
+4. Si el QR, la cámara o el código no funcionan, abre **Si el QR o el código no funcionan** y pega el ticket o la URL temporal.
+
+## Estados
+
+La sesión muestra: **Esperando → Conectado → Transfiriendo → Recibido → Importado**, además de **Expirado**, **Cancelado** o **Error**. El contador indica cuánto queda y **Cancelar sesión** cierra el servidor temporal.
 
 ## Conflictos
 
@@ -29,6 +33,7 @@ Nunca se sobrescribe nada sin que elijas una de esas opciones.
 
 ## Notas
 
-- Los equipos viajan con su modo Clásico/Champions y sus stats convertidos.
-- La sesión caduca en 2 minutos y solo sirve una vez.
-- Si la red bloquea la conexión (Wi-Fi de invitados o aislamiento de clientes), usa una red sin aislamiento o el enlace avanzado.
+- Los equipos viajan con su modo Showdown/Champions y sus stats convertidos.
+- La sesión caduca en 5 minutos y solo sirve una vez.
+- Si la red bloquea la conexión (Wi-Fi de invitados o aislamiento de clientes), usa una red sin aislamiento o el ticket/URL avanzada.
+- El token de la sesión es obligatorio; un código correcto con token incorrecto no entrega datos.

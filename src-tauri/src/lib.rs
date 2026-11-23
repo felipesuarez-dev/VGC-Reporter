@@ -2,6 +2,7 @@
 //! PumaSoft © 2026
 
 pub mod adapters;
+mod android_installer;
 pub mod commands;
 pub mod config;
 pub mod domain;
@@ -57,6 +58,7 @@ pub fn run() {
     }
 
     tauri::Builder::default()
+        .plugin(android_installer::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
@@ -128,11 +130,16 @@ pub fn run() {
             commands::translations::get_translation_table,
             commands::upcoming::list_upcoming_tournaments,
             commands::upcoming::get_official_event_details,
+            commands::upcoming::get_official_tournament_standings,
             commands::pikalytics::get_pikalytics_entry,
             commands::trending::get_trending,
             commands::updater::check_for_app_update,
             commands::updater::download_android_update,
+            commands::updater::cancel_android_update,
+            commands::updater::install_android_update,
             commands::sync::sync_start_send,
+            commands::sync::sync_session_status,
+            commands::sync::sync_cancel,
             commands::sync::sync_fetch,
             commands::sync::sync_fetch_by_code,
             commands::sync::sync_import,

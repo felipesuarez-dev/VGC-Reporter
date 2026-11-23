@@ -4,6 +4,11 @@ export interface AvailableUpdate {
   version: string;
   notes: string | null;
   downloadUrl: string | null;
+  size?: number | null;
+  sha256?: string | null;
+  signature?: string | null;
+  desktopUrl?: string | null;
+  desktopSignature?: string | null;
 }
 
 interface UpdaterState {

@@ -37,6 +37,16 @@ jobs:
           gh release download "$TAG" --pattern '*.sig' --dir /tmp/sigs --skip-existing
           ls -la /tmp/sigs/
 
+      - name: Download the Android APK for size/SHA-256
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -e
+          mkdir -p /tmp/assets
+          gh release download "$TAG" --pattern '*_android.apk' --dir /tmp/assets --skip-existing || true
+          ls -la /tmp/assets/
+
       - name: Fetch release body
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -52,6 +62,7 @@ jobs:
             --tag "$TAG" \
             --body-file /tmp/release-body.md \
             --repo-url "https://github.com/${{ github.repository }}" \
+            --assets-dir /tmp/assets \
             --out /tmp/latest.json
           echo "--- generated latest.json ---"
           cat /tmp/latest.json

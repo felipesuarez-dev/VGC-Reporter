@@ -55,7 +55,9 @@ Handlers `#[tauri::command]` en `src-tauri/src/commands/`. Cada uno extrae `Stat
 - `set_setting(key, value) -> ()` — `SettingsRepo::set`.
 
 ### `upcoming.rs`
-- `list_upcoming_tournaments(country?) -> Vec<UpcomingTournament>` - `country` es un ISO de 2 letras o `None` para todos los países. Mezcla Limitless online + Pokedata presencial + majors oficiales de Championships (estos últimos globales, con `end_date`, `tier`, `prize_pool` y enlace a resultados).
+- `list_upcoming_tournaments(country?) -> Vec<UpcomingTournament>` - `country` es un ISO de 2 letras o `None` para todos los países. Mezcla Limitless online + Pokedata presencial + majors oficiales de Championships (estos últimos globales, con `end_date`, `tier`, `prize_pool`, campeón si ya existe y enlace a resultados).
+- `get_official_event_details(url) -> OfficialEventDetails` — datos best-effort de la página oficial.
+- `get_official_tournament_standings(url, start?, size?) -> OfficialStandingsPage` — standings Masters desde `results.json`; sin decklists (el feed oficial no las publica).
 
 ## Registro
 
@@ -65,18 +67,16 @@ Todos los commands se registran en `lib.rs` dentro de `tauri::generate_handler![
 
 El tipo de retorno **debe** ser `Result<T, AppError>` para que el frontend reciba `{ kind, message }`.
 
-### sync.rs
-- `sync_start_send(ui_json) -> SyncSession` - crea un servidor LAN temporal y devuelve QR/URL/código.
-- `sync_fetch(url) -> SyncBundle` - descarga y valida un bundle por Rust/reqwest.
-- `sync_import(bundle) -> SyncImportResult` - importa equipos y ajustes de la whitelist.
+### `sync.rs`
+- `sync_start_send(ui_json) -> SyncSession` — crea la sesión LAN de 300 s y devuelve ticket versionado, URL legacy, expiración y contadores.
+- `sync_session_status(code) -> SyncSessionStatus` — estado actual (`waiting`, `connected`, `transferring`, `received`, `imported`, `expired`, `cancelled`, `error`).
+- `sync_cancel(code) -> SyncSessionStatus` — cierra el servidor temporal.
+- `sync_fetch(ticket) -> SyncBundle` — acepta ticket `vgcreporter://sync?...` o URL HTTP legacy; valida token, schema y límite de 8 MiB.
+- `sync_fetch_by_code(code) -> SyncBundle` — descubrimiento UDP + descarga.
+- `sync_import(bundle, code?) -> SyncImportResult` — valida antes de escribir, importa equipos/ajustes whitelist y marca la sesión como importada.
 
-### updater.rs
-- `check_for_app_update() -> Option<UpdateInfo>`.
-- `download_android_update(url) -> String` - descarga el APK al cache para el instalador del sistema.
-
-
-### sync.rs (0.6.0)
-- `sync_start_send(ui_json) -> SyncSession`: crea un servidor HTTP temporal de 2 minutos, devuelve código de 8, URL con token y lanza un responder UDP en el puerto 47823.
-- `sync_fetch(url) -> SyncBundle`: descarga y valida el bundle por Rust/reqwest (timeout 10s, máximo 2 MB).
-- `sync_fetch_by_code(code) -> SyncBundle`: descubre la URL por broadcast UDP y luego descarga el bundle. Útil en desktop, que no puede escanear el QR del móvil.
-- `sync_import(bundle) -> SyncImportResult`: valida todos los equipos antes de escribir, importa equipos y solo las claves de settings de la whitelist. El frontend decide renombrar/reemplazar/omitir conflictos antes de llamarlo.
+### `updater.rs`
+- `check_for_app_update() -> Option<UpdateInfo>` — incluye URL, tamaño, SHA-256 y firma del APK Android.
+- `download_android_update(request_id, url, expected_size, expected_sha256) -> String` — descarga streaming con evento `android-update-progress`; valida tamaño y SHA-256.
+- `cancel_android_update(request_id) -> bool` — cancela la descarga en curso.
+- `install_android_update(path)` — valida la ruta de caché y lanza el plugin Android (FileProvider + Intent).

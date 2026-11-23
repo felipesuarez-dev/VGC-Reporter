@@ -31,38 +31,48 @@ VGC Reporter es la herramienta que quería mientras construía equipos para Cham
 ## Qué trae
 
 - **Panel Principal** con tres vistas: **Novedades**, **Métricas** y **Regulación**.
-- **Aprender**: guías competitivas, práctica diaria, equipos iniciales, amenazas del meta, glosario y herramientas.
-- **Constructor Clásico y Champions**: EVs/IVs o 66 Stat Points con conversión automática al cambiar de modo.
+- **Aprender 2.0**: 12 guías, práctica de 10 preguntas/día, trivia, glosario de 80+ términos, 11 arquetipos de cores e insights con muestra y confianza.
+- **Constructor Champions y Showdown**: 66 Stat Points o EVs/IVs con conversión automática al cambiar de modo.
 - **Top Equipos** de Labmaus, Limitless y la comunidad de PokéBase.
-- **En Vivo** con hasta 9 TVs en la Vitrina, últimas transmisiones y control por stream.
-- **Tabla de tipos rápida** con `Ctrl+T`.
-- **Sincronización LAN** entre desktop y Android por QR y código.
+- **En Vivo** con hasta 9 TVs en la Vitrina, últimas transmisiones etiquetadas como no-live y control por stream.
+- **Tablas rápidas** de Tipos y Naturalezas con selección, widget panel/flotante y modo landscape.
+- **Sincronización LAN** entre desktop y Android por QR/ticket y código, con estados, expiración y cierre tras una transferencia.
+- **Updater Android interno** con progreso, cancelación, SHA-256/firma y FileProvider.
+- **Torneos oficiales** con modal de resultados/standings, calendario con hoy y agrupación por categoría.
 - **Offline-friendly**: SQLite para caché y equipos, todas las llamadas de red en Rust.
 
 ## Capturas
 
 <div align="center">
-  <img src="assets/screen-dashboard.png" alt="Panel Principal con métricas" width="46%" />
-  <img src="assets/screen-feed.png" alt="Novedades con torneos y noticias" width="46%" />
+  <img src="assets/screen-app-0.6.2.png" alt="Panel Principal con Novedades, Métricas y Regulación" width="92%" />
   <br/>
-  <img src="assets/screen-topteams.png" alt="Top Equipos con filtros" width="46%" />
-  <img src="assets/screen-builder.png" alt="Constructor Champions" width="46%" />
+  <img src="assets/screen-feed-0.6.2.png" alt="Novedades con regulación, directos y torneos" width="46%" />
+  <img src="assets/screen-recent-tournaments-0.6.2.png" alt="Torneos recientes con grupos colapsables" width="46%" />
   <br/>
-  <img src="assets/screen-regulation.png" alt="Regulación y objetos permitidos" width="46%" />
+  <img src="assets/screen-official-modal-0.6.2.png" alt="Modal de torneo oficial con standings" width="46%" />
+  <img src="assets/screen-calendar-0.6.2.png" alt="Calendario con el día actual marcado" width="46%" />
   <br/>
-  <img src="assets/screen-official-events.png" alt="Campeonatos oficiales y torneos de comunidad con badges" width="92%" />
+  <img src="assets/screen-tables-landscape-0.6.2.png" alt="Tablas rápidas en modo landscape" width="46%" />
+  <img src="assets/screen-learn-0.6.2.png" alt="Aprender 2.0 con guías y práctica" width="46%" />
   <br/>
-  <img src="assets/screen-live-wall.png" alt="Vitrina TV con 9 directos" width="92%" />
+  <img src="assets/screen-glossary-modal-0.6.2.png" alt="Glosario competitivo con buscador" width="46%" />
+  <img src="assets/screen-treemap-0.6.2.png" alt="Treemap de uso del meta" width="46%" />
+  <br/>
+  <img src="assets/screen-sync-0.6.2.png" alt="Sincronización LAN con QR y código" width="46%" />
+  <img src="assets/screen-qr-0.6.2.png" alt="QR de sincronización y código de 8 caracteres" width="46%" />
+  <br/>
+  <img src="assets/screen-settings-0.6.2.png" alt="Ajustes generales y widgets" width="46%" />
+  <img src="assets/screen-mobile-navbar-0.6.2.png" alt="Navbar móvil con atrás, adelante y título" width="30%" />
 </div>
 
 ## Descarga
 
-Instaladores de **`v0.6.1.20261122-beta`**:
+Instaladores de **`v0.6.2.20261122-beta`**:
 
 | Plataforma | Instalador | Notas |
 |---|---|---|
-| Windows 10/11 | `VGC.Reporter_0.6.1_x64_en-US.msi` | MSI sin firma Authenticode; SmartScreen → Más información → Ejecutar de todas formas |
-| Android 7+ (arm64) | `VGC.Reporter_v0.6.1.20261122-beta_android.apk` | Sideload: activa “Instalar apps desconocidas” |
+| Windows 10/11 | `VGC.Reporter_0.6.2_x64_en-US.msi` | MSI sin firma Authenticode; SmartScreen → Más información → Ejecutar de todas formas |
+| Android 7+ (arm64) | `VGC.Reporter_v0.6.2.20261122-beta_android.apk` | Sideload o updater interno; activa “Instalar apps desconocidas” |
 
 **[Descargar desde el último release de GitHub](https://github.com/felipesuarez-dev/VGC-Reporter/releases/latest)**
 
@@ -82,16 +92,21 @@ bun run tauri:dev
 | Área | Qué hace |
 |---|---|
 | **Panel Principal** | Novedades (inicio), Métricas y Regulación. Selector dinámico de regulación/temporada, rango de fechas compartido, drag & drop de paneles en las tres vistas (con subir/bajar como alternativa), colapsables y layouts Separados/Juntos. |
-| **Métricas** | Top Pokémon en barras, grid, treemap con sprites y tooltip, o tiers. Top objetos/movimientos/habilidades con los Pokémon que más los usan. Trending, torneos recientes separados en **campeonatos oficiales** y **comunidad Limitless**, cada uno con su badge, y próximos eventos. |
+| **Métricas** | Top Pokémon en barras, grid, treemap con foreignObject/ellipsis y tooltip, o tiers. Top objetos/movimientos/habilidades con los Pokémon que más los usan y próximos eventos. |
 | **Regulación** | Roster elegible, Megas, objetos permitidos con búsqueda, sprites, descripciones y porcentaje del total de equipos. Procedencia y confianza de cada fuente. |
-| **Novedades** | Resumen de temporada, muro de directos, torneos + calendario y noticias oficiales. Los paneles se arrastran, agrupan y colapsan; el layout se recuerda. |
-| **En Vivo** | Pantallas de YouTube (YukS, Play! Pokémon, Wolfey, Cybertron, James Baek, PokeAlex, Moxie2D, Pokémon Champions, Sekiam, IRNemesis…). Hasta 9 en Vitrina 3×3, últimas transmisiones reales, botón de detener por stream y ojo para ocultar sin recargar los demás. |
-| **Próximos torneos** | Pestañas **Oficiales** (Play! Pokémon presencial + campeonatos de la temporada) y **Comunidad Limitless** (online, no oficiales). Los oficiales incluyen **LAIC, NAIC, EUIC, Regionales, Especiales y Worlds** con badge de nivel, rango de fechas, premio en efectivo cuando la fuente lo publica y `.ics` multi-día. País/ciudad con búsqueda, favorito, dirección completa, precio, inscripción y mapa; los majors no se ocultan por el filtro local. Calendario con días de campeonato destacados. |
+| **Novedades** | Cinco paneles: resumen de temporada, muro de directos, torneos + calendario + tablas, **torneos recientes** y noticias oficiales. Cada panel carga con su propio skeleton; se arrastran, agrupan y colapsan, y el layout se recuerda. |
+| **En Vivo** | Pantallas de YouTube (YukS, Play! Pokémon, Wolfey, Cybertron, James Baek, PokeAlex, Moxie2D, Pokémon Champions, Sekiam, IRNemesis…). Hasta 9 en Vitrina 3×3. Los canales offline muestran su **última transmisión** con badge **No está en vivo**, incluso si están ocultos con el ojo. |
+| **Próximos torneos** | Pestañas **Oficiales** (Play! Pokémon presencial + campeonatos de la temporada) y **Comunidad Limitless** (online, no oficiales). Los oficiales incluyen **LAIC, NAIC, EUIC, Regionales, Especiales y Worlds** con badge de nivel, rango de fechas, premio en efectivo, campeón si ya hay resultados y `.ics` multi-día. País/ciudad con búsqueda, favorito, dirección completa, precio, inscripción y mapa; los majors no se ocultan por el filtro local. Los oficiales pasados abren un **modal interno** con standings. |
+| **Torneos recientes** | Panel propio en Novedades. Oficiales con modal de resumen, fecha, sede, premio, campeón, standings oficiales y “Lista no publicada”; comunidad con standings/decklists y “Ver clasificación”. |
+| **Calendario** | Día actual siempre marcado, dots por categoría, agrupación **Oficiales / Comunidad / Personales**, botón Hoy, filtro de ciudad solo para oficiales locales, multi-día, zona horaria y `.ics`. |
 | **Noticias** | Avisos oficiales paginados, preview dentro de la app, skeleton/shimmer y “Abrir en el navegador”. |
-| **Aprender** | Progreso, guías, práctica diaria de tipos/velocidad/lead, trivia de reglas, **cores reales del meta con “Probar core”**, más equipos iniciales con “Ver más”, glosario y herramientas. Ya no repite el tablero de amenazas de otras vistas. |
-| **Tablas rápidas** | `Ctrl+T` o botón en la barra: matriz de tipos 18×18, cobertura de 1-2 tipos, equipo actual y **tabla de naturalezas**. En la Pokédex quedan fijas y en Ajustes se configuran como widget. |
+| **Aprender** | Progreso, 12 guías, práctica de **10 preguntas/día** (tipos, velocidad, lead, naturaleza, Stat Points, cláusulas), trivia ampliada, **11 arquetipos con “Probar core”**, equipos iniciales, glosario de 80+ términos con índice y 6 insights con muestra/confianza. |
+| **Tablas rápidas** | Widget panel (pestaña en Novedades), flotante o card colapsable en Pokédex. Tipos con selección atacante/defensor; naturalezas en grid × stats con +10%/−10%; modo **Pantalla grande / Landscape**. |
 | **Top Equipos** | Equipos de torneo de Labmaus/Limitless y equipos de comunidad/torneo de PokéBase. Filtros por rango de fechas, fuente, país, jugador y Pokémon. |
-| **Constructor** | Clásico (EVs/IVs) y Champions (66 SP, 32 por stat, IVs 31, nivel 50, cláusulas de especie/objeto). Conversión EV↔SP al cambiar de modo. Import/export Showdown. |
+| **Constructor** | **Champions** (66 SP, 32 por stat, IVs 31, nivel 50, cláusulas) y **Showdown** (EVs/IVs). Conversión EV↔SP al cambiar de modo. Import/export Showdown. El modo clásico se conserva internamente para equipos antiguos. |
+| **Sincronización** | QR versionado + código de 8, sesión de 5 minutos, token obligatorio, un solo uso, estados visibles, preview “Enviar todo”, conflictos renombrar/reemplazar/omitir y fallback manual. |
+| **Updater** | Desktop con diagnóstico y fallback MSI. Android descarga interna con progreso/cancelación, verificación de tamaño/SHA-256/firma y FileProvider; “Abrir en GitHub” queda como opción secundaria. |
+| **Móvil** | Navbar con atrás/adelante, menús de tema/idioma compartidos con estrella, `100dvh` + safe-area en landscape y tablas táctiles. |
 | **Mis equipos** | Persistencia SQLite, renombrar, duplicar, eliminar, importar y exportar varios equipos. |
 | **Calculadora** | `@smogon/calc` Gen 9 con buscadores para todos los campos. |
 | **Pokédex** | Orden por generación/alfabeto/uso, ficha con sets, stats, tipos, matchups y Pikalytics. |
@@ -104,11 +119,12 @@ La página **Aprender** no es un muro de texto. Reúne:
 
 - **Progreso** visual de guías leídas.
 - **Equipos iniciales** desde torneos recientes y PokéBase, con “Ver más” y “Cargar en constructor”.
-- **Práctica diaria**: tipos, velocidad y lead, más **trivia de reglas** y racha.
-- **Cores reales del meta**: tríos con sprites, objetos, porcentaje de uso y **Probar core** en el constructor.
-- **Datos que importan**: mejor win rate con muestra, speed control y objeto más adoptado.
-- **Guías** de construcción, cores, Stat Points, speed control, lectura del meta y errores comunes.
-- **Glosario** buscable.
+- **Práctica diaria**: **10 preguntas** de tipos, velocidad, leads, naturalezas, Stat Points y cláusulas, con explicación obligatoria, puntaje y racha.
+- **Trivia de reglas** diaria con explicación.
+- **Cores reales del meta** y **11 arquetipos** con roles, condición de victoria, cómo se juega, variantes y **Probar core** desde datos del meta actual.
+- **Datos que importan**: mejor win rate con muestra, mejor top cut, amenaza emergente, respuesta anti-meta, speed control y objeto clave, con muestra/fuentes/confianza.
+- **12 guías** de 6 secciones con ejemplos, errores, checklist y ejercicio.
+- **Glosario** de 80+ términos, 6 categorías, buscador, chips e índice alfabético en modal.
 - **Herramientas**: tablas rápidas, constructor, calculadora, regulación, Top Equipos y calendario.
 
 ## Fuentes de datos
@@ -192,7 +208,7 @@ Calidad antes de release:
 
 ```bash
 bun scripts/check-locales.ts
-bun scripts/bump-version.ts --check --tag v0.6.1.20261122-beta
+bun scripts/bump-version.ts --check --tag v0.6.2.20261122-beta
 cd src-tauri && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
 bun run --cwd frontend build && bun run --cwd frontend test
 ```
@@ -214,7 +230,7 @@ bun run --cwd frontend build && bun run --cwd frontend test
 
 MIT. VGC Reporter es un proyecto no oficial y sin fines de lucro. No está afiliado a Nintendo, The Pokémon Company, Game Freak ni Creatures Inc. Pokémon y sus nombres son marcas de sus respectivos dueños. Consulta `DISCLAIMER.txt`.
 
-[version-badge]: https://img.shields.io/badge/version-0.6.1.20261122--beta-8b5cf6
+[version-badge]: https://img.shields.io/badge/version-0.6.2.20261122--beta-8b5cf6
 [version-link]: https://github.com/felipesuarez-dev/VGC-Reporter/releases
 [beta-badge]: https://img.shields.io/badge/status-beta-f59e0b
 [tauri-badge]: https://img.shields.io/badge/Tauri-2-24C8DB

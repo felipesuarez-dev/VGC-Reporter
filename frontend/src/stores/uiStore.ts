@@ -69,6 +69,10 @@ interface UiState {
   calendarPosition: { x: number; y: number } | null;
   pokedexQuickTables: boolean;
   quickTablesDefaultTab: "types" | "natures";
+  quickTablesMode: "panel" | "floating";
+  quickTablesPlacement: "corner" | "free";
+  quickTablesCorner: "bottom-right" | "bottom-left";
+  quickTablesPosition: { x: number; y: number } | null;
   setTheme: (theme: Theme) => void;
   setTimeZone: (timeZone: string) => void;
   setHomeCountry: (country: string) => void;
@@ -89,6 +93,10 @@ interface UiState {
   setCalendarPosition: (position: { x: number; y: number } | null) => void;
   setPokedexQuickTables: (enabled: boolean) => void;
   setQuickTablesDefaultTab: (tab: "types" | "natures") => void;
+  setQuickTablesMode: (mode: "panel" | "floating") => void;
+  setQuickTablesPlacement: (placement: "corner" | "free") => void;
+  setQuickTablesCorner: (corner: "bottom-right" | "bottom-left") => void;
+  setQuickTablesPosition: (position: { x: number; y: number } | null) => void;
 }
 
 export const useUiStore = create<UiState>()(
@@ -112,6 +120,10 @@ export const useUiStore = create<UiState>()(
       calendarPosition: null,
       pokedexQuickTables: true,
       quickTablesDefaultTab: "types",
+      quickTablesMode: "panel",
+      quickTablesPlacement: "corner",
+      quickTablesCorner: "bottom-right",
+      quickTablesPosition: null,
       setTheme: (theme) => set({ theme }),
       setTimeZone: (timeZone) => set({ timeZone }),
       setHomeCountry: (homeCountry) => set({ homeCountry }),
@@ -170,10 +182,16 @@ export const useUiStore = create<UiState>()(
       setPokedexQuickTables: (pokedexQuickTables) => set({ pokedexQuickTables }),
       setQuickTablesDefaultTab: (quickTablesDefaultTab) =>
         set({ quickTablesDefaultTab }),
+      setQuickTablesMode: (quickTablesMode) => set({ quickTablesMode }),
+      setQuickTablesPlacement: (quickTablesPlacement) =>
+        set({ quickTablesPlacement }),
+      setQuickTablesCorner: (quickTablesCorner) => set({ quickTablesCorner }),
+      setQuickTablesPosition: (quickTablesPosition) =>
+        set({ quickTablesPosition }),
     }),
     {
       name: "vgc-ui",
-      version: 14,
+      version: 15,
       migrate: (persisted: unknown, version: number) => {
         const prior = (persisted ?? {}) as Partial<UiState> & { theme?: string };
         let theme: Theme;
@@ -265,6 +283,24 @@ export const useUiStore = create<UiState>()(
             version >= 14 && prior.quickTablesDefaultTab === "natures"
               ? "natures"
               : "types",
+          quickTablesMode:
+            version >= 15 && prior.quickTablesMode === "floating"
+              ? "floating"
+              : "panel",
+          quickTablesPlacement:
+            version >= 15 && prior.quickTablesPlacement === "free"
+              ? "free"
+              : "corner",
+          quickTablesCorner:
+            version >= 15 && prior.quickTablesCorner === "bottom-left"
+              ? "bottom-left"
+              : "bottom-right",
+          quickTablesPosition:
+            version >= 15 &&
+            prior.quickTablesPosition &&
+            typeof prior.quickTablesPosition === "object"
+              ? (prior.quickTablesPosition as { x: number; y: number })
+              : null,
         } as UiState;
       },
     },

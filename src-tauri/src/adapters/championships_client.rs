@@ -1,5 +1,6 @@
 use crate::adapters::HttpClient;
 use crate::config;
+use crate::domain::champions::{OfficialStanding, OfficialStandingsPage};
 use crate::error::AppError;
 use chrono::{Datelike, NaiveDate};
 use regex::Regex;
@@ -110,18 +111,7 @@ impl ChampionshipsClient {
     /// Final Masters VGC winner and player count from the official results
     /// endpoint. Returns `None` while an event has no published results.
     pub async fn winner(&self, event_url: &str) -> Result<Option<ChampionshipWinner>, AppError> {
-        let path = event_url
-            .strip_prefix(BASE)
-            .filter(|path| path.starts_with('/'))
-            .unwrap_or(event_url);
-        let url = format!(
-            "{RESULTS_API}?game=vg&division=masters&locale=en-us&url={}&start=0&size=5",
-            urlencoding::encode(path)
-        );
-        let response: ResultsResponse = self
-            .http
-            .get_json(&url, config::TTL_OFFICIAL_MAJOR_DETAIL)
-            .await?;
+        let response = self.results(event_url, 0, 5).await?;
         let player = response
             .players
             .iter()
@@ -139,6 +129,37 @@ impl ChampionshipsClient {
             country,
             players: response.total_count,
         }))
+    }
+
+    /// Official Masters standings. The official endpoint publishes placement
+    /// and match record only; decklists are not part of this feed.
+    pub async fn standings(
+        &self,
+        event_url: &str,
+        start: u32,
+        size: u32,
+    ) -> Result<OfficialStandingsPage, AppError> {
+        let response = self.results(event_url, start, size.clamp(1, 128)).await?;
+        Ok(official_standings_from_response(response, start, size))
+    }
+
+    async fn results(
+        &self,
+        event_url: &str,
+        start: u32,
+        size: u32,
+    ) -> Result<ResultsResponse, AppError> {
+        let path = event_url
+            .strip_prefix(BASE)
+            .filter(|path| path.starts_with('/'))
+            .unwrap_or(event_url);
+        let url = format!(
+            "{RESULTS_API}?game=vg&division=masters&locale=en-us&url={}&start={start}&size={size}",
+            urlencoding::encode(path)
+        );
+        self.http
+            .get_json(&url, config::TTL_OFFICIAL_MAJOR_DETAIL)
+            .await
     }
 
     /// Enriches a calendar item with the data that lives on the event page:
@@ -263,6 +284,51 @@ struct ResultPlayer {
     place: Option<u32>,
     #[serde(rename = "display_name", default)]
     display_name: Option<String>,
+    #[serde(default)]
+    win: Option<u32>,
+    #[serde(default)]
+    loss: Option<u32>,
+    #[serde(default)]
+    tie: Option<u32>,
+}
+
+fn official_standings_from_response(
+    response: ResultsResponse,
+    start: u32,
+    size: u32,
+) -> OfficialStandingsPage {
+    let standings = response
+        .players
+        .iter()
+        .filter_map(|player| {
+            let display_name = player.display_name.as_deref()?.trim();
+            if display_name.is_empty() {
+                return None;
+            }
+            let (player_name, country) = split_country(display_name);
+            let wins = player.win.unwrap_or(0);
+            let losses = player.loss.unwrap_or(0);
+            let ties = player.tie.unwrap_or(0);
+            let record = (wins + losses + ties > 0).then(|| format!("{wins}-{losses}-{ties}"));
+            Some(OfficialStanding {
+                place: player.place,
+                player_name,
+                country,
+                wins,
+                losses,
+                ties,
+                record,
+            })
+        })
+        .collect::<Vec<_>>();
+    OfficialStandingsPage {
+        results_available: !standings.is_empty(),
+        decklists_available: false,
+        standings,
+        total_count: response.total_count,
+        start,
+        size,
+    }
 }
 
 fn absolute_url(path: &str) -> String {
@@ -288,8 +354,7 @@ fn parse_date_range(
 ) -> Option<(NaiveDate, NaiveDate)> {
     let normalized = display
         .replace('.', " ")
-        .replace('–', "-")
-        .replace('—', "-")
+        .replace(['–', '—'], "-")
         .split_whitespace()
         .collect::<Vec<_>>()
         .join(" ");
@@ -631,6 +696,29 @@ mod tests {
             .into_event(NaiveDate::from_ymd_opt(2026, 11, 22).unwrap())
             .unwrap();
         assert_eq!(mapped.type_code, "special");
+    }
+
+    #[test]
+    fn maps_official_standings_with_records_and_no_decklists() {
+        let response: ResultsResponse = serde_json::from_str(
+            r#"{
+              "totalCount": 517,
+              "players": [
+                {"place": 1, "display_name": "Yuma Kinugawa [JP]", "win": 14, "loss": 2, "tie": 0},
+                {"place": 2, "display_name": "juan salerno [AR]", "win": 13, "loss": 3, "tie": 0}
+              ]
+            }"#,
+        )
+        .unwrap();
+        let page = official_standings_from_response(response, 0, 32);
+        assert!(page.results_available);
+        assert!(!page.decklists_available);
+        assert_eq!(page.total_count, Some(517));
+        assert_eq!(page.standings.len(), 2);
+        assert_eq!(page.standings[0].player_name, "Yuma Kinugawa");
+        assert_eq!(page.standings[0].country.as_deref(), Some("JP"));
+        assert_eq!(page.standings[0].record.as_deref(), Some("14-2-0"));
+        assert_eq!(page.standings[1].wins, 13);
     }
 
     #[test]

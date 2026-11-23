@@ -1,12 +1,13 @@
-import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Command } from "cmdk";
-import { Check, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "../../lib/cn";
 import { ipc } from "../../lib/ipc";
+import { SelectionMenu, type SelectionOption } from "./SelectionMenu";
 
 interface Props {
   variant?: "default" | "titlebar";
+  /** Tighter trigger used by the mobile topbar so controls fit at 360 px. */
+  compact?: boolean;
 }
 
 interface LanguageOption {
@@ -25,30 +26,15 @@ const LANGUAGES: LanguageOption[] = [
 
 function resolveCode(raw: string): string {
   const head = raw.slice(0, 2).toLowerCase();
-  return LANGUAGES.some((l) => l.code === head) ? head : "en";
+  return LANGUAGES.some((language) => language.code === head) ? head : "en";
 }
 
-export function LanguageCombobox({ variant = "default" }: Props) {
-  const { i18n } = useTranslation();
-  const [open, setOpen] = useState(false);
+export function LanguageCombobox({
+  variant = "default",
+  compact = false,
+}: Props) {
+  const { t, i18n } = useTranslation();
   const current = resolveCode(i18n.language);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function onClick(e: MouseEvent) {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("mousedown", onClick);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onClick);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
 
   const change = async (code: string) => {
     await i18n.changeLanguage(code);
@@ -56,82 +42,43 @@ export function LanguageCombobox({ variant = "default" }: Props) {
     try {
       await ipc.setSetting("language", code);
     } catch {
-      /* settings table may not exist on first launch; safe to ignore */
+      // Settings may not exist on first launch; the language still changed.
     }
-    setOpen(false);
   };
 
-  const active = LANGUAGES.find((l) => l.code === current) ?? LANGUAGES[1];
+  const options: SelectionOption[] = LANGUAGES.map((language) => ({
+    id: language.code,
+    label: language.label,
+    keywords: language.code,
+    leading: <span aria-hidden>{language.flag}</span>,
+  }));
+  const active = LANGUAGES.find((language) => language.code === current) ?? LANGUAGES[1];
 
   return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className={cn(
-          "flex items-center gap-1 rounded border uppercase tracking-wider transition-colors hover:bg-[var(--bg-elev-strong)]",
-          variant === "titlebar"
+    <SelectionMenu
+      label={t("settings.language")}
+      trigger={
+        <>
+          <span aria-hidden>{active.flag}</span>
+          <span>{active.code.toUpperCase()}</span>
+          {!compact && <ChevronDown className="h-3 w-3" />}
+        </>
+      }
+      triggerClassName={cn(
+        "rounded border uppercase tracking-wider",
+        compact
+          ? "h-8 min-w-9 justify-center gap-1 px-1 text-[10px]"
+          : variant === "titlebar"
             ? "px-2 py-0.5 text-[10px]"
             : "px-2 py-0.5 text-xs",
-        )}
-        style={{
-          borderColor: "var(--border)",
-          color: "var(--text-muted)",
-        }}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-label="Change language"
-      >
-        <span>{active.flag}</span>
-        <span>{active.code.toUpperCase()}</span>
-        <ChevronDown className="h-3 w-3" />
-      </button>
-      {open && (
-        <div
-          className="absolute right-0 z-50 mt-1 w-44 overflow-hidden rounded-md border shadow-xl"
-          style={{
-            backgroundColor: "var(--bg-elev)",
-            borderColor: "var(--border)",
-          }}
-        >
-          <Command label="Language" loop>
-            <Command.Input
-              placeholder="…"
-              className="w-full border-b bg-transparent px-2 py-1.5 text-xs outline-none"
-              style={{ borderColor: "var(--border)", color: "var(--text)" }}
-            />
-            <Command.List className="max-h-64 overflow-y-auto p-1">
-              <Command.Empty
-                className="px-2 py-2 text-center text-[11px]"
-                style={{ color: "var(--text-dim)" }}
-              >
-                —
-              </Command.Empty>
-              {LANGUAGES.map((lang) => {
-                const selected = lang.code === current;
-                return (
-                  <Command.Item
-                    key={lang.code}
-                    value={`${lang.label} ${lang.code}`}
-                    onSelect={() => change(lang.code)}
-                    className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm data-[selected=true]:bg-[var(--bg-elev-strong)]"
-                    style={{ color: "var(--text)" }}
-                  >
-                    <span>{lang.flag}</span>
-                    <span className="flex-1 truncate">{lang.label}</span>
-                    {selected && (
-                      <Check
-                        className="h-3.5 w-3.5"
-                        style={{ color: "var(--accent)" }}
-                      />
-                    )}
-                  </Command.Item>
-                );
-              })}
-            </Command.List>
-          </Command>
-        </div>
       )}
-    </div>
+      options={options}
+      selectedId={current}
+      onSelect={(code) => void change(code)}
+      searchable
+      searchPlaceholder={`${t("common.search")}…`}
+      openUp={false}
+      widthClass="w-64"
+    />
   );
 }

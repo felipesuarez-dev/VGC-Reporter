@@ -6,7 +6,8 @@ import { ALL_TYPES, canonicalSpeciesId, type PokemonType } from "../../lib/types
 import { natureLabel, statLabel, typeLabel, type StatKey } from "../../lib/labels";
 import {
   NATURE_BOOSTS,
-  naturesForBoost,
+  NATURE_EFFECTS,
+  type NatureEffect,
   type NatureStat,
 } from "../../lib/natures";
 import {
@@ -16,6 +17,7 @@ import {
   weaknessesOf,
 } from "../../lib/typeChart";
 import { useTypeLabStore, type TypeLabTab } from "../../stores/typeLabStore";
+import { treemapTextColor } from "../../lib/treemap";
 import { useTeamBuilder } from "../../stores/teamBuilderStore";
 import { useMoveSummary } from "../../hooks/useMoveCatalog";
 import { useModalBack } from "../../hooks/useModalBack";
@@ -25,8 +27,10 @@ import { TypeBadge } from "../pokemon/TypeBadge";
 import { PokemonSprite } from "../pokemon/PokemonSprite";
 import { cn } from "../../lib/cn";
 
+type ChartType = Exclude<PokemonType, "Stellar">;
+
 const CHART_TYPES = ALL_TYPES.filter(
-  (type): type is Exclude<PokemonType, "Stellar"> => type !== "Stellar",
+  (type): type is ChartType => type !== "Stellar",
 );
 
 const TYPE_COLORS: Record<string, string> = {
@@ -58,11 +62,11 @@ function multiplierLabel(value: number): string {
 }
 
 function multiplierStyle(value: number): { background: string; color: string } {
-  if (value === 0) return { background: "rgba(100,116,139,0.35)", color: "#e2e8f0" };
+  if (value === 0) return { background: "rgba(100,116,139,0.35)", color: "var(--text)" };
   if (value >= 4) return { background: "rgba(185,28,28,0.85)", color: "#fff" };
-  if (value >= 2) return { background: "rgba(220,38,38,0.55)", color: "#fff" };
-  if (value <= 0.25) return { background: "rgba(22,163,74,0.55)", color: "#fff" };
-  if (value <= 0.5) return { background: "rgba(34,197,94,0.3)", color: "#fff" };
+  if (value >= 2) return { background: "rgba(220,38,38,0.55)", color: "var(--text)" };
+  if (value <= 0.25) return { background: "rgba(22,163,74,0.55)", color: "var(--text)" };
+  if (value <= 0.5) return { background: "rgba(34,197,94,0.3)", color: "var(--text)" };
   return { background: "transparent", color: "var(--text-muted)" };
 }
 
@@ -164,68 +168,158 @@ export function TypeLabModal() {
   );
 }
 
-export function TypeChartTable() {
+export function TypeChartTable({ landscape = false }: { landscape?: boolean }) {
   const { t } = useTranslation();
+  const [attacker, setAttacker] = useState<ChartType | null>(null);
+  const [defender, setDefender] = useState<ChartType | null>(null);
+  const value =
+    attacker && defender
+      ? defensiveMultiplier([defender], attacker)
+      : null;
+  const selectCell = (nextAttacker: ChartType, nextDefender: ChartType) => {
+    setAttacker(nextAttacker);
+    setDefender(nextDefender);
+  };
   return (
-    <div className="overflow-auto">
-      <table className="border-collapse text-[10px]">
-        <thead>
-          <tr>
-            <th
-              className="sticky left-0 top-0 z-20 border-b border-r px-2 py-1 text-left"
-              style={{ backgroundColor: "var(--bg-elev-strong)", borderColor: "var(--border)" }}
-            >
-              {t("type_lab.attacker")}
-            </th>
-            {CHART_TYPES.map((type) => (
+    <div className="space-y-3">
+      <div
+        className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-2.5 py-2 text-[11px]"
+        style={{ borderColor: "var(--border)", backgroundColor: "var(--bg)" }}
+        aria-live="polite"
+      >
+        <span style={{ color: "var(--text-muted)" }}>
+          {attacker && defender && value !== null ? (
+            <>
+              <strong style={{ color: "var(--text)" }}>{typeLabel(t, attacker)}</strong>
+              {" → "}
+              <strong style={{ color: "var(--text)" }}>{typeLabel(t, defender)}</strong>
+              {" = "}
+              <span style={{ color: multiplierStyle(value).background, fontWeight: 700 }}>
+                {multiplierLabel(value)}
+              </span>
+            </>
+          ) : attacker ? (
+            t("type_lab.pick_defender", { type: typeLabel(t, attacker) })
+          ) : defender ? (
+            t("type_lab.pick_attacker", { type: typeLabel(t, defender) })
+          ) : (
+            t("type_lab.pick_pair")
+          )}
+        </span>
+        {(attacker || defender) && (
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px]"
+            style={{ color: "var(--text-muted)" }}
+            onClick={() => {
+              setAttacker(null);
+              setDefender(null);
+            }}
+          >
+            <X size={11} />
+            {t("type_lab.clear_selection")}
+          </button>
+        )}
+      </div>
+      <div className={cn("quick-table-scroll", landscape && "quick-table-scroll--landscape")}>
+        <table className={cn("quick-table border-collapse", landscape && "quick-table--landscape")}>
+          <thead>
+            <tr>
               <th
-                key={type}
-                className="sticky top-0 z-10 border-b px-1.5 py-1 text-center font-semibold"
-                style={{
-                  backgroundColor: TYPE_COLORS[type],
-                  borderColor: "var(--border)",
-                  color: "#fff",
-                }}
-                title={typeLabel(t, type)}
+                className="sticky left-0 top-0 z-20 border-b border-r px-2 py-1.5 text-left"
+                style={{ backgroundColor: "var(--bg-elev-strong)", borderColor: "var(--border)" }}
               >
-                {typeLabel(t, type).slice(0, 3)}
+                {t("type_lab.attacker")}
               </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {CHART_TYPES.map((attacker) => (
-            <tr key={attacker}>
-              <th
-                className="sticky left-0 z-10 border-b border-r px-2 py-1 text-left text-[10px] font-semibold"
-                style={{
-                  backgroundColor: TYPE_COLORS[attacker],
-                  borderColor: "var(--border)",
-                  color: "#fff",
-                }}
-                title={typeLabel(t, attacker)}
-              >
-                {typeLabel(t, attacker)}
-              </th>
-              {CHART_TYPES.map((defender) => {
-                const value = defensiveMultiplier([defender], attacker);
-                const style = multiplierStyle(value);
+              {CHART_TYPES.map((type) => {
+                const selected = defender === type;
                 return (
-                  <td
-                    key={defender}
-                    className="border-b px-1 py-1 text-center font-mono tabular-nums"
-                    style={{ borderColor: "var(--border)", ...style }}
-                    title={`${typeLabel(t, attacker)} → ${typeLabel(t, defender)}: ${multiplierLabel(value)}`}
+                  <th
+                    key={type}
+                    className="sticky top-0 z-10 border-b p-0 text-center font-semibold"
+                    style={{
+                      backgroundColor: TYPE_COLORS[type],
+                      borderColor: "var(--border)",
+                      color: treemapTextColor(TYPE_COLORS[type]),
+                    }}
+                    title={typeLabel(t, type)}
                   >
-                    {value === 1 ? "·" : multiplierLabel(value)}
-                  </td>
+                    <button
+                      type="button"
+                      className="h-full min-h-8 w-full px-1.5 py-1 text-[10px] font-semibold"
+                      style={{
+                        boxShadow: selected ? "inset 0 0 0 2px var(--accent)" : undefined,
+                      }}
+                      aria-pressed={selected}
+                      onClick={() => setDefender(selected ? null : type)}
+                    >
+                      {typeLabel(t, type).slice(0, 3)}
+                    </button>
+                  </th>
                 );
               })}
             </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className="mt-3 flex flex-wrap gap-3 text-[10px]" style={{ color: "var(--text-muted)" }}>
+          </thead>
+          <tbody>
+            {CHART_TYPES.map((rowType) => {
+              const rowSelected = attacker === rowType;
+              return (
+                <tr key={rowType}>
+                  <th
+                    className="sticky left-0 z-10 border-b border-r p-0 text-left text-[10px] font-semibold"
+                    style={{
+                      backgroundColor: TYPE_COLORS[rowType],
+                      borderColor: "var(--border)",
+                      color: treemapTextColor(TYPE_COLORS[rowType]),
+                    }}
+                    title={typeLabel(t, rowType)}
+                  >
+                    <button
+                      type="button"
+                      className="h-full w-full px-2 py-1 text-left"
+                      style={{
+                        boxShadow: rowSelected ? "inset 0 0 0 2px var(--accent)" : undefined,
+                      }}
+                      aria-pressed={rowSelected}
+                      onClick={() => setAttacker(rowSelected ? null : rowType)}
+                    >
+                      {typeLabel(t, rowType)}
+                    </button>
+                  </th>
+                  {CHART_TYPES.map((columnType) => {
+                    const cellValue = defensiveMultiplier([columnType], rowType);
+                    const style = multiplierStyle(cellValue);
+                    const selected = rowSelected && defender === columnType;
+                    return (
+                      <td
+                        key={columnType}
+                        className="border-b p-0 text-center"
+                        style={{ borderColor: "var(--border)", ...style }}
+                      >
+                        <button
+                          type="button"
+                          className="h-full min-h-8 w-full px-1 py-1 font-mono text-[10px] tabular-nums"
+                          style={{
+                            boxShadow: selected ? "inset 0 0 0 2px var(--accent)" : undefined,
+                            color: "inherit",
+                          }}
+                          aria-pressed={selected}
+                          aria-label={`${typeLabel(t, rowType)} → ${typeLabel(t, columnType)}: ${multiplierLabel(cellValue)}`}
+                          title={`${typeLabel(t, rowType)} → ${typeLabel(t, columnType)}: ${multiplierLabel(cellValue)}`}
+                          onClick={() => selectCell(rowType, columnType)}
+                        >
+                          {cellValue === 1 ? "·" : multiplierLabel(cellValue)}
+                        </button>
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div className="flex flex-wrap gap-3 text-[10px]" style={{ color: "var(--text-muted)" }}>
         <span>0× {t("type_lab.immune")}</span>
         <span>½× {t("type_lab.resists")}</span>
         <span>2× {t("type_lab.weak")}</span>
@@ -235,25 +329,19 @@ export function TypeChartTable() {
   );
 }
 
-export function NatureTable() {
+export function NatureTable({ landscape = false }: { landscape?: boolean }) {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<NatureStat | "all">("all");
+  const [selected, setSelected] = useState<NatureEffect | null>(null);
   const needle = query.trim().toLowerCase();
-  const groups = [
-    ...NATURE_BOOSTS.map((stat) => ({
-      key: stat as string,
-      stat: stat as NatureStat | null,
-      entries: naturesForBoost(stat),
-    })),
-    { key: "neutral", stat: null, entries: naturesForBoost("neutral") },
-  ].map((group) => ({
-    ...group,
-    entries: group.entries.filter(
-      (entry) =>
-        !needle || natureLabel(t, entry.nature).toLowerCase().includes(needle),
-    ),
-  }));
-  const visible = groups.filter((group) => group.entries.length > 0);
+  const visible = NATURE_EFFECTS.filter((entry) => {
+    if (needle && !natureLabel(t, entry.nature).toLowerCase().includes(needle)) {
+      return false;
+    }
+    if (filter === "all") return true;
+    return entry.up === filter || entry.down === filter;
+  });
 
   return (
     <div className="space-y-3">
@@ -261,93 +349,159 @@ export function NatureTable() {
         <p className="max-w-xl text-[11px]" style={{ color: "var(--text-muted)" }}>
           {t("type_lab.nature_hint")}
         </p>
-        <div className="relative w-full sm:w-64">
-          <Search
-            size={13}
-            className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2"
-            style={{ color: "var(--text-dim)" }}
-          />
-          <input
-            className="input h-8 w-full pl-8 text-xs"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={t("type_lab.nature_search")}
-            aria-label={t("type_lab.nature_search")}
-          />
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <div className="relative min-w-[10rem] flex-1 sm:w-56">
+            <Search
+              size={13}
+              className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2"
+              style={{ color: "var(--text-dim)" }}
+            />
+            <input
+              className="input h-8 w-full pl-8 text-xs"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={t("type_lab.nature_search")}
+              aria-label={t("type_lab.nature_search")}
+            />
+          </div>
+          <select
+            className="input h-8 w-36 text-xs"
+            value={filter}
+            onChange={(event) =>
+              setFilter(event.target.value as NatureStat | "all")
+            }
+            aria-label={t("type_lab.nature_filter")}
+          >
+            <option value="all">{t("type_lab.nature_filter_all")}</option>
+            {NATURE_BOOSTS.map((stat) => (
+              <option key={stat} value={stat}>
+                {statLabel(t, stat as StatKey)}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
+
       <div
-        className="overflow-auto rounded-lg border"
-        style={{ borderColor: "var(--border)" }}
+        className="rounded-lg border px-2.5 py-2 text-[11px]"
+        style={{
+          borderColor: selected ? "var(--accent)" : "var(--border)",
+          backgroundColor: "var(--bg)",
+          color: "var(--text-muted)",
+        }}
+        aria-live="polite"
       >
-        <table className="w-full border-collapse text-[11px]">
+        {selected ? (
+          <span>
+            <strong style={{ color: "var(--text)" }}>
+              {natureLabel(t, selected.nature)}
+            </strong>
+            {": "}
+            {selected.up ? (
+              <>
+                <span style={{ color: "var(--success)" }}>
+                  +10% {statLabel(t, selected.up as StatKey)}
+                </span>
+                {" / "}
+                <span style={{ color: "var(--danger)" }}>
+                  −10% {statLabel(t, selected.down as StatKey)}
+                </span>
+              </>
+            ) : (
+              <span>{t("type_lab.nature_neutral")}</span>
+            )}
+          </span>
+        ) : (
+          t("type_lab.nature_pick")
+        )}
+      </div>
+
+      <div className={cn("quick-table-scroll", landscape && "quick-table-scroll--landscape")}>
+        <table className={cn("quick-table border-collapse text-[11px]", landscape && "quick-table--landscape")}>
           <thead>
             <tr style={{ backgroundColor: "var(--bg-elev-strong)" }}>
               <th
-                className="sticky top-0 border-b px-2.5 py-2 text-left font-semibold"
-                style={{ borderColor: "var(--border)" }}
+                className="sticky left-0 top-0 z-20 border-b border-r px-2.5 py-2 text-left font-semibold"
+                style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-elev-strong)" }}
               >
                 {t("type_lab.nature_name")}
               </th>
-              <th
-                className="sticky top-0 border-b px-2.5 py-2 text-left font-semibold"
-                style={{ borderColor: "var(--border)", color: "var(--success)" }}
-              >
-                +10%
-              </th>
-              <th
-                className="sticky top-0 border-b px-2.5 py-2 text-left font-semibold"
-                style={{ borderColor: "var(--border)", color: "var(--danger)" }}
-              >
-                −10%
-              </th>
+              {NATURE_BOOSTS.map((stat) => (
+                <th
+                  key={stat}
+                  className="sticky top-0 z-10 border-b px-2 py-2 text-center font-semibold"
+                  style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-elev-strong)" }}
+                >
+                  {statLabel(t, stat as StatKey)}
+                </th>
+              ))}
             </tr>
           </thead>
-          {visible.map((group) => (
-            <tbody key={group.key}>
-              <tr>
-                <td
-                  colSpan={3}
-                  className="border-b px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wide"
-                  style={{
-                    borderColor: "var(--border)",
-                    backgroundColor: "var(--accent-soft)",
-                    color: "var(--accent)",
-                  }}
-                >
-                  {group.stat
-                    ? t("type_lab.nature_boost", {
-                        stat: statLabel(t, group.stat as StatKey),
-                      })
-                    : t("type_lab.nature_neutral")}
-                </td>
-              </tr>
-              {group.entries.map((entry) => (
-                <tr key={entry.nature} className="hover:bg-[var(--bg-elev-strong)]">
-                  <td
-                    className="border-b px-2.5 py-1.5 font-medium"
-                    style={{ borderColor: "var(--border)" }}
+          <tbody>
+            {visible.map((entry) => {
+              const isSelected = selected?.nature === entry.nature;
+              return (
+                <tr key={entry.nature}>
+                  <th
+                    className="sticky left-0 z-10 border-b border-r px-2.5 py-1.5 text-left font-medium"
+                    style={{
+                      borderColor: "var(--border)",
+                      backgroundColor: isSelected ? "var(--accent-soft)" : "var(--bg-elev)",
+                      color: isSelected ? "var(--accent)" : "var(--text)",
+                    }}
                   >
-                    {natureLabel(t, entry.nature)}
-                  </td>
-                  <td
-                    className="border-b px-2.5 py-1.5"
-                    style={{ borderColor: "var(--border)", color: "var(--success)" }}
-                  >
-                    {entry.up ? statLabel(t, entry.up) : "—"}
-                  </td>
-                  <td
-                    className="border-b px-2.5 py-1.5"
-                    style={{ borderColor: "var(--border)", color: "var(--danger)" }}
-                  >
-                    {entry.down ? statLabel(t, entry.down) : "—"}
-                  </td>
+                    <button
+                      type="button"
+                      className="w-full text-left"
+                      onClick={() => setSelected(entry)}
+                    >
+                      {natureLabel(t, entry.nature)}
+                    </button>
+                  </th>
+                  {NATURE_BOOSTS.map((stat) => {
+                    const up = entry.up === stat;
+                    const down = entry.down === stat;
+                    return (
+                      <td
+                        key={stat}
+                        className="border-b p-0 text-center"
+                        style={{ borderColor: "var(--border)" }}
+                      >
+                        <button
+                          type="button"
+                          className="h-full min-h-8 w-full px-1.5 py-1 font-mono text-[10px] font-semibold"
+                          style={{
+                            backgroundColor: up
+                              ? "color-mix(in srgb, var(--success) 20%, transparent)"
+                              : down
+                                ? "color-mix(in srgb, var(--danger) 20%, transparent)"
+                                : "transparent",
+                            color: up
+                              ? "var(--success)"
+                              : down
+                                ? "var(--danger)"
+                                : "var(--text-dim)",
+                            boxShadow: isSelected ? "inset 0 0 0 2px var(--accent)" : undefined,
+                          }}
+                          aria-label={`${natureLabel(t, entry.nature)} · ${statLabel(t, stat as StatKey)}: ${
+                            up ? "+10%" : down ? "−10%" : "0%"
+                          }`}
+                          onClick={() => setSelected(entry)}
+                        >
+                          {up ? "+10%" : down ? "−10%" : "·"}
+                        </button>
+                      </td>
+                    );
+                  })}
                 </tr>
-              ))}
-            </tbody>
-          ))}
+              );
+            })}
+          </tbody>
         </table>
       </div>
+      <p className="text-[10px]" style={{ color: "var(--text-dim)" }}>
+        {t("type_lab.nature_hp_note")}
+      </p>
       {visible.length === 0 && (
         <p className="text-xs" style={{ color: "var(--text-dim)" }}>
           {t("type_lab.nature_no_results")}

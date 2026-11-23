@@ -1,3 +1,4 @@
+use crate::domain::champions::OfficialStandingsPage;
 use crate::domain::{OfficialEventDetails, UpcomingTournament};
 use crate::error::AppError;
 use crate::state::AppState;
@@ -19,4 +20,18 @@ pub async fn get_official_event_details(
     url: String,
 ) -> Result<OfficialEventDetails, AppError> {
     state.upcoming.official_details(&url).await
+}
+
+#[tauri::command]
+#[tracing::instrument(skip_all, err(Debug))]
+pub async fn get_official_tournament_standings(
+    state: State<'_, AppState>,
+    url: String,
+    start: Option<u32>,
+    size: Option<u32>,
+) -> Result<OfficialStandingsPage, AppError> {
+    state
+        .upcoming
+        .official_standings(&url, start.unwrap_or(0), size.unwrap_or(32))
+        .await
 }

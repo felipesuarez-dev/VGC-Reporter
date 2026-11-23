@@ -11,7 +11,7 @@ import {
 } from "../lib/types";
 import { PokemonCard } from "../components/pokemon/PokemonCard";
 import { QuickTables } from "../components/ui/QuickTables";
-import { useTypeLabStore } from "../stores/typeLabStore";
+import { PanelLoading } from "../components/ui/PanelLoading";
 import { SearchSelect } from "../components/ui/SearchSelect";
 import { MultiTypeSelect } from "../components/ui/MultiTypeSelect";
 import { typeLabel } from "../lib/labels";
@@ -191,11 +191,7 @@ export function Pokedex() {
       {showQuickTables && (
         <QuickTables
           defaultTab={quickTablesDefaultTab}
-          onOpenFull={(tab) => {
-            const store = useTypeLabStore.getState();
-            store.setTab(tab === "types" ? "table" : "natures");
-            store.setOpen(true);
-          }}
+          collapsible
         />
       )}
 
@@ -352,8 +348,8 @@ export function Pokedex() {
       </div>
 
       {isLoading && (
-        <div className="card" style={{ color: "var(--text-muted)" }}>
-          {t("common.loading")}
+        <div className="card">
+          <PanelLoading variant="cards" rows={6} />
         </div>
       )}
       {isError && (

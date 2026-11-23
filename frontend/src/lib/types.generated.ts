@@ -2,6 +2,8 @@
 
 export type Ability = { id: string, name: string, description: string, };
 
+export type AndroidUpdateProgress = { request_id: string, downloaded: number, total: number, pct: number, done: boolean, error: string | null, };
+
 export type BuildMode = "classic" | "champions";
 
 export type ChampionsReport = { 
@@ -114,6 +116,15 @@ export type Nature = "Hardy" | "Lonely" | "Brave" | "Adamant" | "Naughty" | "Bol
 export type OfficialEventDetails = { tournament_id: string | null, category: string | null, premier_event: string | null, status: string | null, organizer_name: string | null, organizer_phone: string | null, organizer_email: string | null, venue: string | null, address_line1: string | null, address_line2: string | null, city: string | null, state: string | null, postal_code: string | null, country: string | null, website: string | null, admission: string | null, registration: string | null, details: string | null, latitude: number | null, longitude: number | null, };
 
 export type OfficialLiveStream = { video_id: string, title: string, url: string, embed_url: string, thumbnail_url: string, live: boolean, };
+
+/**
+ * One row from the official Championship Series results endpoint. The
+ * official feed publishes placement and match record but no decklists, so
+ * `decklist` is intentionally absent.
+ */
+export type OfficialStanding = { place: number | null, player_name: string, country: string | null, wins: number, losses: number, ties: number, record: string | null, };
+
+export type OfficialStandingsPage = { standings: Array<OfficialStanding>, total_count: number | null, start: number, size: number, results_available: boolean, decklists_available: boolean, };
 
 export type PikalyticsEntry = { species_id: string, species_display: string, sprite_url: string | null, usage_percent: number | null, common_items: Array<PikalyticsItem>, common_abilities: Array<PikalyticsItem>, common_moves: Array<PikalyticsItem>, common_teammates: Array<PikalyticsTeammate>, common_tera: Array<PikalyticsItem>, ev_spreads: Array<PikalyticsEvSpread>, source_url: string, };
 
@@ -257,7 +268,21 @@ ui_json: string, };
 
 export type SyncImportResult = { teams_imported: number, settings_imported: number, };
 
-export type SyncSession = { code: string, url: string, expires_at: string, };
+export type SyncSession = { version: number, code: string, 
+/**
+ * Versioned `vgcreporter://sync?...` ticket shown as a QR code.
+ */
+ticket: string, 
+/**
+ * Legacy HTTP bundle URL kept for the advanced fallback.
+ */
+url: string, expires_at: string, teams: number, settings: number, ui_stores: number, };
+
+export type SyncSessionStatus = { code: string, state: SyncState, expires_at: string, teams: number, settings: number, ui_stores: number, error: string | null, };
+
+export type SyncState = "waiting" | "connected" | "transferring" | "received" | "imported" | "expired" | "cancelled" | "error";
+
+export type SyncTicket = { version: number, code: string, token: string, host: string, port: number, };
 
 export type Team = { id: number | null, name: string, format: Format, build_mode: BuildMode, notes: string | null, members: Array<TeamMember>, created_at: string | null, updated_at: string | null, };
 
@@ -298,7 +323,11 @@ export type TrendingPokemon = { species: string, sprite_url: string, sprite_fall
 
 export type TrendingReport = { rising: Array<TrendingPokemon>, falling: Array<TrendingPokemon>, from_date: string | null, to_date: string | null, window_days: number, };
 
-export type UpcomingTournament = { id: string, name: string, date: string, url: string, region: string | null, players: number | null, source: string, 
+export type UpcomingTournament = { id: string, name: string, date: string, url: string, region: string | null, players: number | null, 
+/**
+ * Masters winner when the official results endpoint already published it.
+ */
+champion_name: string | null, champion_country: string | null, source: string, 
 /**
  * Last day of multi-day events (official majors). `None` for single-day
  * local/online tournaments. The calendar expands the whole range.
@@ -323,7 +352,12 @@ starts_at: string | null,
  */
 registrations: number | null, event_website: string | null, third_party_registration_website: string | null, };
 
-export type UpdateInfo = { version: string, current_version: string, notes: string, android_url: string | null, };
+export type UpdateInfo = { version: string, current_version: string, notes: string, android_url: string | null, android_size: number | null, android_sha256: string | null, android_signature: string | null, 
+/**
+ * Present when the manifest also lists a Windows bundle; used by the
+ * diagnostic panel and the manual MSI fallback.
+ */
+desktop_url: string | null, desktop_signature: string | null, };
 
 export type UsageEntry = { name: string, usage_percent: number, count: number, };
 

@@ -3,6 +3,7 @@ import {
   METRICS_PANEL_IDS,
   REGULATION_PANEL_IDS,
   normalizePanelOrder,
+  placeRecentAfterEvents,
 } from "./dashboardStore";
 
 describe("normalizePanelOrder", () => {
@@ -21,6 +22,23 @@ describe("normalizePanelOrder", () => {
     );
     expect(normalized).toEqual(["roster", "items", "megas"]);
     expect(new Set(normalized).size).toBe(normalized.length);
+  });
+
+  it("moves recent tournaments after events exactly once", () => {
+    const migrated = placeRecentAfterEvents([
+      ["summary"],
+      ["live"],
+      ["events"],
+      ["news"],
+    ]);
+    expect(migrated).toEqual([
+      ["summary"],
+      ["live"],
+      ["events"],
+      ["recent"],
+      ["news"],
+    ]);
+    expect(placeRecentAfterEvents(migrated)).toEqual(migrated);
   });
 
   it("falls back to the full default order for malformed state", () => {

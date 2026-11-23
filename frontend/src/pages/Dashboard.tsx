@@ -17,14 +17,11 @@ import {
   RotateCcw,
   ShieldCheck,
   Sparkles,
-  Swords,
   TrendingUp,
 } from "lucide-react";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
-import { formatDate, formatDateTime } from "../lib/formatDate";
-import { formatLabel } from "../lib/labels";
-import { type ChampionsTournament } from "../lib/types";
+import { formatDate } from "../lib/formatDate";
 import { defaultRangeFor } from "../lib/regulations";
 import { openExternal } from "../lib/openExternal";
 import { UsageBarChart, type UsageBarItem } from "../components/charts/UsageBarChart";
@@ -41,13 +38,7 @@ import { buildEntityUsers } from "../lib/entityUsers";
 import { TrendingCard } from "../components/charts/TrendingCard";
 import { FormatSelector } from "../components/ui/FormatSelector";
 import { XCard } from "../components/dashboard/XCard";
-import { TournamentStandingsDrawer } from "../components/tournament/TournamentStandingsDrawer";
-import { ChampionTeam } from "../components/tournament/ChampionTeam";
-import { ChampionsSearchHits } from "../components/tournament/ChampionsSearchHits";
 import { SourcesChip } from "../components/layout/SourcesChip";
-import { SearchTextInput } from "../components/filters/SearchTextInput";
-import { CountryFilter } from "../components/filters/CountryFilter";
-import { countryFlag } from "../lib/countryFlag";
 import {
   useDashboardStore,
   type DashboardView,
@@ -64,9 +55,9 @@ import { DashboardViewTabs } from "../components/dashboard/DashboardViewTabs";
 import { RegulationFeed } from "../components/dashboard/RegulationFeed";
 import { RegulationInfoView } from "../components/dashboard/RegulationInfoView";
 import { UpcomingTournamentsSection } from "../components/dashboard/UpcomingTournamentsSection";
-import { RecentOfficialTournaments } from "../components/dashboard/RecentOfficialTournaments";
-import { EventSourceBadge } from "../components/dashboard/EventSourceBadge";
+
 import { PanelOrder, PanelOrderGroup } from "../components/layout/PanelBoard";
+import { PanelLoading } from "../components/ui/PanelLoading";
 
 function canonicalSpeciesId(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -122,26 +113,6 @@ export function Dashboard() {
   const regulationStart =
     selectedRegulation?.start_at.slice(0, 10) ?? todayIso;
   const seasonName = selectedRegulation?.active_season?.name ?? null;
-  const [selectedTournament, setSelectedTournament] =
-    useState<ChampionsTournament | null>(null);
-  const TOURNAMENT_INITIAL = 10;
-  const TOURNAMENT_PAGE = 10;
-  const [tournamentVisible, setTournamentVisible] = useState(TOURNAMENT_INITIAL);
-  const [tournamentSearch, setTournamentSearch] = useState("");
-  const [tournamentCountry, setTournamentCountry] = useState<string[]>([]);
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  useEffect(() => {
-    const handle = setTimeout(() => setDebouncedSearch(tournamentSearch.trim()), 250);
-    return () => clearTimeout(handle);
-  }, [tournamentSearch]);
-  const searchQuery = debouncedSearch.length >= 3 ? debouncedSearch : "";
-  const { data: searchHits, isFetching: searchFetching } = useQuery({
-    queryKey: queryKeys.championsSearch(format, searchQuery),
-    queryFn: () => ipc.searchChampions(searchQuery, format, 40),
-    enabled: searchQuery.length >= 3,
-    staleTime: 60_000,
-  });
-  const tournamentLimit = tournamentVisible;
   /** Below this many analysed teams the Panel warns that the meta is young. */
 const THIN_DATA_TEAMS = 200;
 const POKE_INITIAL = 10;
@@ -158,62 +129,6 @@ const POKE_INITIAL = 10;
         dateRange?.to,
       ),
   });
-  const { data: championsReportRaw, isFetching: championsFetching } = useQuery({
-    queryKey: queryKeys.championsReport(
-      format,
-      tournamentLimit,
-      dateRange?.from,
-      dateRange?.to,
-    ),
-    queryFn: () =>
-      ipc.listChampionsTournaments(
-        format,
-        tournamentLimit,
-        dateRange?.from,
-        dateRange?.to,
-      ),
-    staleTime: 30 * 60 * 1000,
-  });
-  const championsReport = championsReportRaw
-    ? {
-        ...championsReportRaw,
-        tournaments: championsReportRaw.tournaments.filter(
-          (t) =>
-            !(t.name ?? "").toUpperCase().includes("TCG") &&
-            !(t.format ?? "").toUpperCase().includes("TCG"),
-        ),
-      }
-    : championsReportRaw;
-
-  const officialTournaments = championsReport?.official_tournaments ?? [];
-  const championCountryOptions = useMemo(
-    () =>
-      [
-        ...new Set(
-          (championsReport?.tournaments ?? [])
-            .map((tournament) => tournament.champion_country?.toUpperCase())
-            .filter((country): country is string => Boolean(country)),
-        ),
-      ].sort(),
-    [championsReport],
-  );
-
-  const filteredTournaments = useMemo(() => {
-    const q = tournamentSearch.trim().toLowerCase();
-    return (championsReport?.tournaments ?? []).filter((tour) => {
-      if (
-        tournamentCountry.length > 0 &&
-        (!tour.champion_country ||
-          !tournamentCountry.includes(tour.champion_country.toUpperCase()))
-      ) {
-        return false;
-      }
-      if (!q) return true;
-      const name = (tour.name ?? "").toLowerCase();
-      const champ = (tour.champion_name ?? "").toLowerCase();
-      return name.includes(q) || champ.includes(q);
-    });
-  }, [championsReport, tournamentSearch, tournamentCountry]);
 
   const allPokemon = data?.pokemon ?? [];
   const topPokemon = allPokemon.slice(0, pokeVisible);
@@ -298,14 +213,7 @@ const POKE_INITIAL = 10;
         dateRange?.to,
       ),
     });
-    qc.invalidateQueries({
-      queryKey: queryKeys.championsReport(
-        format,
-        tournamentLimit,
-        dateRange?.from,
-        dateRange?.to,
-      ),
-    });
+    qc.invalidateQueries({ queryKey: ["champions-report"] });
   };
   const ptrState = usePullToRefresh(refreshAll, isMobile);
 
@@ -391,7 +299,7 @@ const POKE_INITIAL = 10;
       />
 
       {view === "metrics" && selectedRegulation && defaultRange && dateRange && (
-        <section className="card space-y-3">
+        <section className="card card-hero space-y-3">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               <span
@@ -746,160 +654,6 @@ const POKE_INITIAL = 10;
         </>
       )}
 
-      <PanelOrder
-        id="recent_tournaments"
-        label={
-          format === "regulation-i"
-            ? t("dashboard.recent_tournaments")
-            : t("dashboard.champions_report")
-        }
-        icon={<Trophy size={12} />}
-      >
-      <section className="card">
-        <h2 className="mb-1 text-sm font-semibold" style={{ color: "var(--text)" }}>
-          {format === "regulation-i"
-            ? t("dashboard.recent_tournaments")
-            : t("dashboard.champions_report")}
-        </h2>
-        <p className="mb-3 text-[11px]" style={{ color: "var(--text-dim)" }}>
-          {t("dashboard.tournaments_for_format", {
-            format: formatLabel(t, format),
-          })}
-        </p>
-        {championsReport && championsReport.tournaments.length > 0 && (
-          <div className="mb-2 flex flex-col gap-2 sm:flex-row">
-            <SearchTextInput
-              value={tournamentSearch}
-              onChange={setTournamentSearch}
-              placeholder={t("common.filter_search_tournament")}
-            />
-            <CountryFilter
-              options={championCountryOptions}
-              selected={tournamentCountry}
-              onChange={setTournamentCountry}
-              placeholder={t("common.filter_country_placeholder")}
-              className="sm:w-64"
-            />
-          </div>
-        )}
-        {(championsFetching || !championsReport) && (
-          <p className="text-xs" style={{ color: "var(--text-dim)" }}>
-            {t("common.loading")}
-          </p>
-        )}
-        {championsReport &&
-          !championsFetching &&
-          officialTournaments.length > 0 && (
-            <RecentOfficialTournaments
-              tournaments={officialTournaments}
-              className="mb-4"
-            />
-          )}
-        {championsReport &&
-          !championsFetching &&
-          championsReport.tournaments.length === 0 &&
-          officialTournaments.length === 0 && (
-            <p className="text-xs" style={{ color: "var(--text-dim)" }}>
-              {t("common.empty")}
-            </p>
-          )}
-        {championsReport &&
-          officialTournaments.length > 0 &&
-          championsReport.tournaments.length > 0 && (
-          <div className="mb-1 flex items-center gap-2">
-            <Swords size={12} style={{ color: "#2b86ff" }} />
-            <h3
-              className="text-[11px] font-semibold uppercase tracking-wide"
-              style={{ color: "var(--text)" }}
-            >
-              {t("dashboard.community_tournaments")}
-            </h3>
-            <span className="text-[10px]" style={{ color: "var(--text-dim)" }}>
-              {championsReport.tournaments.length}
-            </span>
-          </div>
-        )}
-        {championsReport && championsReport.tournaments.length > 0 && (
-          filteredTournaments.length === 0 ? (
-            <p className="text-xs" style={{ color: "var(--text-dim)" }}>
-              {t("common.no_results")}
-            </p>
-          ) : (
-          <ul className="divide-y divide-[var(--border)]">
-            {filteredTournaments.map((tour) => (
-              <li
-                key={tour.id}
-                className="flex flex-wrap items-center gap-3 py-2.5"
-              >
-                <div className="min-w-0 flex-[1_1_20rem]">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span
-                      className="truncate text-sm font-medium"
-                      style={{ color: "var(--text)" }}
-                    >
-                      {tour.name}
-                    </span>
-                    <EventSourceBadge source={tour.source ?? "limitless"} />
-                  </div>
-                  <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                    {tour.date && <span>{formatDateTime(tour.date, i18n.language)}</span>}
-                    {tour.players != null && (
-                      <span> · {tour.players} {t("dashboard.players")}</span>
-                    )}
-                    {tour.format && <span> · {tour.format}</span>}
-                    {tour.champion_country && (
-                      <span>
-                        {" "}· {countryFlag(tour.champion_country)}{" "}
-                        {tour.champion_country.toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex shrink-0 flex-wrap items-center gap-2">
-                  <ChampionTeam tournament={tour} />
-                  <button
-                    className="btn-ghost shrink-0 text-xs"
-                    onClick={() => setSelectedTournament(tour)}
-                  >
-                    {t("dashboard.view_standings")}
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-          )
-        )}
-        {searchQuery.length >= 3 && (
-          <ChampionsSearchHits
-            hits={searchHits ?? []}
-            isFetching={searchFetching}
-            onOpenTournament={setSelectedTournament}
-          />
-        )}
-        {championsReport && championsReport.tournaments.length > 0 && (
-          <div className="mt-2 flex justify-center gap-2">
-            {filteredTournaments.length >= tournamentVisible && (
-              <button
-                className="btn-ghost text-xs"
-                onClick={() =>
-                  setTournamentVisible((n) => n + TOURNAMENT_PAGE)
-                }
-              >
-                {t("dashboard.view_more")}
-              </button>
-            )}
-            {tournamentVisible > TOURNAMENT_INITIAL && (
-              <button
-                className="btn-ghost text-xs"
-                onClick={() => setTournamentVisible(TOURNAMENT_INITIAL)}
-              >
-                {t("dashboard.view_less")}
-              </button>
-            )}
-          </div>
-        )}
-      </section>
-      </PanelOrder>
 
       <PanelOrder
         id="upcoming"
@@ -952,10 +706,6 @@ const POKE_INITIAL = 10;
         <RegulationFeed format={format} info={selectedRegulation} />
       )}
 
-      <TournamentStandingsDrawer
-        tournament={selectedTournament}
-        onClose={() => setSelectedTournament(null)}
-      />
       </div>
     </div>
   );
@@ -972,70 +722,17 @@ function MetaSkeleton({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="space-y-4">
-      <div
-        className="card flex items-start gap-3"
-        style={{ color: "var(--text-muted)" }}
-      >
-        <RefreshCw size={14} className="mt-0.5 animate-spin" />
-        <div>
-          <div className="text-sm">{label}</div>
-          {showHint && (
-            <div
-              className="mt-0.5 text-[11px]"
-              style={{ color: "var(--text-dim)" }}
-            >
-              {t("dashboard.loading_long_hint")}
-            </div>
-          )}
-          {showPatience && (
-            <div
-              className="mt-0.5 text-[11px]"
-              style={{ color: "var(--text-dim)" }}
-            >
-              {t("dashboard.loading_patience_hint")}
-            </div>
-          )}
-        </div>
-      </div>
-      <div className="card">
-        <div
-          className="mb-3 h-4 w-32 animate-pulse rounded"
-          style={{ backgroundColor: "var(--bg-elev-strong)" }}
-        />
-        <div className="space-y-2">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-6 animate-pulse rounded"
-              style={{
-                width: `${100 - i * 8}%`,
-                backgroundColor: "var(--bg-elev-strong)",
-                opacity: 0.7,
-              }}
-            />
-          ))}
-        </div>
-      </div>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="card">
-            <div
-              className="mb-3 h-4 w-24 animate-pulse rounded"
-              style={{ backgroundColor: "var(--bg-elev-strong)" }}
-            />
-            <div className="space-y-2">
-              {Array.from({ length: 5 }).map((_, j) => (
-                <div
-                  key={j}
-                  className="h-4 w-full animate-pulse rounded"
-                  style={{ backgroundColor: "var(--bg-elev-strong)", opacity: 0.7 }}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+    <PanelLoading
+      variant="chart"
+      rows={8}
+      label={label}
+      hint={
+        showPatience
+          ? t("dashboard.loading_patience_hint")
+          : showHint
+            ? t("dashboard.loading_long_hint")
+            : undefined
+      }
+    />
   );
 }
