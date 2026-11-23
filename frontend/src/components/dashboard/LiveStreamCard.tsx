@@ -1,5 +1,7 @@
 import {
   AlertTriangle,
+  ChevronDown,
+  ChevronRight,
   ExternalLink,
   Eye,
   EyeOff,
@@ -49,6 +51,7 @@ export function LiveStreamCard({
   const navigate = useNavigate();
   const streams = useLiveStreams();
   const [wallOpen, setWallOpen] = useState(false);
+  const [recentCollapsed, setRecentCollapsed] = useState(false);
   const [featuredUrl, setFeaturedUrl] = useState<string | null>(null);
   const [featuredView, setFeaturedView] = useState<"featured" | "equal">(
     "featured",
@@ -428,6 +431,25 @@ export function LiveStreamCard({
         {recentStreams.length > 0 && (
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-[var(--bg-elev-strong)]"
+                style={{ color: "var(--text-muted)" }}
+                onClick={() => setRecentCollapsed((value) => !value)}
+                title={
+                  recentCollapsed ? t("feed.expand") : t("feed.collapse")
+                }
+                aria-label={
+                  recentCollapsed ? t("feed.expand") : t("feed.collapse")
+                }
+                aria-expanded={!recentCollapsed}
+              >
+                {recentCollapsed ? (
+                  <ChevronRight size={14} />
+                ) : (
+                  <ChevronDown size={14} />
+                )}
+              </button>
               <History size={12} style={{ color: "var(--accent)" }} />
               <h3
                 className="text-[11px] font-semibold uppercase tracking-wide"
@@ -445,16 +467,18 @@ export function LiveStreamCard({
                 {t("feed.not_live")}
               </span>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {recentStreams.slice(0, 6).map(({ screen, stream, hidden }) => (
-                <RecentStream
-                  key={`${screen.source_url}-${stream.video_id}`}
-                  screen={screen}
-                  stream={stream}
-                  hidden={hidden}
-                />
-              ))}
-            </div>
+            {!recentCollapsed && (
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {recentStreams.slice(0, 6).map(({ screen, stream, hidden }) => (
+                  <RecentStream
+                    key={`${screen.source_url}-${stream.video_id}`}
+                    screen={screen}
+                    stream={stream}
+                    hidden={hidden}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
 

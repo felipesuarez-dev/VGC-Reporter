@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_FEED_ROWS,
   METRICS_PANEL_IDS,
   REGULATION_PANEL_IDS,
+  migrateDefaultFeedOrder,
   normalizePanelOrder,
   placeRecentAfterEvents,
+  type FeedPanelId,
 } from "./dashboardStore";
 
 describe("normalizePanelOrder", () => {
@@ -39,6 +42,35 @@ describe("normalizePanelOrder", () => {
       ["news"],
     ]);
     expect(placeRecentAfterEvents(migrated)).toEqual(migrated);
+  });
+
+  it("moves recent above events and news directly below live for the legacy default", () => {
+    const migrated = migrateDefaultFeedOrder([
+      ["summary"],
+      ["live"],
+      ["events"],
+      ["recent"],
+      ["news"],
+    ]);
+    expect(migrated).toEqual([
+      ["summary"],
+      ["live"],
+      ["news"],
+      ["recent"],
+      ["events"],
+    ]);
+    expect(migrated).toEqual(DEFAULT_FEED_ROWS);
+    expect(migrateDefaultFeedOrder(migrated)).toEqual(migrated);
+  });
+
+  it("keeps a custom feed layout untouched", () => {
+    const custom: FeedPanelId[][] = [
+      ["live", "news"],
+      ["recent"],
+      ["summary"],
+      ["events"],
+    ];
+    expect(migrateDefaultFeedOrder(custom)).toEqual(custom);
   });
 
   it("falls back to the full default order for malformed state", () => {

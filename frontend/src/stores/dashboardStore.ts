@@ -35,21 +35,38 @@ export interface FeedPanelPrefs {
 export const FEED_PANEL_IDS: readonly FeedPanelId[] = [
   "summary",
   "live",
-  "events",
-  "recent",
   "news",
+  "recent",
+  "events",
 ];
 
 /**
- * Default Feed: Regulación on top, the live wall in its own full-width row
- * below it, then tournaments and news. Users can still drag panels together.
+ * Default Feed: regulation summary, the live wall, official news directly
+ * below live, recent tournaments and finally upcoming/calendar. Users can
+ * still drag panels together; this is only the initial/reset order.
  */
 export const DEFAULT_FEED_ROWS: FeedPanelId[][] = [
+  ["summary"],
+  ["live"],
+  ["news"],
+  ["recent"],
+  ["events"],
+];
+
+const LEGACY_DEFAULT_FEED_ROWS: FeedPanelId[][] = [
   ["summary"],
   ["live"],
   ["events"],
   ["recent"],
   ["news"],
+];
+
+const LEGACY_HORIZONTAL_FEED: FeedPanelId[] = [
+  "summary",
+  "live",
+  "events",
+  "recent",
+  "news",
 ];
 
 export const DEFAULT_FEED_PANELS: Record<FeedPanelId, FeedPanelPrefs> = {
@@ -112,6 +129,32 @@ export function placeRecentAfterEvents(
   if (events >= 0) next.splice(events + 1, 0, ["recent"]);
   else next.push(["recent"]);
   return normalizeFeedRows(next);
+}
+
+/**
+ * One-time move for layouts saved before 0.6.3: the old default put upcoming
+ * tournaments above recent tournaments and news at the bottom. Only exact
+ * legacy defaults are rewritten; custom layouts are left untouched.
+ */
+export function migrateDefaultFeedOrder(
+  rows: FeedPanelId[][],
+): FeedPanelId[][] {
+  const normalized = normalizeFeedRows(rows);
+  const isLegacyVertical =
+    normalized.length === LEGACY_DEFAULT_FEED_ROWS.length &&
+    normalized.every(
+      (row, index) =>
+        row.length === 1 && row[0] === LEGACY_DEFAULT_FEED_ROWS[index][0],
+    );
+  const isLegacyHorizontal =
+    normalized.length === 1 &&
+    normalized[0].length === LEGACY_HORIZONTAL_FEED.length &&
+    normalized[0].every((id, index) => id === LEGACY_HORIZONTAL_FEED[index]);
+  if (isLegacyVertical) return normalizeFeedRows(DEFAULT_FEED_ROWS);
+  if (isLegacyHorizontal) {
+    return [["summary", "live", "news", "recent", "events"]];
+  }
+  return normalized;
 }
 
 export function placeLiveBelowSummary(
@@ -340,7 +383,7 @@ export const useDashboardStore = create<DashboardState>()(
     }),
     {
       name: "vgc-dashboard",
-      version: 24,
+      version: 25,
       migrate: (persisted: unknown, version: number) => {
         const prior = (persisted ?? {}) as Record<string, unknown>;
         if (!(version >= 11)) {
@@ -370,11 +413,15 @@ export const useDashboardStore = create<DashboardState>()(
           dashboardView:
             prior.dashboardView === "regulation" ? "regulation" : "feed",
           feedRows:
-            version < 20
-              ? placeRecentAfterEvents(placeLiveBelowSummary(savedRows))
-              : version < 24
-                ? placeRecentAfterEvents(savedRows)
-                : savedRows,
+            version < 25
+              ? migrateDefaultFeedOrder(
+                  version < 20
+                    ? placeRecentAfterEvents(placeLiveBelowSummary(savedRows))
+                    : version < 24
+                      ? placeRecentAfterEvents(savedRows)
+                      : savedRows,
+                )
+              : savedRows,
           feedPanels: normalizeFeedPanels(prior.feedPanels),
           metricsOrder: normalizePanelOrder(
             version >= 23 ? prior.metricsOrder : [],

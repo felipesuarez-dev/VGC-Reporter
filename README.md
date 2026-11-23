@@ -46,8 +46,10 @@ VGC Reporter es la herramienta que quería mientras construía equipos para Cham
 <div align="center">
   <img src="assets/screen-app-0.6.2.png" alt="Panel Principal con Novedades, Métricas y Regulación" width="92%" />
   <br/>
-  <img src="assets/screen-feed-0.6.2.png" alt="Novedades con regulación, directos y torneos" width="46%" />
+  <img src="assets/screen-feed-0.6.3.png" alt="Novedades con regulación, directos y torneos" width="46%" />
   <img src="assets/screen-recent-tournaments-0.6.2.png" alt="Torneos recientes con grupos colapsables" width="46%" />
+  <br/>
+  <img src="assets/screen-live-collapsible-0.6.3.png" alt="Últimas transmisiones colapsables dentro de En vivo" width="92%" />
   <br/>
   <img src="assets/screen-official-modal-0.6.2.png" alt="Modal de torneo oficial con standings" width="46%" />
   <img src="assets/screen-calendar-0.6.2.png" alt="Calendario con el día actual marcado" width="46%" />
@@ -67,12 +69,12 @@ VGC Reporter es la herramienta que quería mientras construía equipos para Cham
 
 ## Descarga
 
-Instaladores de **`v0.6.2.20261122-beta`**:
+Instaladores de **`v0.6.3.20261122-beta`**:
 
 | Plataforma | Instalador | Notas |
 |---|---|---|
-| Windows 10/11 | `VGC.Reporter_0.6.2_x64_en-US.msi` | MSI sin firma Authenticode; SmartScreen → Más información → Ejecutar de todas formas |
-| Android 7+ (arm64) | `VGC.Reporter_v0.6.2.20261122-beta_android.apk` | Sideload o updater interno; activa “Instalar apps desconocidas” |
+| Windows 10/11 | `VGC.Reporter_0.6.3_x64_en-US.msi` | MSI sin firma Authenticode; SmartScreen → Más información → Ejecutar de todas formas |
+| Android 7+ (arm64) | `VGC.Reporter_v0.6.3.20261122-beta_android.apk` | Sideload o updater interno; activa “Instalar apps desconocidas” |
 
 **[Descargar desde el último release de GitHub](https://github.com/felipesuarez-dev/VGC-Reporter/releases/latest)**
 
@@ -94,7 +96,7 @@ bun run tauri:dev
 | **Panel Principal** | Novedades (inicio), Métricas y Regulación. Selector dinámico de regulación/temporada, rango de fechas compartido, drag & drop de paneles en las tres vistas (con subir/bajar como alternativa), colapsables y layouts Separados/Juntos. |
 | **Métricas** | Top Pokémon en barras, grid, treemap con foreignObject/ellipsis y tooltip, o tiers. Top objetos/movimientos/habilidades con los Pokémon que más los usan y próximos eventos. |
 | **Regulación** | Roster elegible, Megas, objetos permitidos con búsqueda, sprites, descripciones y porcentaje del total de equipos. Procedencia y confianza de cada fuente. |
-| **Novedades** | Cinco paneles: resumen de temporada, muro de directos, torneos + calendario + tablas, **torneos recientes** y noticias oficiales. Cada panel carga con su propio skeleton; se arrastran, agrupan y colapsan, y el layout se recuerda. |
+| **Novedades** | Orden por defecto: resumen de temporada → **En vivo** → **Noticias oficiales** → **Torneos recientes** → **Próximos/Calendario/Tablas**. Las **últimas transmisiones** dentro de En vivo también se colapsan. Cada panel carga con su propio skeleton; se arrastran, agrupan y colapsan, y el layout se recuerda. |
 | **En Vivo** | Pantallas de YouTube (YukS, Play! Pokémon, Wolfey, Cybertron, James Baek, PokeAlex, Moxie2D, Pokémon Champions, Sekiam, IRNemesis…). Hasta 9 en Vitrina 3×3. Los canales offline muestran su **última transmisión** con badge **No está en vivo**, incluso si están ocultos con el ojo. |
 | **Próximos torneos** | Pestañas **Oficiales** (Play! Pokémon presencial + campeonatos de la temporada) y **Comunidad Limitless** (online, no oficiales). Los oficiales incluyen **LAIC, NAIC, EUIC, Regionales, Especiales y Worlds** con badge de nivel, rango de fechas, premio en efectivo, campeón si ya hay resultados y `.ics` multi-día. País/ciudad con búsqueda, favorito, dirección completa, precio, inscripción y mapa; los majors no se ocultan por el filtro local. Los oficiales pasados abren un **modal interno** con standings. |
 | **Torneos recientes** | Panel propio en Novedades. Oficiales con modal de resumen, fecha, sede, premio, campeón, standings oficiales y “Lista no publicada”; comunidad con standings/decklists y “Ver clasificación”. |
@@ -208,7 +210,7 @@ Calidad antes de release:
 
 ```bash
 bun scripts/check-locales.ts
-bun scripts/bump-version.ts --check --tag v0.6.2.20261122-beta
+bun scripts/bump-version.ts --check --tag v0.6.3.20261122-beta
 cd src-tauri && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
 bun run --cwd frontend build && bun run --cwd frontend test
 ```
@@ -230,7 +232,7 @@ bun run --cwd frontend build && bun run --cwd frontend test
 
 MIT. VGC Reporter es un proyecto no oficial y sin fines de lucro. No está afiliado a Nintendo, The Pokémon Company, Game Freak ni Creatures Inc. Pokémon y sus nombres son marcas de sus respectivos dueños. Consulta `DISCLAIMER.txt`.
 
-[version-badge]: https://img.shields.io/badge/version-0.6.2.20261122--beta-8b5cf6
+[version-badge]: https://img.shields.io/badge/version-0.6.3.20261122--beta-8b5cf6
 [version-link]: https://github.com/felipesuarez-dev/VGC-Reporter/releases
 [beta-badge]: https://img.shields.io/badge/status-beta-f59e0b
 [tauri-badge]: https://img.shields.io/badge/Tauri-2-24C8DB

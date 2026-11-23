@@ -68,7 +68,9 @@ ambos rangos para que no parezca un error.
 
 ## Novedades (Feed)
 
-Es la superficie de "qué está pasando ahora". Tiene cinco paneles:
+Es la superficie de "qué está pasando ahora". El orden por defecto es
+**Regulación → En vivo → Noticias oficiales → Torneos recientes → Torneos**;
+puedes arrastrar los paneles para cambiarlo. Tiene cinco paneles:
 
 1. **Regulación**: resumen de la temporada, instantes oficiales y días de datos.
 2. **Transmisión en vivo**: una vitrina de pantallas de YouTube. Por defecto
@@ -85,14 +87,28 @@ Es la superficie de "qué está pasando ahora". Tiene cinco paneles:
    vez de colapsarse. Los canales que no están en vivo muestran su **última
    transmisión** con los badges “Última transmisión” y “No está en vivo”; si el
    canal está oculto con el ojo, la última transmisión sigue visible con el
-   indicador de canal oculto. **Vitrina TV** abre una vista a pantalla completa
-   con todas las señales. Cada pantalla tiene accesos **Suscribirse** y **Abrir**,
+   indicador de canal oculto. El bloque **Últimas transmisiones** que aparece
+   debajo de la vitrina se colapsa con su chevron. **Vitrina TV** abre una vista
+   a pantalla completa con todas las señales. Cada pantalla tiene accesos
+   **Suscribirse** y **Abrir**,
    con los badges EN VIVO / canal / Oficial debajo del video.
    YouTube no permite dar "Me gusta" ni suscribirse dentro de un reproductor
    embebido sin una cuenta de Google, así que esas acciones se confirman en
    YouTube. Cada panel de Novedades carga por su cuenta con spinner y skeleton;
    un panel lento ya no bloquea los demás.
-3. **Torneos**: próximos eventos con filtros de país/ciudad, favorito con
+3. **Noticias oficiales**: avisos de Pokémon Champions paginados de 6 en 6.
+   Las imágenes usan un skeleton con brillo y aparecen con un fade; si una
+   imagen falla se muestra un placeholder limpio. Al hacer click se abre un
+   **modal dentro de la app** que renderiza la página oficial; "Abrir en el
+   navegador" queda siempre disponible.
+4. **Torneos recientes**: oficiales y comunidad, con grupos colapsables igual
+   que los paneles del Panel Principal. Los oficiales abren un **modal interno**
+   con resumen, fecha/rango, sede, premio, campeón, standings oficiales
+   paginados, “Lista no publicada” cuando el feed no la publica, equipo campeón
+   solo si la fuente lo entrega y “Abrir en el navegador”. Los comunitarios
+   conservan standings/decklists y el cajón completo. Un major en curso aparece
+   ese mismo fin de semana.
+5. **Torneos**: próximos eventos con filtros de país/ciudad, favorito con
    estrella, buscador de texto (nombre, local o dirección, sin importar
    tildes) y fuente visible. La pestaña **Oficiales** separa los **campeonatos
    de la temporada** (LAIC, NAIC, EUIC, Regionales, Especiales y Worlds) de los
@@ -107,18 +123,6 @@ Es la superficie de "qué está pasando ahora". Tiene cinco paneles:
    **Calendario** muestra esos mismos eventos en un calendario mensual, con los
    días de campeonato destacados y las horas en la zona horaria configurada. La
    tercera pestaña, **Tablas**, embebe las tablas rápidas de Tipos y Naturalezas.
-4. **Torneos recientes**: oficiales y comunidad, con grupos colapsables igual
-   que los paneles del Panel Principal. Los oficiales abren un **modal interno**
-   con resumen, fecha/rango, sede, premio, campeón, standings oficiales
-   paginados, “Lista no publicada” cuando el feed no la publica, equipo campeón
-   solo si la fuente lo entrega y “Abrir en el navegador”. Los comunitarios
-   conservan standings/decklists y el cajón completo. Un major en curso aparece
-   ese mismo fin de semana.
-5. **Noticias oficiales**: avisos de Pokémon Champions paginados de 6 en 6.
-   Las imágenes usan un skeleton con brillo y aparecen con un fade; si una
-   imagen falla se muestra un placeholder limpio. Al hacer click se abre un
-   **modal dentro de la app** que renderiza la página oficial; "Abrir en el
-   navegador" queda siempre disponible.
 
 ### Calendario de torneos
 

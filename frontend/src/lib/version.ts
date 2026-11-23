@@ -1,4 +1,4 @@
-export const APP_VERSION = "0.6.2.20261122-beta";
+export const APP_VERSION = "0.6.3.20261122-beta";
 
 export function shortVersion(v: string): string {
   const m = v.match(/^(\d+\.\d+\.\d+)/);

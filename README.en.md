@@ -76,12 +76,18 @@ VGC Reporter is the tool I wanted while team-building for Pokémon Champions: on
   </tr>
   <tr>
     <td align="center">
-      <img src="assets/screen-feed-0.6.2.png" alt="Novedades feed" width="420" /><br/>
-      <sub><b>Novedades</b> — multi-screen VGC live wall, official news and local upcoming events</sub>
+      <img src="assets/screen-feed-0.6.3.png" alt="Novedades feed" width="420" /><br/>
+      <sub><b>Novedades</b> — regulation summary, live, official news, recent tournaments, then upcoming events</sub>
     </td>
     <td align="center">
       <img src="assets/screen-regulation.png" alt="Regulation and allowed items" width="420" /><br/>
       <sub><b>Regulación</b> — eligible roster plus searchable items with usage and their top Pokémon</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="assets/screen-live-collapsible-0.6.3.png" alt="Collapsible recent streams inside Live" width="840" /><br/>
+      <sub><b>Live</b> — the recent-streams block now collapses with a chevron, directly above official news</sub>
     </td>
   </tr>
   <tr>
@@ -174,12 +180,12 @@ VGC Reporter is the tool I wanted while team-building for Pokémon Champions: on
 
 ## Download
 
-Pre-built installers for the **`v0.6.2.20261122-beta`** release:
+Pre-built installers for the **`v0.6.3.20261122-beta`** release:
 
 | Platform | Installer | Notes |
 |---|---|---|
-| Windows 10/11 | `VGC.Reporter_0.6.2_x64_en-US.msi` | MSI installer — unsigned; SmartScreen → More info → Run anyway |
-| Android 7+ (arm64) | `VGC.Reporter_v0.6.2.20261122-beta_android.apk` | Sideload or in-app updater; enable "Unknown sources" first |
+| Windows 10/11 | `VGC.Reporter_0.6.3_x64_en-US.msi` | MSI installer — unsigned; SmartScreen → More info → Run anyway |
+| Android 7+ (arm64) | `VGC.Reporter_v0.6.3.20261122-beta_android.apk` | Sideload or in-app updater; enable "Unknown sources" first |
 
 **[→ Download from the latest GitHub Release](https://github.com/felipesuarez-dev/vgc-reporter/releases/latest)**
 
@@ -201,7 +207,7 @@ First launch downloads and caches Pokédex, moves, items, abilities and usage st
 | Area | What it does |
 |---|---|
 | **Dashboard** | Three views in the requested order - **Novedades** (default), **Métricas**, **Regulación** - with a dynamic format selector, live season label and season-aware date range. Top Pokémon with switchable bar chart / grid / meta-share treemap / tier list; Top Items / Moves / Abilities show the Pokémon that use each one most; recent tournaments are split into **official championships** and **Limitless community**, each with a source badge; official rows add a tier badge, multi-day range, prize pool and winner, while community rows keep the champion team and **champion-country filter** with flags and an honest empty state. Metrics and Regulation panels can be reordered by dragging or with the up/down buttons, and the order persists locally. |
-| **Novedades (Feed)** | Fully configurable panel stack: regulation summary, official VGC live broadcast, tournaments + month calendar and official news. Drag panels by the handle to reorder or group them into a shared row; drop on top/bottom edges to split rows. Every panel collapses, and the **Separados / Juntos** controls switch between one-per-row and all-in-one-row. Layout is persisted locally. |
+| **Novedades (Feed)** | Default order: season summary → **Live** → **Official news** → **Recent tournaments** → **Upcoming/Calendar/Tables**. The **recent streams** block inside Live is collapsible too. Drag panels by the handle to reorder or group them into a shared row; drop on top/bottom edges to split rows. Every panel collapses, and the **Separados / Juntos** controls switch between one-per-row and all-in-one-row. Layout is persisted locally. |
 | **Learn** | Progress, guides, daily **type / speed / lead** practice, rules trivia, **real meta cores with “Try core”**, more starter teams with “See more”, a searchable glossary and tool shortcuts. Content in all five languages. |
 | **Quick tables** | `Ctrl+T` or the titlebar/mobile button opens an 18×18 type matrix, coverage, current-team matchups and a **nature table**. They stay pinned in the Pokédex and are configurable as a widget in Settings. |
 | **Live broadcast** | Configurable YouTube screens (YukS VGC, Play! Pokémon, WolfeyVGC, CybertronVGC, James Baek, PokeAlex, Moxie2D, Pokémon Champions, Sekiam, IRNemesis). A stable 9-slot TV wall; every tile has its own stop/resume, keep/mini-player and eye control, so hiding or reordering one never reloads the others. Only genuinely live streams get the live badge; otherwise the panel shows **Latest broadcasts** from `/streams`. **Vitrina TV** opens the fixed 3×3 wall. |
@@ -374,7 +380,7 @@ VGC-Reporter/
 MIT © 2026 PumaSoft — see [LICENSE](LICENSE).
 
 <!-- Reference-style definitions -->
-[version-badge]: https://img.shields.io/badge/version-0.6.2.20261122--beta-2b86ff?style=flat-square&labelColor=0a0e14
+[version-badge]: https://img.shields.io/badge/version-0.6.3.20261122--beta-2b86ff?style=flat-square&labelColor=0a0e14
 [version-link]: #download
 [beta-badge]: https://img.shields.io/badge/release-beta-ff6b6b?style=flat-square&labelColor=0a0e14
 [tauri-badge]: https://img.shields.io/badge/Tauri-2.4-24c8db?style=flat-square&labelColor=0a0e14&logo=tauri
