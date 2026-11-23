@@ -91,4 +91,4 @@ Release de sincronización LAN, updater Android interno, torneos oficiales con r
 | `VGC.Reporter_0.6.2_x64_es-ES.msi` | `2E1083EAF7263AF430FFE0BCB76CF7BEB6C35D632D796D26B1F0796BE1683C86` |
 | `VGC.Reporter_v0.6.2.20261122-beta_android.apk` | `3D6DE9DF1DD7DF92500ADFF8701169839FFABB93F35218EB91C0C07D47533E3F` |
 
-La app release se abrió y validó localmente antes de publicar. La validación física de Android y la prueba real del updater se realizan después de publicar; los binarios no cambian.
+La app release se abrió y validó localmente antes de publicar. El updater de escritorio 0.6.1 → 0.6.2 se probó contra este release: detectó la versión, descargó el MSI, instaló y relanzó la app. La instalación física Android queda pendiente (sin dispositivo conectado) y el salto desde 0.5.0 requiere una instalación administrada; los binarios no cambian.
