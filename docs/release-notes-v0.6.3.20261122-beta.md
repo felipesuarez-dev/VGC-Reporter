@@ -27,4 +27,4 @@ Incluye todo lo publicado en [0.6.2.20261122-beta](https://github.com/felipesuar
 | `VGC.Reporter_0.6.3_x64_es-ES.msi` | `A5C916BC54E8E1495A857965744D7BB311514FDFB7389F23F6D5E3E0E0896AE6` |
 | `VGC.Reporter_v0.6.3.20261122-beta_android.apk` | `EE0EC54750A10BE041F9615C28A3D212C1E6B19923167239052F42D617772BBB` |
 
-La app release se abrió y validó localmente antes de publicar. El updater 0.6.2 → 0.6.3 se prueba contra este release; la instalación física Android queda pendiente si no hay dispositivo conectado.
+La app release se abrió y validó localmente antes de publicar. El updater de escritorio 0.6.2 → 0.6.3 se probó contra este release: detectó la versión, descargó el MSI, instaló (con el UAC de Windows) y relanzó en 0.6.3. El APK también se probó en un móvil Android. El salto 0.5.0 → 0.6.3 queda pendiente en una instalación administrada.
