@@ -55,7 +55,15 @@ Construido sobre 0.6.3.20261122-beta: Sync/QR, updater Android, torneos oficiale
 
 ## Descarga
 
-- Windows 10/11: `VGC.Reporter_0.7.0_x64_en-US.msi`
+- Windows 10/11 (en-US): `VGC.Reporter_0.7.0_x64_en-US.msi`
+- Windows 10/11 (es-ES): `VGC.Reporter_0.7.0_x64_es-ES.msi`
 - Android 7+ (arm64): `VGC.Reporter_v0.7.0.20261123-beta_android.apk`
+- Updater: `latest.json`
+
+### SHA-256
+
+- MSI en-US: `fb85459ebaa698e01dc36643720d7d4406558d49962989e5e46b3ab5612a4a1f`
+- MSI es-ES: `92525f1d210042e06350b1edd0216e5e8d1417f98d9073655e854f74f9caf162`
+- APK arm64: `63dc6b7b0062acef9f5d94404f827f7c3281aa84bd7c999512581dc093137cf1`
 
 > Beta sin firma Authenticode en Windows. SmartScreen → Más información → Ejecutar de todas formas.

@@ -78,12 +78,17 @@ treemap, Aprender 2.0 y validación del updater de escritorio.
 
 ## Artefactos y hashes
 
-Pendientes de la compilación de release. El `release-local.ps1` o el workflow
-de GitHub los rellena con los nombres de 0.7.0 y los SHA-256 definitivos.
+Compilados el 2026-11-24:
+
+- `VGC.Reporter_0.7.0_x64_en-US.msi` — 6.385.664 bytes — SHA-256 `fb85459ebaa698e01dc36643720d7d4406558d49962989e5e46b3ab5612a4a1f`
+- `VGC.Reporter_0.7.0_x64_es-ES.msi` — 6.385.664 bytes — SHA-256 `92525f1d210042e06350b1edd0216e5e8d1417f98d9073655e854f74f9caf162`
+- `VGC.Reporter_v0.7.0.20261123-beta_android.apk` — 19.945.802 bytes — SHA-256 `63dc6b7b0062acef9f5d94404f827f7c3281aa84bd7c999512581dc093137cf1`
+- `latest.json` — manifiesto del updater con tamaño y SHA-256 del APK.
 
 ## Validación
 
-Pendiente de la compilación y prueba del MSI/APK 0.7.0. Checklist en
+Compilación completada el 2026-11-24 (MSI en-US/es-ES y APK arm64 firmado).
+Pendiente la prueba instalada del MSI/APK. Checklist en
 `scripts/release-local.ps1`: updater 0.6.3 → 0.7.0, APK en Android físico,
 safe-area de Vitrina TV, sync selectivo, detección live, paginación por grupo,
 rail de widgets, dock mobile, atajo configurable, Top Cut, rondas y equipos
