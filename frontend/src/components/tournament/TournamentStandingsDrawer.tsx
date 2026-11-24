@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useModalBack } from "../../hooks/useModalBack";
+import { useHomeCountryFilter } from "../../hooks/useHomeCountryFilter";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useDashboardStore } from "../../stores/dashboardStore";
@@ -22,11 +23,10 @@ import type {
   TournamentStanding,
 } from "../../lib/types";
 import { emptyTeamMember } from "../../lib/types";
-import { PokemonSprite } from "../pokemon/PokemonSprite";
 import { Tooltip } from "../ui/Tooltip";
-import { useLocalize } from "../../hooks/useTranslations";
 import { useTeamBuilder } from "../../stores/teamBuilderStore";
 import { computeMissingFields } from "../team/TopTeamDetailModal";
+import { PlacingBadge, TeamPokemonGrid } from "./TeamPokemonGrid";
 
 interface Props {
   tournament: ChampionsTournament | null;
@@ -113,7 +113,6 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
   const pokedex: Pokemon[] = pokedexQ.data ?? [];
 
   const [search, setSearch] = useState("");
-  const [countryFilter, setCountryFilter] = useState<string[]>([]);
   const [pokemonFilter, setPokemonFilter] = useState<string[]>([]);
   const [visibleRows, setVisibleRows] = useState(8);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -121,21 +120,38 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
   useEffect(() => {
     if (!tournament) {
       setSearch("");
-      setCountryFilter([]);
       setPokemonFilter([]);
       setVisibleRows(8);
     }
   }, [tournament]);
 
-  const countryOptions = useMemo(() => {
+  const orderedStandings = useMemo(() => {
     const list = standings.data ?? [];
-    return Array.from(
-      new Set(list.map((s) => s.country).filter((c): c is string => !!c && c.length === 2)),
-    );
+    // Limitless can prepend dropped players with `placing: null` before the
+    // real standings. Keep ranked players first, ordered by placing, and leave
+    // unranked players at the end instead of inventing duplicate #1/#2.
+    return [...list].sort((a, b) => {
+      const placingA = a.placing ?? Number.MAX_SAFE_INTEGER;
+      const placingB = b.placing ?? Number.MAX_SAFE_INTEGER;
+      return placingA - placingB;
+    });
   }, [standings.data]);
 
+  const countryCodes = orderedStandings
+    .map((standing) => standing.country?.toUpperCase())
+    .filter((code): code is string => Boolean(code));
+  const {
+    selected: countryFilter,
+    setSelected: setCountryFilter,
+    homeCountry,
+  } = useHomeCountryFilter(countryCodes, 3);
+
+  const countryOptions = useMemo(() => {
+    return Array.from(new Set([...countryCodes, homeCountry]));
+  }, [countryCodes, homeCountry]);
+
   const filteredStandings = useMemo(() => {
-    const list = standings.data ?? [];
+    const list = orderedStandings;
     const q = search.trim().toLowerCase();
     return list.filter((s) => {
       if (q) {
@@ -153,7 +169,7 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
       }
       return true;
     });
-  }, [standings.data, search, countryFilter, pokemonFilter]);
+  }, [orderedStandings, search, countryFilter, pokemonFilter]);
 
   if (!tournament) return null;
 
@@ -167,11 +183,12 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
 
   const hasFilters =
     search.trim().length > 0 || countryFilter.length > 0 || pokemonFilter.length > 0;
-  const displayList = hasFilters ? filteredStandings : standings.data ?? [];
-  const winner = hasFilters ? undefined : standings.data?.[0];
-  const rest = hasFilters ? displayList : displayList.slice(1);
-  const visibleRest = rest.slice(0, visibleRows);
-  const canShowMore = rest.length > visibleRows;
+  const placingByStanding = new Map(
+    orderedStandings.map((standing) => [standing, standing.placing]),
+  );
+  const displayList = hasFilters ? filteredStandings : orderedStandings;
+  const visibleCards = displayList.slice(0, visibleRows);
+  const canShowMore = displayList.length > visibleRows;
   const canShowLess = visibleRows > 8;
 
   return (
@@ -183,7 +200,7 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
     >
       <div
         ref={containerRef}
-        className="relative max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-xl border p-5 shadow-2xl"
+        className="modal-scroll relative max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-xl border p-5 shadow-2xl"
         style={{
           backgroundColor: "var(--bg-elev)",
           borderColor: "var(--border)",
@@ -265,35 +282,7 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
           </div>
         )}
 
-        {winner && (
-          <section className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <div className="text-[10px] font-semibold uppercase tracking-wide text-amber-300">
-                {t("tournament.winner")}
-              </div>
-              <CopyStandingButton
-                t={t}
-                onClick={() => copyStandingToBuilder(winner)}
-              />
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-base">{flag(winner.country)}</span>
-              <span className="text-lg font-bold" style={{ color: "var(--text)" }}>
-                {winner.player_name ?? winner.player_id ?? "—"}
-              </span>
-              {winner.record && (
-                <span className="text-sm" style={{ color: "var(--text-muted)" }}>
-                  {winner.record}
-                </span>
-              )}
-            </div>
-            <div className="mt-3">
-              <StandingDecklist decklist={winner.decklist} />
-            </div>
-          </section>
-        )}
-
-        {visibleRest.length > 0 && (
+        {visibleCards.length > 0 && (
           <section className="space-y-3">
             <h3
               className="flex items-baseline gap-2 text-xs font-semibold uppercase tracking-wide"
@@ -301,16 +290,19 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
             >
               {t("tournament.standings")}
               <span className="font-normal normal-case tracking-normal" style={{ color: "var(--text-dim)" }}>
-                {visibleRest.length} / {rest.length}
+                {visibleCards.length} / {displayList.length}
               </span>
             </h3>
-            {visibleRest.map((s, i) => (
-              <StandingRow
-                key={`${s.player_id ?? s.player_name ?? i}-${i}`}
-                standing={s}
-                onCopy={() => copyStandingToBuilder(s)}
-              />
-            ))}
+            <div className="grid gap-2 xl:grid-cols-2">
+              {visibleCards.map((s, i) => (
+                <StandingRow
+                  key={`${s.player_id ?? s.player_name ?? i}-${i}`}
+                  standing={s}
+                  placing={placingByStanding.get(s) ?? null}
+                  onCopy={() => copyStandingToBuilder(s)}
+                />
+              ))}
+            </div>
             {(canShowMore || canShowLess) && (
               <div className="flex justify-center gap-2 pt-1">
                 {canShowMore && (
@@ -327,7 +319,7 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
                     type="button"
                     className="btn-ghost text-xs"
                     onClick={() => {
-                      setVisibleRows(rest.length);
+                      setVisibleRows(displayList.length);
                       containerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
                     }}
                   >
@@ -348,8 +340,19 @@ export function TournamentStandingsDrawer({ tournament, onClose }: Props) {
           </section>
         )}
         {hasFilters && displayList.length === 0 && (
-          <div className="text-xs" style={{ color: "var(--text-dim)" }}>
-            {t("common.empty")}
+          <div className="flex flex-wrap items-center gap-2 text-xs" style={{ color: "var(--text-dim)" }}>
+            <span>{t("common.empty")}</span>
+            <button
+              type="button"
+              className="btn-ghost h-7 text-[10px]"
+              onClick={() => {
+                setSearch("");
+                setCountryFilter([]);
+                setPokemonFilter([]);
+              }}
+            >
+              {t("pokedex.clear_filters")}
+            </button>
           </div>
         )}
       </div>
@@ -384,31 +387,28 @@ function CopyStandingButton({
 
 function StandingRow({
   standing,
+  placing,
   onCopy,
 }: {
   standing: TournamentStanding;
+  placing: number | null;
   onCopy: () => void;
 }) {
   const { t } = useTranslation();
   return (
     <div
-      className="rounded-lg border p-3"
+      className="rounded-lg border p-2.5"
       style={{
         borderColor: "var(--border)",
         backgroundColor: "var(--bg)",
       }}
     >
       <div className="flex items-baseline justify-between gap-2">
-        <div className="flex items-baseline gap-2">
-          <span
-            className="w-6 shrink-0 text-right text-xs"
-            style={{ color: "var(--text-dim)" }}
-          >
-            #{standing.placing ?? "—"}
-          </span>
+        <div className="flex min-w-0 items-center gap-2">
+          <PlacingBadge placing={placing} />
           <span className="text-base">{flag(standing.country)}</span>
-          <span className="font-semibold" style={{ color: "var(--text)" }}>
-            {standing.player_name ?? standing.player_id ?? "—"}
+          <span className="truncate font-semibold" style={{ color: "var(--text)" }}>
+            {standing.player_name ?? standing.player_id ?? "-"}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -428,60 +428,8 @@ function StandingRow({
 }
 
 function StandingDecklist({ decklist }: { decklist: DecklistPokemon[] }) {
-  const { t } = useTranslation();
-  const localize = useLocalize();
   if (decklist.length === 0) {
-    return <p className="text-[11px]" style={{ color: "var(--text-dim)" }}>—</p>;
+    return <p className="text-[11px]" style={{ color: "var(--text-dim)" }}>-</p>;
   }
-  return (
-    <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-      {decklist.map((p, i) => (
-        <li
-          key={`${p.id ?? p.name}-${i}`}
-          className="flex gap-2 rounded border p-2"
-          style={{
-            borderColor: "var(--border)",
-            backgroundColor: "var(--bg-elev)",
-          }}
-        >
-          <PokemonSprite
-            url={p.sprite_url}
-            fallbackUrl={p.sprite_fallback_url ?? undefined}
-            homeUrl={p.home_sprite_url ?? undefined}
-            name={p.name}
-            size={48}
-          />
-          <div className="min-w-0 flex-1 text-[10px]">
-            <div
-              className="truncate text-[11px] font-semibold"
-              style={{ color: "var(--text)" }}
-            >
-              {p.name}
-            </div>
-            {p.item && (
-              <div style={{ color: "var(--text-muted)" }}>
-                <span style={{ color: "var(--text-dim)" }}>
-                  {t("top_teams.item")}:
-                </span>{" "}
-                {localize("item", p.item)}
-              </div>
-            )}
-            {p.ability && (
-              <div style={{ color: "var(--text-muted)" }}>
-                <span style={{ color: "var(--text-dim)" }}>
-                  {t("top_teams.ability")}:
-                </span>{" "}
-                {localize("ability", p.ability)}
-              </div>
-            )}
-            {p.moves.length > 0 && (
-              <div className="mt-0.5" style={{ color: "var(--text)" }}>
-                {p.moves.map((mv) => localize("move", mv)).join(" · ")}
-              </div>
-            )}
-          </div>
-        </li>
-      ))}
-    </ul>
-  );
+  return <TeamPokemonGrid pokemon={decklist} />;
 }

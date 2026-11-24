@@ -157,7 +157,7 @@ export function TypeLabModal() {
           ))}
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
+        <div className="modal-scroll min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
           {tab === "table" && <TypeChartTable />}
           {tab === "natures" && <NatureTable />}
           {tab === "coverage" && <TypeCoverage />}
@@ -183,33 +183,48 @@ export function TypeChartTable({ landscape = false }: { landscape?: boolean }) {
   return (
     <div className="space-y-3">
       <div
-        className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-2.5 py-2 text-[11px]"
+        className="flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-[11px] shadow-sm"
         style={{ borderColor: "var(--border)", backgroundColor: "var(--bg)" }}
         aria-live="polite"
       >
-        <span style={{ color: "var(--text-muted)" }}>
-          {attacker && defender && value !== null ? (
-            <>
-              <strong style={{ color: "var(--text)" }}>{typeLabel(t, attacker)}</strong>
-              {" → "}
-              <strong style={{ color: "var(--text)" }}>{typeLabel(t, defender)}</strong>
-              {" = "}
-              <span style={{ color: multiplierStyle(value).background, fontWeight: 700 }}>
-                {multiplierLabel(value)}
-              </span>
-            </>
-          ) : attacker ? (
-            t("type_lab.pick_defender", { type: typeLabel(t, attacker) })
-          ) : defender ? (
-            t("type_lab.pick_attacker", { type: typeLabel(t, defender) })
+        <div className="flex flex-wrap items-center gap-2" style={{ color: "var(--text-muted)" }}>
+          {attacker ? (
+            <TypeBadge type={attacker} />
           ) : (
-            t("type_lab.pick_pair")
+            <span className="rounded-full border px-2 py-0.5" style={{ borderColor: "var(--border)" }}>
+              {t("type_lab.attacker")}
+            </span>
           )}
-        </span>
+          <span aria-hidden>→</span>
+          {defender ? (
+            <TypeBadge type={defender} />
+          ) : (
+            <span className="rounded-full border px-2 py-0.5" style={{ borderColor: "var(--border)" }}>
+              {t("type_lab.defender")}
+            </span>
+          )}
+          {value !== null && (
+            <span
+              className="rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums"
+              style={multiplierStyle(value)}
+            >
+              {multiplierLabel(value)}
+            </span>
+          )}
+          <span>
+            {attacker && defender
+              ? t("type_lab.matchup_hint")
+              : attacker
+                ? t("type_lab.pick_defender", { type: typeLabel(t, attacker) })
+                : defender
+                  ? t("type_lab.pick_attacker", { type: typeLabel(t, defender) })
+                  : t("type_lab.pick_pair")}
+          </span>
+        </div>
         {(attacker || defender) && (
           <button
             type="button"
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px]"
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] transition-colors hover:bg-[var(--bg-elev-strong)]"
             style={{ color: "var(--text-muted)" }}
             onClick={() => {
               setAttacker(null);
@@ -298,9 +313,13 @@ export function TypeChartTable({ landscape = false }: { landscape?: boolean }) {
                       >
                         <button
                           type="button"
-                          className="h-full min-h-8 w-full px-1 py-1 font-mono text-[10px] tabular-nums"
+                          className="h-full min-h-8 w-full px-1 py-1 font-mono text-[10px] tabular-nums transition-colors hover:bg-white/10"
                           style={{
-                            boxShadow: selected ? "inset 0 0 0 2px var(--accent)" : undefined,
+                            boxShadow: selected
+                              ? "inset 0 0 0 2px var(--accent)"
+                              : rowSelected || defender === columnType
+                                ? "inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent)"
+                                : undefined,
                             color: "inherit",
                           }}
                           aria-pressed={selected}
@@ -319,11 +338,30 @@ export function TypeChartTable({ landscape = false }: { landscape?: boolean }) {
           </tbody>
         </table>
       </div>
-      <div className="flex flex-wrap gap-3 text-[10px]" style={{ color: "var(--text-muted)" }}>
-        <span>0× {t("type_lab.immune")}</span>
-        <span>½× {t("type_lab.resists")}</span>
-        <span>2× {t("type_lab.weak")}</span>
-        <span>4× {t("type_lab.double_weak")}</span>
+      <div className="flex flex-wrap items-center gap-3 text-[10px]" style={{ color: "var(--text-muted)" }}>
+        {[
+          { value: 0, label: t("type_lab.immune") },
+          { value: 0.5, label: t("type_lab.resists") },
+          { value: 1, label: t("type_lab.neutral") },
+          { value: 2, label: t("type_lab.weak") },
+          { value: 4, label: t("type_lab.double_weak") },
+        ].map((entry) => {
+          const style = multiplierStyle(entry.value);
+          return (
+            <span key={entry.value} className="inline-flex items-center gap-1">
+              <span
+                className="h-2.5 w-2.5 rounded-sm border"
+                style={{
+                  backgroundColor:
+                    entry.value === 1 ? "transparent" : style.background,
+                  borderColor: "var(--border)",
+                }}
+              />
+              <span className="font-mono">{multiplierLabel(entry.value)}</span>
+              <span>{entry.label}</span>
+            </span>
+          );
+        })}
       </div>
     </div>
   );

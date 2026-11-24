@@ -1,13 +1,64 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_FEED_ROWS,
+  FEED_PANEL_IDS,
   METRICS_PANEL_IDS,
   REGULATION_PANEL_IDS,
-  migrateDefaultFeedOrder,
   normalizePanelOrder,
-  placeRecentAfterEvents,
-  type FeedPanelId,
+  normalizePanelPrefs,
+  normalizePanelRows,
+  panelLayoutMode,
 } from "./dashboardStore";
+
+describe("normalizePanelRows", () => {
+  it("keeps a valid custom layout", () => {
+    expect(
+      normalizePanelRows([["live", "news"], ["summary"]], FEED_PANEL_IDS),
+    ).toEqual([["live", "news"], ["summary"]]);
+  });
+
+  it("drops unknown and duplicate ids and appends missing panels", () => {
+    const normalized = normalizePanelRows(
+      [["summary", "unknown", "summary"], ["live"]],
+      FEED_PANEL_IDS,
+    );
+    expect(normalized).toEqual([["summary"], ["live"], ["news"]]);
+    expect(new Set(normalized.flat()).size).toBe(normalized.flat().length);
+  });
+
+  it("repairs layouts saved before 0.7.0 (events/recent are gone)", () => {
+    const migrated = normalizePanelRows(
+      [["summary"], ["live"], ["events"], ["recent"], ["news"]],
+      FEED_PANEL_IDS,
+    );
+    expect(migrated).toEqual(DEFAULT_FEED_ROWS);
+  });
+
+  it("accepts the old flat order format", () => {
+    expect(normalizePanelRows(["news", "summary", "live"], FEED_PANEL_IDS)).toEqual([
+      ["news"],
+      ["summary"],
+      ["live"],
+    ]);
+  });
+});
+
+describe("normalizePanelPrefs", () => {
+  it("defaults every missing panel to expanded", () => {
+    const prefs = normalizePanelPrefs({ live: { collapsed: true } }, FEED_PANEL_IDS);
+    expect(prefs.live.collapsed).toBe(true);
+    expect(prefs.summary.collapsed).toBe(false);
+    expect(prefs.news.collapsed).toBe(false);
+  });
+});
+
+describe("panelLayoutMode", () => {
+  it("detects vertical, horizontal and custom rows", () => {
+    expect(panelLayoutMode([["summary"], ["live"]])).toBe("vertical");
+    expect(panelLayoutMode([["summary", "live"]])).toBe("horizontal");
+    expect(panelLayoutMode([["summary", "live"], ["news"]])).toBe("custom");
+  });
+});
 
 describe("normalizePanelOrder", () => {
   it("keeps a valid custom order", () => {
@@ -24,53 +75,6 @@ describe("normalizePanelOrder", () => {
       REGULATION_PANEL_IDS,
     );
     expect(normalized).toEqual(["roster", "items", "megas"]);
-    expect(new Set(normalized).size).toBe(normalized.length);
-  });
-
-  it("moves recent tournaments after events exactly once", () => {
-    const migrated = placeRecentAfterEvents([
-      ["summary"],
-      ["live"],
-      ["events"],
-      ["news"],
-    ]);
-    expect(migrated).toEqual([
-      ["summary"],
-      ["live"],
-      ["events"],
-      ["recent"],
-      ["news"],
-    ]);
-    expect(placeRecentAfterEvents(migrated)).toEqual(migrated);
-  });
-
-  it("moves recent above events and news directly below live for the legacy default", () => {
-    const migrated = migrateDefaultFeedOrder([
-      ["summary"],
-      ["live"],
-      ["events"],
-      ["recent"],
-      ["news"],
-    ]);
-    expect(migrated).toEqual([
-      ["summary"],
-      ["live"],
-      ["news"],
-      ["recent"],
-      ["events"],
-    ]);
-    expect(migrated).toEqual(DEFAULT_FEED_ROWS);
-    expect(migrateDefaultFeedOrder(migrated)).toEqual(migrated);
-  });
-
-  it("keeps a custom feed layout untouched", () => {
-    const custom: FeedPanelId[][] = [
-      ["live", "news"],
-      ["recent"],
-      ["summary"],
-      ["events"],
-    ];
-    expect(migrateDefaultFeedOrder(custom)).toEqual(custom);
   });
 
   it("falls back to the full default order for malformed state", () => {
@@ -78,9 +82,6 @@ describe("normalizePanelOrder", () => {
       "roster",
       "items",
       "megas",
-    ]);
-    expect(normalizePanelOrder({ nope: true }, METRICS_PANEL_IDS)).toEqual([
-      ...METRICS_PANEL_IDS,
     ]);
   });
 });

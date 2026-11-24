@@ -61,6 +61,10 @@ export const queryKeys = {
   tournamentStandings: (id: string) => ["tournament-standings", id] as const,
   officialStandings: (url: string, start: number, size: number) =>
     ["official-standings", url, start, size] as const,
+  officialTeams: (name: string, date?: string | null) =>
+    ["official-teams", name, date ?? "auto"] as const,
+  officialDetail: (name: string, date?: string | null) =>
+    ["official-detail", name, date ?? "auto"] as const,
   upcomingTournaments: (country?: string) =>
     ["upcoming-tournaments", country ?? "all"] as const,
   officialEvent: (url: string) => ["official-event", url] as const,

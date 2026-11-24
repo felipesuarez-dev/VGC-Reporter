@@ -12,6 +12,8 @@ export interface LearnGuide {
   minutes: number;
   level: "beginner" | "intermediate" | "advanced";
   sections: LearnGuideSection[];
+  sources: { label: string; url: string }[];
+  reviewedAt: string;
 }
 
 export type GlossaryCategory =
@@ -27,6 +29,8 @@ export interface GlossaryEntry {
   category: GlossaryCategory;
   term: string;
   definition: string;
+  example?: string;
+  sources?: { label: string; url: string }[];
 }
 
 export interface TriviaItem {

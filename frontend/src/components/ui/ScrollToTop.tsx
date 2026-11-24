@@ -31,12 +31,13 @@ export function ScrollToTop() {
       title={t("common.scroll_to_top")}
       onClick={onClick}
       className={cn(
-        "fixed bottom-4 right-4 z-40 flex h-10 w-10 items-center justify-center rounded-full border shadow-lg transition-all",
+        "fixed right-4 z-[46] flex h-10 w-10 items-center justify-center rounded-full border shadow-lg transition-all",
         visible
           ? "pointer-events-auto opacity-100"
           : "pointer-events-none opacity-0",
       )}
       style={{
+        bottom: "max(1rem, env(safe-area-inset-bottom, 0px))",
         backgroundColor: "var(--bg-elev-strong)",
         borderColor: "var(--border)",
         color: "var(--text)",

@@ -1,4 +1,4 @@
-import { BarChart3, BookOpen, Newspaper, Pin } from "lucide-react";
+import { BarChart3, BookOpen, Newspaper, Pin, Trophy } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { DashboardView } from "../../stores/dashboardStore";
 
@@ -13,6 +13,7 @@ export function DashboardViewTabs({ view, pinned, onChange, onPin }: Props) {
   const { t } = useTranslation();
   const tabs: { id: DashboardView; label: string; icon: typeof BarChart3 }[] = [
     { id: "feed", label: t("dashboard.view_feed"), icon: Newspaper },
+    { id: "tournaments", label: t("dashboard.view_tournaments"), icon: Trophy },
     { id: "metrics", label: t("dashboard.view_metrics"), icon: BarChart3 },
     {
       id: "regulation",

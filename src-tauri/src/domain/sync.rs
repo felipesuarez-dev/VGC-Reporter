@@ -28,6 +28,40 @@ pub struct SyncBundle {
     pub ui_json: String,
 }
 
+/// Sender-side selection. Empty lists mean "send none" (not "send all"), so the
+/// UI must explicitly include what it wants in the session.
+#[derive(Debug, Clone, Serialize, Deserialize, TS, PartialEq, Eq)]
+#[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
+pub struct SyncSendSelection {
+    #[ts(type = "number[]")]
+    pub team_ids: Vec<i64>,
+    pub setting_keys: Vec<String>,
+    pub include_ui: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS, PartialEq, Eq)]
+#[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
+pub struct SyncTeamOption {
+    #[ts(type = "number")]
+    pub id: i64,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS, PartialEq, Eq)]
+#[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
+pub struct SyncSettingOption {
+    pub key: String,
+    /// `general`, `streams` or `overrides`; the UI groups checkboxes by this.
+    pub group: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
+pub struct SyncSendOptions {
+    pub teams: Vec<SyncTeamOption>,
+    pub settings: Vec<SyncSettingOption>,
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, TS, PartialEq, Eq)]
 #[ts(export, export_to = "../../frontend/src/lib/types.generated.ts")]
 #[serde(rename_all = "lowercase")]

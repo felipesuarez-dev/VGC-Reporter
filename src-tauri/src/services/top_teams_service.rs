@@ -40,6 +40,9 @@ pub struct TopTeam {
     pub provider: Option<String>,
     #[serde(default)]
     pub community: bool,
+    /// Team published by an official Championship Series tournament.
+    #[serde(default)]
+    pub official: bool,
     #[serde(default)]
     pub source_url: Option<String>,
     #[serde(default)]
@@ -320,6 +323,7 @@ impl TopTeamsService {
             members,
             provider: Some("labmaus".into()),
             community: false,
+            official: false,
             source_url: None,
             shared_at: None,
         })
@@ -450,6 +454,7 @@ impl TopTeamsService {
                     members,
                     provider: Some("limitless".into()),
                     community: false,
+                    official: false,
                     source_url: None,
                     shared_at: None,
                 });
@@ -542,6 +547,7 @@ impl TopTeamsService {
                 members,
                 provider: Some("pokebase".into()),
                 community,
+                official: false,
                 source_url: card.source(),
                 shared_at: card.shared_at(),
             });

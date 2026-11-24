@@ -16,6 +16,7 @@ import {
   Lightbulb,
   Package,
   Plus,
+  RefreshCw,
   Search,
   Shield,
   Sparkles,
@@ -64,6 +65,8 @@ import { PanelLoading } from "../components/ui/PanelLoading";
 import { useDashboardStore } from "../stores/dashboardStore";
 import { useTeamBuilder } from "../stores/teamBuilderStore";
 import { useModalBack } from "../hooks/useModalBack";
+import { openExternal } from "../lib/openExternal";
+import { CheckboxField } from "../components/ui/FormControls";
 import { MiniTeam } from "../components/pokemon/MiniTeam";
 import { PokemonSprite } from "../components/pokemon/PokemonSprite";
 import { defensiveMultiplier } from "../lib/typeChart";
@@ -127,6 +130,8 @@ export function Learn() {
   >("all");
   const [glossaryOpen, setGlossaryOpen] = useState(false);
   const [starterVisible, setStarterVisible] = useState(3);
+  const [refreshing, setRefreshing] = useState(false);
+  const [justRefreshed, setJustRefreshed] = useState(false);
   const [done, setDone] = useState<Record<string, boolean>>(() => {
     try {
       return JSON.parse(localStorage.getItem("vgc-learn-progress") ?? "{}");
@@ -163,6 +168,22 @@ export function Learn() {
     queryFn: () => ipc.getTrending(format),
     staleTime: 30 * 60 * 1000,
   });
+  const refreshLearn = async () => {
+    setRefreshing(true);
+    setJustRefreshed(false);
+    try {
+      await Promise.all([
+        meta.refetch(),
+        pokedex.refetch(),
+        topTeams.refetch(),
+        trending.refetch(),
+      ]);
+      setJustRefreshed(true);
+      window.setTimeout(() => setJustRefreshed(false), 2000);
+    } finally {
+      setRefreshing(false);
+    }
+  };
   const bySpecies = useMemo(() => {
     const map = new Map<string, NonNullable<typeof pokedex.data>[number]>();
     for (const pokemon of pokedex.data ?? []) {
@@ -292,6 +313,28 @@ export function Learn() {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <button
+          type="button"
+          className="btn-ghost h-8 text-[11px]"
+          onClick={() => void refreshLearn()}
+          disabled={refreshing}
+          title={t("learn.refresh")}
+        >
+          {refreshing ? (
+            <RefreshCw size={13} className="mr-1 animate-spin" />
+          ) : justRefreshed ? (
+            <Check size={13} className="mr-1" style={{ color: "var(--accent)" }} />
+          ) : (
+            <RefreshCw size={13} className="mr-1" />
+          )}
+          {refreshing
+            ? t("learn.refreshing")
+            : justRefreshed
+              ? t("learn.refreshed")
+              : t("learn.refresh")}
+        </button>
+      </div>
       <header
         className="relative overflow-hidden rounded-3xl border p-5 sm:p-8"
         style={{
@@ -536,8 +579,8 @@ export function Learn() {
         )}
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-2">
-        <div className="space-y-4">
+      <section className="grid items-start gap-4 lg:grid-cols-2">
+        <div className="min-w-0 space-y-4">
           <DailyPractice
             meta={meta.data?.pokemon ?? []}
             pokedex={pokedex.data ?? []}
@@ -713,7 +756,7 @@ function MetaCores({
   const { t } = useTranslation();
   const localize = useLocalize();
   return (
-    <section id="learn-cores" className="card flex h-full flex-col">
+    <section id="learn-cores" className="card flex flex-col">
       <SectionTitle
         icon={<Layers size={15} />}
         title={t("learn.cores_title")}
@@ -843,56 +886,90 @@ function GuideModal({ guide, onClose }: { guide: LearnGuide | null; onClose: () 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-3" onClick={onClose}>
       <div
-        className="relative max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-xl border p-5 shadow-2xl"
+        className="flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border shadow-2xl"
         style={{ backgroundColor: "var(--bg-elev)", borderColor: "var(--border)" }}
         onClick={(event) => event.stopPropagation()}
       >
-        <button
-          type="button"
-          className="absolute right-3 top-3 rounded p-1"
-          style={{ color: "var(--text-muted)" }}
-          onClick={onClose}
-          aria-label={t("common.close")}
+        <header
+          className="flex items-start justify-between gap-3 border-b px-5 py-4"
+          style={{ borderColor: "var(--border)" }}
         >
-          <X size={16} />
-        </button>
-        <span className="text-[10px] uppercase tracking-wide" style={{ color: "var(--text-dim)" }}>
-          {t(`learn.level_${guide.level}`)} · {guide.minutes} min
-        </span>
-        <h2 className="mt-1 text-xl font-bold">{guide.title}</h2>
-        <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>{guide.summary}</p>
-        <div className="mt-4 space-y-3">
-          {guide.sections.map((section) => (
-            <div key={section.heading}>
-              <h3 className="text-sm font-semibold">{section.heading}</h3>
-              <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>{section.body}</p>
+          <div>
+            <span className="text-[10px] uppercase tracking-wide" style={{ color: "var(--text-dim)" }}>
+              {t(`learn.level_${guide.level}`)} · {guide.minutes} min
+            </span>
+            <h2 className="mt-1 text-xl font-bold">{guide.title}</h2>
+            <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>{guide.summary}</p>
+          </div>
+          <button
+            type="button"
+            className="rounded p-1"
+            style={{ color: "var(--text-muted)" }}
+            onClick={onClose}
+            aria-label={t("common.close")}
+          >
+            <X size={16} />
+          </button>
+        </header>
+        <div className="modal-scroll min-h-0 flex-1 overflow-y-auto p-5">
+          <div className="space-y-3">
+            {guide.sections.map((section) => (
+              <div key={section.heading}>
+                <h3 className="text-sm font-semibold">{section.heading}</h3>
+                <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>{section.body}</p>
+              </div>
+            ))}
+          </div>
+          {guide.sources.length > 0 && (
+            <div
+              className="mt-4 border-t pt-3"
+              style={{ borderColor: "var(--border)" }}
+            >
+              <h3 className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--accent)" }}>
+                {t("learn.guide_sources")}
+              </h3>
+              <ul className="mt-1.5 space-y-1">
+                {guide.sources.map((source) => (
+                  <li key={source.url}>
+                    <button
+                      type="button"
+                      onClick={() => void openExternal(source.url)}
+                      className="inline-flex items-center gap-1 text-[11px] hover:underline"
+                      style={{ color: "var(--accent)" }}
+                    >
+                      <ArrowUpRight size={11} />
+                      {source.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-[10px]" style={{ color: "var(--text-dim)" }}>
+                {t("learn.guide_reviewed", { date: guide.reviewedAt })}
+              </p>
             </div>
-          ))}
-        </div>
-        <div
-          className="mt-5 rounded-xl border p-3"
-          style={{ borderColor: "var(--border)", backgroundColor: "var(--bg)" }}
-        >
-          <h3 className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--accent)" }}>
-            {t("learn.guide_exercise")}
-          </h3>
-          <p className="mt-1 text-[11px]" style={{ color: "var(--text-muted)" }}>
-            {t("learn.guide_exercise_body")}
-          </p>
-          <div className="mt-2 space-y-1.5">
-            {guide.sections.slice(0, 3).map((section, index) => (
-              <label key={section.heading} className="flex items-start gap-2 text-[11px]">
-                <input
-                  type="checkbox"
-                  className="mt-0.5"
+          )}
+          <div
+            className="mt-5 rounded-xl border p-3"
+            style={{ borderColor: "var(--border)", backgroundColor: "var(--bg)" }}
+          >
+            <h3 className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--accent)" }}>
+              {t("learn.guide_exercise")}
+            </h3>
+            <p className="mt-1 text-[11px]" style={{ color: "var(--text-muted)" }}>
+              {t("learn.guide_exercise_body")}
+            </p>
+            <div className="mt-2 space-y-1.5">
+              {guide.sections.slice(0, 3).map((section, index) => (
+                <CheckboxField
+                  key={section.heading}
                   checked={Boolean(checks[index])}
                   onChange={() =>
                     setChecks((current) => ({ ...current, [index]: !current[index] }))
                   }
+                  label={section.heading}
                 />
-                <span>{section.heading}</span>
-              </label>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>

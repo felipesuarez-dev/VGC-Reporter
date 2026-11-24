@@ -38,12 +38,20 @@ Estados terminales adicionales: `expired`, `cancelled`, `error`.
 
 | Comando | Uso |
 |---|---|
-| `sync_start_send(ui_json)` | Crea la sesión y devuelve `SyncSession` con ticket, URL y contadores. |
+| `sync_send_options()` | Lista equipos y ajustes whitelisted agrupados para la selección del emisor. |
+| `sync_start_send(ui_json, selection)` | Filtra el bundle por `SyncSendSelection` (equipos, ajustes, UI) y devuelve `SyncSession` con ticket, URL y contadores reales. |
 | `sync_session_status(code)` | Estado actual y expiración. |
 | `sync_cancel(code)` | Cierra la sesión temporal. |
 | `sync_fetch(ticket)` | Acepta ticket versionado o URL HTTP legacy. |
 | `sync_fetch_by_code(code)` | Descubre la URL por UDP y descarga. |
 | `sync_import(bundle, code?)` | Valida y guarda equipos/ajustes; marca la sesión. |
+
+## Selección dinámica
+
+- **Emisor:** `sync_send_options` devuelve equipos y ajustes whitelisted agrupados (`general`, `streams`, `overrides`). `SyncSendSelection { team_ids, setting_keys, include_ui }` filtra el bundle en Rust antes de abrir el servidor. Listas vacías significan “no enviar”, no “enviar todo”.
+- **Receptor:** `filterSyncBundle` aplica `receiveTeamKeys`, `receiveSettingKeys` e `include_ui` antes de `prepareImport`/`sync_import`. Los conflictos se calculan solo sobre los equipos seleccionados.
+- El bundle mantiene `schema = 1`; la selección es una decisión de la sesión, no un cambio de payload.
+- Tests: `commands::sync::tests` (filtrado, selección vacía, UI-only) y `lib/sync.test.ts` (receptor).
 
 ## UI Android
 

@@ -57,14 +57,17 @@ export function QuickTables({
 
   return (
     <>
-      <section className={cn(embedded ? "space-y-3" : "card space-y-3", className)}>
+      <section
+        className={cn(embedded ? "space-y-3" : "card space-y-3", className)}
+        aria-label={t("type_lab.quick_title")}
+      >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
             <span
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-sm"
               style={{ backgroundColor: "var(--accent-soft)", color: "var(--accent)" }}
             >
-              {tab === "types" ? <Grid3x3 size={16} /> : <Dna size={16} />}
+              {tab === "types" ? <Grid3x3 size={17} /> : <Dna size={17} />}
             </span>
             <div className="min-w-0">
               <h2 className="text-sm font-semibold">{t("type_lab.quick_title")}</h2>
@@ -132,9 +135,19 @@ export function QuickTables({
           </div>
         </div>
         {!collapsed && (
-          <div className="max-h-[520px] overflow-auto">
-            <QuickTablesBody tab={tab} />
-          </div>
+          <>
+            <div className="max-h-[560px] overflow-auto rounded-xl">
+              <QuickTablesBody tab={tab} />
+            </div>
+            <p className="flex flex-wrap items-center gap-2 text-[10px]" style={{ color: "var(--text-dim)" }}>
+              <span className="inline-flex items-center gap-1">
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: "var(--accent)" }} />
+                {t("type_lab.quick_hint")}
+              </span>
+              <span aria-hidden>·</span>
+              <span>{t("type_lab.landscape_hint")}</span>
+            </p>
+          </>
         )}
       </section>
 
@@ -196,7 +209,7 @@ export function QuickTables({
                 </button>
               </div>
             </header>
-            <div className="min-h-0 flex-1 overflow-auto p-2 sm:p-3">
+            <div className="modal-scroll min-h-0 flex-1 overflow-auto p-2 sm:p-3">
               <QuickTablesBody tab={tab} landscape />
             </div>
           </div>

@@ -734,6 +734,9 @@ fn stream_label(url: &str) -> String {
     if lower.contains("sekiam") {
         return "Sekiam".into();
     }
+    if lower.contains("thatsaplusone") {
+        return "THATSAplusONE".into();
+    }
     if lower.contains("irnemesis") {
         return "IRNemesis".into();
     }
@@ -838,6 +841,10 @@ mod tests {
         assert_eq!(
             stream_label("https://www.youtube.com/@IRNemesisTV"),
             "IRNemesis"
+        );
+        assert_eq!(
+            stream_label("https://www.youtube.com/@THATSAplusONE"),
+            "THATSAplusONE"
         );
         assert_eq!(
             stream_label("https://www.youtube.com/watch?v=tP09BzCEJqU"),

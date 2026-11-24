@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
-import { Download, Pencil, Trash2, Plus, Upload } from "lucide-react";
+import { Copy, Download, Pencil, Trash2, Plus, Upload } from "lucide-react";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
 import { useRegulationCatalog } from "../hooks/useRegulationCatalog";
@@ -12,6 +12,7 @@ import type { RegulationInfo } from "../lib/types";
 import { MiniTeam, type MiniTeamMember } from "../components/pokemon/MiniTeam";
 import { ExportTeamsModal } from "../components/team/ExportTeamsModal";
 import { ImportTeamModal } from "../components/team/ImportTeamModal";
+import { DeleteTeamConfirmModal } from "../components/team/DeleteTeamConfirmModal";
 
 export function MyTeams() {
   const { t } = useTranslation();
@@ -23,10 +24,39 @@ export function MyTeams() {
   });
   const [exportOpen, setExportOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
 
-  const remove = async (id: number) => {
-    await ipc.deleteTeam(id);
-    qc.invalidateQueries({ queryKey: queryKeys.teams.list });
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    try {
+      await ipc.deleteTeam(pendingDelete.id);
+      await qc.invalidateQueries({ queryKey: queryKeys.teams.list });
+      setPendingDelete(null);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const duplicate = async (team: NonNullable<typeof data>[number]) => {
+    if (!team.id) return;
+    const { id: _id, created_at: _created, updated_at: _updated, ...rest } = team;
+    const copy = {
+      ...rest,
+      id: null,
+      name: t("my_teams.copy_name", { name: team.name }),
+      created_at: null,
+      updated_at: null,
+    };
+    const newId = await ipc.saveTeam(copy);
+    await qc.invalidateQueries({ queryKey: queryKeys.teams.list });
+    setCopiedId(newId);
+    window.setTimeout(() => setCopiedId(null), 2200);
   };
 
   return (
@@ -63,6 +93,24 @@ export function MyTeams() {
         <ExportTeamsModal teams={data} onClose={() => setExportOpen(false)} />
       )}
       {importOpen && <ImportTeamModal onClose={() => setImportOpen(false)} />}
+      <DeleteTeamConfirmModal
+        teamName={pendingDelete?.name ?? null}
+        busy={deleting}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => void confirmDelete()}
+      />
+      {copiedId !== null && (
+        <div
+          className="rounded-lg border px-3 py-2 text-xs"
+          style={{
+            borderColor: "var(--success)",
+            color: "var(--success)",
+            backgroundColor: "color-mix(in srgb, var(--success) 8%, transparent)",
+          }}
+        >
+          {t("my_teams.duplicated")}
+        </div>
+      )}
 
       {isLoading && (
         <div className="card" style={{ color: "var(--text-muted)" }}>
@@ -161,9 +209,24 @@ export function MyTeams() {
                     <Pencil size={14} />
                   </Link>
                   <button
-                    onClick={() => team.id && remove(team.id)}
+                    type="button"
+                    onClick={() => void duplicate(team)}
+                    disabled={!team.id}
+                    className="rounded p-1 text-[var(--text-muted)] hover:bg-[var(--bg-elev-strong)] hover:text-[var(--accent)] disabled:opacity-30"
+                    title={t("my_teams.duplicate")}
+                    aria-label={t("my_teams.duplicate")}
+                  >
+                    <Copy size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      team.id &&
+                      setPendingDelete({ id: team.id, name: team.name })
+                    }
                     className="rounded p-1 text-[var(--text-muted)] hover:bg-[var(--bg-elev-strong)] hover:text-[var(--danger)]"
                     title={t("common.delete")}
+                    aria-label={t("common.delete")}
                   >
                     <Trash2 size={14} />
                   </button>

@@ -35,8 +35,15 @@ pub use official_stream_client::OfficialStreamClient;
 pub use pikalytics_client::PikalyticsClient;
 pub use pkmn_data_client::PkmnDataClient;
 pub use pokeapi_client::{LocalizedDescription, LocalizedName, PokeApiClient, TranslationTable};
-pub use pokebase_client::{PokebaseClient, PokebasePage, PokebaseTeamCard};
-pub use pokedata_client::{PokedataClient, PokedataEvent};
+pub use pokebase_client::{
+    PokebaseClient, PokebasePage, PokebaseTeamCard, PokebaseTeamPokemon, PokebaseTournamentRef,
+    PokebaseTournamentTeam,
+};
+pub use pokedata_client::{
+    PokedataClient, PokedataDivision, PokedataEvent, PokedataStanding, PokedataStandings,
+    PokedataTeam, PokedataTeamPokemon, PokedataTopCut, PokedataTopCutMatch, PokedataTopCutPlayer,
+    PokedataTopCutRound,
+};
 pub use pokepaste_client::{parse_pokepaste_export, PokepasteClient, ShowdownEntry, StatSpread};
 pub use showdown_client::{ShowdownClient, ShowdownDescriptionMaps, ShowdownPokedex};
 pub use smogon_client::SmogonClient;

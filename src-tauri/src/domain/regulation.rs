@@ -145,6 +145,13 @@ pub struct OfficialLiveStream {
     pub embed_url: String,
     pub thumbnail_url: String,
     pub live: bool,
+    /// YouTube's duration badge for past broadcasts (`9:07:32`), when present.
+    #[serde(default)]
+    pub duration: Option<String>,
+    /// Approximate publish instant derived from YouTube's "Streamed 1d ago"
+    /// text. It lets the UI render the age in the active locale.
+    #[serde(default)]
+    pub published_at: Option<String>,
 }
 
 /// One configured live screen (official channel or a community channel).

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle, X } from "lucide-react";
+import { CheckboxField } from "../ui/FormControls";
 
 interface Props {
   open: boolean;
@@ -67,14 +68,12 @@ export function LoadAllTeamsConfirmModal({ open, count, onConfirm, onCancel }: P
           </div>
         </div>
 
-        <label className="mt-3 flex items-center gap-2 text-xs" style={{ color: "var(--text)" }}>
-          <input
-            type="checkbox"
-            checked={dontAsk}
-            onChange={(e) => setDontAsk(e.target.checked)}
-          />
-          {t("top_teams.confirm_all_dont_ask")}
-        </label>
+        <CheckboxField
+          className="mt-3 text-xs"
+          checked={dontAsk}
+          onChange={setDontAsk}
+          label={t("top_teams.confirm_all_dont_ask")}
+        />
 
         <div className="mt-4 flex justify-end gap-2">
           <button type="button" className="btn-ghost" onClick={onCancel}>

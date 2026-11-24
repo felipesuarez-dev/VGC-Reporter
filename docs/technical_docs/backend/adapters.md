@@ -24,9 +24,11 @@ Host: `https://labmaus.net/api/*`.
 - Solo acepta links de `web-view.app.pokemonchampions.jp`.
 
 ### `official_stream_client.rs`
-- Pantallas por defecto: YukS, `@PlayPokemon`, WolfeyVGC, CybertronVGC, James Baek, PokeAlex, Moxie2D, Pokémon Champions, Sekiam, IRNemesis y un watch party en vivo (orden editable en Ajustes; máximo 12).
-- Lee la pestaña `/streams` (o `/live` como fallback). El canal oficial conserva sólo tarjetas `watching` cuyo título sea VGC/Champions y rechaza GO/TCG; los canales de comunidad aceptan cualquier directo (`live_any`).
-- Un video configurado se valida contra `videoDetails.isLive`.
+- Pantallas por defecto: YukS, `@PlayPokemon`, WolfeyVGC, CybertronVGC, James Baek, PokeAlex, Moxie2D, MoxieBoosted, BlackStormGamesVGC, Pokémon Champions, Sekiam y THATSAplusONE (orden editable en Ajustes; máximo 12). No hay pantalla de “watch party”: si ningún canal está en vivo, la UI muestra las últimas transmisiones.
+- Lee la pestaña `/streams` (o `/live` como fallback). El canal oficial conserva sólo tarjetas con **señal fuerte de directo** (`isLiveNow`, `BADGE_STYLE_TYPE_LIVE_NOW`, `label:LIVE` o contador real “N watching”) cuyo título sea VGC/Champions y rechaza GO/TCG; los canales de comunidad aceptan cualquier directo (`live_any`).
+- Rechaza bloques con `isUpcoming`, `scheduledStartTime`, `Live in`, `Scheduled for`, `premiere` o `waiting`: YouTube devuelve `isLive:true` para estrenos programados y no deben mostrarse como directo.
+- Para la **última transmisión** recorre la misma pestaña, descarta programados/estrenos y elige la tarjeta pasada con menor antigüedad según `Streamed N(d|h|m) ago`; extrae la duración de `thumbnailBadgeViewModel` y expone `published_at` aproximado para que la UI muestre “hace X”. Reconoce títulos VGC, “Championship Sunday” y “Videojuegos Pokémon” (Puebla).
+- Un video configurado se valida contra `videoDetails.isLive` **y** contra las mismas señales de programado/estreno.
 - TTL 5 min; `None` significa que ese canal no está en directo.
 
 ### `official_event_client.rs`
@@ -43,11 +45,13 @@ Host: `https://labmaus.net/api/*`.
 - TTL 6h para listas, 12h para ficha/resultados. `enrich()` combina premio y campeón sin bloquear si una de las dos fuentes falla.
 
 ### `pokedata_client.rs`
-- Host: `https://pokedata.ovh/events/apiv2`.
+- Host de eventos: `https://pokedata.ovh/events/apiv2`.
 - Modo país: `/_vg/challenges/cups/_country/{ISO}/_start/{from}/_end/{to}`.
 - Modo todos: omite `_country` y pagina con `/_page/N` (2 páginas).
 - Extrae datos de asistencia: `street_address`, `state`, `postal_code`, `latitude`, `longitude`, `contact_email`, `contact_phone`, `Details`, `Registration_start/end`, `Admission`, `Event_website`, `Third_party_registration_website`.
 - Recorta el warning PHP antes del primer `{`; TTL 6h.
+- Standings2: `standings(name, date)` busca el evento VG por nombre/fecha en `https://www.pokedata.ovh/standings2/`, lee `standings/{id}_Masters.json` (o `_Master.json`) y construye el historial por rondas. `top_cut(name, date)` parsea `details.bracket` de `/standings2/{id}/Masters` (o `/Master`) y, si falta el HTML, lo deriva del JSON. También lee los equipos de todos los jugadores y las divisiones. TTL 6h; se etiqueta como fuente no oficial.
+- `domain/event_match.rs` centraliza el emparejamiento tolerante (fecha ±2 días, tipo, región y tokens), compartido con PokéBase.
 
 ## LimitlessClient (`limitless_client.rs`)
 Host: `https://play.limitlesstcg.com/api`. TTL 1h listas / 24h detalle.
@@ -59,12 +63,14 @@ Host: `https://play.limitlesstcg.com/api`. TTL 1h listas / 24h detalle.
 - `get_standings(id)` - URL: `?limit=500`. Sin este parámetro la API devuelve ~5 entradas por defecto. Incluye decklist inline cuando el organizador lo publicó.
 
 ## PokebaseClient (`pokebase_client.rs`)
-Host: `https://pokebase.app/pokemon-champions/teams`. TTL 12h.
+Host: `https://pokebase.app/pokemon-champions/teams` y `/tournaments`. TTL 12h.
 
 - Lee la página pública (no `/api`, que está bloqueado por `robots.txt`) y decodifica el payload RSC de Next.js (`self.__next_f.push`).
 - Extrae `showcase.community` y `showcase.tournament` con sus totales.
 - Cada tarjeta conserva `source_url`/`date_shared` si PokéBase atribuye el equipo a otra fuente; `TopTeamsService` muestra esa atribución en lugar de apropiársela.
-- Tests: payload RSC válido y página sin payload.
+- `find_tournament(name, date)` lee los `aria-label` de las cards, descarta TCG y empareja con `domain/event_match.rs`.
+- `tournament_top8(id)` parsea `ol[aria-label="Top 8"]`: jugador, país, placing, record, seis Pokémon, objeto y sprite.
+- Tests: payload RSC, página sin payload, listado LAIC vs TCG y Top 8.
 
 ## ShowdownClient (`showdown_client.rs`)
 Host: `https://play.pokemonshowdown.com/data`. TTL 7d.

@@ -9,7 +9,8 @@ Listado de los equipos que has guardado.
 ## Qué puedes hacer
 
 - **Editar** un equipo: te lleva al *Constructor de equipos* con el equipo cargado.
-- **Borrar** un equipo (con confirmación).
+- **Duplicar** con el icono de copia: crea una copia con el nombre «Copia de …» sin tocar el original.
+- **Borrar** un equipo: siempre abre un modal de confirmación con el nombre; no se elimina hasta confirmar.
 - **Crear nuevo**: atajo al constructor vacío.
 
 ## Dónde se guardan los datos

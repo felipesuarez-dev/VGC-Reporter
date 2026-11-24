@@ -95,6 +95,16 @@ export function matchesCity(
   return !filter.country || eventCountry === filter.country;
 }
 
+/** Inline list of city keys; an empty list means every city. */
+export function matchesCities(
+  eventCity: string | null | undefined,
+  eventCountry: string | null | undefined,
+  keys: string[],
+): boolean {
+  if (keys.length === 0) return true;
+  return keys.some((key) => matchesCity(eventCity, eventCountry, key));
+}
+
 /** Play! Pokémon in-person events vs Limitless community online events. */
 export function splitUpcomingEvents<T extends { source: string }>(events: T[]): {
   official: T[];

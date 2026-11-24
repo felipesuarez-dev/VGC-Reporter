@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, Copy, Download, X } from "lucide-react";
+import { CheckboxField } from "../ui/FormControls";
 import { ipc } from "../../lib/ipc";
 import type { Team } from "../../lib/types";
 
@@ -143,16 +144,16 @@ export function ExportTeamsModal({ teams, onClose }: Props) {
                 className="flex items-center gap-2 border-b px-2 py-1.5 last:border-b-0"
                 style={{ borderColor: "var(--border)" }}
               >
-                <label className="flex flex-1 cursor-pointer items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggle(team.id!)}
-                  />
-                  <span className="truncate text-sm" style={{ color: "var(--text)" }}>
-                    {team.name}
-                  </span>
-                </label>
+                <CheckboxField
+                  className="flex-1 text-sm"
+                  checked={checked}
+                  onChange={() => toggle(team.id!)}
+                  label={
+                    <span className="truncate" style={{ color: "var(--text)" }}>
+                      {team.name}
+                    </span>
+                  }
+                />
                 <span
                   className="shrink-0 text-[10px]"
                   style={{ color: "var(--text-muted)" }}

@@ -1,7 +1,31 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ipc } from "../lib/ipc";
-import { AlertTriangle, CalendarDays, ChevronDown, ExternalLink, FileText, Info, RefreshCw, RotateCcw, Table2 } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarDays,
+  ChevronDown,
+  ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
+  Clock,
+  Database,
+  ExternalLink,
+  FileText,
+  Globe2,
+  Info,
+  Languages,
+  LayoutGrid,
+  ListVideo,
+  MonitorPlay,
+  RefreshCw,
+  RotateCcw,
+  Settings2,
+  ShieldCheck,
+  Smartphone,
+  Table2,
+  Wrench,
+} from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { FormatSelector } from "../components/ui/FormatSelector";
 import { AboutModal } from "../components/layout/AboutModal";
@@ -19,10 +43,16 @@ import {
   FONT_SIZE_MIN,
   useUiStore,
 } from "../stores/uiStore";
-import { usePlaybackStore } from "../stores/playbackStore";
 import { useTypeLabStore } from "../stores/typeLabStore";
+import { usePlaybackStore } from "../stores/playbackStore";
 import { SyncSettings } from "../components/settings/SyncSettings";
 import { LiveScreensSettings } from "../components/settings/LiveScreensSettings";
+import { ShortcutRecorder } from "../components/settings/ShortcutRecorder";
+import {
+  SegmentedControl,
+  ToggleSwitch,
+} from "../components/ui/FormControls";
+import { isAndroidApp } from "../lib/platform";
 
 const LEGACY_INDER_LIVE = "https://www.youtube.com/watch?v=tP09BzCEJqU";
 
@@ -34,19 +64,22 @@ const DEFAULT_LIVE_SCREENS = [
   "https://www.youtube.com/@JamesBaek",
   "https://www.youtube.com/@PokeAlex",
   "https://www.youtube.com/@Moxie2D",
+  "https://www.youtube.com/@MoxieBoosted",
+  "https://www.youtube.com/@BlackStormGamesVGC",
   "https://www.youtube.com/@PokemonChampions",
   "https://www.youtube.com/@Sekiam",
-  "https://www.youtube.com/@IRNemesisTV",
+  "https://www.youtube.com/@THATSAplusONE",
 ];
 
 function defaultLiveScreens(settings: Record<string, string>): string {
   const configured = settings.live_stream_urls?.trim();
   if (configured) {
-    return configured
+    const cleaned = configured
       .split(/\r?\n/)
       .map((url) => url.trim())
       .filter((url) => url && url !== LEGACY_INDER_LIVE)
       .join("\n");
+    if (cleaned) return cleaned;
   }
   const legacy = settings.official_stream_url?.trim();
   return [
@@ -60,10 +93,46 @@ function defaultLiveScreens(settings: Record<string, string>): string {
     .join("\n");
 }
 
+const SETTINGS_GROUP_IDS = [
+  "general",
+  "widgets",
+  "playback",
+  "data",
+  "sync",
+  "advanced",
+] as const;
+
+const SETTINGS_CARD_IDS = [
+  "language",
+  "font_size",
+  "timezone",
+  "home_country",
+  "floating_widgets",
+  "calendar",
+  "quick_tables",
+  "mobile_nav",
+  "playback_mode",
+  "live_screens",
+  "preferred_format",
+  "regulations",
+  "sync",
+  "external_sources",
+  "diagnostics",
+  "disclaimer",
+] as const;
+
 const EXTERNAL_LINKS: { key: string; url: string }[] = [
   { key: "open_labmaus", url: "https://labmaus.net/" },
   { key: "open_pikalytics", url: "https://www.pikalytics.com/" },
-  { key: "open_pokemonzone", url: "https://pokemon-zone.com/" },
+  {
+    key: "open_pokemonzone",
+    url: "https://www.pokemon-zone.com/champions/tournaments/",
+  },
+  {
+    key: "open_pokebase",
+    url: "https://pokebase.app/pokemon-champions/tournaments",
+  },
+  { key: "open_pokedata", url: "https://www.pokedata.ovh/standings2/" },
   { key: "open_porygonlabs", url: "https://porygonlabs.com/" },
   { key: "open_championslab", url: "https://championslab.xyz/" },
   {
@@ -74,6 +143,7 @@ const EXTERNAL_LINKS: { key: string; url: string }[] = [
 
 export function Settings() {
   const { t } = useTranslation();
+  const android = isAndroidApp();
   const format = useDashboardStore((s) => s.favoriteFormat);
   const setFavoriteFormat = useDashboardStore((s) => s.setFavoriteFormat);
   const setFormat = useDashboardStore((s) => s.setFormat);
@@ -86,23 +156,30 @@ export function Settings() {
   const setHomeCountry = useUiStore((s) => s.setHomeCountry);
   const calendarMode = useUiStore((s) => s.calendarMode);
   const setCalendarMode = useUiStore((s) => s.setCalendarMode);
-  const calendarPlacement = useUiStore((s) => s.calendarPlacement);
-  const setCalendarPlacement = useUiStore((s) => s.setCalendarPlacement);
-  const calendarCorner = useUiStore((s) => s.calendarCorner);
-  const setCalendarCorner = useUiStore((s) => s.setCalendarCorner);
-  const pokedexQuickTables = useUiStore((s) => s.pokedexQuickTables);
-  const setPokedexQuickTables = useUiStore((s) => s.setPokedexQuickTables);
-  const quickTablesDefaultTab = useUiStore((s) => s.quickTablesDefaultTab);
-  const setQuickTablesDefaultTab = useUiStore((s) => s.setQuickTablesDefaultTab);
+  const continuity = usePlaybackStore((s) => s.continuity);
+  const setContinuity = usePlaybackStore((s) => s.setContinuity);
+  const floatingWidgetsGrouped = useUiStore((s) => s.floatingWidgetsGrouped);
+  const setFloatingWidgetsGrouped = useUiStore(
+    (s) => s.setFloatingWidgetsGrouped,
+  );
+  const floatingWidgetsCorner = useUiStore((s) => s.floatingWidgetsCorner);
+  const setFloatingWidgetsCorner = useUiStore((s) => s.setFloatingWidgetsCorner);
   const quickTablesMode = useUiStore((s) => s.quickTablesMode);
   const setQuickTablesMode = useUiStore((s) => s.setQuickTablesMode);
-  const quickTablesPlacement = useUiStore((s) => s.quickTablesPlacement);
-  const setQuickTablesPlacement = useUiStore((s) => s.setQuickTablesPlacement);
-  const quickTablesCorner = useUiStore((s) => s.quickTablesCorner);
-  const setQuickTablesCorner = useUiStore((s) => s.setQuickTablesCorner);
-  const setQuickTablesPosition = useUiStore((s) => s.setQuickTablesPosition);
-  const videoContinuity = usePlaybackStore((s) => s.continuity);
-  const setVideoContinuity = usePlaybackStore((s) => s.setContinuity);
+  const quickTablesDefaultTab = useUiStore((s) => s.quickTablesDefaultTab);
+  const setQuickTablesDefaultTab = useUiStore((s) => s.setQuickTablesDefaultTab);
+  const quickTablesShortcut = useUiStore((s) => s.quickTablesShortcut);
+  const setQuickTablesShortcut = useUiStore((s) => s.setQuickTablesShortcut);
+  const mobileNavEnabled = useUiStore((s) => s.mobileNavEnabled);
+  const setMobileNavEnabled = useUiStore((s) => s.setMobileNavEnabled);
+  const mobileNavPlacement = useUiStore((s) => s.mobileNavPlacement);
+  const setMobileNavPlacement = useUiStore((s) => s.setMobileNavPlacement);
+  const setMobileNavPosition = useUiStore((s) => s.setMobileNavPosition);
+  const settingsCollapsed = useUiStore((s) => s.settingsCollapsed);
+  const setSettingsCollapsed = useUiStore((s) => s.setSettingsCollapsed);
+  const setAllSettingsCollapsed = useUiStore(
+    (s) => s.setAllSettingsCollapsed,
+  );
   const [aboutOpen, setAboutOpen] = useState(false);
   const qc = useQueryClient();
   const { options, active } = useRegulationCatalog();
@@ -183,34 +260,66 @@ export function Settings() {
     await refreshCatalog();
   };
 
+  const allCollapseIds = [
+    ...SETTINGS_GROUP_IDS.map((id) => `group:${id}`),
+    ...SETTINGS_CARD_IDS.map((id) => `card:${id}`),
+  ];
+  const anySettingsOpen = allCollapseIds.some((id) => !settingsCollapsed[id]);
+
   return (
     <div className="space-y-4">
-      <header className="flex items-center justify-between">
+      <header className="flex items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">{t("settings.title")}</h1>
-        <button className="btn-ghost" onClick={() => setAboutOpen(true)}>
-          <Info size={14} className="mr-1" />
-          {t("about.title")}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="btn-ghost h-8 text-[11px]"
+            onClick={() => setAllSettingsCollapsed(allCollapseIds, anySettingsOpen)}
+            title={anySettingsOpen ? t("feed.collapse_all") : t("feed.expand_all")}
+          >
+            {anySettingsOpen ? (
+              <ChevronsDownUp size={13} className="mr-1" />
+            ) : (
+              <ChevronsUpDown size={13} className="mr-1" />
+            )}
+            {anySettingsOpen ? t("feed.collapse_all") : t("feed.expand_all")}
+          </button>
+          <button className="btn-ghost h-8 text-[11px]" onClick={() => setAboutOpen(true)}>
+            <Info size={14} className="mr-1" />
+            {t("about.title")}
+          </button>
+        </div>
       </header>
 
       <SettingsGroup
+        id="general"
+        icon={<Settings2 size={15} />}
         title={t("settings.group_general")}
         hint={t("settings.group_general_hint")}
       >
-      <section className="card space-y-3">
-        <div className="label">{t("settings.language")}</div>
+      <SettingsCard
+        id="language"
+        icon={<Languages size={15} />}
+        title={t("settings.language")}
+      >
         <LanguageCombobox variant="default" />
-      </section>
+      </SettingsCard>
 
-      <section className="card space-y-3">
+      <SettingsCard
+        id="font_size"
+        icon={<LayoutGrid size={15} />}
+        title={t("settings.font_size")}
+        hint={t("settings.font_size_hint")}
+      >
         <div>
-          <div className="flex items-baseline justify-between">
-            <label className="label" htmlFor="font-size-slider">
-              {t("settings.font_size")}
-            </label>
+          <div className="flex items-baseline justify-end">
             <span
-              className="text-xs tabular-nums"
-              style={{ color: "var(--text-muted)" }}
+              className="rounded-full border px-2 py-0.5 text-[11px] font-semibold tabular-nums"
+              style={{
+                borderColor: "var(--border)",
+                backgroundColor: "var(--bg-elev-strong)",
+                color: "var(--text)",
+              }}
               aria-live="polite"
             >
               {fontSizePx}px
@@ -225,6 +334,15 @@ export function Settings() {
             value={fontSizePx}
             onChange={(e) => setFontSizePx(Number(e.target.value))}
             className="font-size-slider mt-2 w-full"
+            style={
+              {
+                "--slider-progress": `${
+                  ((fontSizePx - FONT_SIZE_MIN) /
+                    (FONT_SIZE_MAX - FONT_SIZE_MIN)) *
+                  100
+                }%`,
+              } as CSSProperties
+            }
           />
           <div
             className="mt-1 flex items-center justify-between text-[10px]"
@@ -240,260 +358,202 @@ export function Settings() {
             </button>
             <span>{t("settings.font_size_large")}</span>
           </div>
-          <p className="mt-1 text-xs" style={{ color: "var(--text-dim)" }}>
-            {t("settings.font_size_hint")}
-          </p>
         </div>
-      </section>
+      </SettingsCard>
 
-      <section className="card space-y-2">
-        <div className="label">{t("settings.timezone")}</div>
+      <SettingsCard
+        id="timezone"
+        icon={<Clock size={15} />}
+        title={t("settings.timezone")}
+        hint={t("settings.timezone_hint")}
+      >
         <TimeZoneSelect className="w-full sm:w-80" />
-        <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-          {t("settings.timezone_hint")}
-        </p>
-      </section>
+      </SettingsCard>
 
-      <section className="card space-y-2">
-        <div className="label">{t("settings.home_country")}</div>
+      <SettingsCard
+        id="home_country"
+        icon={<Globe2 size={15} />}
+        title={t("settings.home_country")}
+        hint={t("settings.home_country_hint")}
+      >
         <CountrySelect
           value={homeCountry}
           onChange={setHomeCountry}
           className="w-full sm:w-80"
         />
-        <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-          {t("settings.home_country_hint")}
-        </p>
-      </section>
+      </SettingsCard>
       </SettingsGroup>
 
       <SettingsGroup
+        id="widgets"
+        icon={<LayoutGrid size={15} />}
         title={t("settings.group_widgets")}
         hint={t("settings.group_widgets_hint")}
       >
 
-      <section className="card space-y-3">
-        <div className="flex items-center gap-2">
-          <CalendarDays size={15} style={{ color: "var(--accent)" }} />
-          <div>
-            <div className="label">{t("settings.calendar")}</div>
-            <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-              {t("settings.calendar_hint")}
-            </p>
-          </div>
-        </div>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="radio"
-              name="calendar-mode"
-              checked={calendarMode === "panel"}
-              onChange={() => setCalendarMode("panel")}
-            />
-            {t("settings.calendar_panel")}
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="radio"
-              name="calendar-mode"
-              checked={calendarMode === "floating"}
-              onChange={() => setCalendarMode("floating")}
-            />
-            {t("settings.calendar_floating")}
-          </label>
-        </div>
-        {calendarMode === "floating" && (
-          <div className="space-y-2">
-            <div className="flex flex-wrap gap-3">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="calendar-placement"
-                  checked={calendarPlacement === "corner"}
-                  onChange={() => setCalendarPlacement("corner")}
-                />
-                {t("settings.calendar_corner")}
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="calendar-placement"
-                  checked={calendarPlacement === "free"}
-                  onChange={() => setCalendarPlacement("free")}
-                />
-                {t("settings.calendar_free")}
-              </label>
-            </div>
-            {calendarPlacement === "corner" && (
-              <select
-                className="input h-9 w-full sm:w-64"
-                value={calendarCorner}
-                onChange={(event) =>
-                  setCalendarCorner(
-                    event.target.value as "bottom-right" | "bottom-left",
-                  )
-                }
-              >
-                <option value="bottom-right">{t("settings.calendar_bottom_right")}</option>
-                <option value="bottom-left">{t("settings.calendar_bottom_left")}</option>
-              </select>
-            )}
-          </div>
-        )}
-      </section>
+      <SettingsCard
+        id="floating_widgets"
+        icon={<LayoutGrid size={15} />}
+        title={t("settings.floating_widgets")}
+        hint={t("settings.floating_widgets_hint")}
+      >
+        <ToggleSwitch
+          checked={floatingWidgetsGrouped}
+          onChange={setFloatingWidgetsGrouped}
+          label={t("settings.widgets_grouped")}
+          hint={t("settings.widgets_grouped_hint")}
+        />
+        <SegmentedControl
+          value={floatingWidgetsCorner}
+          onChange={(value) => setFloatingWidgetsCorner(value)}
+          label={t("settings.widgets_corner")}
+          options={[
+            {
+              value: "bottom-right",
+              label: t("settings.calendar_bottom_right"),
+            },
+            {
+              value: "bottom-left",
+              label: t("settings.calendar_bottom_left"),
+            },
+          ]}
+        />
+      </SettingsCard>
 
-      <section className="card space-y-3">
-        <div className="flex items-center gap-2">
-          <Table2 size={15} style={{ color: "var(--accent)" }} />
-          <div>
-            <div className="label">{t("settings.quick_tables")}</div>
-            <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-              {t("settings.quick_tables_hint")}
-            </p>
-          </div>
-        </div>
+      <SettingsCard
+        id="calendar"
+        icon={<CalendarDays size={15} />}
+        title={t("settings.calendar")}
+        hint={t("settings.calendar_hint")}
+      >
+        <SegmentedControl
+          value={calendarMode}
+          onChange={(value) => setCalendarMode(value)}
+          options={[
+            { value: "titlebar", label: t("settings.calendar_titlebar") },
+            { value: "floating", label: t("settings.calendar_floating") },
+          ]}
+          hint={
+            calendarMode === "floating"
+              ? t("settings.calendar_rail_hint")
+              : t("settings.calendar_titlebar_hint")
+          }
+        />
+      </SettingsCard>
+
+      <SettingsCard
+        id="quick_tables"
+        icon={<Table2 size={15} />}
+        title={t("settings.quick_tables")}
+        hint={t("settings.quick_tables_hint")}
+      >
+        <SegmentedControl
+          value={quickTablesMode}
+          onChange={(value) => setQuickTablesMode(value)}
+          label={t("settings.quick_tables_mode")}
+          options={[
+            { value: "titlebar", label: t("settings.quick_tables_titlebar_mode") },
+            { value: "floating", label: t("settings.quick_tables_floating_mode") },
+          ]}
+          hint={
+            quickTablesMode === "floating"
+              ? t("settings.quick_tables_floating_hint")
+              : t("settings.quick_tables_titlebar_hint")
+          }
+        />
+        <SegmentedControl
+          fullWidth
+          value={quickTablesDefaultTab}
+          onChange={(value) => setQuickTablesDefaultTab(value)}
+          label={t("settings.quick_tables_default")}
+          options={[
+            { value: "types", label: t("settings.quick_tables_types") },
+            { value: "natures", label: t("settings.quick_tables_natures") },
+          ]}
+        />
+        <button
+          type="button"
+          className="btn-ghost h-9 self-start text-xs"
+          onClick={() => {
+            const store = useTypeLabStore.getState();
+            store.setTab(quickTablesDefaultTab === "types" ? "table" : "natures");
+            store.setOpen(true);
+          }}
+        >
+          {t("settings.quick_tables_open")}
+        </button>
         <div>
-          <div className="mb-1 text-[10px] uppercase tracking-wide" style={{ color: "var(--text-dim)" }}>
-            {t("settings.quick_tables_mode")}
+          <div
+            className="mb-1 text-[10px] uppercase tracking-wide"
+            style={{ color: "var(--text-dim)" }}
+          >
+            {t("settings.quick_tables_shortcut")}
           </div>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="radio"
-                name="quick-tables-mode"
-                checked={quickTablesMode === "panel"}
-                onChange={() => setQuickTablesMode("panel")}
-              />
-              {t("settings.quick_tables_panel")}
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="radio"
-                name="quick-tables-mode"
-                checked={quickTablesMode === "floating"}
-                onChange={() => setQuickTablesMode("floating")}
-              />
-              {t("settings.quick_tables_floating")}
-            </label>
-          </div>
+          <ShortcutRecorder
+            value={quickTablesShortcut}
+            onChange={setQuickTablesShortcut}
+          />
         </div>
-        {quickTablesMode === "floating" && (
+      </SettingsCard>
+
+      {android && (
+      <SettingsCard
+        id="mobile_nav"
+        icon={<Smartphone size={15} />}
+        title={t("settings.mobile_nav")}
+        hint={t("settings.mobile_nav_hint")}
+      >
+        <ToggleSwitch
+          checked={mobileNavEnabled}
+          onChange={setMobileNavEnabled}
+          label={t("settings.mobile_nav_enabled")}
+        />
+        {mobileNavEnabled && (
           <div className="space-y-2">
-            <div className="flex flex-wrap gap-3">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="quick-tables-placement"
-                  checked={quickTablesPlacement === "corner"}
-                  onChange={() => setQuickTablesPlacement("corner")}
-                />
-                {t("settings.calendar_corner")}
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="quick-tables-placement"
-                  checked={quickTablesPlacement === "free"}
-                  onChange={() => setQuickTablesPlacement("free")}
-                />
-                {t("settings.calendar_free")}
-              </label>
-            </div>
-            {quickTablesPlacement === "corner" && (
-              <select
-                className="input h-9 w-full sm:w-64"
-                value={quickTablesCorner}
-                onChange={(event) =>
-                  setQuickTablesCorner(
-                    event.target.value as "bottom-right" | "bottom-left",
-                  )
-                }
-              >
-                <option value="bottom-right">{t("settings.calendar_bottom_right")}</option>
-                <option value="bottom-left">{t("settings.calendar_bottom_left")}</option>
-              </select>
-            )}
+            <SegmentedControl
+              value={mobileNavPlacement}
+              onChange={(value) => setMobileNavPlacement(value)}
+              label={t("settings.mobile_nav_placement")}
+              options={[
+                { value: "fixed", label: t("settings.mobile_nav_fixed") },
+                { value: "free", label: t("settings.mobile_nav_free") },
+              ]}
+            />
             <button
               type="button"
               className="btn-ghost h-8 text-[10px]"
-              onClick={() => setQuickTablesPosition(null)}
+              onClick={() => setMobileNavPosition(null)}
             >
-              {t("settings.quick_tables_reset_position")}
+              {t("settings.mobile_nav_reset")}
             </button>
           </div>
         )}
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={pokedexQuickTables}
-            onChange={(event) => setPokedexQuickTables(event.target.checked)}
-          />
-          {t("settings.quick_tables_show")}
-        </label>
-        <div className="flex flex-wrap items-end gap-2">
-          <div>
-            <div className="mb-1 text-[10px] uppercase tracking-wide" style={{ color: "var(--text-dim)" }}>
-              {t("settings.quick_tables_default")}
-            </div>
-            <select
-              className="input h-9 w-48"
-              value={quickTablesDefaultTab}
-              onChange={(event) =>
-                setQuickTablesDefaultTab(
-                  event.target.value === "natures" ? "natures" : "types",
-                )
-              }
-            >
-              <option value="types">{t("settings.quick_tables_types")}</option>
-              <option value="natures">{t("settings.quick_tables_natures")}</option>
-            </select>
-          </div>
-          <button
-            type="button"
-            className="btn-ghost h-9 text-xs"
-            onClick={() => {
-              const store = useTypeLabStore.getState();
-              store.setTab(quickTablesDefaultTab === "types" ? "table" : "natures");
-              store.setOpen(true);
-            }}
-          >
-            {t("settings.quick_tables_open")}
-          </button>
-        </div>
-      </section>
+      </SettingsCard>
+      )}
       </SettingsGroup>
 
       <SettingsGroup
+        id="playback"
+        icon={<MonitorPlay size={15} />}
         title={t("settings.group_playback")}
         hint={t("settings.group_playback_hint")}
       >
-      <section className="card space-y-2">
-        <div className="label">{t("settings.playback")}</div>
-        <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-          {t("settings.playback_hint")}
-        </p>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="radio"
-              name="video-continuity"
-              checked={videoContinuity === "stop"}
-              onChange={() => setVideoContinuity("stop")}
-            />
-            {t("settings.playback_stop")}
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="radio"
-              name="video-continuity"
-              checked={videoContinuity === "mini"}
-              onChange={() => setVideoContinuity("mini")}
-            />
-            {t("settings.playback_mini")}
-          </label>
-        </div>
-      </section>
-
+      <SettingsCard
+        id="playback_mode"
+        icon={<MonitorPlay size={15} />}
+        title={t("settings.playback")}
+        hint={t("settings.playback_hint")}
+      >
+        <SegmentedControl
+          value={continuity}
+          onChange={(value) => setContinuity(value)}
+          label={t("settings.playback")}
+          options={[
+            { value: "stop", label: t("settings.playback_stop") },
+            { value: "mini", label: t("settings.playback_mini") },
+          ]}
+        />
+      </SettingsCard>
       <LiveScreensSettings
         value={streamUrls}
         onChange={setStreamUrls}
@@ -503,11 +563,17 @@ export function Settings() {
       </SettingsGroup>
 
       <SettingsGroup
+        id="data"
+        icon={<Database size={15} />}
         title={t("settings.group_data")}
         hint={t("settings.group_data_hint")}
       >
-      <section className="card space-y-2">
-        <div className="label">{t("settings.preferred_format")}</div>
+      <SettingsCard
+        id="preferred_format"
+        icon={<ShieldCheck size={15} />}
+        title={t("settings.preferred_format")}
+        hint={t("settings.preferred_format_hint")}
+      >
         <FormatSelector
           value={format}
           favorite={format}
@@ -522,15 +588,15 @@ export function Settings() {
           }}
           className="w-full sm:w-72"
         />
-        <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-          {t("settings.preferred_format_hint")}
-        </p>
-      </section>
+      </SettingsCard>
 
-      <section className="card space-y-3">
+      <SettingsCard
+        id="regulations"
+        icon={<ShieldCheck size={15} />}
+        title={t("regulations.settings_title")}
+      >
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-0">
-            <div className="label">{t("regulations.settings_title")}</div>
             <p className="truncate text-xs" style={{ color: "var(--text-muted)" }}>
               {active ? regulationLabel(t, active) : t("common.loading")}
               {syncStatus?.last_sync
@@ -562,27 +628,21 @@ export function Settings() {
           </button>
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={!formatPinned}
-              onChange={(e) => {
-                useDashboardStore.setState({ formatPinned: !e.target.checked });
-                if (e.target.checked && active) {
-                  useDashboardStore.getState().followActive(active.id);
-                }
-              }}
-            />
-            {t("regulations.auto_follow")}
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={showArchived}
-              onChange={(e) => setShowArchived(e.target.checked)}
-            />
-            {t("regulations.show_archived")}
-          </label>
+          <ToggleSwitch
+            checked={!formatPinned}
+            onChange={(checked) => {
+              useDashboardStore.setState({ formatPinned: !checked });
+              if (checked && active) {
+                useDashboardStore.getState().followActive(active.id);
+              }
+            }}
+            label={t("regulations.auto_follow")}
+          />
+          <ToggleSwitch
+            checked={showArchived}
+            onChange={setShowArchived}
+            label={t("regulations.show_archived")}
+          />
         </div>
         {syncStatus?.calendar_pending && (
           <p className="text-[11px]" style={{ color: "var(--warning)" }}>
@@ -756,10 +816,12 @@ export function Settings() {
             </div>
           </div>
         </details>
-      </section>
+      </SettingsCard>
       </SettingsGroup>
 
       <SettingsGroup
+        id="sync"
+        icon={<ShieldCheck size={15} />}
         title={t("settings.group_sync")}
         hint={t("settings.group_sync_hint")}
       >
@@ -767,11 +829,16 @@ export function Settings() {
       </SettingsGroup>
 
       <SettingsGroup
+        id="advanced"
+        icon={<Wrench size={15} />}
         title={t("settings.group_advanced")}
         hint={t("settings.group_advanced_hint")}
       >
-      <section className="card space-y-2">
-        <div className="label">{t("settings.external_sources")}</div>
+      <SettingsCard
+        id="external_sources"
+        icon={<ExternalLink size={15} />}
+        title={t("settings.external_sources")}
+      >
         <ul className="space-y-1">
           {EXTERNAL_LINKS.map((link) => (
             <li key={link.key}>
@@ -786,13 +853,20 @@ export function Settings() {
             </li>
           ))}
         </ul>
-      </section>
-
-      <section className="card space-y-2">
-        <div className="label">{t("settings.diagnostics")}</div>
-        <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
-          {t("settings.logs_hint")}
+        <p
+          className="mt-3 text-[10px] leading-relaxed"
+          style={{ color: "var(--text-dim)" }}
+        >
+          {t("settings.external_sources_disclaimer")}
         </p>
+      </SettingsCard>
+
+      <SettingsCard
+        id="diagnostics"
+        icon={<FileText size={15} />}
+        title={t("settings.diagnostics")}
+        hint={t("settings.logs_hint")}
+      >
         <button
           className="btn-ghost flex items-center gap-2 text-sm"
           onClick={() => {
@@ -802,14 +876,17 @@ export function Settings() {
           <FileText size={14} />
           {t("settings.open_logs")}
         </button>
-      </section>
+      </SettingsCard>
 
-      <section className="card space-y-2">
-        <div className="label">{t("settings.disclaimer_title")}</div>
+      <SettingsCard
+        id="disclaimer"
+        icon={<AlertTriangle size={15} />}
+        title={t("settings.disclaimer_title")}
+      >
         <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
           {t("settings.disclaimer")}
         </p>
-      </section>
+      </SettingsCard>
       </SettingsGroup>
 
       <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
@@ -818,31 +895,129 @@ export function Settings() {
 }
 
 function SettingsGroup({
+  id,
+  icon,
   title,
   hint,
   children,
 }: {
+  id: string;
+  icon: ReactNode;
   title: string;
   hint: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
+  const { t } = useTranslation();
+  const collapsed = useUiStore(
+    (s) => s.settingsCollapsed[`group:${id}`] ?? false,
+  );
+  const setCollapsed = useUiStore((s) => s.setSettingsCollapsed);
   return (
     <section className="space-y-3">
-      <div className="flex items-start gap-2 px-1 pt-2">
+      <button
+        type="button"
+        className="flex w-full items-start gap-2 rounded-xl px-1 pt-2 text-left transition-colors hover:bg-[var(--bg-elev)]"
+        onClick={() => setCollapsed(`group:${id}`, !collapsed)}
+        aria-expanded={!collapsed}
+        title={collapsed ? t("feed.expand") : t("feed.collapse")}
+      >
         <span
           className="mt-1 h-4 w-1 shrink-0 rounded-full"
           style={{ backgroundColor: "var(--accent)" }}
         />
-        <div>
-          <h2 className="text-sm font-bold" style={{ color: "var(--text)" }}>
+        <span
+          className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+          style={{
+            backgroundColor: "var(--accent-soft)",
+            color: "var(--accent)",
+          }}
+        >
+          {icon}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-bold" style={{ color: "var(--text)" }}>
             {title}
-          </h2>
-          <p className="text-[10px]" style={{ color: "var(--text-dim)" }}>
+          </span>
+          <span className="block text-[10px]" style={{ color: "var(--text-dim)" }}>
             {hint}
-          </p>
+          </span>
+        </span>
+        <span
+          className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-md"
+          style={{ color: "var(--text-muted)" }}
+        >
+          {collapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+        </span>
+      </button>
+      {!collapsed && <div className="space-y-3">{children}</div>}
+    </section>
+  );
+}
+
+function SettingsCard({
+  id,
+  icon,
+  title,
+  hint,
+  children,
+}: {
+  id: string;
+  icon: ReactNode;
+  title: string;
+  hint?: string;
+  children: ReactNode;
+}) {
+  const { t } = useTranslation();
+  const collapsed = useUiStore(
+    (s) => s.settingsCollapsed[`card:${id}`] ?? false,
+  );
+  const setCollapsed = useUiStore((s) => s.setSettingsCollapsed);
+  return (
+    <section
+      className="overflow-hidden rounded-xl border shadow-sm"
+      style={{
+        backgroundColor: "color-mix(in srgb, var(--bg-elev) 85%, transparent)",
+        borderColor: "var(--border)",
+      }}
+    >
+      <button
+        type="button"
+        className="flex w-full items-center gap-2 p-4 text-left transition-colors hover:bg-[var(--bg-elev-strong)]"
+        onClick={() => setCollapsed(`card:${id}`, !collapsed)}
+        aria-expanded={!collapsed}
+        title={collapsed ? t("feed.expand") : t("feed.collapse")}
+      >
+        <span
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+          style={{
+            backgroundColor: "var(--accent-soft)",
+            color: "var(--accent)",
+          }}
+        >
+          {icon}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold" style={{ color: "var(--text)" }}>
+            {title}
+          </span>
+          {hint && (
+            <span className="mt-0.5 block text-[11px]" style={{ color: "var(--text-muted)" }}>
+              {hint}
+            </span>
+          )}
+        </span>
+        <span
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md"
+          style={{ color: "var(--text-muted)" }}
+        >
+          {collapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+        </span>
+      </button>
+      {!collapsed && (
+        <div className="settings-card-body space-y-3 px-4 pb-4">
+          {children}
         </div>
-      </div>
-      {children}
+      )}
     </section>
   );
 }

@@ -11,6 +11,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 
 interface Props {
   value: string;
@@ -39,6 +40,10 @@ export function LiveScreensSettings({
   const [draft, setDraft] = useState("");
   const [editing, setEditing] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<{
+    index: number;
+    url: string;
+  } | null>(null);
   const [savedSnapshot, setSavedSnapshot] = useState(value);
   const [hydrated, setHydrated] = useState(false);
 
@@ -67,6 +72,7 @@ export function LiveScreensSettings({
   const remove = (index: number) => {
     commit(urls.filter((_, current) => current !== index));
     if (editing === index) setEditing(null);
+    setPendingDelete(null);
   };
   const startEdit = (index: number) => {
     setEditing(index);
@@ -229,7 +235,9 @@ export function LiveScreensSettings({
                   type="button"
                   className="flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-[var(--bg-elev-strong)]"
                   style={{ color: "var(--danger)" }}
-                  onClick={() => remove(index)}
+                  onClick={() =>
+                    setPendingDelete({ index, url })
+                  }
                   title={t("settings.live_screens_delete")}
                   aria-label={t("settings.live_screens_delete")}
                 >
@@ -264,6 +272,19 @@ export function LiveScreensSettings({
           </span>
         )}
       </div>
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        title={t("settings.live_screens_delete_title")}
+        body={t("settings.live_screens_delete_body", {
+          url: pendingDelete?.url ?? "",
+        })}
+        confirmLabel={t("settings.live_screens_delete")}
+        onConfirm={() => {
+          if (pendingDelete) remove(pendingDelete.index);
+        }}
+        onCancel={() => setPendingDelete(null)}
+        danger
+      />
     </section>
   );
 }

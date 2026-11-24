@@ -1,25 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { useIsMobile } from "../../hooks/useIsMobile";
+import { isAndroidApp } from "../../lib/platform";
 import { NavLink, Outlet } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import {
-  LayoutDashboard,
-  BookOpen,
-  Blocks,
-  GraduationCap,
-  UsersRound,
-  Trophy,
-  Calculator,
-  Settings as SettingsIcon,
-} from "lucide-react";
 import { cn } from "../../lib/cn";
 import { Titlebar } from "./Titlebar";
 import { MobileTopbar } from "./MobileTopbar";
-import { ScrollToTop } from "../ui/ScrollToTop";
+import { MobileNavDock } from "./MobileNavDock";
 import { useUiStore, SIDEBAR_WIDTH_DEFAULT } from "../../stores/uiStore";
 import { APP_VERSION, shortVersion } from "../../lib/version";
 import { useNavHistorySync } from "../../hooks/useNavHistorySync";
+import { useViewTabsSync } from "../../hooks/useViewTabsSync";
 import { useAutoUpdate } from "../../hooks/useAutoUpdate";
+import { NAV_SECTIONS } from "../../lib/navSections";
 import { PokemonDetailModal } from "../pokemon/PokemonDetailModal";
 import { UpdaterModal } from "./UpdaterModal";
 import { UpdaterErrorBanner } from "./UpdaterErrorBanner";
@@ -29,21 +22,24 @@ import { ItemDetailModal } from "../info/ItemDetailModal";
 import { AbilityDetailModal } from "../info/AbilityDetailModal";
 import { ExternalLinkDialog } from "./ExternalLinkDialog";
 import { TypeLabModal } from "../ui/TypeLabModal";
-import { QuickTablesWidget } from "../ui/QuickTablesWidget";
-import { CalendarWidget } from "../dashboard/CalendarWidget";
-import { MiniPlayback, PlaybackProvider } from "../playback/PlaybackProvider";
+import { FloatingWidgetDock } from "../ui/FloatingWidgetDock";
+import { PlaybackProvider } from "../playback/PlaybackProvider";
 import { useTypeLabStore } from "../../stores/typeLabStore";
+import { isEditableTarget, matchesShortcut } from "../../lib/shortcut";
 
 const SIDEBAR_COLLAPSED_WIDTH = 64;
 
 export function AppShell() {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
+  const android = isAndroidApp();
   useNavHistorySync();
+  useViewTabsSync();
   useAutoUpdate(true);
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
   const sidebarWidthPx = useUiStore((s) => s.sidebarWidthPx);
   const setSidebarWidthPx = useUiStore((s) => s.setSidebarWidthPx);
+  const mobileNavEnabled = useUiStore((s) => s.mobileNavEnabled);
   const [isResizing, setIsResizing] = useState(false);
   const [hoverHandle, setHoverHandle] = useState(false);
   const asideRef = useRef<HTMLElement>(null);
@@ -53,20 +49,31 @@ export function AppShell() {
   }, [isMobile]);
 
   useEffect(() => {
+    const root = document.documentElement;
+    let timer: number | undefined;
+    const onScroll = () => {
+      root.classList.add("is-scrolling");
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(
+        () => root.classList.remove("is-scrolling"),
+        900,
+      );
+    };
+    document.addEventListener("scroll", onScroll, true);
+    return () => {
+      document.removeEventListener("scroll", onScroll, true);
+      if (timer) window.clearTimeout(timer);
+      root.classList.remove("is-scrolling");
+    };
+  }, []);
+
+  useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "t") {
-        return;
-      }
-      const target = event.target as HTMLElement | null;
-      if (
-        target?.tagName === "INPUT" ||
-        target?.tagName === "TEXTAREA" ||
-        target?.isContentEditable
-      ) {
-        return;
-      }
+      if (event.defaultPrevented || isEditableTarget(event.target)) return;
+      const shortcut = useUiStore.getState().quickTablesShortcut;
+      if (!matchesShortcut(event, shortcut)) return;
       event.preventDefault();
-      useTypeLabStore.getState().setOpen(true);
+      useTypeLabStore.getState().toggleOpen();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -109,16 +116,10 @@ export function AppShell() {
 
   // Single source of truth for the sidebar icons. Swapping the icon set is a
   // one-line change per item; labels/tooltips come from i18n.
-  const navItems = [
-    { to: "/dashboard", icon: LayoutDashboard, label: t("nav.dashboard") },
-    { to: "/pokedex", icon: BookOpen, label: t("nav.pokedex") },
-    { to: "/team-builder", icon: Blocks, label: t("nav.team_builder") },
-    { to: "/my-teams", icon: UsersRound, label: t("nav.my_teams") },
-    { to: "/top-teams", icon: Trophy, label: t("nav.top_teams") },
-    { to: "/damage-calc", icon: Calculator, label: t("nav.damage_calc") },
-    { to: "/learn", icon: GraduationCap, label: t("nav.learn") },
-    { to: "/settings", icon: SettingsIcon, label: t("nav.settings") },
-  ];
+  const navItems = NAV_SECTIONS.map((section) => ({
+    ...section,
+    label: t(section.labelKey),
+  }));
 
   return (
     <PlaybackProvider>
@@ -336,7 +337,9 @@ export function AppShell() {
         className="min-h-0 flex-1 overflow-y-auto"
         style={{
           paddingBottom: isMobile
-            ? "max(env(safe-area-inset-bottom, 0px), 0px)"
+            ? mobileNavEnabled
+              ? "calc(80px + env(safe-area-inset-bottom, 0px))"
+              : "max(env(safe-area-inset-bottom, 0px), 0px)"
             : undefined,
           paddingLeft: isMobile
             ? "env(safe-area-inset-left, 0px)"
@@ -351,7 +354,6 @@ export function AppShell() {
         </div>
       </main>
       </div>
-      <ScrollToTop />
       <PokemonDetailModal />
       <MoveDetailModal />
       <ItemDetailModal />
@@ -360,9 +362,8 @@ export function AppShell() {
       <UpdaterModal />
       <ExternalLinkDialog />
       <TypeLabModal />
-      <QuickTablesWidget />
-      <CalendarWidget />
-      <MiniPlayback />
+      <FloatingWidgetDock />
+      {android && <MobileNavDock />}
     </div>
     </PlaybackProvider>
   );

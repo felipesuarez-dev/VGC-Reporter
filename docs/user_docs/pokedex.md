@@ -4,9 +4,10 @@ La Pokédex es el catálogo completo de Pokémon, filtrable y ordenable.
 
 ## Qué verás
 
-- Grid de cards con sprite, nombre, tipos y stats base.
-- Filtros: búsqueda por nombre, tipo, ability, movimiento, generación, debilidades/fortalezas.
-- Selector de orden: por uso (meta actual), por generación o alfabético.
+- Grid rediseñado de cards con sprite, nombre, tipos, uso, generación, base stat total y barra de uso.
+- Filtros: búsqueda por nombre, tipo, ability, movimiento, generación, debilidades/fortalezas; chips de filtros activos y contador de resultados.
+- Selector de orden: por uso (meta actual), por generación o alfabético. Al cambiar el orden se muestra un spinner sobre la cuadrícula atenuada hasta que las cards terminan de reordenarse.
+- Sin bloque de tablas rápidas: ahora viven en el widget flotante o ancladas en la barra de título.
 
 ## Qué puedes hacer
 

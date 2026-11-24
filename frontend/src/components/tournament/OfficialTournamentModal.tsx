@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
+  ChevronDown,
   ExternalLink,
   Loader2,
   MapPin,
@@ -15,11 +16,15 @@ import { formatEventDateRange } from "../../lib/formatDate";
 import { openExternal } from "../../lib/openExternal";
 import { ipc } from "../../lib/ipc";
 import { queryKeys } from "../../lib/queryKeys";
+import { findPlayerMatches } from "../../lib/tournamentPlayers";
 import { useModalBack } from "../../hooks/useModalBack";
 import { useLocalize } from "../../hooks/useTranslations";
 import { PokemonSprite } from "../pokemon/PokemonSprite";
 import { EventSourceBadge } from "../dashboard/EventSourceBadge";
 import { TournamentTierBadge } from "../dashboard/TournamentTierBadge";
+import { OfficialTeamsSection } from "./OfficialTeamsSection";
+import { PlayerMatchHistory } from "./PlayerMatchHistory";
+import { TopCutBracket } from "./TopCutBracket";
 
 interface Props {
   tournament: ChampionsTournament | null;
@@ -62,13 +67,17 @@ function Detail({
  * In-app result sheet for a past/ongoing official Championship Series event.
  * Summary, prizing and the Masters winner come from the calendar/detail feed;
  * standings come from the official results endpoint. The official feed does
- * not publish decklists, so that row says so instead of inventing one.
+ * not publish decklists, so PokéBase enriches the top cut and PokéData adds the
+ * bracket and per-round match history when available.
  */
 export function OfficialTournamentModal({ tournament, onClose }: Props) {
   const { t, i18n } = useTranslation();
   const localize = useLocalize();
   const [visible, setVisible] = useState(16);
   const [pageSize, setPageSize] = useState(32);
+  const [expandedPlayers, setExpandedPlayers] = useState<Set<string>>(new Set());
+  const tournamentName = tournament?.name ?? "";
+  const tournamentDate = tournament?.date ?? null;
 
   useModalBack(Boolean(tournament), onClose);
 
@@ -76,6 +85,7 @@ export function OfficialTournamentModal({ tournament, onClose }: Props) {
     if (!tournament) return;
     setVisible(16);
     setPageSize(32);
+    setExpandedPlayers(new Set());
     const handler = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
@@ -94,10 +104,31 @@ export function OfficialTournamentModal({ tournament, onClose }: Props) {
         tournament!.url!,
         0,
         pageSize,
+        tournamentName,
+        tournamentDate,
       ),
     enabled: Boolean(tournament?.url && tournament.source === "play-pokemon"),
     staleTime: 30 * 60 * 1000,
   });
+
+  const teams = useQuery({
+    queryKey: queryKeys.officialTeams(tournamentName, tournamentDate),
+    queryFn: () => ipc.getOfficialTournamentTeams(tournamentName, tournamentDate),
+    enabled: Boolean(tournamentName && tournament?.source === "play-pokemon"),
+    staleTime: 30 * 60 * 1000,
+  });
+
+  const detail = useQuery({
+    queryKey: queryKeys.officialDetail(tournamentName, tournamentDate),
+    queryFn: () => ipc.getOfficialTournamentDetail(tournamentName, tournamentDate),
+    enabled: Boolean(tournamentName && tournament?.source === "play-pokemon"),
+    staleTime: 30 * 60 * 1000,
+  });
+
+  const detailPlayers = useMemo(
+    () => detail.data?.players ?? [],
+    [detail.data],
+  );
 
   if (!tournament) return null;
 
@@ -110,6 +141,39 @@ export function OfficialTournamentModal({ tournament, onClose }: Props) {
     : null;
   const rows = standings.data?.standings ?? [];
   const shown = rows.slice(0, visible);
+  const detailData = detail.data ?? null;
+  const teamsData =
+    teams.data ??
+    (detailData?.teams.length
+      ? {
+          source: "pokedata",
+          source_url: detailData.source_url,
+          tournament_name: detailData.tournament_name,
+          tournament_date: detailData.tournament_date,
+          teams: detailData.teams,
+        }
+      : null);
+  const divisions = detailData?.divisions ?? [];
+  const noMasters =
+    divisions.length > 0 &&
+    !divisions.some((division) => division.toLowerCase().includes("master"));
+  const championFromData =
+    teamsData?.teams.find((team) => team.placing === 1) ??
+    detailData?.players.find((player) => player.place === 1) ??
+    null;
+  const championName = championFromData?.player_name ?? tournament.champion_name ?? null;
+  const championCountry =
+    championFromData?.country ?? tournament.champion_country ?? null;
+  const hasTeams = Boolean(teamsData?.teams.length);
+
+  const togglePlayer = (key: string) => {
+    setExpandedPlayers((previous) => {
+      const next = new Set(previous);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   return (
     <div
@@ -186,12 +250,12 @@ export function OfficialTournamentModal({ tournament, onClose }: Props) {
           <div className="grid gap-x-6 gap-y-3 md:grid-cols-2">
             <div className="space-y-2">
               <Detail icon={<Trophy size={12} />} label={t("upcoming.champion")}>
-                {tournament.champion_name ? (
+                {championName ? (
                   <span>
-                    {tournament.champion_country
-                      ? `${countryFlag(tournament.champion_country)} `
+                    {championCountry
+                      ? `${countryFlag(championCountry)} `
                       : ""}
-                    {tournament.champion_name}
+                    {championName}
                   </span>
                 ) : (
                   <span style={{ color: "var(--text-dim)" }}>
@@ -213,6 +277,11 @@ export function OfficialTournamentModal({ tournament, onClose }: Props) {
                   </span>
                 )}
               </Detail>
+              {divisions.length > 0 && (
+                <Detail icon={<Users size={12} />} label={t("official.divisions")}>
+                  {divisions.join(" · ")}
+                </Detail>
+              )}
             </div>
             <div className="space-y-2">
               <Detail icon={<Trophy size={12} />} label={t("upcoming.prize_pool")}>
@@ -223,7 +292,7 @@ export function OfficialTournamentModal({ tournament, onClose }: Props) {
                 )}
               </Detail>
               <Detail icon={<Trophy size={12} />} label={t("official.decklist")}>
-                {tournament.champion_team.length > 0
+                {hasTeams || tournament.champion_team.length > 0
                   ? t("official.decklist_published")
                   : t("official.decklist_not_published")}
               </Detail>
@@ -274,15 +343,91 @@ export function OfficialTournamentModal({ tournament, onClose }: Props) {
             </section>
           )}
 
+          {noMasters && (
+            <div
+              className="mt-4 rounded-lg border px-3 py-2 text-[11px]"
+              style={{
+                borderColor: "var(--border)",
+                backgroundColor: "var(--bg)",
+                color: "var(--text-muted)",
+              }}
+            >
+              {t("official.junior_senior_note", {
+                divisions: divisions.join(" · "),
+              })}
+            </div>
+          )}
+
+          {teamsData && <OfficialTeamsSection data={teamsData} />}
+
+          {detailData &&
+            detailData.top_cut.length === 0 &&
+            detailData.teams.length > 0 &&
+            !noMasters && (
+              <p className="mt-2 text-[10px]" style={{ color: "var(--text-dim)" }}>
+                {t("official.no_bracket_teams")}
+              </p>
+            )}
+
+          {detailData && detailData.top_cut.length > 0 && (
+            <TopCutBracket rounds={detailData.top_cut} sourceUrl={detailData.source_url} />
+          )}
+
+          {detail.isLoading && (
+            <div
+              className="mt-4 flex items-center gap-2 rounded-lg border px-3 py-2 text-[11px]"
+              style={{
+                borderColor: "var(--border)",
+                backgroundColor: "var(--bg)",
+                color: "var(--text-dim)",
+              }}
+            >
+              <Loader2 size={12} className="animate-spin" />
+              {t("official.loading_detail")}
+            </div>
+          )}
+
+          {detail.isError && (
+            <p
+              className="mt-4 rounded-lg border px-3 py-2 text-[11px]"
+              style={{
+                borderColor: "color-mix(in srgb, var(--danger) 35%, var(--border))",
+                backgroundColor: "color-mix(in srgb, var(--danger) 7%, transparent)",
+                color: "var(--danger)",
+              }}
+            >
+              {t("official.detail_error")}
+            </p>
+          )}
+
           <section className="mt-5">
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <h3 className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text)" }}>
-                {t("official.standings")}
+                {t(
+                  standings.data?.source === "pokedata"
+                    ? "official.standings_pokedata"
+                    : "official.standings",
+                )}
               </h3>
               {standings.data?.total_count != null && (
                 <span className="text-[10px]" style={{ color: "var(--text-dim)" }}>
                   {standings.data.total_count}
                 </span>
+              )}
+              {standings.data?.source === "pokedata" && (
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px]"
+                  style={{
+                    borderColor: "var(--border)",
+                    color: "var(--text-dim)",
+                    backgroundColor: "var(--bg)",
+                  }}
+                  onClick={() => void openExternal(standings.data!.source_url ?? "https://www.pokedata.ovh/standings2/")}
+                >
+                  <ExternalLink size={9} />
+                  {t("official.pokedata_standings")}
+                </button>
               )}
             </div>
             {standings.isLoading && (
@@ -313,27 +458,79 @@ export function OfficialTournamentModal({ tournament, onClose }: Props) {
                       <th className="px-2 py-1.5 text-left font-semibold">
                         {t("tournament.record")}
                       </th>
+                      <th className="w-8 px-1 py-1.5 text-center font-semibold">
+                        <span className="sr-only">{t("official.rounds")}</span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {shown.map((row, index) => (
-                      <tr
-                        key={`${row.place ?? index}-${row.player_name}`}
-                        className="border-t"
-                        style={{ borderColor: "var(--border)" }}
-                      >
-                        <td className="px-2 py-1.5 font-mono" style={{ color: "var(--text-dim)" }}>
-                          {row.place ?? "—"}
-                        </td>
-                        <td className="px-2 py-1.5">
-                          <span className="mr-1">{countryFlag(row.country)}</span>
-                          {row.player_name}
-                        </td>
-                        <td className="px-2 py-1.5 font-mono" style={{ color: "var(--text-muted)" }}>
-                          {row.record ?? "—"}
-                        </td>
-                      </tr>
-                    ))}
+                    {shown.map((row, index) => {
+                      const rowKey = `${row.place ?? index}-${row.player_name}`;
+                      const player = findPlayerMatches(
+                        detailPlayers,
+                        row.player_name,
+                        row.country,
+                        row.place,
+                      );
+                      const isOpen = expandedPlayers.has(rowKey);
+                      const canExpand = Boolean(
+                        player?.matches.length || player?.team.length,
+                      );
+                      const displayName = player?.player_name ?? row.player_name;
+                      const displayCountry = player?.country ?? row.country;
+                      return (
+                        <Fragment key={rowKey}>
+                          <tr
+                            className="border-t"
+                            style={{ borderColor: "var(--border)" }}
+                          >
+                            <td className="px-2 py-1.5 font-mono" style={{ color: "var(--text-dim)" }}>
+                              {row.place ?? "—"}
+                            </td>
+                            <td className="px-2 py-1.5">
+                              <span className="mr-1">{countryFlag(displayCountry)}</span>
+                              {displayName}
+                            </td>
+                            <td className="px-2 py-1.5 font-mono" style={{ color: "var(--text-muted)" }}>
+                              {row.record ?? "—"}
+                            </td>
+                            <td className="px-1 py-1 text-center">
+                              <button
+                                type="button"
+                                className="inline-flex h-6 w-6 items-center justify-center rounded-md transition-colors hover:bg-[var(--bg-elev-strong)] disabled:cursor-default disabled:opacity-25"
+                                style={{ color: "var(--text-dim)" }}
+                                onClick={() => togglePlayer(rowKey)}
+                                disabled={!canExpand}
+                                aria-expanded={canExpand ? isOpen : undefined}
+                                aria-label={
+                                  canExpand
+                                    ? t(isOpen ? "official.hide_rounds" : "official.show_rounds", {
+                                        player: displayName,
+                                      })
+                                    : undefined
+                                }
+                              >
+                                <ChevronDown
+                                  size={12}
+                                  className={isOpen ? "rotate-180 transition-transform" : "transition-transform"}
+                                />
+                              </button>
+                            </td>
+                          </tr>
+                          {isOpen && player && (
+                            <tr>
+                              <td colSpan={4} className="px-2 pb-2 pt-0">
+                                <PlayerMatchHistory
+                                  matches={player.matches}
+                                  swissRounds={detailData?.swiss_rounds}
+                                  team={player.team}
+                                />
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -363,6 +560,16 @@ export function OfficialTournamentModal({ tournament, onClose }: Props) {
                 </button>
               )}
           </section>
+
+          <p
+            className="mt-4 border-t pt-2 text-[9px] leading-relaxed"
+            style={{
+              borderColor: "color-mix(in srgb, var(--border) 65%, transparent)",
+              color: "var(--text-dim)",
+            }}
+          >
+            {t("official.external_disclaimer")}
+          </p>
         </div>
       </div>
     </div>

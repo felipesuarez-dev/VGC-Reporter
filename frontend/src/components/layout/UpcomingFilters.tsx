@@ -1,7 +1,7 @@
 import { Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { CountryFilterSelect } from "./CountryFilterSelect";
-import { CityFilterSelect } from "./CityFilterSelect";
+import { CityMultiFilter } from "./CityMultiFilter";
+import { CountryFilter } from "../filters/CountryFilter";
 import { useUiStore } from "../../stores/uiStore";
 import { cn } from "../../lib/cn";
 import type { UpcomingTournament } from "../../lib/types";
@@ -17,9 +17,9 @@ interface Props {
 }
 
 /**
- * Country + city filters shared by the upcoming list and the calendar.
- * Starring a country promotes it to the top of the country picker (same
- * favorite interaction as the regulation selector) and selects it.
+ * Multi-country + multi-city filters shared by the upcoming list and the
+ * calendar. The city list is derived from the selected countries and is
+ * grouped by country so equal city names stay distinct.
  */
 export function UpcomingFilters({
   events,
@@ -30,38 +30,27 @@ export function UpcomingFilters({
   showLocationFilters = true,
 }: Props) {
   const { t } = useTranslation();
-  const upcomingCountry = useUiStore((s) => s.upcomingCountry);
-  const setUpcomingCountry = useUiStore((s) => s.setUpcomingCountry);
-  const favoriteCountry = useUiStore((s) => s.favoriteUpcomingCountry);
-  const setFavoriteCountry = useUiStore(
-    (s) => s.setFavoriteUpcomingCountry,
-  );
-  const upcomingCity = useUiStore((s) => s.upcomingCity);
-  const setUpcomingCity = useUiStore((s) => s.setUpcomingCity);
+  const homeCountry = useUiStore((s) => s.homeCountry);
+  const upcomingCountries = useUiStore((s) => s.upcomingCountries);
+  const setUpcomingCountries = useUiStore((s) => s.setUpcomingCountries);
+  const upcomingCities = useUiStore((s) => s.upcomingCities);
+  const setUpcomingCities = useUiStore((s) => s.setUpcomingCities);
+
+  const countryOptions = [
+    ...new Set([...availableCountries, homeCountry].filter(Boolean)),
+  ];
 
   const cities = events
-    .filter((event) => event.city)
+    .filter(
+      (event) =>
+        event.city &&
+        (upcomingCountries.length === 0 ||
+          (event.country && upcomingCountries.includes(event.country))),
+    )
     .map((event) => ({
       city: event.city as string,
       country: event.country,
     }));
-
-  const selectCountry = (code: string | null) => {
-    setUpcomingCountry(code);
-    setUpcomingCity(null);
-  };
-
-  const toggleFavorite = (code: string) => {
-    if (favoriteCountry === code) {
-      setFavoriteCountry(null);
-      if (upcomingCountry === code) setUpcomingCountry(null);
-      setUpcomingCity(null);
-      return;
-    }
-    setFavoriteCountry(code);
-    setUpcomingCountry(code);
-    setUpcomingCity(null);
-  };
 
   return (
     <div className={cn("space-y-2", className)}>
@@ -112,12 +101,11 @@ export function UpcomingFilters({
           >
             {t("upcoming.filter_country")}
           </div>
-          <CountryFilterSelect
-            value={upcomingCountry}
-            favorite={favoriteCountry}
-            onChange={selectCountry}
-            onFavoriteChange={toggleFavorite}
-            availableCountries={availableCountries}
+          <CountryFilter
+            options={countryOptions}
+            selected={upcomingCountries}
+            onChange={setUpcomingCountries}
+            placeholder={t("upcoming.all_countries")}
           />
         </div>
         <div className="min-w-[9rem] flex-1">
@@ -127,10 +115,11 @@ export function UpcomingFilters({
           >
             {t("upcoming.filter_city")}
           </div>
-          <CityFilterSelect
-            value={upcomingCity}
-            onChange={setUpcomingCity}
+          <CityMultiFilter
             cities={cities}
+            selected={upcomingCities}
+            onChange={setUpcomingCities}
+            placeholder={t("upcoming.all_cities")}
           />
         </div>
           </>

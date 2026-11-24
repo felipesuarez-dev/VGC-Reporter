@@ -30,24 +30,35 @@ import { listen } from "@tauri-apps/api/event";
 import { ipc } from "../../lib/ipc";
 import { queryKeys } from "../../lib/queryKeys";
 import {
+  filterSyncBundle,
   formatSyncCode,
   formatSyncCountdown,
   isSyncTerminal,
   normalizeSyncCode,
+  normalizeTeamName,
   parseSyncTicket,
   prepareImport,
+  syncTeamKey,
   secondsRemaining,
   SYNC_STATE_ORDER,
   type ConflictMode,
 } from "../../lib/sync";
+import { settingDisplay } from "../../lib/syncLabels";
 import type {
   SyncBundle,
+  SyncSendOptions,
+  SyncSendSelection,
   SyncSession,
   SyncSessionStatus,
   SyncState,
 } from "../../lib/types";
+import {
+  CheckboxField,
+  SegmentedControl,
+  ToggleSwitch,
+} from "../ui/FormControls";
 
-const UI_KEYS = ["vgc-ui", "vgc-dashboard", "vgc-playback"];
+const UI_KEYS = ["vgc-ui", "vgc-dashboard"];
 
 function collectUi(): string {
   const out: Record<string, unknown> = {};
@@ -64,6 +75,18 @@ function collectUi(): string {
 
 function isAndroid(): boolean {
   return typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
+}
+
+function settingGroup(key: string): "general" | "streams" | "overrides" {
+  if (key.includes("::")) return "overrides";
+  if (key === "live_stream_urls" || key === "official_stream_url") {
+    return "streams";
+  }
+  return "general";
+}
+
+function groupLabelKey(group: string): string {
+  return `settings.sync_group_${group}`;
 }
 
 function statusFromSession(session: SyncSession): SyncSessionStatus {
@@ -179,6 +202,10 @@ export function SyncSettings() {
     queryKey: queryKeys.teams.list,
     queryFn: () => ipc.listTeams(),
   });
+  const { data: syncOptions, isLoading: optionsLoading } = useQuery({
+    queryKey: ["sync-send-options"],
+    queryFn: () => ipc.syncSendOptions(),
+  });
   const [mode, setMode] = useState<"send" | "receive">("send");
   const [session, setSession] = useState<SyncSession | null>(null);
   const [status, setStatus] = useState<SyncSessionStatus | null>(null);
@@ -189,11 +216,40 @@ export function SyncSettings() {
   const [sourceCode, setSourceCode] = useState<string | null>(null);
   const [conflictMode, setConflictMode] = useState<ConflictMode>("rename");
   const [advanced, setAdvanced] = useState(false);
+  const [sendOptions, setSendOptions] = useState<SyncSendOptions | null>(null);
+  const [selectedTeamIds, setSelectedTeamIds] = useState<number[]>([]);
+  const [selectedSettingKeys, setSelectedSettingKeys] = useState<string[]>([]);
+  const [includeUi, setIncludeUi] = useState(true);
+  const [sendSelectionReady, setSendSelectionReady] = useState(false);
+  const [receiveTeamKeys, setReceiveTeamKeys] = useState<string[]>([]);
+  const [receiveSettingKeys, setReceiveSettingKeys] = useState<string[]>([]);
+  const [receiveUi, setReceiveUi] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [permissionBlocked, setPermissionBlocked] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!syncOptions || sendSelectionReady) return;
+    setSendOptions(syncOptions);
+    setSelectedTeamIds(syncOptions.teams.map((team) => team.id));
+    setSelectedSettingKeys(syncOptions.settings.map((setting) => setting.key));
+    setIncludeUi(true);
+    setSendSelectionReady(true);
+  }, [sendSelectionReady, syncOptions]);
+
+  useEffect(() => {
+    if (!bundle) {
+      setReceiveTeamKeys([]);
+      setReceiveSettingKeys([]);
+      setReceiveUi(true);
+      return;
+    }
+    setReceiveTeamKeys(bundle.teams.map((team, index) => syncTeamKey(team, index)));
+    setReceiveSettingKeys(Object.keys(bundle.settings));
+    setReceiveUi(true);
+  }, [bundle]);
 
   useEffect(() => {
     if (!session) {
@@ -245,9 +301,30 @@ export function SyncSettings() {
     };
   }, [session]);
 
+  const selectedReceiveBundle = useMemo(
+    () =>
+      bundle
+        ? filterSyncBundle(
+            bundle,
+            receiveTeamKeys,
+            receiveSettingKeys,
+            receiveUi,
+          )
+        : null,
+    [bundle, receiveSettingKeys, receiveTeamKeys, receiveUi],
+  );
+  const selectedReceiveTeams = selectedReceiveBundle?.teams ?? [];
+  const selectedReceiveSettings = selectedReceiveBundle?.settings ?? {};
+  const receiveHasSelection =
+    selectedReceiveTeams.length > 0 ||
+    Object.keys(selectedReceiveSettings).length > 0 ||
+    receiveUi;
   const conflictCount = useMemo(
-    () => (bundle ? prepareImport(bundle, existing, conflictMode).conflicts : 0),
-    [bundle, existing, conflictMode],
+    () =>
+      selectedReceiveBundle
+        ? prepareImport(selectedReceiveBundle, existing, conflictMode).conflicts
+        : 0,
+    [conflictMode, existing, selectedReceiveBundle],
   );
   const remaining = secondsRemaining(
     status?.expires_at ?? session?.expires_at ?? new Date(0).toISOString(),
@@ -260,10 +337,23 @@ export function SyncSettings() {
   };
 
   const startSend = async () => {
+    if (
+      selectedTeamIds.length === 0 &&
+      selectedSettingKeys.length === 0 &&
+      !includeUi
+    ) {
+      setError(t("settings.sync_send_empty"));
+      return;
+    }
     setBusy(true);
     resetMessages();
     try {
-      const next = await ipc.syncStartSend(collectUi());
+      const selection: SyncSendSelection = {
+        team_ids: selectedTeamIds,
+        setting_keys: selectedSettingKeys,
+        include_ui: includeUi,
+      };
+      const next = await ipc.syncStartSend(collectUi(), selection);
       setSession(next);
       setStatus(statusFromSession(next));
       setPermissionBlocked(false);
@@ -380,11 +470,15 @@ export function SyncSettings() {
   };
 
   const importBundle = async () => {
-    if (!bundle) return;
+    if (!selectedReceiveBundle) return;
     setBusy(true);
     resetMessages();
     try {
-      const prepared = prepareImport(bundle, existing, conflictMode);
+      const prepared = prepareImport(
+        selectedReceiveBundle,
+        existing,
+        conflictMode,
+      );
       if (prepared.bundle.teams.length === 0 && conflictCount > 0) {
         setMessage(t("settings.sync_nothing"));
         setBundle(null);
@@ -395,7 +489,7 @@ export function SyncSettings() {
       }
       const result = await ipc.syncImport(prepared.bundle, sourceCode);
       try {
-        const ui = JSON.parse(bundle.ui_json) as Record<string, unknown>;
+        const ui = JSON.parse(selectedReceiveBundle.ui_json) as Record<string, unknown>;
         for (const key of UI_KEYS) {
           if (ui[key]) localStorage.setItem(key, JSON.stringify(ui[key]));
         }
@@ -434,7 +528,51 @@ export function SyncSettings() {
 
   const sessionState = status?.state ?? "waiting";
   const expired = remaining === 0 || sessionState === "expired";
-  const canImport = bundle !== null;
+  const canImport = selectedReceiveBundle !== null && receiveHasSelection;
+  const receiveGroups = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const key of Object.keys(bundle?.settings ?? {})) {
+      const group = settingGroup(key);
+      const list = map.get(group) ?? [];
+      list.push(key);
+      map.set(group, list);
+    }
+    return [...map.entries()];
+  }, [bundle]);
+  const existingNames = useMemo(
+    () => new Set(existing.map((team) => normalizeTeamName(team.name))),
+    [existing],
+  );
+  const allReceiveTeamsSelected =
+    Boolean(bundle?.teams.length) &&
+    bundle!.teams.every((team, index) =>
+      receiveTeamKeys.includes(syncTeamKey(team, index)),
+    );
+  const allReceiveSettingsSelected =
+    Boolean(Object.keys(bundle?.settings ?? {}).length) &&
+    Object.keys(bundle?.settings ?? {}).every((key) =>
+      receiveSettingKeys.includes(key),
+    );
+  const senderGroups = useMemo(() => {
+    const map = new Map<string, { key: string }[]>();
+    for (const setting of sendOptions?.settings ?? []) {
+      const group = settingGroup(setting.key);
+      const list = map.get(group) ?? [];
+      list.push({ key: setting.key });
+      map.set(group, list);
+    }
+    return [...map.entries()];
+  }, [sendOptions]);
+  const allTeamsSelected =
+    Boolean(sendOptions?.teams.length) &&
+    sendOptions!.teams.every((team) => selectedTeamIds.includes(team.id));
+  const allSettingsSelected =
+    Boolean(sendOptions?.settings.length) &&
+    sendOptions!.settings.every((setting) =>
+      selectedSettingKeys.includes(setting.key),
+    );
+  const senderHasSelection =
+    selectedTeamIds.length > 0 || selectedSettingKeys.length > 0 || includeUi;
 
   return (
     <section className="card space-y-4">
@@ -504,23 +642,179 @@ export function SyncSettings() {
         <div className="space-y-3">
           {!session ? (
             <>
+              {optionsLoading && (
+                <p className="flex items-center gap-1 text-[11px]" style={{ color: "var(--text-dim)" }}>
+                  <Loader2 size={12} className="animate-spin" />
+                  {t("common.loading")}
+                </p>
+              )}
+              {sendOptions && (
+                <div className="space-y-3 rounded-xl border p-3" style={{ borderColor: "var(--border)" }}>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold">{t("settings.sync_send_choose")}</p>
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        className="btn-ghost h-6 text-[10px]"
+                        onClick={() =>
+                          setSelectedTeamIds(
+                            allTeamsSelected ? [] : sendOptions.teams.map((team) => team.id),
+                          )
+                        }
+                      >
+                        {t("settings.sync_select_all_teams")}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-ghost h-6 text-[10px]"
+                        onClick={() => setSelectedTeamIds([])}
+                      >
+                        {t("settings.sync_select_none")}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="mb-1 flex items-center justify-between text-[10px]" style={{ color: "var(--text-dim)" }}>
+                      <span className="font-semibold uppercase tracking-wide">{t("settings.sync_send_teams")}</span>
+                      <span>{selectedTeamIds.length}/{sendOptions.teams.length}</span>
+                    </div>
+                    {sendOptions.teams.length === 0 ? (
+                      <p className="text-[10px]" style={{ color: "var(--text-dim)" }}>
+                        {t("settings.sync_no_teams")}
+                      </p>
+                    ) : (
+                      <div className="max-h-36 space-y-1 overflow-y-auto rounded-lg border p-2" style={{ borderColor: "var(--border)" }}>
+                        {sendOptions.teams.map((team) => (
+                          <CheckboxField
+                            key={team.id}
+                            checked={selectedTeamIds.includes(team.id)}
+                            onChange={() =>
+                              setSelectedTeamIds((current) =>
+                                current.includes(team.id)
+                                  ? current.filter((id) => id !== team.id)
+                                  : [...current, team.id],
+                              )
+                            }
+                            label={<span className="truncate">{team.name}</span>}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <div className="mb-1 flex items-center justify-between text-[10px]" style={{ color: "var(--text-dim)" }}>
+                      <span className="font-semibold uppercase tracking-wide">{t("settings.sync_send_settings")}</span>
+                      <button
+                        type="button"
+                        className="underline-offset-2 hover:underline"
+                        onClick={() =>
+                          setSelectedSettingKeys(
+                            allSettingsSelected
+                              ? []
+                              : sendOptions.settings.map((setting) => setting.key),
+                          )
+                        }
+                      >
+                        {allSettingsSelected ? t("settings.sync_select_none") : t("settings.sync_select_all")}
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {senderGroups.length === 0 ? (
+                        <p className="text-[10px]" style={{ color: "var(--text-dim)" }}>
+                          {t("settings.sync_no_settings")}
+                        </p>
+                      ) : (
+                        senderGroups.map(([group, entries]) => {
+                          const groupKeys = entries.map((entry) => entry.key);
+                          const allGroup = groupKeys.every((key) =>
+                            selectedSettingKeys.includes(key),
+                          );
+                          return (
+                            <div key={group} className="rounded-lg border p-2" style={{ borderColor: "var(--border)" }}>
+                              <div className="mb-1 flex items-center justify-between">
+                                <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                                  {t(groupLabelKey(group))}
+                                </span>
+                                <button
+                                  type="button"
+                                  className="text-[9px] underline-offset-2 hover:underline"
+                                  style={{ color: "var(--text-dim)" }}
+                                  onClick={() =>
+                                    setSelectedSettingKeys((current) =>
+                                      allGroup
+                                        ? current.filter((key) => !groupKeys.includes(key))
+                                        : [...new Set([...current, ...groupKeys])],
+                                    )
+                                  }
+                                >
+                                  {allGroup ? t("settings.sync_select_none") : t("settings.sync_select_all")}
+                                </button>
+                              </div>
+                              <div className="grid gap-1 sm:grid-cols-2">
+                                {entries.map((entry) => {
+                                  const display = settingDisplay(entry.key, t);
+                                  return (
+                                    <CheckboxField
+                                      key={entry.key}
+                                      checked={selectedSettingKeys.includes(entry.key)}
+                                      onChange={() =>
+                                        setSelectedSettingKeys((current) =>
+                                          current.includes(entry.key)
+                                            ? current.filter((key) => key !== entry.key)
+                                            : [...current, entry.key],
+                                        )
+                                      }
+                                      label={
+                                        <span className="block">
+                                          <span className="block text-[11px] font-medium" style={{ color: "var(--text)" }}>
+                                            {display.label}
+                                          </span>
+                                          {display.hint && (
+                                            <span className="block text-[10px]" style={{ color: "var(--text-dim)" }}>
+                                              {display.hint}
+                                            </span>
+                                          )}
+                                        </span>
+                                      }
+                                    />
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+
+                  <ToggleSwitch
+                    checked={includeUi}
+                    onChange={setIncludeUi}
+                    label={t("settings.sync_send_ui", { count: UI_KEYS.length })}
+                    className="rounded-lg border px-2.5 py-2"
+                  />
+                </div>
+              )}
               <button
                 type="button"
                 className="btn-primary w-full text-xs"
                 onClick={() => void startSend()}
-                disabled={busy}
+                disabled={busy || !senderHasSelection}
               >
                 {busy ? (
                   <Loader2 size={14} className="mr-1 animate-spin" />
                 ) : (
                   <Send size={14} className="mr-1" />
                 )}
-                {t("settings.sync_send_all")}
+                {t("settings.sync_send_selected")}
               </button>
               <p className="text-[10px]" style={{ color: "var(--text-dim)" }}>
-                {t("settings.sync_send_preview", {
-                  teams: existing.length,
-                  ui: UI_KEYS.length,
+                {t("settings.sync_send_preview_selected", {
+                  teams: selectedTeamIds.length,
+                  settings: selectedSettingKeys.length,
+                  ui: includeUi ? UI_KEYS.length : 0,
                 })}
               </p>
             </>
@@ -783,6 +1077,168 @@ export function SyncSettings() {
               settings: Object.keys(bundle.settings).length,
             })}
           </p>
+          <div className="space-y-3 rounded-lg border p-2" style={{ borderColor: "var(--border)" }}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs font-semibold">{t("settings.sync_import_choose")}</p>
+              <div className="flex flex-wrap gap-1">
+                <button
+                  type="button"
+                  className="btn-ghost h-6 text-[10px]"
+                  onClick={() =>
+                    setReceiveTeamKeys(
+                      allReceiveTeamsSelected
+                        ? []
+                        : bundle.teams.map((team, index) => syncTeamKey(team, index)),
+                    )
+                  }
+                >
+                  {t("settings.sync_select_all_teams")}
+                </button>
+                <button
+                  type="button"
+                  className="btn-ghost h-6 text-[10px]"
+                  onClick={() => setReceiveTeamKeys([])}
+                >
+                  {t("settings.sync_select_none")}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <div className="mb-1 flex items-center justify-between text-[10px]" style={{ color: "var(--text-dim)" }}>
+                <span className="font-semibold uppercase tracking-wide">{t("settings.sync_send_teams")}</span>
+                <span>{receiveTeamKeys.length}/{bundle.teams.length}</span>
+              </div>
+              {bundle.teams.length === 0 ? (
+                <p className="text-[10px]" style={{ color: "var(--text-dim)" }}>
+                  {t("settings.sync_no_teams")}
+                </p>
+              ) : (
+                <div className="max-h-40 space-y-1 overflow-y-auto rounded-lg border p-2" style={{ borderColor: "var(--border)" }}>
+                  {bundle.teams.map((team, index) => {
+                    const key = syncTeamKey(team, index);
+                    const conflict = existingNames.has(normalizeTeamName(team.name));
+                    return (
+                      <CheckboxField
+                        key={key}
+                        checked={receiveTeamKeys.includes(key)}
+                        onChange={() =>
+                          setReceiveTeamKeys((current) =>
+                            current.includes(key)
+                              ? current.filter((entry) => entry !== key)
+                              : [...current, key],
+                          )
+                        }
+                        label={
+                          <span className="flex items-center gap-1">
+                            <span className="truncate">{team.name}</span>
+                            {conflict && (
+                              <span
+                                title={t("settings.sync_conflicts", { count: 1 })}
+                                aria-label={t("settings.sync_conflicts", { count: 1 })}
+                              >
+                                <AlertTriangle size={11} style={{ color: "var(--warning)" }} />
+                              </span>
+                            )}
+                          </span>
+                        }
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <div className="mb-1 flex items-center justify-between text-[10px]" style={{ color: "var(--text-dim)" }}>
+                <span className="font-semibold uppercase tracking-wide">{t("settings.sync_send_settings")}</span>
+                <button
+                  type="button"
+                  className="underline-offset-2 hover:underline"
+                  onClick={() =>
+                    setReceiveSettingKeys(
+                      allReceiveSettingsSelected
+                        ? []
+                        : Object.keys(bundle.settings),
+                    )
+                  }
+                >
+                  {allReceiveSettingsSelected ? t("settings.sync_select_none") : t("settings.sync_select_all")}
+                </button>
+              </div>
+              {receiveGroups.length === 0 ? (
+                <p className="text-[10px]" style={{ color: "var(--text-dim)" }}>
+                  {t("settings.sync_no_settings")}
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {receiveGroups.map(([group, keys]) => {
+                    const allGroup = keys.every((key) => receiveSettingKeys.includes(key));
+                    return (
+                      <div key={group} className="rounded-lg border p-2" style={{ borderColor: "var(--border)" }}>
+                        <div className="mb-1 flex items-center justify-between">
+                          <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                            {t(groupLabelKey(group))}
+                          </span>
+                          <button
+                            type="button"
+                            className="text-[9px] underline-offset-2 hover:underline"
+                            style={{ color: "var(--text-dim)" }}
+                            onClick={() =>
+                              setReceiveSettingKeys((current) =>
+                                allGroup
+                                  ? current.filter((key) => !keys.includes(key))
+                                  : [...new Set([...current, ...keys])],
+                              )
+                            }
+                          >
+                            {allGroup ? t("settings.sync_select_none") : t("settings.sync_select_all")}
+                          </button>
+                        </div>
+                        <div className="grid gap-1 sm:grid-cols-2">
+                          {keys.map((key) => {
+                            const display = settingDisplay(key, t);
+                            return (
+                              <CheckboxField
+                                key={key}
+                                checked={receiveSettingKeys.includes(key)}
+                                onChange={() =>
+                                  setReceiveSettingKeys((current) =>
+                                    current.includes(key)
+                                      ? current.filter((entry) => entry !== key)
+                                      : [...current, key],
+                                  )
+                                }
+                                label={
+                                  <span className="block">
+                                    <span className="block text-[11px] font-medium" style={{ color: "var(--text)" }}>
+                                      {display.label}
+                                    </span>
+                                    {display.hint && (
+                                      <span className="block text-[10px]" style={{ color: "var(--text-dim)" }}>
+                                        {display.hint}
+                                      </span>
+                                    )}
+                                  </span>
+                                }
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <ToggleSwitch
+              checked={receiveUi}
+              onChange={setReceiveUi}
+              label={t("settings.sync_send_ui", { count: UI_KEYS.length })}
+              className="rounded-lg border px-2.5 py-2"
+            />
+          </div>
           {conflictCount > 0 && (
             <div
               className="space-y-2 rounded-lg border p-2"
@@ -795,23 +1251,15 @@ export function SyncSettings() {
                 <AlertTriangle size={12} />
                 {t("settings.sync_conflicts", { count: conflictCount })}
               </p>
-              <div className="grid gap-1 sm:grid-cols-3">
-                {(["rename", "replace", "skip"] as const).map((entry) => (
-                  <label key={entry} className="flex items-start gap-2 text-[11px]">
-                    <input
-                      type="radio"
-                      name="sync-conflict"
-                      className="mt-0.5"
-                      checked={conflictMode === entry}
-                      onChange={() => setConflictMode(entry)}
-                    />
-                    <span>
-                      <span className="block font-medium">{t(`settings.sync_conflict_${entry}`)}</span>
-                      <span style={{ color: "var(--text-dim)" }}>{t(`settings.sync_conflict_${entry}_hint`)}</span>
-                    </span>
-                  </label>
-                ))}
-              </div>
+              <SegmentedControl
+                value={conflictMode}
+                onChange={(value) => setConflictMode(value)}
+                options={(["rename", "replace", "skip"] as const).map((entry) => ({
+                  value: entry,
+                  label: t(`settings.sync_conflict_${entry}`),
+                }))}
+                hint={t(`settings.sync_conflict_${conflictMode}_hint`)}
+              />
               {conflictMode === "replace" && (
                 <p className="text-[10px]" style={{ color: "var(--danger)" }}>
                   {t("settings.sync_replace_warning", { count: conflictCount })}

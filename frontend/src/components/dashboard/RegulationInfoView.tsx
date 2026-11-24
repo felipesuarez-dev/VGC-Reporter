@@ -32,7 +32,12 @@ import { buildEntityUsers, type EntityUser } from "../../lib/entityUsers";
 import { prettifyItemName } from "../../lib/labels";
 import { formatDate, formatDateTime } from "../../lib/formatDate";
 import { dataDay, regulationStatusAt } from "../../lib/regulations";
-import { PanelOrder, PanelOrderGroup } from "../layout/PanelBoard";
+import { PanelBoard, type PanelBoardItem } from "../layout/PanelBoard";
+import {
+  REGULATION_PANEL_IDS,
+  useDashboardStore,
+  type RegulationPanelId,
+} from "../../stores/dashboardStore";
 
 const INITIAL_SPECIES = 48;
 const INITIAL_ITEMS = 36;
@@ -40,18 +45,23 @@ const INITIAL_ITEMS = 36;
 interface Props {
   format: Format;
   info: RegulationInfo | null;
-  panelOrder?: string[];
-  onPanelOrderChange?: (order: string[]) => void;
 }
 
 type UsageSort = "usage" | "alphabetical";
 
-export function RegulationInfoView({
-  format,
-  info,
-  panelOrder = ["roster", "items", "megas"],
-  onPanelOrderChange,
-}: Props) {
+export function RegulationInfoView({ format, info }: Props) {
+  const regulationRows = useDashboardStore((s) => s.regulationRows);
+  const regulationPanels = useDashboardStore((s) => s.regulationPanels);
+  const setRegulationRows = useDashboardStore((s) => s.setRegulationRows);
+  const setRegulationCollapsed = useDashboardStore(
+    (s) => s.setRegulationCollapsed,
+  );
+  const setAllRegulationCollapsed = useDashboardStore(
+    (s) => s.setAllRegulationCollapsed,
+  );
+  const resetRegulationLayout = useDashboardStore(
+    (s) => s.resetRegulationLayout,
+  );
   const { t, i18n } = useTranslation();
   const [speciesQuery, setSpeciesQuery] = useState("");
   const [itemQuery, setItemQuery] = useState("");
@@ -214,6 +224,21 @@ export function RegulationInfoView({
     (warning) => warning.kind === "calendar_pending",
   );
 
+  const regulationItems: Record<RegulationPanelId, PanelBoardItem> = {
+    roster: {
+      label: t("feed.eligible_pokemon"),
+      icon: <ShieldCheck size={12} />,
+    },
+    items: {
+      label: t("feed.allowed_items"),
+      icon: <Package size={12} />,
+    },
+    megas: {
+      label: t("feed.eligible_megas"),
+      icon: <Sparkles size={12} />,
+    },
+  };
+
   return (
     <div className="space-y-4">
       <header className="card card-hero relative overflow-hidden p-5">
@@ -349,15 +374,18 @@ export function RegulationInfoView({
         </div>
       </header>
 
-      <PanelOrderGroup
-        order={panelOrder}
-        onOrderChange={onPanelOrderChange ?? (() => undefined)}
-      >
-        <PanelOrder
-          id="roster"
-          label={t("feed.eligible_pokemon")}
-          icon={<ShieldCheck size={12} />}
-        >
+      <PanelBoard
+        rows={regulationRows}
+        panelIds={REGULATION_PANEL_IDS}
+        items={regulationItems}
+        prefs={regulationPanels}
+        onRowsChange={setRegulationRows}
+        onToggle={setRegulationCollapsed}
+        onAllCollapsed={setAllRegulationCollapsed}
+        onReset={resetRegulationLayout}
+        renderPanel={(panelId) => {
+          if (panelId === "roster") {
+            return (
         <section className="card">
           <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
             <div>
@@ -420,13 +448,10 @@ export function RegulationInfoView({
             </button>
           )}
         </section>
-        </PanelOrder>
-
-        <PanelOrder
-          id="items"
-          label={t("feed.allowed_items")}
-          icon={<Package size={12} />}
-        >
+            );
+          }
+          if (panelId === "items") {
+            return (
         <section className="card" data-section="allowed-items">
           <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
             <div>
@@ -501,13 +526,9 @@ export function RegulationInfoView({
             </button>
           )}
         </section>
-        </PanelOrder>
-
-          <PanelOrder
-            id="megas"
-            label={t("feed.eligible_megas")}
-            icon={<Sparkles size={12} />}
-          >
+            );
+          }
+          return (
           <section className="card">
             <h3 className="text-sm font-semibold" style={{ color: "var(--text)" }}>
               {t("feed.eligible_megas")}{" "}
@@ -542,8 +563,9 @@ export function RegulationInfoView({
               </p>
             )}
           </section>
-          </PanelOrder>
-      </PanelOrderGroup>
+          );
+        }}
+      />
     </div>
   );
 }

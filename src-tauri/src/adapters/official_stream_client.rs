@@ -2,6 +2,7 @@ use crate::adapters::HttpClient;
 use crate::config;
 use crate::domain::regulation::OfficialLiveStream;
 use crate::error::AppError;
+use chrono::{SecondsFormat, Utc};
 use regex::Regex;
 use std::sync::Arc;
 
@@ -18,10 +19,12 @@ pub const DEFAULT_WOLFEY_SOURCE: &str = "https://www.youtube.com/@WolfeyVGC";
 pub const DEFAULT_JAMES_SOURCE: &str = "https://www.youtube.com/@JamesBaek";
 pub const DEFAULT_POKEALEX_SOURCE: &str = "https://www.youtube.com/@PokeAlex";
 pub const DEFAULT_MOXIE_SOURCE: &str = "https://www.youtube.com/@Moxie2D";
+pub const DEFAULT_MOXIE_BOOSTED_SOURCE: &str = "https://www.youtube.com/@MoxieBoosted";
+pub const DEFAULT_BLACKSTORM_SOURCE: &str = "https://www.youtube.com/@BlackStormGamesVGC";
 pub const DEFAULT_POKEMON_CHAMPIONS_SOURCE: &str = "https://www.youtube.com/@PokemonChampions";
 pub const DEFAULT_SEKIAM_SOURCE: &str = "https://www.youtube.com/@Sekiam";
-/// Chilean VGC channel (Pokémon VGC Chile Invitational).
-pub const DEFAULT_IRNEMESIS_SOURCE: &str = "https://www.youtube.com/@IRNemesisTV";
+/// Large English-language VGC channel focused on competitive play and meta.
+pub const DEFAULT_THATSAPLUSONE_SOURCE: &str = "https://www.youtube.com/@THATSAplusONE";
 /// Old default watch-party URL shipped before 0.6.0. It is not a channel and
 /// must never come back as "latest stream": remove it from stored settings.
 pub const LEGACY_INDER_LIVE: &str = "https://www.youtube.com/watch?v=tP09BzCEJqU";
@@ -35,9 +38,11 @@ pub const DEFAULT_LIVE_SCREENS: &[&str] = &[
     DEFAULT_JAMES_SOURCE,
     DEFAULT_POKEALEX_SOURCE,
     DEFAULT_MOXIE_SOURCE,
+    DEFAULT_MOXIE_BOOSTED_SOURCE,
+    DEFAULT_BLACKSTORM_SOURCE,
     DEFAULT_POKEMON_CHAMPIONS_SOURCE,
     DEFAULT_SEKIAM_SOURCE,
-    DEFAULT_IRNEMESIS_SOURCE,
+    DEFAULT_THATSAPLUSONE_SOURCE,
 ];
 
 const HEADERS: &[(&str, &str)] = &[("Accept-Language", "en-US,en;q=0.9")];
@@ -237,6 +242,8 @@ fn stream(video_id: &str, title: String) -> OfficialLiveStream {
         embed_url: format!("https://www.youtube-nocookie.com/embed/{video_id}"),
         thumbnail_url: format!("https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"),
         live: true,
+        duration: None,
+        published_at: None,
     }
 }
 
@@ -263,9 +270,49 @@ fn is_vgc_title(title: &str) -> bool {
     {
         return false;
     }
+    // Latin American broadcasts use Spanish titles ("Videojuegos Pokémon")
+    // and the final day is published as "Championship Sunday" without "VGC".
+    if lower.contains("videojuegos pokémon") || lower.contains("videojuegos pokemon") {
+        return true;
+    }
     lower.contains("vgc")
         || lower.contains("pokémon champions")
         || lower.contains("pokemon champions")
+        || lower.contains("championship sunday")
+}
+
+/// YouTube uses `isLive:true` for scheduled premieres too. Those blocks carry
+/// `isUpcoming`, a scheduled start, or a “waiting” counter; they must never be
+/// presented as a live broadcast.
+fn is_scheduled_or_premiere(block: &str) -> bool {
+    let lower = block.to_ascii_lowercase();
+    lower.contains("\"isupcoming\":true")
+        || lower.contains("\"scheduledstarttime\"")
+        || lower.contains("\"live in ")
+        || lower.contains("\"scheduled for")
+        || lower.contains("premiere")
+        || lower.contains("\"waiting\"")
+        || lower.contains(" waiting")
+}
+
+fn has_strong_live_badge(block: &str) -> bool {
+    block.contains("\"isLiveNow\":true")
+        || block.contains("BADGE_STYLE_TYPE_LIVE_NOW")
+        || block.contains("\"label\":\"LIVE\"")
+        || block.contains("\"liveIndicatorText\":{\"simpleText\":\"Live\"}")
+}
+
+fn has_watching_count(block: &str) -> bool {
+    Regex::new(r#""content":"[\d.,]+[KMB]? watching""#)
+        .map(|re| re.is_match(block))
+        .unwrap_or(false)
+}
+
+fn is_live_block(block: &str) -> bool {
+    !is_scheduled_or_premiere(block)
+        && (has_strong_live_badge(block)
+            || block.contains("\"isLive\":true")
+            || has_watching_count(block))
 }
 
 fn unescape_title(raw: &str) -> String {
@@ -304,7 +351,15 @@ fn parse_watch_page_live(html: &str, expected_video_id: &str) -> Option<Official
     )
     .ok()?;
     let capture = re.captures(html)?;
-    if capture.get(1)?.as_str() != expected_video_id || capture.get(3)?.as_str() != "true" {
+    let block = capture.get(0)?;
+    let window_end = (block.start() + 6000).min(html.len());
+    let window = html
+        .get(block.start()..window_end)
+        .unwrap_or(block.as_str());
+    if capture.get(1)?.as_str() != expected_video_id
+        || capture.get(3)?.as_str() != "true"
+        || is_scheduled_or_premiere(window)
+    {
         return None;
     }
     Some(stream(
@@ -313,9 +368,50 @@ fn parse_watch_page_live(html: &str, expected_video_id: &str) -> Option<Official
     ))
 }
 
+/// YouTube reports past broadcasts as "Streamed 1d ago" (content metadata)
+/// and "Streamed 1 day ago" (accessibility label). Convert that relative
+/// text to an instant so the UI can render the age in any locale.
+fn parse_published_at(segment: &str) -> Option<chrono::DateTime<Utc>> {
+    let re = Regex::new(
+        r#"(?i)(?:streamed|premiered)\s+(\d+)\s*(seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|weeks?|w|months?|mos?|mo|years?|y)\s+ago"#,
+    )
+    .ok()?;
+    let capture = re.captures(segment)?;
+    let amount: i64 = capture.get(1)?.as_str().parse().ok()?;
+    let unit = capture.get(2)?.as_str().to_ascii_lowercase();
+    let seconds = match unit.as_str() {
+        "s" | "sec" | "secs" | "second" | "seconds" => 1,
+        "m" | "min" | "mins" | "minute" | "minutes" => 60,
+        "h" | "hr" | "hrs" | "hour" | "hours" => 60 * 60,
+        "d" | "day" | "days" => 24 * 60 * 60,
+        "w" | "week" | "weeks" => 7 * 24 * 60 * 60,
+        "mo" | "mos" | "month" | "months" => 30 * 24 * 60 * 60,
+        "y" | "year" | "years" => 365 * 24 * 60 * 60,
+        _ => return None,
+    };
+    Some(Utc::now() - chrono::Duration::seconds(amount * seconds))
+}
+
+/// Duration badge of the card whose metadata marker is at `marker`. YouTube
+/// renders the thumbnail before `lockupMetadataViewModel`, so the closest
+/// duration badge in the preceding card window belongs to this card.
+fn duration_before(html: &str, marker: usize, floor: usize) -> Option<String> {
+    let window = html.get(floor..marker)?;
+    let badge_re = Regex::new(r#""thumbnailBadgeViewModel":\{"text":"([^"]+)""#).ok()?;
+    let duration_re = Regex::new(r#"^\d{1,2}:\d{2}(?::\d{2})?$"#).ok()?;
+    badge_re
+        .captures_iter(window)
+        .filter_map(|capture| capture.get(1))
+        .map(|value| value.as_str())
+        .filter(|value| duration_re.is_match(value))
+        .last()
+        .map(str::to_string)
+}
+
 /// Live VGC entry from the channel `/streams` tab. The page renders cards as
 /// `lockupMetadataViewModel`; live ones show "N watching" while past streams
-/// show "Streamed ... ago".
+/// show "Streamed ... ago". Scheduled event cards share the tab and must never
+/// be mistaken for the latest past broadcast.
 fn parse_streams_page(html: &str, vgc_only: bool, want_live: bool) -> Option<OfficialLiveStream> {
     let marker = "\"lockupMetadataViewModel\"";
     let positions: Vec<usize> = html
@@ -324,8 +420,10 @@ fn parse_streams_page(html: &str, vgc_only: bool, want_live: bool) -> Option<Off
         .collect();
     let title_re = Regex::new(r#""title":\{"content":"((?:[^"\\]|\\.)*)""#).ok()?;
     let id_re = Regex::new(r#""watchEndpoint":\{"videoId":"([A-Za-z0-9_-]{11})""#).ok()?;
+    let now = Utc::now();
 
-    let mut best: Option<(u8, OfficialLiveStream)> = None;
+    let mut best_live: Option<(u8, OfficialLiveStream)> = None;
+    let mut best_past: Option<(i64, OfficialLiveStream)> = None;
     for (index, position) in positions.iter().enumerate() {
         let raw_end = positions
             .get(index + 1)
@@ -345,13 +443,6 @@ fn parse_streams_page(html: &str, vgc_only: bool, want_live: bool) -> Option<Off
         if vgc_only && !is_vgc_title(&title) {
             continue;
         }
-        let live = segment.contains("watching")
-            || segment.contains("\"isLive\":true")
-            || segment.contains("BADGE_STYLE_TYPE_LIVE_NOW")
-            || segment.contains("\"label\":\"LIVE\"");
-        if live != want_live {
-            continue;
-        }
         let Some(video_id) = id_re
             .captures(segment)
             .and_then(|capture| capture.get(1))
@@ -359,28 +450,62 @@ fn parse_streams_page(html: &str, vgc_only: bool, want_live: bool) -> Option<Off
         else {
             continue;
         };
-        // Live cards are ordered by preference (VGC first). Past cards are
-        // ordered newest-first by YouTube, so the first match IS the latest
-        // broadcast; scoring them would resurrect an older VGC stream.
-        let score = if want_live && title.to_lowercase().contains("vgc") {
-            2
-        } else {
-            1
-        };
-        let better = if want_live {
-            best.as_ref()
+        let live = is_live_block(segment);
+        if want_live {
+            if !live {
+                continue;
+            }
+            // Live cards are ordered by preference (VGC first), so VGC wins
+            // over another game's broadcast.
+            let score = if title.to_lowercase().contains("vgc") {
+                2
+            } else {
+                1
+            };
+            let better = best_live
+                .as_ref()
                 .map(|(current, _)| score > *current)
-                .unwrap_or(true)
-        } else {
-            best.is_none()
-        };
+                .unwrap_or(true);
+            if better {
+                let mut candidate = stream(&video_id, title);
+                candidate.live = true;
+                best_live = Some((score, candidate));
+            }
+            continue;
+        }
+        // Future event cards and premieres also carry `isLive:false`. Without
+        // this guard YouTube's Stuttgart schedule replaces the real latest
+        // past broadcast.
+        if live || is_scheduled_or_premiere(segment) {
+            continue;
+        }
+        let published = parse_published_at(segment);
+        let age = published
+            .map(|value| (now - value).num_seconds().max(0))
+            .unwrap_or(i64::MAX);
+        let better = best_past
+            .as_ref()
+            .map(|(current, _)| age < *current)
+            .unwrap_or(true);
         if better {
+            let floor = index
+                .checked_sub(1)
+                .and_then(|previous| positions.get(previous))
+                .copied()
+                .unwrap_or(0);
             let mut candidate = stream(&video_id, title);
-            candidate.live = want_live;
-            best = Some((score, candidate));
+            candidate.live = false;
+            candidate.duration = duration_before(html, *position, floor);
+            candidate.published_at =
+                published.map(|value| value.to_rfc3339_opts(SecondsFormat::Secs, true));
+            best_past = Some((age, candidate));
         }
     }
-    best.map(|(_, stream)| stream)
+    if want_live {
+        best_live.map(|(_, stream)| stream)
+    } else {
+        best_past.map(|(_, stream)| stream)
+    }
 }
 
 /// Fallback for the channel `/live` page: collect live cards and keep the VGC
@@ -412,12 +537,7 @@ fn live_candidates(html: &str) -> Vec<OfficialLiveStream> {
     else {
         return Vec::new();
     };
-    let live_marker = |window: &str| {
-        window.contains("\"isLive\":true")
-            || window.contains("\"isLiveNow\":true")
-            || window.contains("BADGE_STYLE_TYPE_LIVE_NOW")
-            || window.contains("\"label\":\"LIVE\"")
-    };
+    let live_marker = |window: &str| is_live_block(window);
 
     let mut out: Vec<OfficialLiveStream> = Vec::new();
     let push = |out: &mut Vec<OfficialLiveStream>, candidate: OfficialLiveStream| {
@@ -448,14 +568,20 @@ fn live_candidates(html: &str) -> Vec<OfficialLiveStream> {
 
     // The main player is the strongest signal and has an unescaped title.
     if let Some(capture) = primary_re.captures(html) {
-        if let Some(title) = capture.get(2) {
-            push(
-                &mut out,
-                stream(
-                    capture.get(1).map(|m| m.as_str()).unwrap_or_default(),
-                    unescape_title(title.as_str()),
-                ),
-            );
+        if let (Some(title), Some(block)) = (capture.get(2), capture.get(0)) {
+            let window_end = (block.start() + 6000).min(html.len());
+            let window = html
+                .get(block.start()..window_end)
+                .unwrap_or(block.as_str());
+            if !is_scheduled_or_premiere(window) {
+                push(
+                    &mut out,
+                    stream(
+                        capture.get(1).map(|m| m.as_str()).unwrap_or_default(),
+                        unescape_title(title.as_str()),
+                    ),
+                );
+            }
         }
     }
 
@@ -627,5 +753,74 @@ mod tests {
         let recent = parse_streams_page(page, true, false).unwrap();
         assert_eq!(recent.video_id, "McqT0f8VAXY");
         assert!(!recent.live);
+    }
+
+    #[test]
+    fn picks_the_latest_past_broadcast_and_reads_duration() {
+        let page = r#"
+          "lockupMetadataViewModel":{"title":{"content":"VGC Day 1 | 2027 Stuttgart Pokémon Regional Championships"},"metadata":{"contentMetadataViewModel":{"metadataRows":[{"metadataParts":[{"text":{"content":"Scheduled for 11/28/26, 12:00 AM"}}]}]}}}
+          "watchEndpoint":{"videoId":"jhaJTtqz0E0"}
+          "lockupMetadataViewModel":{"title":{"content":"VGC Day 2 | 2027 Pokémon Latin America International Championships"},"metadata":{"contentMetadataViewModel":{"metadataRows":[{"metadataParts":[{"text":{"content":"2.1K"}},{"text":{"content":"Streamed 2d ago"}}]}]}}}
+          "watchEndpoint":{"videoId":"2_l7hdlAs6E"}
+          "thumbnailBadgeViewModel":{"text":"9:07:32","badgeStyle":"THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT"}
+          "lockupMetadataViewModel":{"title":{"content":"Championship Sunday | 2027 Pokémon Latin America International Championships"},"metadata":{"contentMetadataViewModel":{"metadataRows":[{"metadataParts":[{"text":{"content":"214K"}},{"text":{"content":"Streamed 1d ago"},"accessibilityLabel":"Streamed 1 day ago"}]}]}}}
+          "watchEndpoint":{"videoId":"JlQ8cpTuRFI"}
+        "#;
+        let recent = parse_streams_page(page, true, false).unwrap();
+        // The Stuttgart card is in the future and must not win, even though
+        // its title contains VGC; 1d ago is newer than 2d ago.
+        assert_eq!(recent.video_id, "JlQ8cpTuRFI");
+        assert_eq!(recent.duration.as_deref(), Some("9:07:32"));
+        assert!(recent.published_at.is_some());
+        assert!(!recent.live);
+    }
+
+    #[test]
+    fn recognises_localised_vgc_and_championship_sunday_titles() {
+        assert!(is_vgc_title(
+            "Championship Sunday | 2027 Pokémon Latin America International Championships"
+        ));
+        assert!(is_vgc_title(
+            "Videojuegos Pokémon: Día 2 | Campeonato Regional Pokémon de Puebla 2027"
+        ));
+        assert!(!is_vgc_title(
+            "JCC Pokémon: Día 2 | Campeonato Regional Pokémon de Puebla 2027"
+        ));
+        assert!(!is_vgc_title(
+            "Pokémon GO: Día 2 | Campeonato Regional Pokémon de Puebla 2027"
+        ));
+    }
+
+    #[test]
+    fn rejects_a_scheduled_premiere_even_if_youtube_says_is_live() {
+        let page = r#"
+          "videoId":"jhaJTtqz0E0"
+          "videoDetails":{"videoId":"jhaJTtqz0E0","title":"VGC Day 1 | 2027 Stuttgart Pokémon Regional Championships","lengthSeconds":"0","isLive":true}
+          "isUpcoming":true
+          "liveStreamability":{"liveStreamabilityRenderer":{"videoId":"jhaJTtqz0E0","offlineSlate":{"liveStreamOfflineSlateRenderer":{"scheduledStartTime":"1795852800","mainText":{"runs":[{"text":"Live in "},{"text":"4 days"}]}}}}}
+          "viewCount":{"runs":[{"text":"1 waiting"}]}
+          "dateText":{"simpleText":"Scheduled for Nov 28, 2026"}
+        "#;
+        assert!(parse_live_page(page, true).is_none());
+        assert!(parse_watch_page_live(page, "jhaJTtqz0E0").is_none());
+    }
+
+    #[test]
+    fn generic_watching_copy_is_not_a_live_card() {
+        let page = r#"
+          "lockupMetadataViewModel":{"title":{"content":"VGC Day 2 | 2027 Pokémon Latin America International Championships"},"metadata":{"contentMetadataViewModel":{"metadataRows":[{"metadataParts":[{"text":{"content":"Continue watching"}}]}]}}}
+          "watchEndpoint":{"videoId":"2_l7hdlAs6E"}
+        "#;
+        assert!(parse_streams_page(page, true, true).is_none());
+    }
+
+    #[test]
+    fn accepts_a_strong_live_badge() {
+        let page = r#"
+          "lockupMetadataViewModel":{"title":{"content":"VGC Day 2 | 2027 Pokémon Latin America International Championships"},"metadata":{"contentMetadataViewModel":{"metadataRows":[{"metadataParts":[{"text":{"content":"4.1K watching"}},{"text":{"content":"LIVE"}}]}]}}}
+          "watchEndpoint":{"videoId":"2_l7hdlAs6E"}
+        "#;
+        let stream = parse_streams_page(page, true, true).unwrap();
+        assert_eq!(stream.video_id, "2_l7hdlAs6E");
     }
 }

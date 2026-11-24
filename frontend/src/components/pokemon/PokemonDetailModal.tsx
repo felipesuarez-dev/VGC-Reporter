@@ -154,7 +154,7 @@ export function PokemonDetailModal() {
         <div
           ref={scrollRef}
           onScroll={(e) => setShowScrollTop(e.currentTarget.scrollTop > 320)}
-          className="overflow-y-auto p-5 pt-12"
+          className="modal-scroll overflow-y-auto p-5 pt-12"
         >
         {pokemon.isLoading && (
           <div style={{ color: "var(--text-muted)" }}>{t("common.loading")}</div>

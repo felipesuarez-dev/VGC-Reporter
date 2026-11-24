@@ -6,11 +6,11 @@ export type AndroidUpdateProgress = { request_id: string, downloaded: number, to
 
 export type BuildMode = "classic" | "champions";
 
-export type ChampionsReport = { 
+export type ChampionsReport = {
 /**
  * Community tournaments with published teams (Limitless).
  */
-tournaments: Array<ChampionsTournament>, 
+tournaments: Array<ChampionsTournament>,
 /**
  * Official Championship Series majors (Internationals, Regionals,
  * Specials and Worlds) for the same date window.
@@ -19,33 +19,37 @@ official_tournaments: Array<ChampionsTournament>, fetched_at: string, };
 
 export type ChampionsSearchHit = { tournament_id: string, tournament_name: string, tournament_date: string | null, kind: SearchHitKind, matched_text: string, player_name: string | null, player_placing: number | null, player_pokemon: Array<string>, };
 
-export type ChampionsTournament = { id: string, name: string, date: string | null, 
+export type ChampionsTournament = { id: string, name: string, date: string | null,
 /**
  * Last day for multi-day official majors.
  */
-end_date: string | null, players: number | null, format: string | null, organizer_id: string | null, 
+end_date: string | null, players: number | null, format: string | null, organizer_id: string | null,
 /**
  * `limitless` (community) or `play-pokemon` (official major).
  */
-source: string | null, 
+source: string | null,
 /**
  * Official event page / results page. Community rows are opened through
  * the in-app Limitless standings drawer instead.
  */
-url: string | null, location: string | null, 
+url: string | null, location: string | null,
+/**
+ * ISO country code when the source publishes it (official calendar).
+ */
+country: string | null,
 /**
  * `world`, `international`, `regional` or `special` for official majors.
  */
-tier: string | null, 
+tier: string | null,
 /**
  * Published cash prize pool, when the organizer lists one.
  */
-prize_pool: string | null, champion_name: string | null, 
+prize_pool: string | null, champion_name: string | null,
 /**
  * Country reported by Limitless for the champion; used by the local
  * scene filter without touching standings or decklists.
  */
-champion_country: string | null, 
+champion_country: string | null,
 /**
  * Champion's six-Pokémon decklist, when the organizer published it.
  */
@@ -79,7 +83,7 @@ export type IvSpread = { hp: number, atk: number, def: number, spa: number, spd:
  * One configured live screen (official channel or a community channel).
  * Offline screens keep their source URL so the UI can still offer the channel.
  */
-export type LiveStreamScreen = { source_url: string, label: string, official: boolean, live: boolean, video_id: string | null, title: string | null, url: string | null, embed_url: string | null, thumbnail_url: string | null, 
+export type LiveStreamScreen = { source_url: string, label: string, official: boolean, live: boolean, video_id: string | null, title: string | null, url: string | null, embed_url: string | null, thumbnail_url: string | null,
 /**
  * Most recent past broadcast for this source, used when nothing is live.
  */
@@ -89,7 +93,7 @@ export type LocalizedDescription = { en: string, es: string, pt: string, it: str
 
 export type LocalizedName = { en: string, es: string, pt: string, it: string, fr: string, };
 
-export type MetaSnapshot = { format: Format, generated_at: string, source: string, tournaments_used: number, total_entries: number, battles_analyzed: number, pokemon: Array<PokemonUsage>, top_items: Array<UsageEntry>, top_moves: Array<UsageEntry>, top_abilities: Array<UsageEntry>, top_tera: Array<UsageEntry>, from_date: string | null, to_date: string | null, 
+export type MetaSnapshot = { format: Format, generated_at: string, source: string, tournaments_used: number, total_entries: number, battles_analyzed: number, pokemon: Array<PokemonUsage>, top_items: Array<UsageEntry>, top_moves: Array<UsageEntry>, top_abilities: Array<UsageEntry>, top_tera: Array<UsageEntry>, from_date: string | null, to_date: string | null,
 /**
  * One entry per source that contributed, with the regulation each one
  * claims it is describing and its share of the merged result.
@@ -115,7 +119,22 @@ export type Nature = "Hardy" | "Lonely" | "Brave" | "Adamant" | "Naughty" | "Bol
  */
 export type OfficialEventDetails = { tournament_id: string | null, category: string | null, premier_event: string | null, status: string | null, organizer_name: string | null, organizer_phone: string | null, organizer_email: string | null, venue: string | null, address_line1: string | null, address_line2: string | null, city: string | null, state: string | null, postal_code: string | null, country: string | null, website: string | null, admission: string | null, registration: string | null, details: string | null, latitude: number | null, longitude: number | null, };
 
-export type OfficialLiveStream = { video_id: string, title: string, url: string, embed_url: string, thumbnail_url: string, live: boolean, };
+export type OfficialLiveStream = { video_id: string, title: string, url: string, embed_url: string, thumbnail_url: string, live: boolean,
+/**
+ * YouTube's duration badge for past broadcasts (`9:07:32`), when present.
+ */
+duration: string | null,
+/**
+ * Approximate publish instant derived from YouTube's "Streamed 1d ago"
+ * text. It lets the UI render the age in the active locale.
+ */
+published_at: string | null, };
+
+export type OfficialPlayerMatches = { player_name: string, country: string | null, place: number | null, record: string | null, matches: Array<OfficialTournamentMatch>,
+/**
+ * Six-Pokémon team published by the source, when available.
+ */
+team: Array<DecklistPokemon>, };
 
 /**
  * One row from the official Championship Series results endpoint. The
@@ -124,11 +143,51 @@ export type OfficialLiveStream = { video_id: string, title: string, url: string,
  */
 export type OfficialStanding = { place: number | null, player_name: string, country: string | null, wins: number, losses: number, ties: number, record: string | null, };
 
-export type OfficialStandingsPage = { standings: Array<OfficialStanding>, total_count: number | null, start: number, size: number, results_available: boolean, decklists_available: boolean, };
+export type OfficialStandingsPage = { standings: Array<OfficialStanding>, total_count: number | null, start: number, size: number, results_available: boolean, decklists_available: boolean,
+/**
+ * `play-pokemon` for the official results feed, `pokedata` when the
+ * unofficial standings mirror filled a gap.
+ */
+source: string | null, source_url: string | null, };
+
+export type OfficialTournamentDetail = { source: string, source_url: string, tournament_name: string, tournament_date: string | null, swiss_rounds: number | null, top_cut: Array<TopCutRound>,
+/**
+ * Divisions published by the source. Empty when only Masters exists or
+ * the page does not expose the division ribbon.
+ */
+divisions: Array<string>,
+/**
+ * Top-cut teams from PokéData; used as a fallback when PokéBase has no
+ * page for this event.
+ */
+teams: Array<OfficialTournamentTeam>, players: Array<OfficialPlayerMatches>, };
+
+export type OfficialTournamentMatch = { round: number,
+/**
+ * `swiss` or `top-cut`.
+ */
+phase: string, opponent_name: string, opponent_country: string | null, opponent_place: number | null,
+/**
+ * `win`, `loss`, `tie` or `bye`.
+ */
+result: string, };
+
+/**
+ * A top-cut team published by PokéBase for an official tournament. The
+ * official Championship Series feed has no decklists, so this is the
+ * enrichment layer used by the in-app tournament sheet.
+ */
+export type OfficialTournamentTeam = { placing: number | null, placing_label: string | null, player_name: string, country: string | null, record: string | null, pokemon: Array<DecklistPokemon>, };
+
+export type OfficialTournamentTeams = {
+/**
+ * Community source that published the teams (`pokebase`).
+ */
+source: string, source_url: string, tournament_name: string, tournament_date: string | null, teams: Array<OfficialTournamentTeam>, };
 
 export type PikalyticsEntry = { species_id: string, species_display: string, sprite_url: string | null, usage_percent: number | null, common_items: Array<PikalyticsItem>, common_abilities: Array<PikalyticsItem>, common_moves: Array<PikalyticsItem>, common_teammates: Array<PikalyticsTeammate>, common_tera: Array<PikalyticsItem>, ev_spreads: Array<PikalyticsEvSpread>, source_url: string, };
 
-export type PikalyticsEvSpread = { 
+export type PikalyticsEvSpread = {
 /**
  * Free-form label (e.g. "252 HP / 4 Def / 252 SpA"). Pikalytics renders
  * spreads as plain text and we keep that representation verbatim.
@@ -139,24 +198,24 @@ export type PikalyticsItem = { name: string, usage_percent: number | null, };
 
 export type PikalyticsTeammate = { species: string, usage_percent: number | null, sprite_url: string | null, };
 
-export type Pokemon = { 
+export type Pokemon = {
 /**
  * Showdown canonical id (e.g. "incineroar").
  */
-id: string, 
+id: string,
 /**
  * Display name (e.g. "Incineroar").
  */
-name: string, 
+name: string,
 /**
  * National Pokédex number. 0 for entries that have no number (cosmetic forms).
  */
-num: number, types: Array<PokemonType>, base_stats: Stats, abilities: Array<string>, sprite_url: string, 
+num: number, types: Array<PokemonType>, base_stats: Stats, abilities: Array<string>, sprite_url: string,
 /**
  * Secondary sprite URL tried by the frontend when `sprite_url` 404s.
  * Variant-aware: indexed by slug, not dex number.
  */
-sprite_fallback_url: string | null, 
+sprite_fallback_url: string | null,
 /**
  * High-resolution PokéAPI Home render, keyed by national dex number.
  * `None` for cosmetic forms that share a dex number with their base.
@@ -168,11 +227,11 @@ home_sprite_url: string | null, };
  * Sourced from `data.pkmn.cc`. Fields are tolerant — items/abilities can be
  * missing for ability-locked or item-less sets.
  */
-export type PokemonSet = { name: string, item: string | null, ability: string | null, nature: string | null, 
+export type PokemonSet = { name: string, item: string | null, ability: string | null, nature: string | null,
 /**
  * Tera type(s) recommended for this set. May be empty.
  */
-tera_types: Array<string>, evs: EvSpread, 
+tera_types: Array<string>, evs: EvSpread,
 /**
  * Move list. Each slot is at most one move; alternative options are
  * joined with " / " for display (e.g. `"Air Slash / Dragon Pulse"`).
@@ -181,21 +240,21 @@ moves: Array<string>, };
 
 export type PokemonType = "Normal" | "Fire" | "Water" | "Electric" | "Grass" | "Ice" | "Fighting" | "Poison" | "Ground" | "Flying" | "Psychic" | "Bug" | "Rock" | "Ghost" | "Dragon" | "Dark" | "Steel" | "Fairy" | "Stellar";
 
-export type PokemonUsage = { species: string, usage_percent: number, count: number, top_items: Array<UsageEntry>, top_moves: Array<UsageEntry>, top_abilities: Array<UsageEntry>, top_tera: Array<UsageEntry>, top_teammates: Array<TeammateUsage>, top_natures: Array<UsageEntry>, common_movesets: Array<MovesetUsage>, sprite_url: string, sprite_fallback_url: string | null, home_sprite_url: string | null, 
+export type PokemonUsage = { species: string, usage_percent: number, count: number, top_items: Array<UsageEntry>, top_moves: Array<UsageEntry>, top_abilities: Array<UsageEntry>, top_tera: Array<UsageEntry>, top_teammates: Array<TeammateUsage>, top_natures: Array<UsageEntry>, common_movesets: Array<MovesetUsage>, sprite_url: string, sprite_fallback_url: string | null, home_sprite_url: string | null,
 /**
  * Win rate across every team that ran this species, 0..100. `None` when
  * no contributing source published match records.
  */
-win_rate: number | null, 
+win_rate: number | null,
 /**
  * Share of this species' teams that reached top cut, 0..100.
  */
-top_cut_rate: number | null, 
+top_cut_rate: number | null,
 /**
  * Our composite ranking score. Not a 0-100 rating: it is normalised
  * against the strongest values in the same snapshot.
  */
-meta_score: number | null, tier: Tier | null, 
+meta_score: number | null, tier: Tier | null,
 /**
  * How many sources reported this species at all. Low values mean the
  * numbers rest on a single upstream opinion.
@@ -238,18 +297,18 @@ export type SourceId = "labmaus" | "limitless" | "champteams" | "smogon";
  * What one source contributed to a snapshot, and how far it should be
  * trusted for the format that was actually requested.
  */
-export type SourceProvenance = { source: SourceId, 
+export type SourceProvenance = { source: SourceId,
 /**
  * The regulation the source itself claims this data describes, parsed out
  * of its payload — never inferred from the request. `None` when the
  * payload says nothing, which is treated as "cannot vouch for it".
  */
-declared_regulation: string | null, 
+declared_regulation: string | null,
 /**
  * Whether `declared_regulation` matches the requested format. Drives the
  * recency weight and lets the UI flag a source as out-of-period.
  */
-matches_active_format: boolean, teams: number, tournaments: number, from_date: string | null, to_date: string | null, 
+matches_active_format: boolean, teams: number, tournaments: number, from_date: string | null, to_date: string | null,
 /**
  * Share of the merged result attributable to this source, 0..1.
  * Filled in after the merge, so it is 0 until then.
@@ -260,7 +319,7 @@ export type StatPointSpread = { hp: number, atk: number, def: number, spa: numbe
 
 export type Stats = { hp: number, atk: number, def: number, spa: number, spd: number, spe: number, };
 
-export type SyncBundle = { schema: number, app_version: string, exported_at: string, teams: Array<Team>, settings: { [key in string]?: string }, 
+export type SyncBundle = { schema: number, app_version: string, exported_at: string, teams: Array<Team>, settings: { [key in string]?: string },
 /**
  * UI preferences serialized by the frontend (localStorage stores).
  */
@@ -268,11 +327,19 @@ ui_json: string, };
 
 export type SyncImportResult = { teams_imported: number, settings_imported: number, };
 
-export type SyncSession = { version: number, code: string, 
+export type SyncSendOptions = { teams: Array<SyncTeamOption>, settings: Array<SyncSettingOption>, };
+
+/**
+ * Sender-side selection. Empty lists mean "send none" (not "send all"), so the
+ * UI must explicitly include what it wants in the session.
+ */
+export type SyncSendSelection = { team_ids: number[], setting_keys: Array<string>, include_ui: boolean, };
+
+export type SyncSession = { version: number, code: string,
 /**
  * Versioned `vgcreporter://sync?...` ticket shown as a QR code.
  */
-ticket: string, 
+ticket: string,
 /**
  * Legacy HTTP bundle URL kept for the advanced fallback.
  */
@@ -280,13 +347,21 @@ url: string, expires_at: string, teams: number, settings: number, ui_stores: num
 
 export type SyncSessionStatus = { code: string, state: SyncState, expires_at: string, teams: number, settings: number, ui_stores: number, error: string | null, };
 
+export type SyncSettingOption = { key: string,
+/**
+ * `general`, `streams` or `overrides`; the UI groups checkboxes by this.
+ */
+group: string, };
+
 export type SyncState = "waiting" | "connected" | "transferring" | "received" | "imported" | "expired" | "cancelled" | "error";
+
+export type SyncTeamOption = { id: number, name: string, };
 
 export type SyncTicket = { version: number, code: string, token: string, host: string, port: number, };
 
 export type Team = { id: number | null, name: string, format: Format, build_mode: BuildMode, notes: string | null, members: Array<TeamMember>, created_at: string | null, updated_at: string | null, };
 
-export type TeamMember = { species: string, item: string | null, ability: string | null, nature: Nature | null, tera_type: PokemonType | null, moves: Array<string>, evs: EvSpread, level: number, gender: Gender | null, shiny: boolean, nickname: string | null, ivs: IvSpread, 
+export type TeamMember = { species: string, item: string | null, ability: string | null, nature: Nature | null, tera_type: PokemonType | null, moves: Array<string>, evs: EvSpread, level: number, gender: Gender | null, shiny: boolean, nickname: string | null, ivs: IvSpread,
 /**
  * Champions stat points. Kept alongside EVs so switching modes is a
  * conversion, never a data loss.
@@ -307,7 +382,21 @@ export type TeraUsage = { tera_type: string, usage_percent: number, };
 
 export type Tier = "S" | "A" | "B" | "C" | "D";
 
-export type TopTeam = { tournament: string, placing: number | null, player: string | null, country: string | null, record: string | null, members: Array<TopTeamMember>, provider: string | null, community: boolean, source_url: string | null, shared_at: string | null, };
+export type TopCutMatch = { winner: TopCutPlayer, loser: TopCutPlayer, };
+
+export type TopCutPlayer = { name: string, seed: number | null, country: string | null, };
+
+export type TopCutRound = {
+/**
+ * Display label from the source: `Top 16`, `Top 8`, `Top 4`, `Finals`.
+ */
+label: string, matches: Array<TopCutMatch>, };
+
+export type TopTeam = { tournament: string, placing: number | null, player: string | null, country: string | null, record: string | null, members: Array<TopTeamMember>, provider: string | null, community: boolean,
+/**
+ * Team published by an official Championship Series tournament.
+ */
+official: boolean, source_url: string | null, shared_at: string | null, };
 
 export type TopTeamMember = { species: string, sprite_url: string, sprite_fallback_url: string | null, home_sprite_url: string | null, item: string | null, tera_type: string | null, ability: string | null, nature: string | null, moves: Array<string>, level: number | null, evs: EvStatSpread | null, ivs: EvStatSpread | null, };
 
@@ -317,42 +406,44 @@ export type TopTeamsReport = { teams: Array<TopTeam>, meta: TopTeamsMeta, };
 
 export type TournamentStanding = { placing: number | null, player_name: string | null, player_id: string | null, country: string | null, record: string | null, wins: number, losses: number, ties: number, decklist: Array<DecklistPokemon>, };
 
+export type TournamentTopCut = { source: string, source_url: string, tournament_name: string, tournament_date: string | null, rounds: Array<TopCutRound>, };
+
 export type TranslationTable = { abilities: { [key in string]?: LocalizedName }, moves: { [key in string]?: LocalizedName }, items: { [key in string]?: LocalizedName }, };
 
 export type TrendingPokemon = { species: string, sprite_url: string, sprite_fallback_url: string | null, home_sprite_url: string | null, change_percentage: number, day1_percentage: number, day2_percentage: number, };
 
 export type TrendingReport = { rising: Array<TrendingPokemon>, falling: Array<TrendingPokemon>, from_date: string | null, to_date: string | null, window_days: number, };
 
-export type UpcomingTournament = { id: string, name: string, date: string, url: string, region: string | null, players: number | null, 
+export type UpcomingTournament = { id: string, name: string, date: string, url: string, region: string | null, players: number | null,
 /**
  * Masters winner when the official results endpoint already published it.
  */
-champion_name: string | null, champion_country: string | null, source: string, 
+champion_name: string | null, champion_country: string | null, source: string,
 /**
  * Last day of multi-day events (official majors). `None` for single-day
  * local/online tournaments. The calendar expands the whole range.
  */
-end_date: string | null, 
+end_date: string | null,
 /**
  * Visual tier: `world`, `international`, `regional`, `special`, `local`
  * or `community`. Majors are highlighted with a dedicated badge.
  */
-tier: string | null, 
+tier: string | null,
 /**
  * Published cash prize pool, when the official page has one.
  */
-prize_pool: string | null, time: string | null, kind: string | null, city: string | null, country: string | null, venue: string | null, street_address: string | null, state: string | null, postal_code: string | null, latitude: number | null, longitude: number | null, contact_email: string | null, contact_phone: string | null, details: string | null, registration_start: string | null, registration_end: string | null, admission: string | null, 
+prize_pool: string | null, time: string | null, kind: string | null, city: string | null, country: string | null, venue: string | null, street_address: string | null, state: string | null, postal_code: string | null, latitude: number | null, longitude: number | null, contact_email: string | null, contact_phone: string | null, details: string | null, registration_start: string | null, registration_end: string | null, admission: string | null,
 /**
  * Exact start instant for sources that publish one (Limitless). Kept
  * alongside `date`/`time` so the UI can render the user's timezone.
  */
-starts_at: string | null, 
+starts_at: string | null,
 /**
  * Upcoming Limitless registration count (not the player field).
  */
 registrations: number | null, event_website: string | null, third_party_registration_website: string | null, };
 
-export type UpdateInfo = { version: string, current_version: string, notes: string, android_url: string | null, android_size: number | null, android_sha256: string | null, android_signature: string | null, 
+export type UpdateInfo = { version: string, current_version: string, notes: string, android_url: string | null, android_size: number | null, android_sha256: string | null, android_signature: string | null,
 /**
  * Present when the manifest also lists a Windows bundle; used by the
  * diagnostic panel and the manual MSI fallback.

@@ -16,6 +16,8 @@ export interface SourcesChipProps {
   toDate?: string | null;
   totalEntries?: number;
   prefix?: ReactNode;
+  /** Adds the official Championship Series source (Top Equipos). */
+  includeOfficial?: boolean;
 }
 
 export function SourcesChip({
@@ -25,8 +27,18 @@ export function SourcesChip({
   toDate,
   totalEntries,
   prefix,
+  includeOfficial = false,
 }: SourcesChipProps) {
   const { t, i18n } = useTranslation();
+  const sources = includeOfficial
+    ? [
+        ...MAIN_SOURCES,
+        {
+          label: t("top_teams.provider_official"),
+          url: "https://championships.pokemon.com/en-us/",
+        },
+      ]
+    : MAIN_SOURCES;
   return (
     <span
       className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5 rounded-full border px-2.5 py-1 text-xs"
@@ -73,7 +85,7 @@ export function SourcesChip({
       ) : null}
       <span style={{ color: "var(--text-dim)" }}>|</span>
       <span>{t("dashboard.sources_label")}:</span>
-      {MAIN_SOURCES.map((s, i) => (
+      {sources.map((s, i) => (
         <span key={s.label} className="inline-flex items-center gap-1">
           {i > 0 && <span style={{ color: "var(--text-dim)" }}>/</span>}
           <button

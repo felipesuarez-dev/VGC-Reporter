@@ -1,10 +1,18 @@
+use crate::adapters::sprite_resolver::{canonical_id, primary_sprite_url};
 use crate::adapters::{
     ChampionshipEvent, ChampionshipsClient, LimitlessClient, LimitlessTournamentSummary,
-    LimitlessUpcoming, OfficialEventClient, PokedataClient, PokedataEvent,
+    LimitlessUpcoming, OfficialEventClient, PokebaseClient, PokedataClient, PokedataEvent,
+    PokedataTeam, PokedataTeamPokemon,
+};
+use crate::domain::champions::{
+    DecklistPokemon, OfficialPlayerMatches, OfficialStanding, OfficialStandingsPage,
+    OfficialTournamentDetail, OfficialTournamentMatch, OfficialTournamentTeam,
+    OfficialTournamentTeams, TopCutMatch, TopCutPlayer, TopCutRound,
 };
 use crate::domain::{OfficialEventDetails, UpcomingTournament};
 use crate::error::AppError;
 use chrono::{Duration, NaiveDate, Utc};
+use std::collections::HashMap;
 
 const LIMITLESS_TOURNAMENT_URL: &str = "https://play.limitlesstcg.com/tournament";
 const LIMITLESS_SOURCE: &str = "limitless";
@@ -22,6 +30,7 @@ const MAJOR_DETAIL_WINDOW_DAYS: i64 = 120;
 pub struct UpcomingTournamentsService {
     limitless: LimitlessClient,
     pokedata: PokedataClient,
+    pokebase: PokebaseClient,
     official_event: OfficialEventClient,
     championships: ChampionshipsClient,
 }
@@ -30,12 +39,14 @@ impl UpcomingTournamentsService {
     pub fn new(
         limitless: LimitlessClient,
         pokedata: PokedataClient,
+        pokebase: PokebaseClient,
         official_event: OfficialEventClient,
         championships: ChampionshipsClient,
     ) -> Self {
         Self {
             limitless,
             pokedata,
+            pokebase,
             official_event,
             championships,
         }
@@ -48,14 +59,293 @@ impl UpcomingTournamentsService {
     }
 
     /// Official Masters standings for a Championship Series event. The feed
-    /// publishes placement and match record but no decklists.
+    /// publishes placement and match record but no decklists. When the official
+    /// results are empty or late, the independent PokéData mirror fills the gap.
     pub async fn official_standings(
         &self,
         url: &str,
         start: u32,
         size: u32,
-    ) -> Result<crate::domain::champions::OfficialStandingsPage, AppError> {
-        self.championships.standings(url, start, size).await
+        name: Option<&str>,
+        date: Option<NaiveDate>,
+    ) -> Result<OfficialStandingsPage, AppError> {
+        let official = self.championships.standings(url, start, size).await;
+        match official {
+            Ok(page) if page.results_available => Ok(page),
+            Ok(page) => {
+                if let Some(name) = name {
+                    if let Ok(Some(fallback)) =
+                        self.pokedata_standings_page(name, date, start, size).await
+                    {
+                        return Ok(fallback);
+                    }
+                }
+                Ok(page)
+            }
+            Err(error) => {
+                if let Some(name) = name {
+                    if let Ok(Some(fallback)) =
+                        self.pokedata_standings_page(name, date, start, size).await
+                    {
+                        return Ok(fallback);
+                    }
+                }
+                Err(error)
+            }
+        }
+    }
+
+    /// Public top-cut teams from PokéBase for an official major. The official
+    /// results feed has no decklists, so this is the enrichment layer.
+    pub async fn official_teams(
+        &self,
+        name: &str,
+        date: Option<NaiveDate>,
+    ) -> Result<Option<OfficialTournamentTeams>, AppError> {
+        let Some(tournament) = self.pokebase.find_tournament(name, date).await? else {
+            return Ok(None);
+        };
+        let teams = self.pokebase.tournament_top8(&tournament.id).await?;
+        Ok(Some(OfficialTournamentTeams {
+            source: "pokebase".into(),
+            source_url: tournament.url,
+            tournament_name: tournament.name,
+            tournament_date: tournament
+                .date
+                .or(date)
+                .map(|value| value.format("%Y-%m-%d").to_string()),
+            teams: teams
+                .into_iter()
+                .map(|team| OfficialTournamentTeam {
+                    placing: team.placing,
+                    placing_label: team.placing_label,
+                    player_name: team.player_name,
+                    country: team.country,
+                    record: team.record,
+                    pokemon: team
+                        .pokemon
+                        .into_iter()
+                        .map(|pokemon| DecklistPokemon {
+                            id: Some(canonical_id(&pokemon.name)),
+                            name: pokemon.name.clone(),
+                            item: pokemon.item,
+                            ability: None,
+                            tera_type: None,
+                            moves: Vec::new(),
+                            sprite_fallback_url: Some(primary_sprite_url(&pokemon.name)),
+                            sprite_url: pokemon.sprite_url,
+                            home_sprite_url: None,
+                        })
+                        .collect(),
+                })
+                .collect(),
+        }))
+    }
+
+    /// Complete PokéData detail for an official event: top-cut bracket, teams
+    /// and the per-player round history. The source sometimes omits the bracket
+    /// but still publishes the final table and teams; both are preserved.
+    pub async fn official_detail(
+        &self,
+        name: &str,
+        date: Option<NaiveDate>,
+    ) -> Result<Option<OfficialTournamentDetail>, AppError> {
+        let (standings_result, top_cut_result) = tokio::join!(
+            self.pokedata.standings(name, date),
+            self.pokedata.top_cut(name, date)
+        );
+        let mut first_error = None;
+        let standings = match standings_result {
+            Ok(value) => value,
+            Err(error) => {
+                tracing::debug!(%error, "PokéData standings unavailable");
+                first_error = Some(error);
+                None
+            }
+        };
+        let top_cut = match top_cut_result {
+            Ok(value) => value,
+            Err(error) => {
+                tracing::warn!(%error, "PokéData top cut unavailable");
+                first_error = Some(error);
+                None
+            }
+        };
+        if standings.is_none() && top_cut.is_none() {
+            return match first_error {
+                Some(error) => Err(error),
+                None => Ok(None),
+            };
+        }
+
+        let event_name = standings
+            .as_ref()
+            .map(|value| value.event_name.clone())
+            .or_else(|| top_cut.as_ref().map(|value| value.event_name.clone()))
+            .unwrap_or_default();
+        let event_url = standings
+            .as_ref()
+            .map(|value| value.event_url.clone())
+            .or_else(|| top_cut.as_ref().map(|value| value.event_url.clone()))
+            .unwrap_or_default();
+        let event_date = standings
+            .as_ref()
+            .and_then(|value| value.event_date)
+            .or_else(|| top_cut.as_ref().and_then(|value| value.event_date));
+        let divisions = top_cut
+            .as_ref()
+            .map(|value| {
+                value
+                    .divisions
+                    .iter()
+                    .map(|division| division.name.clone())
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+        let teams_by_player = top_cut
+            .as_ref()
+            .map(|value| {
+                value
+                    .teams
+                    .iter()
+                    .map(|team| {
+                        (
+                            team.player_name.clone(),
+                            team.pokemon
+                                .iter()
+                                .cloned()
+                                .map(into_pokedata_pokemon)
+                                .collect(),
+                        )
+                    })
+                    .collect::<HashMap<_, Vec<_>>>()
+            })
+            .unwrap_or_default();
+        let top_cut_teams = top_cut
+            .as_ref()
+            .map(|value| {
+                let mut teams = value
+                    .teams
+                    .iter()
+                    .filter(|team| team.placement.is_some_and(|place| place <= 8))
+                    .cloned()
+                    .map(into_pokedata_team)
+                    .collect::<Vec<_>>();
+                teams.sort_by_key(|team| team.placing.unwrap_or(u32::MAX));
+                teams
+            })
+            .unwrap_or_default();
+        let top_cut_rounds = top_cut
+            .as_ref()
+            .map(|value| {
+                value
+                    .rounds
+                    .iter()
+                    .map(|round| TopCutRound {
+                        label: round.label.clone(),
+                        matches: round
+                            .matches
+                            .iter()
+                            .map(|m| TopCutMatch {
+                                winner: TopCutPlayer {
+                                    name: m.winner.name.clone(),
+                                    seed: m.winner.seed,
+                                    country: m.winner.country.clone(),
+                                },
+                                loser: TopCutPlayer {
+                                    name: m.loser.name.clone(),
+                                    seed: m.loser.seed,
+                                    country: m.loser.country.clone(),
+                                },
+                            })
+                            .collect(),
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        Ok(Some(OfficialTournamentDetail {
+            source: "pokedata".into(),
+            source_url: event_url,
+            tournament_name: event_name,
+            tournament_date: event_date.map(|value| value.format("%Y-%m-%d").to_string()),
+            swiss_rounds: standings.as_ref().and_then(|value| value.swiss_rounds),
+            top_cut: top_cut_rounds,
+            divisions,
+            teams: top_cut_teams,
+            players: standings
+                .map(|standings| {
+                    standings
+                        .players
+                        .into_iter()
+                        .map(|player| {
+                            let team = teams_by_player
+                                .get(&player.player_name)
+                                .cloned()
+                                .unwrap_or_default();
+                            OfficialPlayerMatches {
+                                player_name: player.player_name,
+                                country: player.country,
+                                place: Some(player.place),
+                                record: player.record,
+                                matches: player
+                                    .matches
+                                    .into_iter()
+                                    .map(|entry| OfficialTournamentMatch {
+                                        round: entry.round,
+                                        phase: entry.phase,
+                                        opponent_name: entry.opponent_name,
+                                        opponent_country: entry.opponent_country,
+                                        opponent_place: entry.opponent_place,
+                                        result: entry.result,
+                                    })
+                                    .collect(),
+                                team,
+                            }
+                        })
+                        .collect()
+                })
+                .unwrap_or_default(),
+        }))
+    }
+
+    async fn pokedata_standings_page(
+        &self,
+        name: &str,
+        date: Option<NaiveDate>,
+        start: u32,
+        size: u32,
+    ) -> Result<Option<OfficialStandingsPage>, AppError> {
+        let Some(standings) = self.pokedata.standings(name, date).await? else {
+            return Ok(None);
+        };
+        let source_url = standings.event_url.clone();
+        let total = standings.players.len() as u32;
+        let standings = standings
+            .players
+            .into_iter()
+            .skip(start as usize)
+            .take(size as usize)
+            .map(|player| OfficialStanding {
+                place: Some(player.place),
+                player_name: player.player_name,
+                country: player.country,
+                wins: player.wins,
+                losses: player.losses,
+                ties: player.ties,
+                record: player.record,
+            })
+            .collect::<Vec<_>>();
+        Ok(Some(OfficialStandingsPage {
+            results_available: !standings.is_empty(),
+            decklists_available: false,
+            standings,
+            total_count: Some(total),
+            start,
+            size,
+            source: Some("pokedata".into()),
+            source_url: Some(source_url),
+        }))
     }
 
     pub async fn list_upcoming(
@@ -326,6 +616,45 @@ fn to_official_major(event: ChampionshipEvent) -> UpcomingTournament {
         registrations: None,
         event_website: Some(url),
         third_party_registration_website: None,
+    }
+}
+
+fn into_pokedata_pokemon(pokemon: PokedataTeamPokemon) -> DecklistPokemon {
+    let display = pokemon.name;
+    DecklistPokemon {
+        id: Some(canonical_id(&display)),
+        name: display.clone(),
+        item: pokemon.item,
+        ability: None,
+        tera_type: None,
+        moves: pokemon.moves,
+        sprite_url: pokemon.sprite_url,
+        sprite_fallback_url: Some(primary_sprite_url(&display)),
+        home_sprite_url: None,
+    }
+}
+
+fn into_pokedata_team(team: PokedataTeam) -> OfficialTournamentTeam {
+    OfficialTournamentTeam {
+        placing: team.placement,
+        placing_label: team.placement.map(placing_label),
+        player_name: team.player_name,
+        country: team.country,
+        record: team.record,
+        pokemon: team
+            .pokemon
+            .into_iter()
+            .map(into_pokedata_pokemon)
+            .collect(),
+    }
+}
+
+fn placing_label(place: u32) -> String {
+    match place {
+        1 => "1st".to_string(),
+        2 => "2nd".to_string(),
+        3 => "3rd".to_string(),
+        value => format!("{value}th"),
     }
 }
 

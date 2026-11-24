@@ -1,5 +1,6 @@
 pub mod ability;
 pub mod champions;
+pub mod event_match;
 pub mod evs;
 pub mod format;
 pub mod item;
@@ -42,7 +43,10 @@ pub use regulation::{
 pub use sets::{PokemonSet, SetsBundle};
 pub use source_stats::{SourceId, SourceProvenance};
 pub use stat_points::{StatPointSpread, SP_MAX_PER_STAT, SP_MAX_TOTAL};
-pub use sync::{SyncBundle, SyncImportResult, SyncSession, SyncSessionStatus, SyncState};
+pub use sync::{
+    SyncBundle, SyncImportResult, SyncSendOptions, SyncSendSelection, SyncSession,
+    SyncSessionStatus, SyncSettingOption, SyncState, SyncTeamOption,
+};
 pub use team::{BuildMode, Gender, Team, TeamMember, TeamValidationError};
 pub use tera_type::TeraType;
 pub use tier::Tier;

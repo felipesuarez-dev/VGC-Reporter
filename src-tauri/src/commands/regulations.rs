@@ -150,6 +150,8 @@ mod tests {
         assert_eq!(sources[1], "https://www.youtube.com/@PlayPokemon");
         assert!(sources.contains(&"https://www.youtube.com/@WolfeyVGC".to_string()));
         assert!(sources.contains(&"https://www.youtube.com/@PokeAlex".to_string()));
+        assert!(sources.contains(&"https://www.youtube.com/@MoxieBoosted".to_string()));
+        assert!(sources.contains(&"https://www.youtube.com/@BlackStormGamesVGC".to_string()));
     }
 
     #[test]

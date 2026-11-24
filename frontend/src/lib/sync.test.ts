@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { SyncBundle, Team } from "./types";
 import { emptyTeamMember } from "./types";
-import { normalizeTeamName, prepareImport } from "./sync";
+import {
+  filterSyncBundle,
+  normalizeTeamName,
+  prepareImport,
+  syncTeamKey,
+} from "./sync";
 
 function team(id: number | null, name: string): Team {
   return {
@@ -51,5 +56,27 @@ describe("sync conflict resolution", () => {
     const prepared = prepareImport(bundle, existing, "skip");
     expect(prepared.deleteIds).toEqual([]);
     expect(prepared.bundle.teams.map((entry) => entry.name)).toEqual(["Fresh Team"]);
+  });
+});
+
+describe("receiver-side bundle selection", () => {
+  it("keeps only selected teams and settings", () => {
+    const selectedKey = syncTeamKey(bundle.teams[0], 0);
+    const filtered = filterSyncBundle(
+      bundle,
+      [selectedKey],
+      ["language"],
+      false,
+    );
+    expect(filtered.teams.map((entry) => entry.name)).toEqual(["Santiago Cup"]);
+    expect(filtered.settings).toEqual({ language: "es" });
+    expect(filtered.ui_json).toBe("{}");
+  });
+
+  it("can import only UI preferences", () => {
+    const filtered = filterSyncBundle(bundle, [], [], true);
+    expect(filtered.teams).toEqual([]);
+    expect(filtered.settings).toEqual({});
+    expect(filtered.ui_json).toBe(bundle.ui_json);
   });
 });

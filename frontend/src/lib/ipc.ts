@@ -11,6 +11,8 @@ import type {
   OfficialEventDetails,
   OfficialLiveStream,
   OfficialStandingsPage,
+  OfficialTournamentDetail,
+  OfficialTournamentTeams,
   PikalyticsEntry,
   Pokemon,
   PokemonType,
@@ -22,6 +24,8 @@ import type {
   TopTeamsReport,
   SyncBundle,
   SyncImportResult,
+  SyncSendOptions,
+  SyncSendSelection,
   SyncSession,
   SyncSessionStatus,
   TournamentStanding,
@@ -158,11 +162,29 @@ export const ipc = {
     }),
   getOfficialEventDetails: (url: string) =>
     call<OfficialEventDetails>("get_official_event_details", { url }),
-  getOfficialTournamentStandings: (url: string, start = 0, size = 32) =>
+  getOfficialTournamentStandings: (
+    url: string,
+    start = 0,
+    size = 32,
+    name?: string | null,
+    date?: string | null,
+  ) =>
     call<OfficialStandingsPage>("get_official_tournament_standings", {
       url,
       start,
       size,
+      name: name ?? null,
+      date: date ?? null,
+    }),
+  getOfficialTournamentTeams: (name: string, date?: string | null) =>
+    call<OfficialTournamentTeams | null>("get_official_tournament_teams", {
+      name,
+      date: date ?? null,
+    }),
+  getOfficialTournamentDetail: (name: string, date?: string | null) =>
+    call<OfficialTournamentDetail | null>("get_official_tournament_detail", {
+      name,
+      date: date ?? null,
     }),
   getSettings: () => call<Record<string, string>>("get_settings"),
   setSetting: (key: string, value: string) =>
@@ -188,8 +210,9 @@ export const ipc = {
     call<boolean>("cancel_android_update", { requestId }),
   installAndroidUpdate: (path: string) =>
     call<void>("install_android_update", { path }),
-  syncStartSend: (uiJson: string) =>
-    call<SyncSession>("sync_start_send", { uiJson }),
+  syncSendOptions: () => call<SyncSendOptions>("sync_send_options"),
+  syncStartSend: (uiJson: string, selection: SyncSendSelection) =>
+    call<SyncSession>("sync_start_send", { uiJson, selection }),
   syncSessionStatus: (code: string) =>
     call<SyncSessionStatus>("sync_session_status", { code }),
   syncCancel: (code: string) =>

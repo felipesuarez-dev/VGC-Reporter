@@ -5,7 +5,6 @@ import {
   AlertTriangle,
   BarChart3,
   CalendarRange,
-  CalendarClock,
   Check,
   ExternalLink,
   Grid2x2,
@@ -40,10 +39,10 @@ import { FormatSelector } from "../components/ui/FormatSelector";
 import { XCard } from "../components/dashboard/XCard";
 import { SourcesChip } from "../components/layout/SourcesChip";
 import {
+  METRICS_PANEL_IDS,
   useDashboardStore,
   type DashboardView,
   type MetricsPanelId,
-  type RegulationPanelId,
 } from "../stores/dashboardStore";
 import { useRegulationCatalog, useRegulationStatus } from "../hooks/useRegulationCatalog";
 import { usePokedexStore } from "../stores/pokedexStore";
@@ -54,9 +53,9 @@ import { PullToRefreshIndicator } from "../components/layout/PullToRefreshIndica
 import { DashboardViewTabs } from "../components/dashboard/DashboardViewTabs";
 import { RegulationFeed } from "../components/dashboard/RegulationFeed";
 import { RegulationInfoView } from "../components/dashboard/RegulationInfoView";
-import { UpcomingTournamentsSection } from "../components/dashboard/UpcomingTournamentsSection";
+import { TournamentsView } from "../components/dashboard/TournamentsView";
 
-import { PanelOrder, PanelOrderGroup } from "../components/layout/PanelBoard";
+import { PanelBoard, type PanelBoardItem } from "../components/layout/PanelBoard";
 import { PanelLoading } from "../components/ui/PanelLoading";
 
 function canonicalSpeciesId(s: string): string {
@@ -66,8 +65,12 @@ function canonicalSpeciesId(s: string): string {
 const EXTERNAL_SITES: { name: string; url: string }[] = [
   { name: "Labmaus", url: "https://labmaus.net/" },
   { name: "Pikalytics", url: "https://www.pikalytics.com/" },
-  { name: "Pokebase", url: "https://pokebase.app/pokemon-champions" },
-  { name: "Pokemon-Zone", url: "https://pokemon-zone.com/" },
+  { name: "PokéBase", url: "https://pokebase.app/pokemon-champions/tournaments" },
+  {
+    name: "Pokémon Zone",
+    url: "https://www.pokemon-zone.com/champions/tournaments/",
+  },
+  { name: "PokéData", url: "https://www.pokedata.ovh/standings2/" },
   { name: "Champions Lab", url: "https://championslab.xyz/" },
   { name: "Munchstats", url: "https://munchstats.com/" },
 ];
@@ -85,12 +88,34 @@ export function Dashboard() {
   const favoriteSource = useDashboardStore((s) => s.favoriteSource);
   const setFavoriteSource = useDashboardStore((s) => s.setFavoriteSource);
   const setTopPokemonView = useDashboardStore((s) => s.setTopPokemonView);
-  const metricsOrder = useDashboardStore((s) => s.metricsOrder);
-  const setMetricsOrder = useDashboardStore((s) => s.setMetricsOrder);
-  const regulationOrder = useDashboardStore((s) => s.regulationOrder);
-  const setRegulationOrder = useDashboardStore((s) => s.setRegulationOrder);
+  const metricsRows = useDashboardStore((s) => s.metricsRows);
+  const metricsPanels = useDashboardStore((s) => s.metricsPanels);
+  const setMetricsRows = useDashboardStore((s) => s.setMetricsRows);
+  const setMetricsCollapsed = useDashboardStore((s) => s.setMetricsCollapsed);
+  const setAllMetricsCollapsed = useDashboardStore(
+    (s) => s.setAllMetricsCollapsed,
+  );
+  const resetMetricsLayout = useDashboardStore((s) => s.resetMetricsLayout);
   const openDetail = usePokedexStore((s) => s.openDetail);
   const openSpecies = (species: string) => openDetail(canonicalSpeciesId(species));
+  const metricsItems: Record<MetricsPanelId, PanelBoardItem> = {
+    top_pokemon: {
+      label: t("dashboard.top_pokemon"),
+      icon: <BarChart3 size={12} />,
+    },
+    trending: {
+      label: t("dashboard.panel_trending"),
+      icon: <TrendingUp size={12} />,
+    },
+    top_entities: {
+      label: t("dashboard.panel_top_entities"),
+      icon: <LayoutGrid size={12} />,
+    },
+    external_sources: {
+      label: t("dashboard.external_sources"),
+      icon: <ExternalLink size={12} />,
+    },
+  };
   const dashboardView = useDashboardStore((s) => s.dashboardView);
   const setDashboardView = useDashboardStore((s) => s.setDashboardView);
   const [view, setView] = useState<DashboardView>(() => dashboardView);
@@ -484,226 +509,183 @@ const POKE_INITIAL = 10;
         </div>
       )}
 
-      <PanelOrderGroup
-        order={metricsOrder}
-        onOrderChange={(order) => setMetricsOrder(order as MetricsPanelId[])}
-      >
       {data && data.pokemon.length > 0 && (
-        <>
-          <PanelOrder
-            id="top_pokemon"
-            label={t("dashboard.top_pokemon")}
-            icon={<BarChart3 size={12} />}
-          >
-          <section className="card">
-            {(data?.sources?.length ?? 0) > 0 && (
-              <div className="mb-2">
-                <SourceProvenanceChips sources={data?.sources ?? []} />
-              </div>
-            )}
-            {isThinData && (
-              <div
-                className="mb-2 rounded-md border px-3 py-2 text-[11px]"
-                style={{
-                  borderColor: "var(--warning)",
-                  color: "var(--warning)",
-                  backgroundColor: "var(--bg-elev-strong)",
-                }}
-              >
-                {t("dashboard.thin_data", {
-                  tournaments: data?.tournaments_used ?? 0,
-                  teams: data?.total_entries ?? 0,
-                })}
-              </div>
-            )}
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <h2 className="text-sm font-semibold" style={{ color: "var(--text)" }}>
-                {t("dashboard.top_pokemon")}
-              </h2>
-              <div
-                className="flex overflow-hidden rounded-md border"
-                style={{ borderColor: "var(--border)" }}
-                role="tablist"
-                aria-label={t("dashboard.chart_view")}
-              >
-                {(
-                  [
-                    { id: "bar", Icon: BarChart3, label: t("dashboard.chart_view_bar") },
-                    { id: "grid", Icon: LayoutGrid, label: t("dashboard.chart_view_grid") },
-                    { id: "treemap", Icon: Grid2x2, label: t("dashboard.chart_view_treemap") },
-                    { id: "tier", Icon: Trophy, label: t("dashboard.chart_view_tier") },
-                  ] as const
-                ).map(({ id, Icon, label }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    role="tab"
-                    aria-selected={topPokemonView === id}
-                    title={label}
-                    onClick={() => setTopPokemonView(id)}
-                    className={cn(
-                      "flex h-7 w-8 items-center justify-center transition-colors",
-                      topPokemonView === id
-                        ? "bg-[var(--accent-soft)] text-[var(--accent)]"
-                        : "text-[var(--text-muted)] hover:bg-[var(--bg-elev-strong)]",
-                    )}
-                  >
-                    <Icon size={14} />
-                  </button>
-                ))}
-              </div>
-            </div>
-            {topPokemonView === "bar" && (
-              <UsageBarChart
-                data={chartPokemon}
-                height={Math.max(440, topPokemon.length * 48)}
-                onBarClick={handleBarClick}
-              />
-            )}
-            {topPokemonView === "grid" && (
-              <UsageGridView
-                data={chartPokemon}
-                onItemClick={handleBarClick}
-              />
-            )}
-            {topPokemonView === "tier" && (
-              <UsageTierList data={tierPokemon} onItemClick={handleBarClick} />
-            )}
-            {topPokemonView === "treemap" && (
-              <UsageTreemap
-                data={chartPokemon}
-                height={Math.max(360, Math.min(560, topPokemon.length * 28))}
-                onItemClick={handleBarClick}
-              />
-            )}
-            {(allPokemon.length > pokeVisible || pokeVisible > POKE_INITIAL) && (
-              <div className="mt-3 flex justify-center gap-2">
-                {allPokemon.length > pokeVisible && (
-                  <button
-                    type="button"
-                    className="btn-ghost text-xs"
-                    onClick={() => setPokeVisible((n) => n + POKE_PAGE)}
-                  >
-                    {t("common.see_more")}
-                  </button>
-                )}
-                {pokeVisible > POKE_INITIAL && (
-                  <button
-                    type="button"
-                    className="btn-ghost text-xs"
-                    onClick={() => setPokeVisible(POKE_INITIAL)}
-                  >
-                    {t("common.see_less")}
-                  </button>
-                )}
-              </div>
-            )}
-          </section>
-          </PanelOrder>
-
-          <PanelOrder
-            id="trending"
-            label={t("dashboard.panel_trending")}
-            icon={<TrendingUp size={12} />}
-          >
-            <TrendingCard format={format} />
-          </PanelOrder>
-
-          <PanelOrder
-            id="top_entities"
-            label={t("dashboard.panel_top_entities")}
-            icon={<LayoutGrid size={12} />}
-          >
-          <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <div className="card">
-              <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
-                {t("dashboard.top_items")}
-              </h2>
-              <TopList
-                data={topItems}
-                limit={10}
-                entityKind="item"
-                users={itemUsers}
-              />
-            </div>
-            <div className="card">
-              <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
-                {t("dashboard.top_moves")}
-              </h2>
-              <TopList
-                data={topMoves}
-                limit={10}
-                entityKind="move"
-                users={moveUsers}
-              />
-            </div>
-            <div className="card">
-              <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
-                {t("dashboard.top_abilities")}
-              </h2>
-              <TopList
-                data={topAbilities}
-                limit={10}
-                entityKind="ability"
-                users={abilityUsers}
-              />
-            </div>
-          </section>
-          </PanelOrder>
-
-        </>
-      )}
-
-
-      <PanelOrder
-        id="upcoming"
-        label={t("upcoming.title")}
-        icon={<CalendarClock size={12} />}
-      >
-        <UpcomingTournamentsSection />
-      </PanelOrder>
-
-      <PanelOrder
-        id="external_sources"
-        label={t("dashboard.external_sources")}
-        icon={<ExternalLink size={12} />}
-      >
-      <section className="card">
-        <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
-          {t("dashboard.external_sources")}
-        </h2>
-        <div className="mb-3 grid grid-cols-1 gap-2 md:grid-cols-2">
-          <XCard handle="VGCdata" url="https://x.com/VGCdata" />
-          <XCard handle="VGChampStats" url="https://x.com/VGChampStats" />
-        </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-          {EXTERNAL_SITES.map((site) => (
-            <button
-              key={site.name}
-              type="button"
-              onClick={() => openExternal(site.url)}
-              className="btn-ghost flex items-center justify-center gap-1.5 text-xs"
-            >
-              <ExternalLink size={12} />
-              {site.name}
-            </button>
-          ))}
-        </div>
-      </section>
-      </PanelOrder>
-      </PanelOrderGroup>
-        </>
-      ) : view === "regulation" ? (
-        <RegulationInfoView
-          format={format}
-          info={selectedRegulation}
-          panelOrder={regulationOrder}
-          onPanelOrderChange={(order) =>
-            setRegulationOrder(order as RegulationPanelId[])
-          }
+        <PanelBoard
+          rows={metricsRows}
+          panelIds={METRICS_PANEL_IDS}
+          items={metricsItems}
+          prefs={metricsPanels}
+          onRowsChange={setMetricsRows}
+          onToggle={setMetricsCollapsed}
+          onAllCollapsed={setAllMetricsCollapsed}
+          onReset={resetMetricsLayout}
+          renderPanel={(panelId) => {
+            if (panelId === "top_pokemon") {
+              return (
+                <section className="card">
+                  {(data?.sources?.length ?? 0) > 0 && (
+                    <div className="mb-2">
+                      <SourceProvenanceChips sources={data?.sources ?? []} />
+                    </div>
+                  )}
+                  {isThinData && (
+                    <div
+                      className="mb-2 rounded-md border px-3 py-2 text-[11px]"
+                      style={{
+                        borderColor: "var(--warning)",
+                        color: "var(--warning)",
+                        backgroundColor: "var(--bg-elev-strong)",
+                      }}
+                    >
+                      {t("dashboard.thin_data", {
+                        tournaments: data?.tournaments_used ?? 0,
+                        teams: data?.total_entries ?? 0,
+                      })}
+                    </div>
+                  )}
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <h2 className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+                      {t("dashboard.top_pokemon")}
+                    </h2>
+                    <div
+                      className="flex overflow-hidden rounded-md border"
+                      style={{ borderColor: "var(--border)" }}
+                      role="tablist"
+                      aria-label={t("dashboard.chart_view")}
+                    >
+                      {(
+                        [
+                          { id: "bar", Icon: BarChart3, label: t("dashboard.chart_view_bar") },
+                          { id: "grid", Icon: LayoutGrid, label: t("dashboard.chart_view_grid") },
+                          { id: "treemap", Icon: Grid2x2, label: t("dashboard.chart_view_treemap") },
+                          { id: "tier", Icon: Trophy, label: t("dashboard.chart_view_tier") },
+                        ] as const
+                      ).map(({ id, Icon, label }) => (
+                        <button
+                          key={id}
+                          type="button"
+                          role="tab"
+                          aria-selected={topPokemonView === id}
+                          title={label}
+                          onClick={() => setTopPokemonView(id)}
+                          className={cn(
+                            "flex h-7 w-8 items-center justify-center transition-colors",
+                            topPokemonView === id
+                              ? "bg-[var(--accent-soft)] text-[var(--accent)]"
+                              : "text-[var(--text-muted)] hover:bg-[var(--bg-elev-strong)]",
+                          )}
+                        >
+                          <Icon size={14} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {topPokemonView === "bar" && (
+                    <UsageBarChart
+                      data={chartPokemon}
+                      height={Math.max(440, topPokemon.length * 48)}
+                      onBarClick={handleBarClick}
+                    />
+                  )}
+                  {topPokemonView === "grid" && (
+                    <UsageGridView data={chartPokemon} onItemClick={handleBarClick} />
+                  )}
+                  {topPokemonView === "tier" && (
+                    <UsageTierList data={tierPokemon} onItemClick={handleBarClick} />
+                  )}
+                  {topPokemonView === "treemap" && (
+                    <UsageTreemap
+                      data={chartPokemon}
+                      height={Math.max(360, Math.min(560, topPokemon.length * 28))}
+                      onItemClick={handleBarClick}
+                    />
+                  )}
+                  {(allPokemon.length > pokeVisible || pokeVisible > POKE_INITIAL) && (
+                    <div className="mt-3 flex justify-center gap-2">
+                      {allPokemon.length > pokeVisible && (
+                        <button
+                          type="button"
+                          className="btn-ghost text-xs"
+                          onClick={() => setPokeVisible((n) => n + POKE_PAGE)}
+                        >
+                          {t("common.see_more")}
+                        </button>
+                      )}
+                      {pokeVisible > POKE_INITIAL && (
+                        <button
+                          type="button"
+                          className="btn-ghost text-xs"
+                          onClick={() => setPokeVisible(POKE_INITIAL)}
+                        >
+                          {t("common.see_less")}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </section>
+              );
+            }
+            if (panelId === "trending") {
+              return <TrendingCard format={format} />;
+            }
+            if (panelId === "top_entities") {
+              return (
+                <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                  <div className="card">
+                    <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
+                      {t("dashboard.top_items")}
+                    </h2>
+                    <TopList data={topItems} limit={10} entityKind="item" users={itemUsers} />
+                  </div>
+                  <div className="card">
+                    <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
+                      {t("dashboard.top_moves")}
+                    </h2>
+                    <TopList data={topMoves} limit={10} entityKind="move" users={moveUsers} />
+                  </div>
+                  <div className="card">
+                    <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
+                      {t("dashboard.top_abilities")}
+                    </h2>
+                    <TopList data={topAbilities} limit={10} entityKind="ability" users={abilityUsers} />
+                  </div>
+                </section>
+              );
+            }
+            return (
+              <section className="card">
+                <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text)" }}>
+                  {t("dashboard.external_sources")}
+                </h2>
+                <div className="mb-3 grid grid-cols-1 gap-2 md:grid-cols-2">
+                  <XCard handle="VGCdata" url="https://x.com/VGCdata" />
+                  <XCard handle="VGChampStats" url="https://x.com/VGChampStats" />
+                </div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                  {EXTERNAL_SITES.map((site) => (
+                    <button
+                      key={site.name}
+                      type="button"
+                      onClick={() => openExternal(site.url)}
+                      className="btn-ghost flex items-center justify-center gap-1.5 text-xs"
+                    >
+                      <ExternalLink size={12} />
+                      {site.name}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            );
+          }}
         />
+      )}
+        </>
+      ) : view === "tournaments" ? (
+        <TournamentsView format={format} info={selectedRegulation} />
+      ) : view === "regulation" ? (
+        <RegulationInfoView format={format} info={selectedRegulation} />
       ) : (
-        <RegulationFeed format={format} info={selectedRegulation} />
+        <RegulationFeed info={selectedRegulation} />
       )}
 
       </div>

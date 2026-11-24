@@ -1,7 +1,7 @@
 # Panel Principal
 
-El **Panel Principal** (Dashboard en inglés) es la pantalla de inicio y tiene tres vistas en este orden:
-**Novedades** (vista inicial), **Métricas** y **Regulación**. Cada una responde
+El **Panel Principal** (Dashboard en inglés) es la pantalla de inicio y tiene cuatro vistas en este orden:
+**Novedades** (vista inicial), **Torneos**, **Métricas** y **Regulación**. Cada una responde
 una pregunta distinta sobre la misma temporada activa. La vista inicial se
 puede fijar con **Fijar como vista inicial**.
 
@@ -22,21 +22,7 @@ Muestra el "estado del meta" de la regulación activa en un vistazo.
   descripción y modal de detalle.
 - **Trending**: Pokémon que más suben o bajan comparando los últimos 7 días
   contra los 7 anteriores.
-- **Próximos torneos**: pestañas **Oficiales** y **Comunidad Limitless**.
-  Oficiales reúne los majors de la temporada (**LAIC, NAIC, EUIC, Regionales,
-  Especiales y Worlds**) y los eventos presenciales locales. Cada major lleva
-  un **badge de nivel** (Mundial/Internacional/Regional/Especial), rango de
-  fechas multi-día y, cuando la organización lo publica, el **premio en
-  efectivo** con su divisa. Los majors son globales: el filtro país/ciudad solo
-  afecta a los eventos locales y nunca los oculta. Por defecto se muestran
-  **todos los países**; los combobox de país y **ciudad** tienen buscador y
-  puedes marcar un país favorito con la estrella. Cada fila indica su **fuente**
-  y abre una ficha con dirección, mapa, contacto, entrada, inscripción,
-  categoría, evento premier, estado, ID del torneo, código postal, web del local
-  y **Exportar .ics** multi-día. El precio y el premio se muestran como badges.
-- **Calendario**: los majors oficiales se expanden a todos sus días y se
-  destacan con borde/punto dorado. La hora de cada evento respeta la **zona
-  horaria configurada** en Ajustes; las fechas de solo día no se desplazan.
+- **Próximos torneos** viven en la pestaña **Torneos**, no en Métricas.
 - **Fuentes**: chips clickables a Labmaus, Limitless y Pikalytics.
 
 ## Regulación
@@ -66,18 +52,68 @@ diciembre**. Por eso la vista de Regulación muestra el instante local (3 nov
 23:00 → 1 dic 22:59) y las métricas parten el 4 de noviembre. La app muestra
 ambos rangos para que no parezca un error.
 
+## Pestañas de escritorio
+
+En desktop, el **navbar/titlebar** incluye pestañas:
+
+- El **+** está junto a la lupa y abre una pestaña nueva en **Panel Principal**.
+- Cada pestaña conserva su ruta y su scroll. Puedes tener varias pestañas de Panel Principal y navegar dentro de cada una.
+- La pestaña activa se resalta con el acento; la **X** cierra. Al cerrar la activa se abre la vecina; si cierras la última, se crea un Panel Principal nuevo.
+- Cada pestaña conserva su propia reproducción: si tienes uno o varios directos
+  en una pestaña, siguen siendo de esa pestaña. Cambiar a otra no los mezcla ni
+  reutiliza su reproductor. Al cerrar la pestaña se cierran sus videos.
+- Al cambiar de página dentro de la misma pestaña, el ajuste **Reproducción al
+  cambiar de página** decide: **Detener el video** o **Mini-reproductor en la
+  esquina**. El mini aparece a la izquierda del rail de widgets (encima del dock
+  en mobile) y se puede cerrar o abrir en YouTube.
+
+## Torneos
+
+La pestaña **Torneos** reúne los eventos en un solo lugar:
+
+- **Próximos torneos**: pestañas **Oficiales** y **Comunidad Limitless**.
+  Los oficiales incluyen majors (**LAIC, NAIC, EUIC, Regionales, Especiales y
+  Worlds**) y eventos locales. País y ciudad son **múltiples**; el país arranca
+  con el local de Ajustes y el combo de ciudad solo muestra las ciudades de los
+  países elegidos, agrupadas por país con su bandera. Los majors nunca se ocultan
+  por el filtro local. Cada grupo —**Campeonatos oficiales**, **Eventos locales**
+  y **Comunidad Limitless**— tiene su propio paginador de **10 en 10** y se puede
+  colapsar; no hay “Ver más/menos”.
+- **Torneos recientes**: el mismo componente que usa **Top Equipos**. Toda la
+  fila abre el detalle y “Ver resultados” es igual para oficiales y comunidad;
+  cada grupo tiene su propia búsqueda, filtro de país y paginación de **10 en
+  10**, sin “Ver más”. Los filtros de país arrancan con el **país local** de
+  Ajustes (si no hay resultados, el botón “Todos los países” los limpia). Oficiales y comunidad comparten estructura, altura y
+  alineación: misma fila de título, misma línea de metadatos, tercera línea
+  reservada para premio/equipo campeón, fondo tenue y borde izquierdo de color.
+  En un oficial, el detalle incluye **Top Cut con líneas de
+  llaves tipo torneo**, historial completo por rondas (verde = victoria, rojo =
+  derrota), **equipos Top 8 de PokéBase** y respaldo de equipos/standings de
+  PokéData; también muestra las divisiones del evento. Si el feed oficial no
+  publica la clasificación, se usa PokéData como respaldo y se indica claramente.
+  Al pulsar un Pokémon de un equipo se abre su ficha encima del detalle; al
+  cerrarla vuelves al torneo, no se cierra todo.
+- **Calendario**: mismo componente que el widget, pero ocupa todo el ancho del
+  panel en Torneos. Día actual marcado, dots por categoría, eventos personales,
+  zona horaria y export `.ics`. Los grupos del día —**Campeonatos oficiales** y
+  **Torneos de la comunidad**— son colapsables, muestran su contador y paginan 6
+  eventos cada uno.
+
+Los tres paneles se arrastran, agrupan, colapsan y aceptan **Separados/Juntos**
+igual que el resto del Panel.
+
 ## Novedades (Feed)
 
 Es la superficie de "qué está pasando ahora". El orden por defecto es
-**Regulación → En vivo → Noticias oficiales → Torneos recientes → Torneos**;
-puedes arrastrar los paneles para cambiarlo. Tiene cinco paneles:
+**Regulación → En vivo → Noticias oficiales**; puedes arrastrar los paneles para
+cambiarlo. Tiene tres paneles:
 
 1. **Regulación**: resumen de la temporada, instantes oficiales y días de datos.
 2. **Transmisión en vivo**: una vitrina de pantallas de YouTube. Por defecto
    incluye **YukS VGC**, Play! Pokémon, WolfeyVGC, CybertronVGC, James Baek,
-   PokeAlex, Moxie2D, Pokémon Champions, **Sekiam**, el canal chileno
-   **IRNemesis** y un watch party en vivo; puedes cambiar el orden, añadir o
-   quitar URLs en Ajustes (una por línea, máximo 12). El panel aparece en su
+   PokeAlex, Moxie2D, MoxieBoosted, BlackStormGamesVGC, Pokémon Champions,
+   **Sekiam** y **THATSAplusONE**; puedes cambiar el orden, añadir o quitar URLs
+   en Ajustes (una por línea, máximo 12). El panel aparece en su
    propia fila debajo de Regulación. La primera señal en vivo se ve grande a la
    izquierda y las demás en una columna pequeña a la derecha, como YouTube; el
    botón **Destacar** cambia la principal y el selector permite pasar las
@@ -85,44 +121,32 @@ puedes arrastrar los paneles para cambiarlo. Tiene cinco paneles:
    la lista: queda como badge EN VIVO con el ojo cerrado y se restaura con un
    click. Si un canal no está en directo, el panel sigue visible y lo indica en
    vez de colapsarse. Los canales que no están en vivo muestran su **última
-   transmisión** con los badges “Última transmisión” y “No está en vivo”; si el
+   transmisión real** con los badges "Última transmisión" y "No está en vivo",
+   **hace X** y **duración**; se descartan programados y estrenos. Si el
    canal está oculto con el ojo, la última transmisión sigue visible con el
    indicador de canal oculto. El bloque **Últimas transmisiones** que aparece
-   debajo de la vitrina se colapsa con su chevron. **Vitrina TV** abre una vista
+   debajo de la vitrina se colapsa con su chevron y pagina 6 transmisiones por
+   vez. **Vitrina TV** abre una vista
    a pantalla completa con todas las señales. Cada pantalla tiene accesos
    **Suscribirse** y **Abrir**,
    con los badges EN VIVO / canal / Oficial debajo del video.
    YouTube no permite dar "Me gusta" ni suscribirse dentro de un reproductor
    embebido sin una cuenta de Google, así que esas acciones se confirman en
    YouTube. Cada panel de Novedades carga por su cuenta con spinner y skeleton;
-   un panel lento ya no bloquea los demás.
+   un panel lento ya no bloquea los demás. Al entrar, los reproductores se
+   montan de forma diferida y muestran un **spinner grande** hasta que están
+   listos, para que Novedades no se congele. Cada tile crea su reproductor al
+   pulsar play (puedes tener varios) y, al cambiar de página dentro de la misma
+   pestaña, el ajuste **Reproducción al cambiar de página** decide entre detener
+   el video o mantenerlo en el **mini-reproductor**. Puedes cambiarlo en
+   **Ajustes → Directos y pantallas**.
 3. **Noticias oficiales**: avisos de Pokémon Champions paginados de 6 en 6.
    Las imágenes usan un skeleton con brillo y aparecen con un fade; si una
    imagen falla se muestra un placeholder limpio. Al hacer click se abre un
    **modal dentro de la app** que renderiza la página oficial; "Abrir en el
    navegador" queda siempre disponible.
-4. **Torneos recientes**: oficiales y comunidad, con grupos colapsables igual
-   que los paneles del Panel Principal. Los oficiales abren un **modal interno**
-   con resumen, fecha/rango, sede, premio, campeón, standings oficiales
-   paginados, “Lista no publicada” cuando el feed no la publica, equipo campeón
-   solo si la fuente lo entrega y “Abrir en el navegador”. Los comunitarios
-   conservan standings/decklists y el cajón completo. Un major en curso aparece
-   ese mismo fin de semana.
-5. **Torneos**: próximos eventos con filtros de país/ciudad, favorito con
-   estrella, buscador de texto (nombre, local o dirección, sin importar
-   tildes) y fuente visible. La pestaña **Oficiales** separa los **campeonatos
-   de la temporada** (LAIC, NAIC, EUIC, Regionales, Especiales y Worlds) de los
-   eventos locales; los majors llevan badge de nivel, rango multi-día y premio
-   en efectivo cuando está publicado. El listado muestra la dirección completa
-   de cada evento. Click en un evento abre una ficha con organizador, teléfono,
-   web, local, dirección, mapa OpenStreetMap, entrada, premio, inscripción,
-   categoría, evento premier, estado, ID y **Exportar .ics** multi-día. Los
-   datos que faltan en el listado se leen de la página oficial de Pokémon y se
-   muestran dentro de la ficha; como esa página bloquea los iframes, la app no
-   la embebe y mantiene **Abrir en el navegador** como respaldo. La pestaña
-   **Calendario** muestra esos mismos eventos en un calendario mensual, con los
-   días de campeonato destacados y las horas en la zona horaria configurada. La
-   tercera pestaña, **Tablas**, embebe las tablas rápidas de Tipos y Naturalezas.
+Los torneos recientes y próximos, junto con el calendario, ahora viven en la
+pestaña **Torneos**.
 
 ### Calendario de torneos
 
@@ -130,10 +154,14 @@ puedes arrastrar los paneles para cambiarlo. Tiene cinco paneles:
 - El día actual se marca siempre, aunque esté seleccionado otro día.
 - Los días con eventos tienen un punto por categoría (oficial, comunidad,
   personal); el tooltip resume los eventos.
-- Al tocar un día se agrupan **Oficiales**, **Comunidad** y **Personales**, con
-  su dirección completa y ficha.
+- Al tocar un día se agrupan **Campeonatos oficiales**, **Torneos de la
+  comunidad** y **Personales**, con su dirección completa y ficha. Los dos
+  primeros grupos se pliegan con su chevron y conservan el contador; el
+  calendario de Torneos usa el mismo componente que el widget y se estira a todo
+  el ancho del panel.
 - El filtro de ciudad solo se aplica a oficiales locales: comunidad y majors
-  siguen visibles.
+  siguen visibles. País y ciudad son múltiples; las ciudades se agrupan por país
+  y el combo de ciudad solo muestra las de los países seleccionados.
 - **Añadir evento** crea un evento **personal** (título, fecha, hora, lugar y
   notas) que queda guardado en el calendario de la app. Estos eventos llevan el
   badge **Personal** y se pueden eliminar.
@@ -149,9 +177,25 @@ puedes arrastrar los paneles para cambiarlo. Tiene cinco paneles:
 - Suelta en el **borde superior o inferior** para dejar ese panel en su propia
   fila.
 - Los botones **Separados** y **Juntos** aplican el layout a todos los paneles.
+- El mismo patrón funciona en **Novedades, Torneos, Métricas y Regulación**.
 - Cada panel se puede **colapsar** con la flecha; "Contraer todo" / "Expandir
   todo" lo hace en bloque.
 - El orden, la agrupación y el estado colapsado se guardan en el equipo.
+
+## Navegación mobile
+
+En pantallas pequeñas, la app muestra un **dock flotante** sobre el contenido:
+
+- **Atrás / Adelante** usan el historial de la vista actual.
+- **Lupa** abre el buscador global.
+- **`+` junto a la lupa** crea una vista nueva en Panel Principal.
+- **Vistas abiertas** abre una hoja con las vistas visitadas y accesos a todas
+  las secciones. Puedes cambiar de vista, cerrarla o abrir otra sin perder la
+  actual. Es el equivalente mobile de las pestañas de escritorio.
+- Por defecto está **fijo abajo centrado**. En Ajustes puedes elegirlo **libre**
+  y arrastrarlo con el asa; no hay opción de esquina.
+- Al estar activo, el topbar oculta atrás/adelante/lupa para no duplicar
+  controles. El dock se puede **desactivar** en Ajustes.
 
 ## Qué significan los números
 

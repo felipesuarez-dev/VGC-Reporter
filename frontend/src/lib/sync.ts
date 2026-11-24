@@ -12,6 +12,37 @@ export function normalizeTeamName(name: string): string {
   return name.trim().toLocaleLowerCase();
 }
 
+/** Stable key for a team inside a received bundle (ids may collide locally). */
+export function syncTeamKey(team: Team, index: number): string {
+  return `${team.id ?? "new"}-${team.name}-${index}`;
+}
+
+/**
+ * Apply the receiver-side selection to a bundle. Empty lists mean "import
+ * none"; the confirmation UI must opt in explicitly.
+ */
+export function filterSyncBundle(
+  bundle: SyncBundle,
+  teamKeys: string[],
+  settingKeys: string[],
+  includeUi: boolean,
+): SyncBundle {
+  const teams = bundle.teams.filter((team, index) =>
+    teamKeys.includes(syncTeamKey(team, index)),
+  );
+  const settings = Object.fromEntries(
+    Object.entries(bundle.settings).filter(([key]) =>
+      settingKeys.includes(key),
+    ),
+  );
+  return {
+    ...bundle,
+    teams,
+    settings,
+    ui_json: includeUi ? bundle.ui_json : "{}",
+  };
+}
+
 /**
  * Resolve what to do with incoming teams whose name already exists locally.
  * Pure so the three choices are impossible to apply by accident: the caller

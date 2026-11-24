@@ -1,15 +1,18 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronRight, MapPin, Swords, Trophy, Users } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  MapPin,
+  Trophy,
+  Users,
+} from "lucide-react";
 import type { ChampionsTournament, Format } from "../../lib/types";
 import { ipc } from "../../lib/ipc";
 import { queryKeys } from "../../lib/queryKeys";
 import { countryFlag } from "../../lib/countries";
-import {
-  formatEventDateRange,
-  formatDateTime,
-} from "../../lib/formatDate";
+import { formatEventDateRange, formatDateTime } from "../../lib/formatDate";
 import { formatLabel } from "../../lib/labels";
 import { EventSourceBadge } from "./EventSourceBadge";
 import { TournamentTierBadge } from "./TournamentTierBadge";
@@ -18,7 +21,9 @@ import { TournamentStandingsDrawer } from "../tournament/TournamentStandingsDraw
 import { OfficialTournamentModal } from "../tournament/OfficialTournamentModal";
 import { SearchTextInput } from "../filters/SearchTextInput";
 import { CountryFilter } from "../filters/CountryFilter";
+import { useHomeCountryFilter } from "../../hooks/useHomeCountryFilter";
 import { PanelLoading } from "../ui/PanelLoading";
+import { Pagination } from "../ui/Pagination";
 
 interface Props {
   format: Format;
@@ -28,29 +33,112 @@ interface Props {
   className?: string;
 }
 
-const INITIAL = 10;
-const PAGE = 10;
+const PAGE_SIZE = 10;
 
 function isCommunity(tournament: ChampionsTournament): boolean {
   return (tournament.source ?? "limitless") !== "play-pokemon";
 }
 
+function countriesOf(rows: ChampionsTournament[]): string[] {
+  return [
+    ...new Set(
+      rows
+        .map((tournament) =>
+          (tournament.country ?? tournament.champion_country)?.toUpperCase(),
+        )
+        .filter((value): value is string => Boolean(value)),
+    ),
+  ].sort();
+}
+
+function filterRows(
+  rows: ChampionsTournament[],
+  search: string,
+  countries: string[],
+): ChampionsTournament[] {
+  const needle = search.trim().toLowerCase();
+  return rows.filter((tournament) => {
+    const eventCountry = tournament.country ?? tournament.champion_country;
+    if (
+      countries.length > 0 &&
+      (!eventCountry || !countries.includes(eventCountry.toUpperCase()))
+    ) {
+      return false;
+    }
+    if (!needle) return true;
+    return [
+      tournament.name,
+      tournament.champion_name,
+      tournament.location,
+      tournament.tier,
+    ].some((value) => (value ?? "").toLowerCase().includes(needle));
+  });
+}
+
+function GroupFilters({
+  search,
+  onSearch,
+  country,
+  onCountry,
+  countryOptions,
+}: {
+  search: string;
+  onSearch: (value: string) => void;
+  country: string[];
+  onCountry: (value: string[]) => void;
+  countryOptions: string[];
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-end">
+      <div className="min-w-0 flex-1">
+        <div
+          className="mb-1 text-[9px] uppercase tracking-wide"
+          style={{ color: "var(--text-dim)" }}
+        >
+          {t("upcoming.filter_search")}
+        </div>
+        <SearchTextInput
+          value={search}
+          onChange={onSearch}
+          placeholder={t("common.filter_search_tournament")}
+        />
+      </div>
+      <div className="sm:w-64">
+        <div
+          className="mb-1 text-[9px] uppercase tracking-wide"
+          style={{ color: "var(--text-dim)" }}
+        >
+          {t("upcoming.filter_country")}
+        </div>
+        <CountryFilter
+          options={countryOptions}
+          selected={country}
+          onChange={onCountry}
+          placeholder={t("common.filter_country_placeholder")}
+        />
+      </div>
+    </div>
+  );
+}
+
 /**
- * Recent tournaments shared by the Feed and any other surface that needs the
- * same list. Official majors open the in-app result sheet; community events
- * keep the Limitless standings drawer with decklists and copy-to-builder.
+ * Recent tournaments shared by the Panel and Top Teams. Official and
+ * community events have independent filters and pagination; the whole row is
+ * the trigger, so it works with mouse, keyboard and touch.
  */
 export function RecentTournamentsSection({
   format,
   from = null,
   to = null,
-  limit = 30,
+  limit = 60,
   className = "card",
 }: Props) {
   const { t, i18n } = useTranslation();
-  const [search, setSearch] = useState("");
-  const [country, setCountry] = useState<string[]>([]);
-  const [visible, setVisible] = useState(INITIAL);
+  const [officialSearch, setOfficialSearch] = useState("");
+  const [communitySearch, setCommunitySearch] = useState("");
+  const [officialPage, setOfficialPage] = useState(1);
+  const [communityPage, setCommunityPage] = useState(1);
   const [officialCollapsed, setOfficialCollapsed] = useState(false);
   const [communityCollapsed, setCommunityCollapsed] = useState(false);
   const [community, setCommunity] = useState<ChampionsTournament | null>(null);
@@ -68,48 +156,203 @@ export function RecentTournamentsSection({
       (report.data?.tournaments ?? []).filter(
         (tournament) =>
           !(tournament.name ?? "").toUpperCase().includes("TCG") &&
-          !(tournament.format ?? "").toUpperCase().includes("TCG"),
+          !(tournament.format ?? "").toUpperCase().includes("TCG") &&
+          isCommunity(tournament),
       ),
     [report.data],
   );
-  const countryOptions = useMemo(
+  const officialCountryCodes = useMemo(
     () =>
-      [
-        ...new Set(
-          communityRows
-            .map((tournament) => tournament.champion_country?.toUpperCase())
-            .filter((value): value is string => Boolean(value)),
-        ),
-      ].sort(),
+      officialRows
+        .map((tournament) => tournament.country?.toUpperCase())
+        .filter((code): code is string => Boolean(code)),
+    [officialRows],
+  );
+  const communityCountryCodes = useMemo(
+    () =>
+      communityRows
+        .map((tournament) => tournament.champion_country?.toUpperCase())
+        .filter((code): code is string => Boolean(code)),
     [communityRows],
   );
-  const filteredCommunity = useMemo(() => {
-    const needle = search.trim().toLowerCase();
-    return communityRows.filter((tournament) => {
-      if (
-        country.length > 0 &&
-        (!tournament.champion_country ||
-          !country.includes(tournament.champion_country.toUpperCase()))
-      ) {
-        return false;
-      }
-      if (!needle) return true;
-      return (
-        (tournament.name ?? "").toLowerCase().includes(needle) ||
-        (tournament.champion_name ?? "").toLowerCase().includes(needle)
-      );
-    });
-  }, [communityRows, country, search]);
-  const filteredOfficial = useMemo(() => {
-    const needle = search.trim().toLowerCase();
-    if (!needle) return officialRows;
-    return officialRows.filter(
-      (tournament) =>
-        tournament.name.toLowerCase().includes(needle) ||
-        (tournament.champion_name ?? "").toLowerCase().includes(needle),
+  const {
+    selected: officialCountry,
+    setSelected: setOfficialCountry,
+    homeCountry,
+  } = useHomeCountryFilter(officialCountryCodes, 1);
+  const {
+    selected: communityCountry,
+    setSelected: setCommunityCountry,
+  } = useHomeCountryFilter(communityCountryCodes, 1);
+  const officialCountryOptions = useMemo(() => {
+    const list = countriesOf(officialRows);
+    return list.includes(homeCountry)
+      ? list
+      : [...list, homeCountry].sort();
+  }, [homeCountry, officialRows]);
+  const communityCountryOptions = useMemo(() => {
+    const list = countriesOf(communityRows);
+    return list.includes(homeCountry)
+      ? list
+      : [...list, homeCountry].sort();
+  }, [communityRows, homeCountry]);
+  const filteredOfficial = useMemo(
+    () => filterRows(officialRows, officialSearch, officialCountry),
+    [officialCountry, officialRows, officialSearch],
+  );
+  const filteredCommunity = useMemo(
+    () => filterRows(communityRows, communitySearch, communityCountry),
+    [communityCountry, communityRows, communitySearch],
+  );
+  const officialPageCount = Math.max(
+    1,
+    Math.ceil(filteredOfficial.length / PAGE_SIZE),
+  );
+  const communityPageCount = Math.max(
+    1,
+    Math.ceil(filteredCommunity.length / PAGE_SIZE),
+  );
+  const currentOfficialPage = Math.min(officialPage, officialPageCount);
+  const currentCommunityPage = Math.min(communityPage, communityPageCount);
+  const officialPageRows = filteredOfficial.slice(
+    (currentOfficialPage - 1) * PAGE_SIZE,
+    currentOfficialPage * PAGE_SIZE,
+  );
+  const communityPageRows = filteredCommunity.slice(
+    (currentCommunityPage - 1) * PAGE_SIZE,
+    currentCommunityPage * PAGE_SIZE,
+  );
+
+  useEffect(() => {
+    setOfficialPage(1);
+  }, [officialSearch, officialCountry]);
+  useEffect(() => {
+    setCommunityPage(1);
+  }, [communitySearch, communityCountry]);
+
+  const renderGroupHeader = (
+    key: "official" | "community",
+    icon: ReactNode,
+    label: string,
+    total: number,
+    collapsed: boolean,
+    onToggle: () => void,
+  ) => (
+    <button
+      type="button"
+      className="mb-1 flex w-full items-center gap-2 text-left"
+      style={{ color: "var(--text-muted)" }}
+      title={collapsed ? t("feed.expand") : t("feed.collapse")}
+      aria-expanded={!collapsed}
+      onClick={onToggle}
+      data-recent-group={key}
+    >
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-[var(--bg-elev-strong)]">
+        {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+      </span>
+      {icon}
+      <span
+        className="text-[11px] font-semibold uppercase tracking-wide"
+        style={{ color: "var(--text)" }}
+      >
+        {label}
+      </span>
+      <span className="text-[10px]" style={{ color: "var(--text-dim)" }}>
+        {total}
+      </span>
+    </button>
+  );
+
+  const renderRow = (
+    tournament: ChampionsTournament,
+    source: "official" | "community",
+  ) => {
+    const isOfficial = source === "official";
+    return (
+      <li key={tournament.id}>
+        <button
+          type="button"
+          className="group flex w-full items-start gap-3 border-t py-2.5 text-left transition-colors hover:bg-[var(--bg-elev-strong)]"
+          style={{
+            borderColor: "var(--border)",
+            borderLeft: isOfficial ? "3px solid #f5c542" : "3px solid #2b86ff",
+            paddingLeft: "0.65rem",
+            backgroundColor: isOfficial
+              ? "color-mix(in srgb, #f5c542 5%, transparent)"
+              : "color-mix(in srgb, #2b86ff 5%, transparent)",
+          }}
+          onClick={() => (isOfficial ? setOfficial(tournament) : setCommunity(tournament))}
+          title={t("upcoming.preview")}
+        >
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span
+                className="truncate text-sm font-medium group-hover:text-[var(--accent)]"
+                style={{ color: "var(--text)" }}
+              >
+                {tournament.name}
+              </span>
+              <EventSourceBadge source={tournament.source ?? (isOfficial ? "play-pokemon" : "limitless")} />
+              {isOfficial && <TournamentTierBadge tier={tournament.tier} />}
+            </div>
+            <div
+              className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {tournament.date && (
+                <span>
+                  {isOfficial
+                    ? formatEventDateRange(
+                        tournament.date,
+                        tournament.end_date,
+                        i18n.language,
+                      )
+                    : formatDateTime(tournament.date, i18n.language)}
+                </span>
+              )}
+              {isOfficial && tournament.location && (
+                <span className="inline-flex min-w-0 items-center gap-1">
+                  <MapPin size={10} />
+                  <span className="truncate">
+                    {tournament.country ? `${countryFlag(tournament.country)} ` : ""}
+                    {tournament.location}
+                  </span>
+                </span>
+              )}
+              {tournament.players != null && (
+                <span className="inline-flex items-center gap-1">
+                  <Users size={10} />
+                  {tournament.players} {t("dashboard.players")}
+                </span>
+              )}
+              {!isOfficial && tournament.format && (
+                <span>{tournament.format}</span>
+              )}
+            </div>
+            <div className="mt-0.5 flex min-h-[1.1rem] flex-wrap items-center gap-x-2 gap-y-0.5 leading-none">
+              {isOfficial && tournament.prize_pool && (
+                <span
+                  className="inline-flex items-center gap-1 text-[10px] font-semibold"
+                  style={{ color: "#f5c542" }}
+                >
+                  <Trophy size={10} />
+                  {tournament.prize_pool}
+                </span>
+              )}
+              <ChampionTeam tournament={tournament} />
+            </div>
+          </div>
+          <span
+            className="mt-0.5 inline-flex shrink-0 items-center gap-1 text-[11px] font-medium"
+            style={{ color: "var(--accent)" }}
+          >
+            {t("dashboard.view_results")}
+            <ChevronRight size={13} />
+          </span>
+        </button>
+      </li>
     );
-  }, [officialRows, search]);
-  const shown = filteredCommunity.slice(0, visible);
+  };
 
   return (
     <section className={className}>
@@ -122,9 +365,7 @@ export function RecentTournamentsSection({
         })}
       </p>
 
-      {report.isLoading && (
-        <PanelLoading variant="list" rows={4} compact />
-      )}
+      {report.isLoading && <PanelLoading variant="list" rows={4} compact />}
       {report.isError && (
         <p className="text-xs" style={{ color: "var(--danger)" }}>
           {t("common.error_with_detail", {
@@ -133,201 +374,104 @@ export function RecentTournamentsSection({
         </p>
       )}
 
-      {filteredOfficial.length > 0 && (
-        <div className="mb-4">
-          <button
-            type="button"
-            className="mb-1.5 flex w-full items-center gap-2 text-left"
-            style={{ color: "var(--text-muted)" }}
-            title={officialCollapsed ? t("feed.expand") : t("feed.collapse")}
-            aria-expanded={!officialCollapsed}
-            onClick={() => setOfficialCollapsed((value) => !value)}
-          >
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-[var(--bg-elev-strong)]">
-              {officialCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-            </span>
-            <Trophy size={12} style={{ color: "#f5c542" }} />
-            <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text)" }}>
-              {t("dashboard.official_tournaments")}
-            </span>
-            <span className="text-[10px]" style={{ color: "var(--text-dim)" }}>
-              {filteredOfficial.length}
-            </span>
-          </button>
-          {!officialCollapsed && (
-          <ul className="space-y-1.5">
-            {filteredOfficial.map((tournament) => (
-              <li
-                key={tournament.id}
-                className="rounded-lg border px-2.5 py-2"
-                style={{
-                  borderColor: "var(--border)",
-                  borderLeft: "3px solid #f5c542",
-                  backgroundColor: "color-mix(in srgb, #f5c542 7%, transparent)",
-                }}
-              >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-sm font-medium" style={{ color: "var(--text)" }}>
-                        {tournament.name}
-                      </span>
-                      <EventSourceBadge source="play-pokemon" />
-                      <TournamentTierBadge tier={tournament.tier} />
-                    </div>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]" style={{ color: "var(--text-muted)" }}>
-                      {tournament.date && (
-                        <span>
-                          {formatEventDateRange(tournament.date, tournament.end_date, i18n.language)}
-                        </span>
-                      )}
-                      {tournament.location && (
-                        <span className="inline-flex items-center gap-1">
-                          <MapPin size={10} />
-                          {tournament.location}
-                        </span>
-                      )}
-                      {tournament.players != null && (
-                        <span className="inline-flex items-center gap-1">
-                          <Users size={10} />
-                          {tournament.players} {t("dashboard.players")}
-                        </span>
-                      )}
-                      {tournament.champion_name && (
-                        <ChampionTeam tournament={tournament} />
-                      )}
-                    </div>
-                    {tournament.prize_pool && (
-                      <div className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-semibold" style={{ color: "#f5c542" }}>
-                        <Trophy size={10} />
-                        {tournament.prize_pool}
-                      </div>
-                    )}
-                  </div>
+      {!report.isLoading &&
+        !report.isError &&
+        filteredOfficial.length === 0 &&
+        filteredCommunity.length === 0 && (
+          <p className="text-xs" style={{ color: "var(--text-dim)" }}>
+            {t("common.empty")}
+          </p>
+        )}
+
+      <div className="mb-5">
+        {renderGroupHeader(
+          "official",
+          <Trophy size={12} style={{ color: "#f5c542" }} />,
+          t("dashboard.official_tournaments"),
+          filteredOfficial.length,
+          officialCollapsed,
+          () => setOfficialCollapsed((value) => !value),
+        )}
+        {!officialCollapsed && (
+          <>
+            <GroupFilters
+              search={officialSearch}
+              onSearch={setOfficialSearch}
+              country={officialCountry}
+              onCountry={setOfficialCountry}
+              countryOptions={officialCountryOptions}
+            />
+            {officialPageRows.length > 0 ? (
+              <ul>{officialPageRows.map((tournament) => renderRow(tournament, "official"))}</ul>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-xs" style={{ color: "var(--text-dim)" }}>
+                  {t("common.empty")}
+                </p>
+                {officialCountry.length > 0 && (
                   <button
                     type="button"
-                    className="btn-ghost shrink-0 text-xs"
-                    onClick={() => setOfficial(tournament)}
+                    className="btn-ghost h-7 text-[10px]"
+                    onClick={() => setOfficialCountry([])}
                   >
-                    {t("dashboard.view_results")}
+                    {t("upcoming.all_countries")}
                   </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-          )}
-        </div>
-      )}
-
-      <button
-        type="button"
-        className="mb-1.5 flex w-full items-center gap-2 text-left"
-        style={{ color: "var(--text-muted)" }}
-        title={communityCollapsed ? t("feed.expand") : t("feed.collapse")}
-        aria-expanded={!communityCollapsed}
-        onClick={() => setCommunityCollapsed((value) => !value)}
-      >
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-[var(--bg-elev-strong)]">
-          {communityCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-        </span>
-        <Swords size={12} style={{ color: "#2b86ff" }} />
-        <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text)" }}>
-          {t("dashboard.community_tournaments")}
-        </span>
-        <span className="text-[10px]" style={{ color: "var(--text-dim)" }}>
-          {filteredCommunity.length}
-        </span>
-      </button>
-
-      {!communityCollapsed && (
-        <>
-      {communityRows.length > 0 && (
-        <div className="mb-2 flex flex-col gap-2 sm:flex-row">
-          <SearchTextInput
-            value={search}
-            onChange={setSearch}
-            placeholder={t("common.filter_search_tournament")}
-          />
-          <CountryFilter
-            options={countryOptions}
-            selected={country}
-            onChange={setCountry}
-            placeholder={t("common.filter_country_placeholder")}
-            className="sm:w-64"
-          />
-        </div>
-      )}
-
-      {!report.isLoading && !report.isError && filteredCommunity.length === 0 && filteredOfficial.length === 0 && (
-        <p className="text-xs" style={{ color: "var(--text-dim)" }}>
-          {t("common.empty")}
-        </p>
-      )}
-
-      {shown.length > 0 && (
-        <ul className="divide-y" style={{ borderColor: "var(--border)" }}>
-          {shown.map((tournament) => (
-            <li key={tournament.id} className="flex flex-wrap items-center gap-3 py-2.5">
-              <div className="min-w-0 flex-[1_1_20rem]">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="truncate text-sm font-medium" style={{ color: "var(--text)" }}>
-                    {tournament.name}
-                  </span>
-                  <EventSourceBadge source={tournament.source ?? "limitless"} />
-                </div>
-                <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                  {tournament.date && <span>{formatDateTime(tournament.date, i18n.language)}</span>}
-                  {tournament.players != null && (
-                    <span> · {tournament.players} {t("dashboard.players")}</span>
-                  )}
-                  {tournament.format && <span> · {tournament.format}</span>}
-                  {tournament.champion_country && (
-                    <span>
-                      {" "}· {countryFlag(tournament.champion_country)}{" "}
-                      {tournament.champion_country.toUpperCase()}
-                    </span>
-                  )}
-                </div>
+                )}
               </div>
-              <div className="flex shrink-0 flex-wrap items-center gap-2">
-                <ChampionTeam tournament={tournament} />
-                <button
-                  type="button"
-                  className="btn-ghost shrink-0 text-xs"
-                  onClick={() => setCommunity(tournament)}
-                >
-                  {t("dashboard.view_standings")}
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+            )}
+            <Pagination
+              page={currentOfficialPage}
+              pageCount={officialPageCount}
+              onChange={setOfficialPage}
+            />
+          </>
+        )}
+      </div>
 
-      {filteredCommunity.length > visible && (
-        <div className="mt-2 flex justify-center">
-          <button
-            type="button"
-            className="btn-ghost text-xs"
-            onClick={() => setVisible((value) => value + PAGE)}
-          >
-            {t("dashboard.view_more")}
-          </button>
-        </div>
-      )}
-      {visible > INITIAL && (
-        <div className="mt-1 flex justify-center">
-          <button
-            type="button"
-            className="btn-ghost text-xs"
-            onClick={() => setVisible(INITIAL)}
-          >
-            {t("dashboard.view_less")}
-          </button>
-        </div>
-      )}
-        </>
-      )}
+      <div>
+        {renderGroupHeader(
+          "community",
+          <Users size={12} style={{ color: "#2b86ff" }} />,
+          t("dashboard.community_tournaments"),
+          filteredCommunity.length,
+          communityCollapsed,
+          () => setCommunityCollapsed((value) => !value),
+        )}
+        {!communityCollapsed && (
+          <>
+            <GroupFilters
+              search={communitySearch}
+              onSearch={setCommunitySearch}
+              country={communityCountry}
+              onCountry={setCommunityCountry}
+              countryOptions={communityCountryOptions}
+            />
+            {communityPageRows.length > 0 ? (
+              <ul>{communityPageRows.map((tournament) => renderRow(tournament, "community"))}</ul>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-xs" style={{ color: "var(--text-dim)" }}>
+                  {t("common.empty")}
+                </p>
+                {communityCountry.length > 0 && (
+                  <button
+                    type="button"
+                    className="btn-ghost h-7 text-[10px]"
+                    onClick={() => setCommunityCountry([])}
+                  >
+                    {t("upcoming.all_countries")}
+                  </button>
+                )}
+              </div>
+            )}
+            <Pagination
+              page={currentCommunityPage}
+              pageCount={communityPageCount}
+              onChange={setCommunityPage}
+            />
+          </>
+        )}
+      </div>
 
       <TournamentStandingsDrawer
         tournament={community}

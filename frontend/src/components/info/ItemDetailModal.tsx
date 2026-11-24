@@ -43,7 +43,7 @@ export function ItemDetailModal() {
       onClick={close}
     >
       <div
-        className="relative max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl border p-5 shadow-2xl"
+        className="modal-scroll relative max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl border p-5 shadow-2xl"
         style={{
           backgroundColor: "var(--bg-elev)",
           borderColor: "var(--border)",

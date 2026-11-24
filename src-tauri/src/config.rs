@@ -61,6 +61,8 @@ pub const TTL_REGULATION_OFFICIAL: i64 = 60 * 60; // 1h
 pub const TTL_REGULATION_CATALOG: i64 = 6 * 60 * 60; // 6h in-memory refresh
 pub const TTL_OFFICIAL_STREAM: i64 = 2 * 60; // 2 min: a finished broadcast must not linger
 pub const TTL_POKEDATA: i64 = 6 * 60 * 60; // 6h official event locator mirror
+/// PokéData's independent standings mirror (JSON + Top Cut page).
+pub const TTL_POKEDATA_STANDINGS: i64 = 6 * 60 * 60; // 6h
 pub const TTL_OFFICIAL_EVENT: i64 = 6 * 60 * 60; // 6h official event page detail
 /// Official Championship Series calendar (Internationals, Regionals, Worlds).
 pub const TTL_OFFICIAL_MAJORS: i64 = 6 * 60 * 60; // 6h

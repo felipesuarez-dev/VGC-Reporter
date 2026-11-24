@@ -78,7 +78,7 @@ impl AppState {
             labmaus.clone(),
             pokepaste.clone(),
             limitless.clone(),
-            pokebase,
+            pokebase.clone(),
             pokedex.clone(),
             cache.clone(),
         );
@@ -87,6 +87,7 @@ impl AppState {
         let upcoming = UpcomingTournamentsService::new(
             limitless.clone(),
             pokedata,
+            pokebase,
             official_event,
             championships,
         );

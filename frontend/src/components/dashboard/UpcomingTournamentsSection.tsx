@@ -1,5 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
-import { BadgeCheck, Eye, Globe2, Trophy } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  BadgeCheck,
+  ChevronDown,
+  ChevronRight,
+  Eye,
+  Globe2,
+  Trophy,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   formatDate,
@@ -8,9 +15,10 @@ import {
 } from "../../lib/formatDate";
 import { countryFlag } from "../../lib/countries";
 import {
+  cityKey,
   eventAddress,
   isMajorEvent,
-  matchesCity,
+  matchesCities,
   matchesUpcomingQuery,
   splitUpcomingEvents,
 } from "../../lib/upcoming";
@@ -22,104 +30,158 @@ import { EventSourceBadge } from "./EventSourceBadge";
 import { TournamentDetailModal } from "./TournamentDetailModal";
 import { TournamentTierBadge } from "./TournamentTierBadge";
 import { PanelLoading } from "../ui/PanelLoading";
+import { Pagination } from "../ui/Pagination";
 import { cn } from "../../lib/cn";
 
 type UpcomingTab = "official" | "limitless";
 
+const PAGE_SIZE = 10;
+
 interface Props {
   /** Only show events for this regulation code (for example `M-C`). */
   formatCode?: string | null;
-  limit?: number;
   className?: string;
 }
 
 /**
  * Upcoming VGC events: Limitless online tournaments plus in-person Play!
- * Pokémon League Challenges/Cups. The row opens an in-app preview with the
- * full address, map, contact details and official page.
+ * Pokémon League Challenges/Cups and Championship Series majors. The list is
+ * filtered over the full dataset and paginated 10 at a time; the old hidden
+ * `limit` (which made Chile look like it only had eight events) is gone.
  */
 export function UpcomingTournamentsSection({
   formatCode,
-  limit,
   className = "card",
 }: Props) {
   const { t, i18n } = useTranslation();
-  const upcomingCountry = useUiStore((s) => s.upcomingCountry);
-  const upcomingCity = useUiStore((s) => s.upcomingCity);
-  const setUpcomingCity = useUiStore((s) => s.setUpcomingCity);
+  const upcomingCountries = useUiStore((s) => s.upcomingCountries);
+  const upcomingCities = useUiStore((s) => s.upcomingCities);
+  const setUpcomingCities = useUiStore((s) => s.setUpcomingCities);
   const timeZone = useUiStore((s) => s.timeZone);
-  const [query, setQuery] = useState("");
+  const [officialQuery, setOfficialQuery] = useState("");
+  const [limitlessQuery, setLimitlessQuery] = useState("");
   const [tab, setTab] = useState<UpcomingTab>("official");
+  const [majorsPage, setMajorsPage] = useState(1);
+  const [localsPage, setLocalsPage] = useState(1);
+  const [limitlessPage, setLimitlessPage] = useState(1);
   const [selected, setSelected] = useState<UpcomingTournament | null>(null);
+  const [majorsCollapsed, setMajorsCollapsed] = useState(false);
+  const [localsCollapsed, setLocalsCollapsed] = useState(false);
+  const [limitlessCollapsed, setLimitlessCollapsed] = useState(false);
+  const query = tab === "official" ? officialQuery : limitlessQuery;
+  const setQuery = tab === "official" ? setOfficialQuery : setLimitlessQuery;
   const { data, isLoading, isError, error, refetch, isFetching } =
-    useUpcomingTournaments(upcomingCountry);
-  const allCountries = useUpcomingTournaments(null);
+    useUpcomingTournaments(null);
 
   const availableCountries = useMemo(
     () =>
       new Set(
-        (allCountries.data ?? [])
+        (data ?? [])
           .filter((event) => !isMajorEvent(event))
           .map((event) => event.country)
           .filter((code): code is string => Boolean(code)),
       ),
-    [allCountries.data],
+    [data],
   );
   const countryEvents = useMemo(() => data ?? [], [data]);
   const { official: officialEvents, limitless: limitlessEvents } = useMemo(
     () => splitUpcomingEvents(countryEvents),
     [countryEvents],
   );
-  const activeEvents =
-    tab === "official" ? officialEvents : limitlessEvents;
-  const cities = useMemo(
-    () =>
-      officialEvents
-        .filter((event) => !isMajorEvent(event) && event.city)
-        .map((event) => ({
-          city: event.city as string,
-          country: event.country,
-        })),
-    [officialEvents],
-  );
 
   useEffect(() => {
-    if (!upcomingCity || isLoading) return;
-    const exists = officialEvents.some((event) =>
-      matchesCity(event.city, event.country, upcomingCity),
+    if (isLoading) return;
+    const allowed = new Set(
+      officialEvents
+        .filter((event) => event.city)
+        .map((event) => cityKey(event.city as string, event.country)),
     );
-    if (!exists) setUpcomingCity(null);
-  }, [isLoading, officialEvents, setUpcomingCity, upcomingCity]);
+    const kept = upcomingCities.filter((key) => allowed.has(key));
+    if (kept.length !== upcomingCities.length) setUpcomingCities(kept);
+  }, [isLoading, officialEvents, setUpcomingCities, upcomingCities]);
 
-  const filteredEvents = activeEvents
-    .filter((event) => !formatCode || !event.region || event.region === formatCode)
-    .filter((event) => matchesUpcomingQuery(event, query))
-    .filter((event) =>
-      tab === "official"
-        ? isMajorEvent(event) ||
-          !upcomingCountry ||
-          event.country === upcomingCountry
-        : true,
-    )
-    .filter((event) =>
-      tab === "official"
-        ? isMajorEvent(event) ||
-          matchesCity(event.city, event.country, upcomingCity)
-        : true,
-    );
-  const events = limit ? filteredEvents.slice(0, limit) : filteredEvents;
-  const majorEvents =
-    tab === "official" ? events.filter((event) => isMajorEvent(event)) : [];
-  const localEvents =
-    tab === "official"
-      ? events.filter((event) => !isMajorEvent(event))
-      : events;
+  const filteredOfficial = useMemo(
+    () =>
+      officialEvents
+        .filter((event) => !formatCode || !event.region || event.region === formatCode)
+        .filter((event) => matchesUpcomingQuery(event, query))
+        .filter(
+          (event) =>
+            isMajorEvent(event) ||
+            upcomingCountries.length === 0 ||
+            (event.country != null &&
+              upcomingCountries.includes(event.country)),
+        )
+        .filter(
+          (event) =>
+            isMajorEvent(event) ||
+            matchesCities(event.city, event.country, upcomingCities),
+        ),
+    [formatCode, officialEvents, query, upcomingCities, upcomingCountries],
+  );
+  const filteredLimitless = useMemo(
+    () =>
+      limitlessEvents
+        .filter((event) => !formatCode || !event.region || event.region === formatCode)
+        .filter((event) => matchesUpcomingQuery(event, query)),
+    [formatCode, limitlessEvents, query],
+  );
+
+  const filteredMajors = useMemo(
+    () => filteredOfficial.filter((event) => isMajorEvent(event)),
+    [filteredOfficial],
+  );
+  const filteredLocals = useMemo(
+    () => filteredOfficial.filter((event) => !isMajorEvent(event)),
+    [filteredOfficial],
+  );
+  const majorsPageCount = Math.max(
+    1,
+    Math.ceil(filteredMajors.length / PAGE_SIZE),
+  );
+  const localsPageCount = Math.max(
+    1,
+    Math.ceil(filteredLocals.length / PAGE_SIZE),
+  );
+  const limitlessPageCount = Math.max(
+    1,
+    Math.ceil(filteredLimitless.length / PAGE_SIZE),
+  );
+  const currentMajorsPage = Math.min(majorsPage, majorsPageCount);
+  const currentLocalsPage = Math.min(localsPage, localsPageCount);
+  const currentLimitlessPage = Math.min(limitlessPage, limitlessPageCount);
+  const majorEvents = filteredMajors.slice(
+    (currentMajorsPage - 1) * PAGE_SIZE,
+    currentMajorsPage * PAGE_SIZE,
+  );
+  const localEvents = filteredLocals.slice(
+    (currentLocalsPage - 1) * PAGE_SIZE,
+    currentLocalsPage * PAGE_SIZE,
+  );
+  const limitlessEventsPage = filteredLimitless.slice(
+    (currentLimitlessPage - 1) * PAGE_SIZE,
+    currentLimitlessPage * PAGE_SIZE,
+  );
   const emptyKey =
     tab === "official"
-      ? upcomingCountry || upcomingCity
+      ? upcomingCountries.length > 0 || upcomingCities.length > 0 || query
         ? "upcoming.empty_filtered"
         : "upcoming.empty_official"
       : "upcoming.empty_limitless";
+
+  useEffect(() => {
+    setMajorsPage(1);
+    setLocalsPage(1);
+    setLimitlessPage(1);
+  }, [tab, query, upcomingCountries, upcomingCities, formatCode]);
+
+  const selectTab = (next: UpcomingTab) => {
+    setTab(next);
+    setMajorsPage(1);
+    setLocalsPage(1);
+    setLimitlessPage(1);
+    if (next === "official") setUpcomingCities([]);
+  };
 
   const renderEvent = (event: UpcomingTournament) => {
     const address = eventAddress(event);
@@ -238,6 +300,39 @@ export function UpcomingTournamentsSection({
     );
   };
 
+  const renderGroupHeader = (
+    key: "majors" | "locals" | "limitless",
+    icon: ReactNode,
+    label: string,
+    total: number,
+    collapsed: boolean,
+    onToggle: () => void,
+  ) => (
+    <button
+      type="button"
+      className="mb-1 flex w-full items-center gap-2 text-left"
+      style={{ color: "var(--text-muted)" }}
+      title={collapsed ? t("feed.expand") : t("feed.collapse")}
+      aria-expanded={!collapsed}
+      onClick={onToggle}
+      data-upcoming-group={key}
+    >
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-[var(--bg-elev-strong)]">
+        {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+      </span>
+      {icon}
+      <span
+        className="text-[11px] font-semibold uppercase tracking-wide"
+        style={{ color: "var(--text)" }}
+      >
+        {label}
+      </span>
+      <span className="text-[10px]" style={{ color: "var(--text-dim)" }}>
+        {total}
+      </span>
+    </button>
+  );
+
   return (
     <section className={className}>
       <h2 className="mb-1 text-sm font-semibold" style={{ color: "var(--text)" }}>
@@ -260,13 +355,13 @@ export function UpcomingTournamentsSection({
                 id: "official" as const,
                 icon: BadgeCheck,
                 label: t("upcoming.tab_official"),
-                count: officialEvents.length,
+                count: filteredOfficial.length,
               },
               {
                 id: "limitless" as const,
                 icon: Globe2,
                 label: t("upcoming.tab_limitless"),
-                count: limitlessEvents.length,
+                count: filteredLimitless.length,
               },
             ] as const
           ).map((entry) => {
@@ -278,10 +373,7 @@ export function UpcomingTournamentsSection({
                 type="button"
                 role="tab"
                 aria-selected={active}
-                onClick={() => {
-                  setTab(entry.id);
-                  setUpcomingCity(null);
-                }}
+                onClick={() => selectTab(entry.id)}
                 className={cn(
                   "flex h-8 items-center gap-1.5 px-3 text-[11px] font-medium transition-colors",
                   active
@@ -362,48 +454,89 @@ export function UpcomingTournamentsSection({
           </button>
         </div>
       )}
-      {!isLoading && !isError && events.length === 0 && (
-        <p className="text-xs" style={{ color: "var(--text-dim)" }}>
-          {t(emptyKey)}
-        </p>
-      )}
-      {tab === "official" && majorEvents.length > 0 && (
-        <div className="mb-1 flex items-center gap-2">
-          <Trophy size={12} style={{ color: "#f5c542" }} />
-          <h3
-            className="text-[11px] font-semibold uppercase tracking-wide"
-            style={{ color: "var(--text)" }}
-          >
-            {t("upcoming.majors_title")}
-          </h3>
-          <span className="text-[10px]" style={{ color: "var(--text-dim)" }}>
-            {majorEvents.length}
-          </span>
+      {!isLoading &&
+        !isError &&
+        (tab === "official"
+          ? filteredOfficial.length === 0
+          : filteredLimitless.length === 0) && (
+          <p className="text-xs" style={{ color: "var(--text-dim)" }}>
+            {t(emptyKey)}
+          </p>
+        )}
+
+      {tab === "official" && filteredMajors.length > 0 && (
+        <div className="mb-1">
+          {renderGroupHeader(
+            "majors",
+            <Trophy size={12} style={{ color: "#f5c542" }} />,
+            t("upcoming.majors_title"),
+            filteredMajors.length,
+            majorsCollapsed,
+            () => setMajorsCollapsed((value) => !value),
+          )}
+          {!majorsCollapsed && (
+            <>
+              <ul className="divide-y divide-[var(--border)]">
+                {majorEvents.map(renderEvent)}
+              </ul>
+              <Pagination
+                page={currentMajorsPage}
+                pageCount={majorsPageCount}
+                onChange={setMajorsPage}
+              />
+            </>
+          )}
         </div>
       )}
-      {majorEvents.length > 0 && (
-        <ul className="divide-y divide-[var(--border)]">
-          {majorEvents.map(renderEvent)}
-        </ul>
-      )}
-      {tab === "official" && localEvents.length > 0 && (
-        <div className="mb-1 mt-4 flex items-center gap-2">
-          <BadgeCheck size={12} style={{ color: "var(--accent)" }} />
-          <h3
-            className="text-[11px] font-semibold uppercase tracking-wide"
-            style={{ color: "var(--text)" }}
-          >
-            {t("upcoming.locals_title")}
-          </h3>
-          <span className="text-[10px]" style={{ color: "var(--text-dim)" }}>
-            {localEvents.length}
-          </span>
+
+      {tab === "official" && filteredLocals.length > 0 && (
+        <div className="mb-1 mt-3">
+          {renderGroupHeader(
+            "locals",
+            <BadgeCheck size={12} style={{ color: "var(--accent)" }} />,
+            t("upcoming.locals_title"),
+            filteredLocals.length,
+            localsCollapsed,
+            () => setLocalsCollapsed((value) => !value),
+          )}
+          {!localsCollapsed && (
+            <>
+              <ul className="divide-y divide-[var(--border)]">
+                {localEvents.map(renderEvent)}
+              </ul>
+              <Pagination
+                page={currentLocalsPage}
+                pageCount={localsPageCount}
+                onChange={setLocalsPage}
+              />
+            </>
+          )}
         </div>
       )}
-      {localEvents.length > 0 && (
-        <ul className="divide-y divide-[var(--border)]">
-          {localEvents.map(renderEvent)}
-        </ul>
+
+      {tab === "limitless" && filteredLimitless.length > 0 && (
+        <div>
+          {renderGroupHeader(
+            "limitless",
+            <Globe2 size={12} style={{ color: "#2b86ff" }} />,
+            t("upcoming.tab_limitless"),
+            filteredLimitless.length,
+            limitlessCollapsed,
+            () => setLimitlessCollapsed((value) => !value),
+          )}
+          {!limitlessCollapsed && (
+            <>
+              <ul className="divide-y divide-[var(--border)]">
+                {limitlessEventsPage.map(renderEvent)}
+              </ul>
+              <Pagination
+                page={currentLimitlessPage}
+                pageCount={limitlessPageCount}
+                onChange={setLimitlessPage}
+              />
+            </>
+          )}
+        </div>
       )}
 
       <TournamentDetailModal

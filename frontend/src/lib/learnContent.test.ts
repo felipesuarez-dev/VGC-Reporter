@@ -17,11 +17,17 @@ describe("Learn content", () => {
       for (const guide of LEARN_GUIDES[locale]) {
         expect(guide.title.trim().length).toBeGreaterThan(0);
         expect(guide.summary.trim().length).toBeGreaterThan(0);
-        expect(guide.sections.length).toBeGreaterThanOrEqual(6);
+        expect(guide.sections.length).toBeGreaterThanOrEqual(8);
         for (const section of guide.sections) {
           expect(section.heading.trim().length).toBeGreaterThan(0);
           expect(section.body.trim().length).toBeGreaterThan(20);
         }
+        expect(guide.sources.length).toBeGreaterThanOrEqual(2);
+        for (const source of guide.sources) {
+          expect(source.label.trim().length).toBeGreaterThan(0);
+          expect(source.url.startsWith("https://")).toBe(true);
+        }
+        expect(guide.reviewedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       }
     }
   });
@@ -54,6 +60,22 @@ describe("Learn content", () => {
       for (const entry of glossary) {
         expect(entry.term.trim().length).toBeGreaterThan(1);
         expect(entry.definition.trim().length).toBeGreaterThan(10);
+        expect(entry.example?.trim().length ?? 0).toBeGreaterThan(10);
+        expect(entry.sources?.length ?? 0).toBeGreaterThan(0);
+        for (const source of entry.sources ?? []) {
+          expect(source.label.trim().length).toBeGreaterThan(0);
+          expect(source.url.startsWith("https://")).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("does not fall back to English examples for FR, IT or PT", () => {
+    for (const locale of ["fr", "it", "pt"] as const) {
+      for (const entry of LEARN_GLOSSARY[locale]) {
+        const english = LEARN_GLOSSARY.en.find((item) => item.id === entry.id);
+        expect(english).toBeDefined();
+        expect(entry.example).not.toBe(english?.example);
       }
     }
   });

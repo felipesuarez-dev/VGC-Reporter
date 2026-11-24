@@ -7,7 +7,7 @@ Estructura:
 - [`sync.md`](./sync.md) — ticket QR, sesión LAN, estados y tests.
 - [`updater.md`](./updater.md) — updater desktop, descarga/verificación/instalación Android.
 - [`backend/`](./backend/) — capas Rust (architecture, commands, services, adapters, storage, domain).
-- [`frontend/`](./frontend/) — React (architecture, pages, components, stores, ipc, aprender).
+- [`frontend/`](./frontend/) — React (architecture, pages, components, stores, ipc, aprender, design-system).
 - [`pipelines/`](./pipelines/) — flujos de datos end-to-end (top-pokemon, top-teams, trending, champions-tournaments, official-tournaments, regulaciones dinámicas).
 
 Convenciones:

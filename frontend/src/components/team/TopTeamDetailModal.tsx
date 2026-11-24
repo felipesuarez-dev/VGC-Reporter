@@ -157,7 +157,7 @@ export function TopTeamDetailModal({ team, onClose }: Props) {
       onClick={onClose}
     >
       <div
-        className="relative max-h-[90vh] w-full max-w-7xl overflow-y-auto rounded-xl border p-5 shadow-2xl"
+        className="modal-scroll relative max-h-[90vh] w-full max-w-7xl overflow-y-auto rounded-xl border p-5 shadow-2xl"
         style={{
           backgroundColor: "var(--bg-elev)",
           borderColor: "var(--border)",

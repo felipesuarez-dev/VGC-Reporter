@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { Loader2 } from "lucide-react";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
 import {
@@ -10,7 +11,6 @@ import {
   type PokemonType,
 } from "../lib/types";
 import { PokemonCard } from "../components/pokemon/PokemonCard";
-import { QuickTables } from "../components/ui/QuickTables";
 import { PanelLoading } from "../components/ui/PanelLoading";
 import { SearchSelect } from "../components/ui/SearchSelect";
 import { MultiTypeSelect } from "../components/ui/MultiTypeSelect";
@@ -19,7 +19,6 @@ import { defensiveMultiplier, offensiveCoverage } from "../lib/typeChart";
 import { cn } from "../lib/cn";
 import { useDashboardStore } from "../stores/dashboardStore";
 import { usePokedexStore, type PokedexSort } from "../stores/pokedexStore";
-import { useUiStore } from "../stores/uiStore";
 import { useLocalize } from "../hooks/useTranslations";
 import { useLearnsetsIndex } from "../hooks/useLearnsetsIndex";
 import { useMoveSummary } from "../hooks/useMoveCatalog";
@@ -51,11 +50,11 @@ export function Pokedex() {
   const moveSummary = useMoveSummary();
   const sort = usePokedexStore((s) => s.sort);
   const setSort = usePokedexStore((s) => s.setSort);
+  const [sorting, setSorting] = useState(false);
+  const [pendingSort, setPendingSort] = useState<PokedexSort | null>(null);
   const scrollY = usePokedexStore((s) => s.scrollY);
   const setScrollY = usePokedexStore((s) => s.setScrollY);
   const format = useDashboardStore((s) => s.format);
-  const showQuickTables = useUiStore((s) => s.pokedexQuickTables);
-  const quickTablesDefaultTab = useUiStore((s) => s.quickTablesDefaultTab);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: queryKeys.pokedex.search(query, type || undefined),
@@ -87,6 +86,35 @@ export function Pokedex() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, [setScrollY]);
+
+  useEffect(() => {
+    if (!pendingSort) return;
+    // Paint the spinner first. Sorting is cheap; rendering the whole card grid
+    // is not, so the deferred store update gives the loading state a frame.
+    const timer = window.setTimeout(() => {
+      setSort(pendingSort);
+      setPendingSort(null);
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [pendingSort, setSort]);
+
+  useEffect(() => {
+    if (!sorting || pendingSort) return;
+    let second = 0;
+    const first = requestAnimationFrame(() => {
+      second = requestAnimationFrame(() => setSorting(false));
+    });
+    return () => {
+      cancelAnimationFrame(first);
+      if (second) cancelAnimationFrame(second);
+    };
+  }, [pendingSort, sort, sorting]);
+
+  const changeSort = (next: PokedexSort) => {
+    if (next === sort) return;
+    setSorting(true);
+    setPendingSort(next);
+  };
 
   const usageMap = useMemo(() => {
     const m = new Map<string, number>();
@@ -184,16 +212,19 @@ export function Pokedex() {
 
   return (
     <div className="space-y-4">
-      <header>
-        <h1 className="text-2xl font-bold">{t("pokedex.title")}</h1>
+      <header className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-bold">{t("pokedex.title")}</h1>
+          <p className="text-xs" style={{ color: "var(--text-dim)" }}>
+            {t("pokedex.results_count", { count: sorted.length })}
+          </p>
+        </div>
+        {hasActiveFilter && (
+          <button type="button" className="btn-ghost h-8 text-xs" onClick={clearAll}>
+            {t("pokedex.clear_filters")}
+          </button>
+        )}
       </header>
-
-      {showQuickTables && (
-        <QuickTables
-          defaultTab={quickTablesDefaultTab}
-          collapsible
-        />
-      )}
 
       <div className="card space-y-4">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
@@ -318,7 +349,7 @@ export function Pokedex() {
                   type="button"
                   role="tab"
                   aria-selected={sort === s.value}
-                  onClick={() => setSort(s.value)}
+                  onClick={() => changeSort(s.value)}
                   className={cn(
                     "px-3 py-1.5 text-xs font-medium transition",
                     sort === s.value
@@ -339,13 +370,48 @@ export function Pokedex() {
               ))}
             </div>
           </div>
-          {hasActiveFilter && (
-            <button type="button" className="btn-ghost text-xs" onClick={clearAll}>
-              {t("pokedex.clear_filters")}
-            </button>
-          )}
         </div>
       </div>
+
+      {hasActiveFilter && (
+        <div className="flex flex-wrap gap-1.5">
+          {query && (
+            <span className="rounded-full border px-2 py-1 text-[10px]" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+              {t("pokedex.filter_name")}: {query}
+            </span>
+          )}
+          {type && (
+            <span className="rounded-full border px-2 py-1 text-[10px]" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+              {t("pokedex.filter_type")}: {typeLabel(t, type)}
+            </span>
+          )}
+          {ability && (
+            <span className="rounded-full border px-2 py-1 text-[10px]" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+              {localize("ability", ability)}
+            </span>
+          )}
+          {move && (
+            <span className="rounded-full border px-2 py-1 text-[10px]" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+              {localize("move", move)}
+            </span>
+          )}
+          {generation !== "" && (
+            <span className="rounded-full border px-2 py-1 text-[10px]" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+              {t("pokedex.generation_label", { n: generation })}
+            </span>
+          )}
+          {weakAgainst.length > 0 && (
+            <span className="rounded-full border px-2 py-1 text-[10px]" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+              {t("pokedex.filter_weak_against")}: {weakAgainst.map((entry) => typeLabel(t, entry)).join(", ")}
+            </span>
+          )}
+          {strongAgainst.length > 0 && (
+            <span className="rounded-full border px-2 py-1 text-[10px]" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+              {t("pokedex.filter_strong_against")}: {strongAgainst.map((entry) => typeLabel(t, entry)).join(", ")}
+            </span>
+          )}
+        </div>
+      )}
 
       {isLoading && (
         <div className="card">
@@ -363,35 +429,69 @@ export function Pokedex() {
         </div>
       )}
 
-      {grouped ? (
-        <div className="space-y-6">
-          {grouped.map(([gen, list]) => (
-            <section key={gen}>
-              <h2
-                className="mb-2 text-xs font-semibold uppercase tracking-wide"
-                style={{ color: "var(--text-muted)" }}
-              >
-                {t("pokedex.gen_header", { n: gen })}
-              </h2>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-                {list.map((p) => (
-                  <PokemonCard
-                    key={p.id}
-                    pokemon={p}
-                    usage={usageMap.get(canonicalKey(p.name))}
-                  />
-                ))}
-              </div>
-            </section>
-          ))}
+      <div className="relative" aria-busy={sorting}>
+        <div
+          className={cn(
+            "transition-opacity duration-150",
+            sorting && "pointer-events-none opacity-30",
+          )}
+        >
+          {grouped ? (
+            <div className="space-y-6">
+              {grouped.map(([gen, list]) => (
+                <section key={gen}>
+                  <h2
+                    className="mb-2 text-xs font-semibold uppercase tracking-wide"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    {t("pokedex.gen_header", { n: gen })}
+                  </h2>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+                    {list.map((p) => (
+                      <PokemonCard
+                        key={p.id}
+                        pokemon={p}
+                        usage={usageMap.get(canonicalKey(p.name))}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+              {sorted.map((p) => (
+                <PokemonCard key={p.id} pokemon={p} usage={usageMap.get(canonicalKey(p.name))} />
+              ))}
+            </div>
+          )}
         </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-          {sorted.map((p) => (
-            <PokemonCard key={p.id} pokemon={p} usage={usageMap.get(canonicalKey(p.name))} />
-          ))}
-        </div>
-      )}
+
+        {sorting && (
+          <div
+            className="pointer-events-none absolute inset-x-0 top-8 z-10 flex justify-center"
+            role="status"
+            aria-live="polite"
+            data-testid="pokedex-sorting"
+          >
+            <span
+              className="inline-flex items-center gap-2 rounded-xl border px-4 py-3 shadow-xl"
+              style={{
+                backgroundColor: "var(--bg-elev)",
+                borderColor: "var(--border)",
+                color: "var(--text-muted)",
+              }}
+            >
+              <Loader2
+                size={18}
+                className="animate-spin"
+                style={{ color: "var(--accent)" }}
+              />
+              <span className="text-xs">{t("common.loading")}</span>
+            </span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

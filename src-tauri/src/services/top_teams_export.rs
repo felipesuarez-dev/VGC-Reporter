@@ -339,6 +339,7 @@ mod tests {
             members: vec![full_member()],
             provider: Some("labmaus".into()),
             community: false,
+            official: false,
             source_url: None,
             shared_at: None,
         };
@@ -381,6 +382,7 @@ mod tests {
             members: vec![full_member()],
             provider: Some("labmaus".into()),
             community: false,
+            official: false,
             source_url: None,
             shared_at: None,
         };

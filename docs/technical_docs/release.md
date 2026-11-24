@@ -1,5 +1,7 @@
 # Release
 
+> **Release actual:** `0.7.0.20261123-beta`.
+
 ## Versionado
 
 La versión visible es `MAJOR.MINOR.PATCH.YYYYMMDD-beta` (por ejemplo

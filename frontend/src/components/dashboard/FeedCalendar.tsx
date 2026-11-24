@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
   CalendarPlus,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Loader2,
@@ -19,10 +20,11 @@ import {
 } from "../../lib/formatDate";
 import { downloadIcs } from "../../lib/calendar";
 import {
+  cityKey,
   eventAddress,
   eventDayKeys,
   isMajorEvent,
-  matchesCity,
+  matchesCities,
   matchesUpcomingQuery,
 } from "../../lib/upcoming";
 import { useCustomEventsStore } from "../../stores/customEventsStore";
@@ -33,6 +35,7 @@ import { EventSourceBadge } from "./EventSourceBadge";
 import { TournamentDetailModal } from "./TournamentDetailModal";
 import { TournamentTierBadge } from "./TournamentTierBadge";
 import { CustomEventModal } from "./CustomEventModal";
+import { Pagination } from "../ui/Pagination";
 
 interface Props {
   info: RegulationInfo;
@@ -45,6 +48,8 @@ const CATEGORY_COLORS: Record<CalendarCategory, string> = {
   community: "#2b86ff",
   personal: "var(--accent)",
 };
+
+const DAY_GROUP_PAGE_SIZE = 6;
 
 function pad(value: number): string {
   return String(value).padStart(2, "0");
@@ -72,19 +77,22 @@ function startOfMonth(date: Date): Date {
  */
 export function FeedCalendar({ info }: Props) {
   const { t, i18n } = useTranslation();
-  const upcomingCountry = useUiStore((s) => s.upcomingCountry);
-  const upcomingCity = useUiStore((s) => s.upcomingCity);
-  const setUpcomingCity = useUiStore((s) => s.setUpcomingCity);
+  const upcomingCountries = useUiStore((s) => s.upcomingCountries);
+  const upcomingCities = useUiStore((s) => s.upcomingCities);
+  const setUpcomingCities = useUiStore((s) => s.setUpcomingCities);
   const timeZone = useUiStore((s) => s.timeZone);
   const { data, isLoading, isError, refetch, isFetching } =
-    useUpcomingTournaments(upcomingCountry);
-  const allCountries = useUpcomingTournaments(null);
+    useUpcomingTournaments(null);
   const [query, setQuery] = useState("");
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState(() => dayKey(new Date()));
   const [dayTouched, setDayTouched] = useState(false);
   const [selectedEvent, setSelectedEvent] =
     useState<UpcomingTournament | null>(null);
+  const [officialPage, setOfficialPage] = useState(1);
+  const [communityPage, setCommunityPage] = useState(1);
+  const [officialCollapsed, setOfficialCollapsed] = useState(false);
+  const [communityCollapsed, setCommunityCollapsed] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
   const [customDate, setCustomDate] = useState(() => dayKey(new Date()));
   const customEvents = useCustomEventsStore((s) => s.events);
@@ -93,27 +101,34 @@ export function FeedCalendar({ info }: Props) {
   const availableCountries = useMemo(
     () =>
       new Set(
-        (allCountries.data ?? [])
+        (data ?? [])
           .filter((event) => !isMajorEvent(event))
           .map((event) => event.country)
           .filter((code): code is string => Boolean(code)),
       ),
-    [allCountries.data],
+    [data],
   );
   const countryEvents = data ?? [];
   const events = useMemo(
     () =>
       countryEvents
         .filter((event) => matchesUpcomingQuery(event, query))
-        // The city filter belongs to official local events. Community
-        // tournaments have no city, and majors are global; neither may be
-        // hidden when the user filters their local scene.
         .filter((event) => {
           const localOfficial =
             event.source === "play-pokemon" && !isMajorEvent(event);
-          return !localOfficial || matchesCity(event.city, event.country, upcomingCity);
+          if (!localOfficial) return true;
+          if (
+            upcomingCountries.length > 0 &&
+            (!event.country || !upcomingCountries.includes(event.country))
+          ) {
+            return false;
+          }
+          // The city filter belongs to official local events. Community
+          // tournaments have no city, and majors are global; neither may be
+          // hidden when the user filters their local scene.
+          return matchesCities(event.city, event.country, upcomingCities);
         }),
-    [countryEvents, query, upcomingCity],
+    [countryEvents, query, upcomingCities, upcomingCountries],
   );
   const eventsByDate = useMemo(() => {
     const map = new Map<string, UpcomingTournament[]>();
@@ -176,12 +191,15 @@ export function FeedCalendar({ info }: Props) {
   }, [customByDate, eventsByDate]);
 
   useEffect(() => {
-    if (!upcomingCity || isLoading) return;
-    const exists = countryEvents.some((event) =>
-      matchesCity(event.city, event.country, upcomingCity),
+    if (isLoading) return;
+    const allowed = new Set(
+      countryEvents
+        .filter((event) => event.city)
+        .map((event) => cityKey(event.city as string, event.country)),
     );
-    if (!exists) setUpcomingCity(null);
-  }, [countryEvents, isLoading, setUpcomingCity, upcomingCity]);
+    const kept = upcomingCities.filter((key) => allowed.has(key));
+    if (kept.length !== upcomingCities.length) setUpcomingCities(kept);
+  }, [countryEvents, isLoading, setUpcomingCities, upcomingCities]);
 
   const year = month.getFullYear();
   const monthIndex = month.getMonth();
@@ -218,6 +236,28 @@ export function FeedCalendar({ info }: Props) {
   const selectedCommunity = selectedEvents.filter(
     (event) => event.source !== "play-pokemon",
   );
+  const officialPageCount = Math.max(
+    1,
+    Math.ceil(selectedOfficial.length / DAY_GROUP_PAGE_SIZE),
+  );
+  const communityPageCount = Math.max(
+    1,
+    Math.ceil(selectedCommunity.length / DAY_GROUP_PAGE_SIZE),
+  );
+  const currentOfficialPage = Math.min(officialPage, officialPageCount);
+  const currentCommunityPage = Math.min(communityPage, communityPageCount);
+  const selectedOfficialPageRows = selectedOfficial.slice(
+    (currentOfficialPage - 1) * DAY_GROUP_PAGE_SIZE,
+    currentOfficialPage * DAY_GROUP_PAGE_SIZE,
+  );
+  const selectedCommunityPageRows = selectedCommunity.slice(
+    (currentCommunityPage - 1) * DAY_GROUP_PAGE_SIZE,
+    currentCommunityPage * DAY_GROUP_PAGE_SIZE,
+  );
+  useEffect(() => {
+    setOfficialPage(1);
+    setCommunityPage(1);
+  }, [selectedDay, query, upcomingCountries, upcomingCities]);
   const season = info.active_season ?? info.seasons[info.seasons.length - 1];
 
   useEffect(() => {
@@ -484,26 +524,86 @@ export function FeedCalendar({ info }: Props) {
           <div className="space-y-3">
             {selectedOfficial.length > 0 && (
               <section>
-                <div className="mb-1 flex items-center gap-1.5">
+                <button
+                  type="button"
+                  className="mb-1 flex w-full items-center gap-1.5 rounded-md py-0.5 text-left transition-colors hover:bg-[var(--bg-elev-strong)]"
+                  onClick={() => setOfficialCollapsed((value) => !value)}
+                  title={
+                    officialCollapsed ? t("feed.expand") : t("feed.collapse")
+                  }
+                  aria-expanded={!officialCollapsed}
+                  data-calendar-group="official"
+                >
+                  {officialCollapsed ? (
+                    <ChevronRight
+                      size={12}
+                      style={{ color: "var(--text-dim)" }}
+                    />
+                  ) : (
+                    <ChevronDown
+                      size={12}
+                      style={{ color: "var(--text-dim)" }}
+                    />
+                  )}
                   <span className="h-2 w-2 rounded-full" style={{ backgroundColor: CATEGORY_COLORS.official }} />
                   <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                    {t("upcoming.source_official")}
+                    {t("upcoming.majors_title")}
                   </span>
                   <span className="text-[9px]" style={{ color: "var(--text-dim)" }}>{selectedOfficial.length}</span>
-                </div>
-                <ul className="space-y-1">{selectedOfficial.map(renderEventRow)}</ul>
+                </button>
+                {!officialCollapsed && (
+                  <>
+                    <ul className="space-y-1">{selectedOfficialPageRows.map(renderEventRow)}</ul>
+                    <Pagination
+                      page={currentOfficialPage}
+                      pageCount={officialPageCount}
+                      onChange={setOfficialPage}
+                      className="mt-2 flex flex-wrap items-center justify-center gap-1"
+                    />
+                  </>
+                )}
               </section>
             )}
             {selectedCommunity.length > 0 && (
               <section>
-                <div className="mb-1 flex items-center gap-1.5">
+                <button
+                  type="button"
+                  className="mb-1 flex w-full items-center gap-1.5 rounded-md py-0.5 text-left transition-colors hover:bg-[var(--bg-elev-strong)]"
+                  onClick={() => setCommunityCollapsed((value) => !value)}
+                  title={
+                    communityCollapsed ? t("feed.expand") : t("feed.collapse")
+                  }
+                  aria-expanded={!communityCollapsed}
+                  data-calendar-group="community"
+                >
+                  {communityCollapsed ? (
+                    <ChevronRight
+                      size={12}
+                      style={{ color: "var(--text-dim)" }}
+                    />
+                  ) : (
+                    <ChevronDown
+                      size={12}
+                      style={{ color: "var(--text-dim)" }}
+                    />
+                  )}
                   <span className="h-2 w-2 rounded-full" style={{ backgroundColor: CATEGORY_COLORS.community }} />
                   <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                    {t("upcoming.source_limitless")}
+                    {t("dashboard.community_tournaments")}
                   </span>
                   <span className="text-[9px]" style={{ color: "var(--text-dim)" }}>{selectedCommunity.length}</span>
-                </div>
-                <ul className="space-y-1">{selectedCommunity.map(renderEventRow)}</ul>
+                </button>
+                {!communityCollapsed && (
+                  <>
+                    <ul className="space-y-1">{selectedCommunityPageRows.map(renderEventRow)}</ul>
+                    <Pagination
+                      page={currentCommunityPage}
+                      pageCount={communityPageCount}
+                      onChange={setCommunityPage}
+                      className="mt-2 flex flex-wrap items-center justify-center gap-1"
+                    />
+                  </>
+                )}
               </section>
             )}
             {selectedCustom.length > 0 && (

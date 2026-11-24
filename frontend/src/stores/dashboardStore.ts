@@ -3,30 +3,16 @@ import { persist } from "zustand/middleware";
 import type { Format, SourceId } from "../lib/types";
 
 export type TopPokemonView = "bar" | "grid" | "treemap" | "tier";
-export type DashboardView = "metrics" | "regulation" | "feed";
-export type FeedPanelId = "summary" | "live" | "events" | "recent" | "news";
-export type FeedLayoutMode = "vertical" | "horizontal" | "custom";
+export type DashboardView = "feed" | "tournaments" | "metrics" | "regulation";
+export type FeedPanelId = "summary" | "live" | "news";
+export type TournamentPanelId = "upcoming" | "recent" | "calendar";
 export type MetricsPanelId =
   | "top_pokemon"
   | "trending"
   | "top_entities"
-  | "upcoming"
   | "external_sources";
 export type RegulationPanelId = "roster" | "items" | "megas";
-
-export const METRICS_PANEL_IDS: readonly MetricsPanelId[] = [
-  "top_pokemon",
-  "trending",
-  "top_entities",
-  "upcoming",
-  "external_sources",
-];
-
-export const REGULATION_PANEL_IDS: readonly RegulationPanelId[] = [
-  "roster",
-  "items",
-  "megas",
-];
+export type FeedLayoutMode = "vertical" | "horizontal" | "custom";
 
 export interface FeedPanelPrefs {
   collapsed: boolean;
@@ -36,66 +22,110 @@ export const FEED_PANEL_IDS: readonly FeedPanelId[] = [
   "summary",
   "live",
   "news",
+];
+
+export const TOURNAMENT_PANEL_IDS: readonly TournamentPanelId[] = [
+  "upcoming",
   "recent",
-  "events",
+  "calendar",
+];
+
+export const METRICS_PANEL_IDS: readonly MetricsPanelId[] = [
+  "top_pokemon",
+  "trending",
+  "top_entities",
+  "external_sources",
+];
+
+export const REGULATION_PANEL_IDS: readonly RegulationPanelId[] = [
+  "roster",
+  "items",
+  "megas",
 ];
 
 /**
- * Default Feed: regulation summary, the live wall, official news directly
- * below live, recent tournaments and finally upcoming/calendar. Users can
- * still drag panels together; this is only the initial/reset order.
+ * Default Feed: regulation summary, the live wall and official news. Tournaments
+ * and the calendar now live in their own Dashboard tab so the Feed stays focused
+ * on "what is happening right now".
  */
 export const DEFAULT_FEED_ROWS: FeedPanelId[][] = [
   ["summary"],
   ["live"],
   ["news"],
-  ["recent"],
-  ["events"],
 ];
 
-const LEGACY_DEFAULT_FEED_ROWS: FeedPanelId[][] = [
-  ["summary"],
-  ["live"],
-  ["events"],
+export const DEFAULT_TOURNAMENT_ROWS: TournamentPanelId[][] = [
+  ["upcoming"],
   ["recent"],
-  ["news"],
+  ["calendar"],
 ];
 
-const LEGACY_HORIZONTAL_FEED: FeedPanelId[] = [
-  "summary",
-  "live",
-  "events",
-  "recent",
-  "news",
+export const DEFAULT_METRICS_ROWS: MetricsPanelId[][] = [
+  ["top_pokemon"],
+  ["trending"],
+  ["top_entities"],
+  ["external_sources"],
+];
+
+export const DEFAULT_REGULATION_ROWS: RegulationPanelId[][] = [
+  ["roster"],
+  ["items"],
+  ["megas"],
 ];
 
 export const DEFAULT_FEED_PANELS: Record<FeedPanelId, FeedPanelPrefs> = {
   summary: { collapsed: false },
   live: { collapsed: false },
-  events: { collapsed: false },
-  recent: { collapsed: false },
   news: { collapsed: false },
 };
 
+export const DEFAULT_TOURNAMENT_PANELS: Record<
+  TournamentPanelId,
+  FeedPanelPrefs
+> = {
+  upcoming: { collapsed: false },
+  recent: { collapsed: false },
+  calendar: { collapsed: false },
+};
+
+export const DEFAULT_METRICS_PANELS: Record<MetricsPanelId, FeedPanelPrefs> = {
+  top_pokemon: { collapsed: false },
+  trending: { collapsed: false },
+  top_entities: { collapsed: false },
+  external_sources: { collapsed: false },
+};
+
+export const DEFAULT_REGULATION_PANELS: Record<
+  RegulationPanelId,
+  FeedPanelPrefs
+> = {
+  roster: { collapsed: false },
+  items: { collapsed: false },
+  megas: { collapsed: false },
+};
+
 /**
- * Rows are horizontal groups: `[["live", "news"], ["events"]]` renders live
- * and news side by side, with events on its own row below. Unknown, duplicate
- * or missing panels are repaired so the persisted layout always renders every
+ * Rows are horizontal groups: `[["live", "news"], ["summary"]]` renders live
+ * and news side by side, with summary on its own row below. Unknown, duplicate
+ * or missing panels are repaired so a persisted layout always renders every
  * section exactly once.
  */
-export function normalizeFeedRows(raw: unknown): FeedPanelId[][] {
+export function normalizePanelRows<T extends string>(
+  raw: unknown,
+  ids: readonly T[],
+): T[][] {
   const source = Array.isArray(raw) ? raw : [];
-  const seen = new Set<FeedPanelId>();
-  const rows: FeedPanelId[][] = [];
+  const seen = new Set<T>();
+  const rows: T[][] = [];
   for (const entry of source) {
     const candidates = Array.isArray(entry) ? entry : [entry];
-    const row: FeedPanelId[] = [];
+    const row: T[] = [];
     for (const value of candidates) {
       if (
         typeof value === "string" &&
-        FEED_PANEL_IDS.includes(value as FeedPanelId)
+        ids.includes(value as T)
       ) {
-        const id = value as FeedPanelId;
+        const id = value as T;
         if (!seen.has(id)) {
           seen.add(id);
           row.push(id);
@@ -104,89 +134,20 @@ export function normalizeFeedRows(raw: unknown): FeedPanelId[][] {
     }
     if (row.length > 0) rows.push(row);
   }
-  for (const id of FEED_PANEL_IDS) {
+  for (const id of ids) {
     if (!seen.has(id)) rows.push([id]);
   }
   return rows;
 }
 
-/**
- * One-time repair for layouts saved before 0.5.0: live must start directly
- * below the regulation summary, never beside or above it. Other groups
- * (events + news) are kept.
- */
-/**
- * One-time move for layouts saved before 0.6.2: recent tournaments leave
- * Metrics and become a Feed panel right after the events panel. The helper
- * never duplicates the panel when the layout is already migrated.
- */
-export function placeRecentAfterEvents(
-  rows: FeedPanelId[][],
-): FeedPanelId[][] {
-  if (rows.some((row) => row.includes("recent"))) return rows;
-  const next = rows.map((row) => [...row]);
-  const events = next.findIndex((row) => row.includes("events"));
-  if (events >= 0) next.splice(events + 1, 0, ["recent"]);
-  else next.push(["recent"]);
-  return normalizeFeedRows(next);
-}
-
-/**
- * One-time move for layouts saved before 0.6.3: the old default put upcoming
- * tournaments above recent tournaments and news at the bottom. Only exact
- * legacy defaults are rewritten; custom layouts are left untouched.
- */
-export function migrateDefaultFeedOrder(
-  rows: FeedPanelId[][],
-): FeedPanelId[][] {
-  const normalized = normalizeFeedRows(rows);
-  const isLegacyVertical =
-    normalized.length === LEGACY_DEFAULT_FEED_ROWS.length &&
-    normalized.every(
-      (row, index) =>
-        row.length === 1 && row[0] === LEGACY_DEFAULT_FEED_ROWS[index][0],
-    );
-  const isLegacyHorizontal =
-    normalized.length === 1 &&
-    normalized[0].length === LEGACY_HORIZONTAL_FEED.length &&
-    normalized[0].every((id, index) => id === LEGACY_HORIZONTAL_FEED[index]);
-  if (isLegacyVertical) return normalizeFeedRows(DEFAULT_FEED_ROWS);
-  if (isLegacyHorizontal) {
-    return [["summary", "live", "news", "recent", "events"]];
-  }
-  return normalized;
-}
-
-export function placeLiveBelowSummary(
-  rows: FeedPanelId[][],
-): FeedPanelId[][] {
-  const summaryRow = rows.find((row) => row.includes("summary")) ?? [
-    "summary",
-  ];
-  const summaryRest = summaryRow.filter(
-    (id) => id !== "summary" && id !== "live",
-  );
-  // Keep the groups that did not contain the summary, without the live panel.
-  const rest = rows
-    .filter((row) => !row.includes("summary"))
-    .map((row) => row.filter((id) => id !== "live"))
-    .filter((row) => row.length > 0);
-  return [
-    ["summary"],
-    ["live"],
-    ...(summaryRest.length > 0 ? [summaryRest] : []),
-    ...rest,
-  ];
-}
-
-/** Missing or malformed panel preferences fall back to expanded. */
-export function normalizeFeedPanels(
+export function normalizePanelPrefs<T extends string>(
   raw: unknown,
-): Record<FeedPanelId, FeedPanelPrefs> {
+  ids: readonly T[],
+): Record<T, FeedPanelPrefs> {
   const source =
     raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
-  const out = {} as Record<FeedPanelId, FeedPanelPrefs>;
-  for (const id of FEED_PANEL_IDS) {
+  const out = {} as Record<T, FeedPanelPrefs>;
+  for (const id of ids) {
     const entry =
       source[id] && typeof source[id] === "object"
         ? (source[id] as Record<string, unknown>)
@@ -196,17 +157,17 @@ export function normalizeFeedPanels(
   return out;
 }
 
-export function feedLayoutMode(rows: FeedPanelId[][]): FeedLayoutMode {
+export function panelLayoutMode<T extends string>(
+  rows: T[][],
+): FeedLayoutMode {
   const visible = rows.filter((row) => row.length > 0);
   if (visible.length === 1 && visible[0].length > 1) return "horizontal";
   if (visible.every((row) => row.length === 1)) return "vertical";
   return "custom";
 }
 
-/**
- * Repair a persisted panel order: drop unknown/duplicate ids and append any
- * panel added in a newer version, so a layout never hides content silently.
- */
+/** Repair a persisted panel order: drop unknown/duplicate ids and append any
+ * panel added in a newer version, so a layout never hides content silently. */
 export function normalizePanelOrder<T extends string>(
   raw: unknown,
   ids: readonly T[],
@@ -231,6 +192,31 @@ export function normalizePanelOrder<T extends string>(
   return out;
 }
 
+function rowsFromOrder<T extends string>(order: readonly T[]): T[][] {
+  return order.map((id) => [id]);
+}
+
+function layoutRows<T extends string>(
+  rows: T[][],
+  ids: readonly T[],
+  mode: "vertical" | "horizontal",
+): T[][] {
+  const seen = new Set<T>();
+  const flat: T[] = [];
+  for (const row of rows) {
+    for (const id of row) {
+      if (ids.includes(id) && !seen.has(id)) {
+        seen.add(id);
+        flat.push(id);
+      }
+    }
+  }
+  for (const id of ids) {
+    if (!seen.has(id)) flat.push(id);
+  }
+  return mode === "horizontal" ? [flat] : flat.map((id) => [id]);
+}
+
 const VIEWS: readonly TopPokemonView[] = ["bar", "grid", "treemap", "tier"];
 
 interface DashboardState {
@@ -243,8 +229,12 @@ interface DashboardState {
   dashboardView: DashboardView;
   feedRows: FeedPanelId[][];
   feedPanels: Record<FeedPanelId, FeedPanelPrefs>;
-  metricsOrder: MetricsPanelId[];
-  regulationOrder: RegulationPanelId[];
+  tournamentRows: TournamentPanelId[][];
+  tournamentPanels: Record<TournamentPanelId, FeedPanelPrefs>;
+  metricsRows: MetricsPanelId[][];
+  metricsPanels: Record<MetricsPanelId, FeedPanelPrefs>;
+  regulationRows: RegulationPanelId[][];
+  regulationPanels: Record<RegulationPanelId, FeedPanelPrefs>;
   /** `null` merges every source; a value pins the view to one provider. */
   sourceFilter: SourceId | null;
   /** Starred source. `null` means "all sources". */
@@ -260,8 +250,21 @@ interface DashboardState {
   setFeedCollapsed: (id: FeedPanelId, collapsed: boolean) => void;
   setAllFeedCollapsed: (collapsed: boolean) => void;
   resetFeedLayout: () => void;
-  setMetricsOrder: (order: MetricsPanelId[]) => void;
-  setRegulationOrder: (order: RegulationPanelId[]) => void;
+  setTournamentRows: (rows: TournamentPanelId[][]) => void;
+  setTournamentLayoutMode: (mode: "vertical" | "horizontal") => void;
+  setTournamentCollapsed: (id: TournamentPanelId, collapsed: boolean) => void;
+  setAllTournamentCollapsed: (collapsed: boolean) => void;
+  resetTournamentLayout: () => void;
+  setMetricsRows: (rows: MetricsPanelId[][]) => void;
+  setMetricsLayoutMode: (mode: "vertical" | "horizontal") => void;
+  setMetricsCollapsed: (id: MetricsPanelId, collapsed: boolean) => void;
+  setAllMetricsCollapsed: (collapsed: boolean) => void;
+  resetMetricsLayout: () => void;
+  setRegulationRows: (rows: RegulationPanelId[][]) => void;
+  setRegulationLayoutMode: (mode: "vertical" | "horizontal") => void;
+  setRegulationCollapsed: (id: RegulationPanelId, collapsed: boolean) => void;
+  setAllRegulationCollapsed: (collapsed: boolean) => void;
+  resetRegulationLayout: () => void;
   resetPanelOrders: () => void;
   followActive: (format: Format) => void;
   setTopPokemonView: (view: TopPokemonView) => void;
@@ -287,6 +290,12 @@ function normalizeView(raw: unknown): TopPokemonView {
   return "bar";
 }
 
+function normalizeDashboardView(raw: unknown): DashboardView {
+  return raw === "tournaments" || raw === "metrics" || raw === "regulation"
+    ? raw
+    : "feed";
+}
+
 function normalizeFormat(raw: unknown): Format {
   return typeof raw === "string" && raw.trim().length > 0 ? raw : ACTIVE_FORMAT;
 }
@@ -300,11 +309,27 @@ export const useDashboardStore = create<DashboardState>()(
       showArchived: true,
       topPokemonView: "bar",
       dashboardView: "feed",
-      feedRows: normalizeFeedRows(DEFAULT_FEED_ROWS),
-      feedPanels: normalizeFeedPanels(DEFAULT_FEED_PANELS),
-      metricsOrder: normalizePanelOrder(METRICS_PANEL_IDS, METRICS_PANEL_IDS),
-      regulationOrder: normalizePanelOrder(
+      feedRows: normalizePanelRows(DEFAULT_FEED_ROWS, FEED_PANEL_IDS),
+      feedPanels: normalizePanelPrefs(DEFAULT_FEED_PANELS, FEED_PANEL_IDS),
+      tournamentRows: normalizePanelRows(
+        DEFAULT_TOURNAMENT_ROWS,
+        TOURNAMENT_PANEL_IDS,
+      ),
+      tournamentPanels: normalizePanelPrefs(
+        DEFAULT_TOURNAMENT_PANELS,
+        TOURNAMENT_PANEL_IDS,
+      ),
+      metricsRows: normalizePanelRows(DEFAULT_METRICS_ROWS, METRICS_PANEL_IDS),
+      metricsPanels: normalizePanelPrefs(
+        DEFAULT_METRICS_PANELS,
+        METRICS_PANEL_IDS,
+      ),
+      regulationRows: normalizePanelRows(
+        DEFAULT_REGULATION_ROWS,
         REGULATION_PANEL_IDS,
+      ),
+      regulationPanels: normalizePanelPrefs(
+        DEFAULT_REGULATION_PANELS,
         REGULATION_PANEL_IDS,
       ),
       sourceFilter: null,
@@ -315,55 +340,156 @@ export const useDashboardStore = create<DashboardState>()(
         set({ favoriteFormat, format: favoriteFormat, formatPinned: true }),
       setShowArchived: (showArchived) => set({ showArchived }),
       setDashboardView: (dashboardView) => set({ dashboardView }),
-      setFeedRows: (feedRows) => set({ feedRows: normalizeFeedRows(feedRows) }),
-      setFeedLayoutMode: (mode) => {
-        const current = get().feedRows.flat();
-        const ordered = [
-          ...current,
-          ...FEED_PANEL_IDS.filter((id) => !current.includes(id)),
-        ];
-        set({
-          feedRows:
-            mode === "horizontal"
-              ? [ordered]
-              : ordered.map((id) => [id]),
-        });
-      },
+      setFeedRows: (feedRows) =>
+        set({ feedRows: normalizePanelRows(feedRows, FEED_PANEL_IDS) }),
+      setFeedLayoutMode: (mode) =>
+        set((state) => ({ feedRows: layoutRows(state.feedRows, FEED_PANEL_IDS, mode) })),
       setFeedCollapsed: (id, collapsed) =>
         set((state) => ({
-          feedPanels: {
-            ...state.feedPanels,
-            [id]: { ...state.feedPanels[id], collapsed },
-          },
+          feedPanels: { ...state.feedPanels, [id]: { collapsed } },
         })),
       setAllFeedCollapsed: (collapsed) =>
         set((state) => {
           const feedPanels = { ...state.feedPanels };
-          for (const id of FEED_PANEL_IDS) {
-            feedPanels[id] = { ...feedPanels[id], collapsed };
-          }
+          for (const id of FEED_PANEL_IDS) feedPanels[id] = { collapsed };
           return { feedPanels };
         }),
       resetFeedLayout: () =>
         set({
-          feedRows: normalizeFeedRows(DEFAULT_FEED_ROWS),
-          feedPanels: normalizeFeedPanels(DEFAULT_FEED_PANELS),
+          feedRows: normalizePanelRows(DEFAULT_FEED_ROWS, FEED_PANEL_IDS),
+          feedPanels: normalizePanelPrefs(DEFAULT_FEED_PANELS, FEED_PANEL_IDS),
         }),
-      setMetricsOrder: (metricsOrder) =>
+      setTournamentRows: (tournamentRows) =>
         set({
-          metricsOrder: normalizePanelOrder(metricsOrder, METRICS_PANEL_IDS),
+          tournamentRows: normalizePanelRows(
+            tournamentRows,
+            TOURNAMENT_PANEL_IDS,
+          ),
         }),
-      setRegulationOrder: (regulationOrder) =>
+      setTournamentLayoutMode: (mode) =>
+        set((state) => ({
+          tournamentRows: layoutRows(
+            state.tournamentRows,
+            TOURNAMENT_PANEL_IDS,
+            mode,
+          ),
+        })),
+      setTournamentCollapsed: (id, collapsed) =>
+        set((state) => ({
+          tournamentPanels: {
+            ...state.tournamentPanels,
+            [id]: { collapsed },
+          },
+        })),
+      setAllTournamentCollapsed: (collapsed) =>
+        set((state) => {
+          const tournamentPanels = { ...state.tournamentPanels };
+          for (const id of TOURNAMENT_PANEL_IDS) {
+            tournamentPanels[id] = { collapsed };
+          }
+          return { tournamentPanels };
+        }),
+      resetTournamentLayout: () =>
         set({
-          regulationOrder: normalizePanelOrder(
-            regulationOrder,
+          tournamentRows: normalizePanelRows(
+            DEFAULT_TOURNAMENT_ROWS,
+            TOURNAMENT_PANEL_IDS,
+          ),
+          tournamentPanels: normalizePanelPrefs(
+            DEFAULT_TOURNAMENT_PANELS,
+            TOURNAMENT_PANEL_IDS,
+          ),
+        }),
+      setMetricsRows: (metricsRows) =>
+        set({
+          metricsRows: normalizePanelRows(metricsRows, METRICS_PANEL_IDS),
+        }),
+      setMetricsLayoutMode: (mode) =>
+        set((state) => ({
+          metricsRows: layoutRows(state.metricsRows, METRICS_PANEL_IDS, mode),
+        })),
+      setMetricsCollapsed: (id, collapsed) =>
+        set((state) => ({
+          metricsPanels: { ...state.metricsPanels, [id]: { collapsed } },
+        })),
+      setAllMetricsCollapsed: (collapsed) =>
+        set((state) => {
+          const metricsPanels = { ...state.metricsPanels };
+          for (const id of METRICS_PANEL_IDS) metricsPanels[id] = { collapsed };
+          return { metricsPanels };
+        }),
+      resetMetricsLayout: () =>
+        set({
+          metricsRows: normalizePanelRows(DEFAULT_METRICS_ROWS, METRICS_PANEL_IDS),
+          metricsPanels: normalizePanelPrefs(
+            DEFAULT_METRICS_PANELS,
+            METRICS_PANEL_IDS,
+          ),
+        }),
+      setRegulationRows: (regulationRows) =>
+        set({
+          regulationRows: normalizePanelRows(
+            regulationRows,
+            REGULATION_PANEL_IDS,
+          ),
+        }),
+      setRegulationLayoutMode: (mode) =>
+        set((state) => ({
+          regulationRows: layoutRows(
+            state.regulationRows,
+            REGULATION_PANEL_IDS,
+            mode,
+          ),
+        })),
+      setRegulationCollapsed: (id, collapsed) =>
+        set((state) => ({
+          regulationPanels: {
+            ...state.regulationPanels,
+            [id]: { collapsed },
+          },
+        })),
+      setAllRegulationCollapsed: (collapsed) =>
+        set((state) => {
+          const regulationPanels = { ...state.regulationPanels };
+          for (const id of REGULATION_PANEL_IDS) {
+            regulationPanels[id] = { collapsed };
+          }
+          return { regulationPanels };
+        }),
+      resetRegulationLayout: () =>
+        set({
+          regulationRows: normalizePanelRows(
+            DEFAULT_REGULATION_ROWS,
+            REGULATION_PANEL_IDS,
+          ),
+          regulationPanels: normalizePanelPrefs(
+            DEFAULT_REGULATION_PANELS,
             REGULATION_PANEL_IDS,
           ),
         }),
       resetPanelOrders: () =>
         set({
-          metricsOrder: [...METRICS_PANEL_IDS],
-          regulationOrder: [...REGULATION_PANEL_IDS],
+          tournamentRows: normalizePanelRows(
+            DEFAULT_TOURNAMENT_ROWS,
+            TOURNAMENT_PANEL_IDS,
+          ),
+          tournamentPanels: normalizePanelPrefs(
+            DEFAULT_TOURNAMENT_PANELS,
+            TOURNAMENT_PANEL_IDS,
+          ),
+          metricsRows: normalizePanelRows(DEFAULT_METRICS_ROWS, METRICS_PANEL_IDS),
+          metricsPanels: normalizePanelPrefs(
+            DEFAULT_METRICS_PANELS,
+            METRICS_PANEL_IDS,
+          ),
+          regulationRows: normalizePanelRows(
+            DEFAULT_REGULATION_ROWS,
+            REGULATION_PANEL_IDS,
+          ),
+          regulationPanels: normalizePanelPrefs(
+            DEFAULT_REGULATION_PANELS,
+            REGULATION_PANEL_IDS,
+          ),
         }),
       followActive: (format) => {
         if (get().formatPinned) return;
@@ -383,52 +509,65 @@ export const useDashboardStore = create<DashboardState>()(
     }),
     {
       name: "vgc-dashboard",
-      version: 25,
+      version: 26,
       migrate: (persisted: unknown, version: number) => {
         const prior = (persisted ?? {}) as Record<string, unknown>;
-        if (!(version >= 11)) {
-          return {
-            format: ACTIVE_FORMAT,
-            favoriteFormat: ACTIVE_FORMAT,
-            formatPinned: false,
-            showArchived: true,
-            topPokemonView: normalizeView(prior.topPokemonView),
-            dashboardView: "feed",
-            feedRows: normalizeFeedRows(DEFAULT_FEED_ROWS),
-            feedPanels: normalizeFeedPanels(DEFAULT_FEED_PANELS),
-            metricsOrder: [...METRICS_PANEL_IDS],
-            regulationOrder: [...REGULATION_PANEL_IDS],
-            sourceFilter: null,
-            favoriteSource: null,
-            dateRanges: {},
-          } as DashboardState;
-        }
-        const savedRows = normalizeFeedRows(prior.feedRows ?? prior.feedOrder);
+        const legacyFeedRows = normalizePanelRows(
+          prior.feedRows ?? prior.feedOrder,
+          FEED_PANEL_IDS,
+        );
+        const legacyMetricsOrder = Array.isArray(prior.metricsOrder)
+          ? prior.metricsOrder
+          : [];
+        const legacyRegulationOrder = Array.isArray(prior.regulationOrder)
+          ? prior.regulationOrder
+          : [];
+        const metricsRows =
+          version >= 26 && Array.isArray(prior.metricsRows)
+            ? normalizePanelRows(prior.metricsRows, METRICS_PANEL_IDS)
+            : normalizePanelRows(
+                rowsFromOrder(
+                  normalizePanelOrder(legacyMetricsOrder, METRICS_PANEL_IDS),
+                ),
+                METRICS_PANEL_IDS,
+              );
+        const regulationRows =
+          version >= 26 && Array.isArray(prior.regulationRows)
+            ? normalizePanelRows(prior.regulationRows, REGULATION_PANEL_IDS)
+            : normalizePanelRows(
+                rowsFromOrder(
+                  normalizePanelOrder(
+                    legacyRegulationOrder,
+                    REGULATION_PANEL_IDS,
+                  ),
+                ),
+                REGULATION_PANEL_IDS,
+              );
         return {
           format: normalizeFormat(prior.format),
           favoriteFormat: normalizeFormat(prior.favoriteFormat ?? prior.format),
           formatPinned: Boolean(prior.formatPinned),
           showArchived: prior.showArchived !== false,
           topPokemonView: normalizeView(prior.topPokemonView),
-          dashboardView:
-            prior.dashboardView === "regulation" ? "regulation" : "feed",
-          feedRows:
-            version < 25
-              ? migrateDefaultFeedOrder(
-                  version < 20
-                    ? placeRecentAfterEvents(placeLiveBelowSummary(savedRows))
-                    : version < 24
-                      ? placeRecentAfterEvents(savedRows)
-                      : savedRows,
-                )
-              : savedRows,
-          feedPanels: normalizeFeedPanels(prior.feedPanels),
-          metricsOrder: normalizePanelOrder(
-            version >= 23 ? prior.metricsOrder : [],
+          dashboardView: normalizeDashboardView(prior.dashboardView),
+          feedRows: legacyFeedRows,
+          feedPanels: normalizePanelPrefs(prior.feedPanels, FEED_PANEL_IDS),
+          tournamentRows:
+            version >= 26 && Array.isArray(prior.tournamentRows)
+              ? normalizePanelRows(prior.tournamentRows, TOURNAMENT_PANEL_IDS)
+              : normalizePanelRows(DEFAULT_TOURNAMENT_ROWS, TOURNAMENT_PANEL_IDS),
+          tournamentPanels: normalizePanelPrefs(
+            prior.tournamentPanels,
+            TOURNAMENT_PANEL_IDS,
+          ),
+          metricsRows,
+          metricsPanels: normalizePanelPrefs(
+            prior.metricsPanels,
             METRICS_PANEL_IDS,
           ),
-          regulationOrder: normalizePanelOrder(
-            version >= 23 ? prior.regulationOrder : [],
+          regulationRows,
+          regulationPanels: normalizePanelPrefs(
+            prior.regulationPanels,
             REGULATION_PANEL_IDS,
           ),
           sourceFilter: normalizeSource(prior.sourceFilter),

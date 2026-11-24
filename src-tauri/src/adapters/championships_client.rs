@@ -328,6 +328,8 @@ fn official_standings_from_response(
         total_count: response.total_count,
         start,
         size,
+        source: Some("play-pokemon".into()),
+        source_url: None,
     }
 }
 

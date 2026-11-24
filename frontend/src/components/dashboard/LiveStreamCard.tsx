@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronRight,
+  Clock,
   ExternalLink,
   Eye,
   EyeOff,
@@ -13,7 +14,6 @@ import {
   MonitorPlay,
   PanelBottom,
   PanelRight,
-  Pin,
   Play,
   Radio,
   RefreshCw,
@@ -27,16 +27,19 @@ import { useNavigate } from "react-router-dom";
 import { useLiveStreams } from "../../hooks/useLiveStreams";
 import { useUiStore } from "../../stores/uiStore";
 import type { LiveStreamScreen, OfficialLiveStream } from "../../lib/types";
+import { formatRelativeTime } from "../../lib/mediaTime";
 import { openExternal } from "../../lib/openExternal";
 import { channelSubscribeUrl } from "../../lib/youtube";
 import { LiveWall } from "./LiveWall";
+import { LiveFallbackImage } from "../ui/LiveFallbackImage";
 import { PlaybackHost, usePlayback } from "../playback/PlaybackProvider";
+import { Pagination } from "../ui/Pagination";
 
 interface Props {
   className?: string;
-  /** Disable the iframes while a drag is in progress so drop targets work. */
-  dragging?: boolean;
 }
+
+const RECENT_PAGE_SIZE = 6;
 
 /**
  * TV wall of the configured YouTube screens. The official channel and YukS
@@ -45,13 +48,13 @@ interface Props {
  */
 export function LiveStreamCard({
   className = "card",
-  dragging = false,
 }: Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const streams = useLiveStreams();
   const [wallOpen, setWallOpen] = useState(false);
   const [recentCollapsed, setRecentCollapsed] = useState(false);
+  const [recentPage, setRecentPage] = useState(1);
   const [featuredUrl, setFeaturedUrl] = useState<string | null>(null);
   const [featuredView, setFeaturedView] = useState<"featured" | "equal">(
     "featured",
@@ -62,22 +65,13 @@ export function LiveStreamCard({
   const hiddenScreens = useUiStore((s) => s.hiddenLiveScreens);
   const toggleHidden = useUiStore((s) => s.toggleLiveScreenHidden);
   const playback = usePlayback();
-  // Per-session stop state. Stopping unmounts only that iframe; the screen
-  // stays configured and can be resumed with Play. It is intentionally not
-  // persisted: reopening the app starts every configured stream fresh.
-  const [stoppedScreens, setStoppedScreens] = useState<string[]>([]);
-  const toggleStopped = (url: string) =>
-    setStoppedScreens((current) =>
-      current.includes(url)
-        ? current.filter((entry) => entry !== url)
-        : [...current, url],
-    );
 
   const screens = streams.data ?? [];
   const visibleScreens = screens.filter(
     (screen) => !hiddenScreens.includes(screen.source_url),
   );
   const live = visibleScreens.filter((screen) => screen.live);
+
   const hiddenLive = screens.filter(
     (screen) =>
       screen.live && hiddenScreens.includes(screen.source_url),
@@ -93,6 +87,15 @@ export function LiveStreamCard({
       hidden: hiddenScreens.includes(screen.source_url),
     }));
   const showRecent = recentStreams.length > 0;
+  const recentPageCount = Math.max(
+    1,
+    Math.ceil(recentStreams.length / RECENT_PAGE_SIZE),
+  );
+  const currentRecentPage = Math.min(recentPage, recentPageCount);
+  const recentPageRows = recentStreams.slice(
+    (currentRecentPage - 1) * RECENT_PAGE_SIZE,
+    currentRecentPage * RECENT_PAGE_SIZE,
+  );
   const featured =
     featuredView === "featured" && live.length > 1
       ? (live.find((screen) => screen.source_url === featuredUrl) ?? live[0])
@@ -103,16 +106,22 @@ export function LiveStreamCard({
   };
   const showEqual = () => setFeaturedView("equal");
 
-  // If the kept stream goes offline (or disappears from the list while the
-  // app is open), stop its audio instead of leaving it playing in a hidden
-  // host.
   useEffect(() => {
-    if (!playback.active || streams.isLoading || !streams.data) return;
-    const stillLive = streams.data.some(
-      (screen) =>
-        screen.source_url === playback.active?.source_url && screen.live,
+    setRecentPage(1);
+  }, [recentStreams.length]);
+
+  // If a stream goes offline, stop only that player. Other streams in this
+  // tab and players in other tabs keep running.
+  useEffect(() => {
+    if (streams.isLoading || !streams.data) return;
+    const liveUrls = new Set(
+      streams.data.filter((screen) => screen.live).map((screen) => screen.source_url),
     );
-    if (!stillLive) playback.stop();
+    playback.activeScreens.forEach((screen) => {
+      if (!liveUrls.has(screen.source_url)) {
+        playback.stop(screen.source_url, false);
+      }
+    });
   }, [playback, streams.data, streams.isLoading]);
 
   const controls = (
@@ -179,7 +188,7 @@ export function LiveStreamCard({
       <button
         type="button"
         className="btn-ghost text-xs"
-        onClick={() => streams.refetch()}
+        onClick={() => void streams.refetchForce()}
         disabled={streams.isFetching}
         aria-label={t("dashboard.refresh")}
         title={t("dashboard.refresh")}
@@ -231,7 +240,7 @@ export function LiveStreamCard({
         <button
           type="button"
           className="btn-ghost self-start text-xs"
-          onClick={() => streams.refetch()}
+          onClick={() => void streams.refetchForce()}
           disabled={streams.isFetching}
         >
           <RefreshCw
@@ -287,16 +296,24 @@ export function LiveStreamCard({
           </div>
 
           {showRecent && (
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {recentStreams.slice(0, 6).map(({ screen, stream, hidden }) => (
-                <RecentStream
-                  key={`${screen.source_url}-${stream.video_id}`}
-                  screen={screen}
-                  stream={stream}
-                  hidden={hidden}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {recentPageRows.map(({ screen, stream, hidden }) => (
+                  <RecentStream
+                    key={`${screen.source_url}-${stream.video_id}`}
+                    screen={screen}
+                    stream={stream}
+                    hidden={hidden}
+                  />
+                ))}
+              </div>
+              <Pagination
+                page={currentRecentPage}
+                pageCount={recentPageCount}
+                onChange={setRecentPage}
+                className="mt-1 flex flex-wrap items-center justify-center gap-1"
+              />
+            </>
           )}
 
           {(hiddenLive.length > 0 ||
@@ -379,7 +396,7 @@ export function LiveStreamCard({
 
         {/* One stable grid: every tile is a sibling with a stable key.
             Featuring or hiding a stream only changes classes / removes that
-            one tile, so React never remounts the other iframes. */}
+            one tile. No iframe is created until the user presses play. */}
         <div
           className={`grid gap-2 ${
             featured && featuredLayout === "side"
@@ -402,14 +419,21 @@ export function LiveStreamCard({
               <div key={screen.source_url} className={`${span} min-w-0`}>
                 <LiveTile
                   screen={screen}
-                  dragging={dragging}
                   featured={isFeatured}
                   compact={live.length > 1 && !isFeatured}
-                  stopped={stoppedScreens.includes(screen.source_url)}
-                  onToggleStop={() => toggleStopped(screen.source_url)}
-                  kept={playback.active?.source_url === screen.source_url}
-                  onKeep={() => playback.activate(screen)}
-                  onUnkeep={() => playback.stop()}
+                  playing={playback.isPlaying(screen.source_url)}
+                  stopped={playback.stopped.includes(screen.source_url)}
+                  onToggleStop={() => {
+                    if (playback.isPlaying(screen.source_url)) {
+                      playback.stop(screen.source_url, true);
+                    } else {
+                      playback.activate(screen);
+                    }
+                  }}
+                  onPlay={() => {
+                    if (live.length > 1) featureScreen(screen.source_url);
+                    playback.activate(screen);
+                  }}
                   onFeature={
                     live.length > 1
                       ? () => featureScreen(screen.source_url)
@@ -417,8 +441,8 @@ export function LiveStreamCard({
                   }
                   onReset={isFeatured ? showEqual : undefined}
                   onHide={() => {
-                    if (playback.active?.source_url === screen.source_url) {
-                      playback.stop();
+                    if (playback.isPlaying(screen.source_url)) {
+                      playback.stop(screen.source_url, false);
                     }
                     toggleHidden(screen.source_url);
                   }}
@@ -468,16 +492,24 @@ export function LiveStreamCard({
               </span>
             </div>
             {!recentCollapsed && (
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {recentStreams.slice(0, 6).map(({ screen, stream, hidden }) => (
-                  <RecentStream
-                    key={`${screen.source_url}-${stream.video_id}`}
-                    screen={screen}
-                    stream={stream}
-                    hidden={hidden}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {recentPageRows.map(({ screen, stream, hidden }) => (
+                    <RecentStream
+                      key={`${screen.source_url}-${stream.video_id}`}
+                      screen={screen}
+                      stream={stream}
+                      hidden={hidden}
+                    />
+                  ))}
+                </div>
+                <Pagination
+                  page={currentRecentPage}
+                  pageCount={recentPageCount}
+                  onChange={setRecentPage}
+                  className="mt-1 flex flex-wrap items-center justify-center gap-1"
+                />
+              </>
             )}
           </div>
         )}
@@ -517,27 +549,23 @@ export function LiveStreamCard({
 
 function LiveTile({
   screen,
-  dragging,
   featured = false,
   compact = false,
+  playing = false,
   stopped = false,
-  kept = false,
   onToggleStop,
-  onKeep,
-  onUnkeep,
+  onPlay,
   onFeature,
   onReset,
   onHide,
 }: {
   screen: LiveStreamScreen;
-  dragging: boolean;
   featured?: boolean;
   compact?: boolean;
+  playing?: boolean;
   stopped?: boolean;
-  kept?: boolean;
   onToggleStop?: () => void;
-  onKeep?: () => void;
-  onUnkeep?: () => void;
+  onPlay?: () => void;
   onFeature?: () => void;
   onReset?: () => void;
   onHide?: () => void;
@@ -555,26 +583,6 @@ function LiveTile({
           </p>
         </div>
         <div className="flex min-w-0 flex-wrap items-center gap-1">
-          {(onKeep || onUnkeep) && (
-            <button
-              type="button"
-              className="flex items-center gap-1 rounded-md border px-1.5 py-1 text-[10px] font-medium"
-              style={{
-                borderColor: kept ? "var(--accent)" : "var(--border)",
-                backgroundColor: kept ? "var(--accent-soft)" : "transparent",
-                color: kept ? "var(--accent)" : "var(--text-muted)",
-              }}
-              onClick={kept ? onUnkeep : onKeep}
-              title={kept ? t("feed.unkeep_stream") : t("feed.keep_stream")}
-              aria-label={kept ? t("feed.unkeep_stream") : t("feed.keep_stream")}
-              aria-pressed={kept}
-            >
-              <Pin size={11} />
-              {!compact && (
-                <span>{kept ? t("feed.unkeep") : t("feed.keep")}</span>
-              )}
-            </button>
-          )}
           {onToggleStop && (
             <button
               type="button"
@@ -681,9 +689,7 @@ function LiveTile({
         className="relative w-full overflow-hidden rounded-lg border"
         style={{ borderColor: "var(--border)" }}
       >
-        {kept ? (
-          <PlaybackHost screen={screen} />
-        ) : stopped ? (
+        {stopped ? (
           <div
             className="flex aspect-video w-full flex-col items-center justify-center gap-2"
             style={{ backgroundColor: "var(--bg)" }}
@@ -702,16 +708,39 @@ function LiveTile({
               </button>
             )}
           </div>
+        ) : playing ? (
+          <PlaybackHost screen={screen} />
         ) : (
-          <iframe
-            src={screen.embed_url ?? ""}
-            title={screen.title ?? screen.label}
-            className="aspect-video w-full"
-            style={{ pointerEvents: dragging ? "none" : undefined }}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            referrerPolicy="strict-origin-when-cross-origin"
-          />
+          <button
+            type="button"
+            className="group relative flex aspect-video w-full items-center justify-center overflow-hidden bg-black"
+            onClick={onPlay}
+            aria-label={`${t("feed.watch_stream")}: ${screen.title ?? screen.label}`}
+          >
+            <LiveFallbackImage
+              src={screen.thumbnail_url}
+              alt=""
+              loading="lazy"
+              className="opacity-70 transition-opacity group-hover:opacity-90"
+            />
+            <span className="absolute inset-0 flex items-center justify-center bg-black/25">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/70 ring-1 ring-white/15">
+                <Play size={18} className="ml-0.5 text-white" fill="white" />
+              </span>
+            </span>
+            <span
+              className="absolute left-2 top-2 rounded-full px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide"
+              style={{ backgroundColor: "rgba(0,0,0,.65)", color: "#fff" }}
+            >
+              {t("feed.live_now")}
+            </span>
+            <span
+              className="absolute bottom-2 left-2 max-w-[80%] truncate rounded-full px-1.5 py-0.5 text-[9px]"
+              style={{ backgroundColor: "rgba(0,0,0,.65)", color: "#fff" }}
+            >
+              {screen.label}
+            </span>
+          </button>
         )}
       </div>
       <div className="flex flex-wrap items-center gap-1">
@@ -758,42 +787,36 @@ function LiveLoading({ className = "card" }: { className?: string }) {
       aria-busy="true"
       aria-live="polite"
     >
-      <div className="flex items-center gap-2">
-        <span
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-          style={{
-            backgroundColor: "var(--accent-soft)",
-            color: "var(--accent)",
-          }}
-        >
-          <Loader2 size={15} className="animate-spin" />
-        </span>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>
-            {t("feed.loading_streams")}
-          </p>
-          <p className="text-[10px]" style={{ color: "var(--text-dim)" }}>
-            {t("feed.loading_streams_hint")}
-          </p>
-        </div>
+      <div
+        className="flex min-h-40 flex-col items-center justify-center gap-2 rounded-xl border px-4 py-8 text-center"
+        style={{
+          borderColor: "var(--border)",
+          backgroundColor: "color-mix(in srgb, var(--bg-elev) 70%, transparent)",
+        }}
+      >
+        <Loader2
+          size={46}
+          className="animate-spin"
+          style={{ color: "var(--accent)" }}
+        />
+        <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+          {t("feed.loading_streams")}
+        </p>
+        <p className="max-w-md text-[11px]" style={{ color: "var(--text-dim)" }}>
+          {t("feed.loading_streams_hint")}
+        </p>
       </div>
-      <div className="grid gap-3 lg:grid-cols-2">
-        {[0, 1].map((index) => (
-          <div
-            key={index}
-            className="overflow-hidden rounded-lg border"
-            style={{ borderColor: "var(--border)" }}
-          >
-            <div
-              className="aspect-video w-full animate-pulse"
-              style={{
-                background:
-                  "linear-gradient(110deg, var(--bg-elev-strong) 8%, var(--bg-elev) 18%, var(--bg-elev-strong) 33%)",
-                backgroundSize: "200% 100%",
-              }}
-            />
-          </div>
-        ))}
+      <div
+        className="relative aspect-video w-full overflow-hidden rounded-lg border"
+        style={{ borderColor: "var(--border)" }}
+      >
+        <LiveFallbackImage
+          src={null}
+          alt={t("feed.stream_fallback")}
+          loading="eager"
+          className="opacity-45"
+        />
+        <div className="absolute inset-0 animate-pulse bg-black/20" />
       </div>
     </section>
   );
@@ -808,8 +831,11 @@ function RecentStream({
   stream: OfficialLiveStream;
   hidden?: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const url = stream.url ?? screen.source_url;
+  const published = stream.published_at
+    ? formatRelativeTime(stream.published_at, i18n.language)
+    : "";
   return (
     <button
       type="button"
@@ -822,10 +848,10 @@ function RecentStream({
         className="relative aspect-video overflow-hidden rounded-lg border"
         style={{ borderColor: "var(--border)" }}
       >
-        <img
+        <LiveFallbackImage
           src={stream.thumbnail_url}
           alt=""
-          className="h-full w-full object-cover opacity-85 transition-opacity group-hover:opacity-100"
+          className="opacity-85 transition-opacity group-hover:opacity-100"
           loading="lazy"
         />
         <span className="absolute inset-0 flex items-center justify-center bg-black/20">
@@ -855,9 +881,21 @@ function RecentStream({
           <Radio size={9} />
           {t("feed.not_live")}
         </span>
+        {stream.duration && (
+          <span
+            className="absolute bottom-1.5 right-1.5 rounded px-1 py-0.5 text-[9px] font-semibold"
+            style={{
+              backgroundColor: "rgba(0,0,0,0.72)",
+              color: "#ffffff",
+            }}
+            title={`${t("feed.duration")}: ${stream.duration}`}
+          >
+            {stream.duration}
+          </span>
+        )}
         {hidden && (
           <span
-            className="absolute bottom-1.5 right-1.5 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide"
+            className="absolute right-1.5 top-1.5 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide"
             style={{
               backgroundColor: "rgba(0,0,0,0.62)",
               color: "#ffffff",
@@ -877,6 +915,15 @@ function RecentStream({
       <p className="text-[9px]" style={{ color: "var(--text-dim)" }}>
         {screen.label}
       </p>
+      {published && (
+        <p
+          className="mt-0.5 inline-flex items-center gap-1 text-[9px]"
+          style={{ color: "var(--text-dim)" }}
+        >
+          <Clock size={9} />
+          {published}
+        </p>
+      )}
     </button>
   );
 }

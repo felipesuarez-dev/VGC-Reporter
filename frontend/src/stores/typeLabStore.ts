@@ -6,6 +6,7 @@ interface TypeLabState {
   open: boolean;
   tab: TypeLabTab;
   setOpen: (open: boolean) => void;
+  toggleOpen: () => void;
   setTab: (tab: TypeLabTab) => void;
 }
 
@@ -13,5 +14,6 @@ export const useTypeLabStore = create<TypeLabState>((set) => ({
   open: false,
   tab: "table",
   setOpen: (open) => set({ open }),
+  toggleOpen: () => set((state) => ({ open: !state.open })),
   setTab: (tab) => set({ tab }),
 }));

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { LiveStreamScreen } from "../../lib/types";
 import { openExternal } from "../../lib/openExternal";
 import { channelSubscribeUrl } from "../../lib/youtube";
+import { LazyVideoFrame } from "../ui/LazyVideoFrame";
 
 interface Props {
   screens: LiveStreamScreen[];
@@ -37,7 +38,14 @@ export function LiveWall({ screens, onClose }: Props) {
       aria-modal="true"
       aria-label={t("feed.tv_wall")}
       className="fixed inset-0 z-[80] flex flex-col"
-      style={{ backgroundColor: "#050409" }}
+      style={{
+        backgroundColor: "#050409",
+        minHeight: "100dvh",
+        paddingTop: "env(safe-area-inset-top, 0px)",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        paddingLeft: "env(safe-area-inset-left, 0px)",
+        paddingRight: "env(safe-area-inset-right, 0px)",
+      }}
     >
       <header className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-2.5">
         <div className="flex min-w-0 items-center gap-2">
@@ -76,7 +84,7 @@ export function LiveWall({ screens, onClose }: Props) {
         </button>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-3">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
         <div className="mx-auto grid max-w-[1800px] grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {slots.map((screen, index) =>
             screen ? (
@@ -128,13 +136,10 @@ function LiveWallTile({ screen }: { screen: LiveStreamScreen }) {
         </div>
       </div>
       {screen.live && screen.embed_url ? (
-        <iframe
+        <LazyVideoFrame
           src={screen.embed_url}
           title={screen.title ?? screen.label}
           className="aspect-video w-full"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          referrerPolicy="strict-origin-when-cross-origin"
         />
       ) : (
         <div

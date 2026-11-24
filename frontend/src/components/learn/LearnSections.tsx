@@ -29,6 +29,7 @@ import type { LearnedMetaInsights } from "../../lib/learn/insights";
 import type { Pokemon, PokemonUsage, Team } from "../../lib/types";
 import { useDashboardStore } from "../../stores/dashboardStore";
 import { useModalBack } from "../../hooks/useModalBack";
+import { openExternal } from "../../lib/openExternal";
 import { SectionTitle } from "./SectionTitle";
 
 export function GlossaryModal({
@@ -63,7 +64,8 @@ export function GlossaryModal({
     if (!needle) return true;
     return (
       entry.term.toLowerCase().includes(needle) ||
-      entry.definition.toLowerCase().includes(needle)
+      entry.definition.toLowerCase().includes(needle) ||
+      (entry.example ?? "").toLowerCase().includes(needle)
     );
   });
   const groups = new Map<string, GlossaryEntry[]>();
@@ -162,7 +164,7 @@ export function GlossaryModal({
             ))}
           </div>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        <div className="modal-scroll min-h-0 flex-1 overflow-y-auto p-4">
           {filtered.length === 0 ? (
             <p className="text-xs" style={{ color: "var(--text-dim)" }}>
               {t("learn.glossary_no_results")}
@@ -181,7 +183,7 @@ export function GlossaryModal({
                     {(groups.get(letter) ?? []).map((entry) => (
                       <div
                         key={entry.id}
-                        className="rounded-lg border p-2"
+                        className="space-y-1.5 rounded-lg border p-2.5"
                         style={{ borderColor: "var(--border)" }}
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -190,9 +192,34 @@ export function GlossaryModal({
                             {t(`learn.glossary_category_${entry.category}`)}
                           </span>
                         </div>
-                        <p className="mt-0.5 text-[11px]" style={{ color: "var(--text-muted)" }}>
+                        <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
                           {entry.definition}
                         </p>
+                        {entry.example && (
+                          <p
+                            className="rounded-md px-2 py-1 text-[10px] leading-relaxed"
+                            style={{ backgroundColor: "var(--bg)", color: "var(--text-muted)" }}
+                          >
+                            <strong style={{ color: "var(--text)" }}>{t("learn.glossary_example")}:</strong>{" "}
+                            {entry.example}
+                          </p>
+                        )}
+                        {(entry.sources?.length ?? 0) > 0 && (
+                          <div className="flex flex-wrap items-center gap-1 text-[9px]" style={{ color: "var(--text-dim)" }}>
+                            <span>{t("learn.glossary_source")}:</span>
+                            {entry.sources!.map((source) => (
+                              <button
+                                key={source.url}
+                                type="button"
+                                className="underline-offset-2 hover:underline"
+                                style={{ color: "var(--accent)" }}
+                                onClick={() => void openExternal(source.url)}
+                              >
+                                {source.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -264,7 +291,7 @@ export function DailyPractice({
   };
 
   return (
-    <section className="card flex h-full flex-col">
+    <section className="card flex flex-col">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <SectionTitle icon={<Sparkles size={15} />} title={t("learn.quiz_title")} hint={t("learn.quiz_hint")} />
         <div className="flex items-center gap-2">

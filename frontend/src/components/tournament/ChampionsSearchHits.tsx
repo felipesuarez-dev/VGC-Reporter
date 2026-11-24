@@ -118,6 +118,7 @@ export function ChampionsSearchHits({ hits, isFetching, onOpenTournament }: Prop
                     source: "limitless",
                     url: null,
                     location: null,
+                    country: null,
                     tier: "community",
                     prize_pool: null,
                     champion_name: null,

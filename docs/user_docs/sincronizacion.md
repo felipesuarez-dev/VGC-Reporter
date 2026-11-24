@@ -4,9 +4,10 @@ Ajustes → **Sincronización** pasa equipos, configuración y preferencias entr
 
 ## Enviar
 
-1. Pulsa **Enviar todo**. La app muestra cuántos equipos, ajustes y preferencias se van a transferir.
-2. Se crea una sesión de **5 minutos** con un QR y un código de 8 caracteres.
-3. En el otro dispositivo, escanea el QR (Android) o escribe el código (desktop).
+1. Elige qué enviar: equipos individuales, grupos de ajustes (general, pantallas en vivo, ajustes de regulación) y preferencias de UI. Los ajustes se muestran con nombres humanos (“Labmaus · Regulación M-C”), nunca con claves técnicas.
+2. Pulsa **Enviar selección**. La app muestra cuántos equipos, ajustes y preferencias se van a transferir.
+3. Se crea una sesión de **5 minutos** con un QR y un código de 8 caracteres.
+4. En el otro dispositivo, escanea el QR (Android) o escribe el código (desktop).
 
 El QR es un **ticket de emparejamiento**, no tus equipos: solo abre una conexión temporal. Los datos viajan directamente por tu Wi-Fi y la sesión se cierra después de la primera transferencia.
 
@@ -16,6 +17,7 @@ El QR es un **ticket de emparejamiento**, no tus equipos: solo abre una conexió
 2. En Android, la app pide permiso de cámara antes de abrir el escáner a pantalla completa. Si el permiso está bloqueado, **Abrir Ajustes** te lleva a la pantalla de permisos de Android.
 3. En desktop, escribe el **código de 8 caracteres** y pulsa **Conectar**.
 4. Si el QR, la cámara o el código no funcionan, abre **Si el QR o el código no funcionan** y pega el ticket o la URL temporal.
+5. Antes de importar, elige **qué equipos, ajustes y preferencias de UI** quieres recibir del subconjunto enviado. Lo que no marques no se escribe.
 
 ## Estados
 
@@ -23,7 +25,7 @@ La sesión muestra: **Esperando → Conectado → Transfiriendo → Recibido →
 
 ## Conflictos
 
-Antes de importar se muestra una vista previa. Si un equipo entrante ya existe con el mismo nombre, la app avisa y ofrece:
+Antes de importar se muestra una vista previa con selección de equipos/ajustes/UI. Si un equipo seleccionado ya existe con el mismo nombre, la app avisa y ofrece:
 
 - **Renombrar** (por defecto): añade la fecha al nombre importado.
 - **Reemplazar**: elimina el equipo local con ese nombre y guarda el nuevo.
@@ -35,5 +37,6 @@ Nunca se sobrescribe nada sin que elijas una de esas opciones.
 
 - Los equipos viajan con su modo Showdown/Champions y sus stats convertidos.
 - La sesión caduca en 5 minutos y solo sirve una vez.
+- La selección de ajustes usa checkboxes del sistema y los interruptores de UI usan el mismo switch que Ajustes; los conflictos se eligen con un control segmentado.
 - Si la red bloquea la conexión (Wi-Fi de invitados o aislamiento de clientes), usa una red sin aislamiento o el ticket/URL avanzada.
 - El token de la sesión es obligatorio; un código correcto con token incorrecto no entrega datos.

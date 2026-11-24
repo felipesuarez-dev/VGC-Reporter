@@ -1,6 +1,12 @@
 import { CORE_SEEDS } from "./learn/cores";
 import { GLOSSARY_SEEDS } from "./learn/glossary";
+import { GLOSSARY_DETAILS } from "./learn/glossaryDetails";
 import { GUIDE_SEEDS } from "./learn/guides";
+import {
+  GUIDE_EXTRAS,
+  GUIDE_REVIEWED_AT,
+  GUIDE_SOURCES,
+} from "./learn/guideExtras";
 import { TRIVIA_SEEDS } from "./learn/trivia";
 import {
   learnLanguage,
@@ -39,15 +45,26 @@ export const LEARN_GUIDES: Record<LearnLang, LearnGuide[]> = byLang((lang) =>
     minutes: seed.minutes,
     level: seed.level,
     ...seed.text[lang],
+    sections: [
+      ...seed.text[lang].sections,
+      ...(GUIDE_EXTRAS[seed.id]?.[lang] ?? []),
+    ],
+    sources: GUIDE_SOURCES[seed.id] ?? [],
+    reviewedAt: GUIDE_REVIEWED_AT,
   })),
 );
 
 export const LEARN_GLOSSARY: Record<LearnLang, GlossaryEntry[]> = byLang((lang) =>
-  GLOSSARY_SEEDS.map((seed) => ({
-    id: seed.id,
-    category: seed.category,
-    ...seed.text[lang],
-  })),
+  GLOSSARY_SEEDS.map((seed) => {
+    const detail = GLOSSARY_DETAILS[seed.id];
+    return {
+      id: seed.id,
+      category: seed.category,
+      ...seed.text[lang],
+      example: detail?.examples[lang] ?? detail?.examples.en,
+      sources: detail?.sources ?? [],
+    };
+  }),
 );
 
 export const LEARN_TRIVIA: Record<LearnLang, TriviaItem[]> = byLang((lang) =>

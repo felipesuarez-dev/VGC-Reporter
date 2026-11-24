@@ -4,8 +4,10 @@
 
 `lib/learnContent.ts` es la fachada. Los datos viven separados por responsabilidad:
 
-- `lib/learn/guides.ts`: 12 guías × 5 idiomas, 6 secciones por guía.
+- `lib/learn/guides.ts`: 12 guías × 5 idiomas, 6 secciones base por guía.
+- `lib/learn/guideExtras.ts`: 3 secciones adicionales por guía (ejemplo práctico, errores comunes, checklist), fuentes por guía y fecha de revisión; la fachada concatena y expone 9 secciones.
 - `lib/learn/glossary.ts`: 80 términos reales × 5 idiomas y 6 categorías.
+- `lib/learn/glossaryDetails.ts`: ejemplo propio en ES/EN/FR/IT/PT y fuentes por término.
 - `lib/learn/trivia.ts`: pool ampliado de reglas, con respuesta y explicación.
 - `lib/learn/cores.ts`: 11 arquetipos con roles, condición de victoria, cómo se juega y variantes.
 - `lib/learn/practice.ts`: generadores puros de práctica diaria.

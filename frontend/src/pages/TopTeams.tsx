@@ -1,24 +1,21 @@
-import { useEffect, useState, useTransition } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState, useTransition } from "react";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Download, ExternalLink, Loader2, RefreshCw } from "lucide-react";
+import { BadgeCheck, Download, ExternalLink, Loader2, RefreshCw } from "lucide-react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { ipc } from "../lib/ipc";
 import { queryKeys } from "../lib/queryKeys";
-import type { ChampionsTournament, Format, TopTeam } from "../lib/types";
+import type { Format, OfficialTournamentTeams, TopTeam } from "../lib/types";
 import { MiniTeam } from "../components/pokemon/MiniTeam";
 import { TopTeamDetailModal } from "../components/team/TopTeamDetailModal";
 import { LoadAllTeamsConfirmModal } from "../components/team/LoadAllTeamsConfirmModal";
 import { ExportLargeMdConfirmModal } from "../components/team/ExportLargeMdConfirmModal";
-import { TournamentStandingsDrawer } from "../components/tournament/TournamentStandingsDrawer";
-import { ChampionsSearchHits } from "../components/tournament/ChampionsSearchHits";
-import { EventSourceBadge } from "../components/dashboard/EventSourceBadge";
+import { RecentTournamentsSection } from "../components/dashboard/RecentTournamentsSection";
 import { PokemonMultiSelect } from "../components/filters/PokemonMultiSelect";
 import { SearchTextInput } from "../components/filters/SearchTextInput";
 import { CountryFilter } from "../components/filters/CountryFilter";
 import { SourcesChip } from "../components/layout/SourcesChip";
 import { SearchSelect } from "../components/ui/SearchSelect";
-import { formatDateTime } from "../lib/formatDate";
 import { openExternal } from "../lib/openExternal";
 import { defaultRangeFor } from "../lib/regulations";
 import { formatLabel } from "../lib/labels";
@@ -26,12 +23,11 @@ import { useUiStore } from "../stores/uiStore";
 import { useDashboardStore } from "../stores/dashboardStore";
 import { useRegulationCatalog } from "../hooks/useRegulationCatalog";
 import { useLongLoadingHint } from "../hooks/useLoadingHint";
+import { useHomeCountryFilter } from "../hooks/useHomeCountryFilter";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { usePullToRefresh } from "../hooks/usePullToRefresh";
 import { PullToRefreshIndicator } from "../components/layout/PullToRefreshIndicator";
 
-const RECENT_INITIAL = 5;
-const RECENT_EXPANDED = 20;
 const TOP_TEAMS_DEFAULT_FETCH = 100;
 const ALL_SENTINEL = "all" as const;
 type DisplayLimit = number | typeof ALL_SENTINEL;
@@ -58,8 +54,43 @@ function canonical(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+function officialTopTeams(data: OfficialTournamentTeams): TopTeam[] {
+  return data.teams.flatMap((team) => {
+    const members = team.pokemon.map((pokemon) => ({
+      species: pokemon.name,
+      sprite_url: pokemon.sprite_url,
+      sprite_fallback_url: pokemon.sprite_fallback_url,
+      home_sprite_url: pokemon.home_sprite_url,
+      item: pokemon.item,
+      tera_type: pokemon.tera_type,
+      ability: pokemon.ability,
+      nature: null,
+      moves: pokemon.moves,
+      level: null,
+      evs: null,
+      ivs: null,
+    }));
+    if (members.length < 3) return [];
+    return [
+      {
+        tournament: data.tournament_name,
+        placing: team.placing,
+        player: team.player_name,
+        country: team.country,
+        record: team.record,
+        members,
+        provider: "official",
+        community: false,
+        official: true,
+        source_url: data.source_url,
+        shared_at: data.tournament_date,
+      },
+    ];
+  });
+}
+
 export function TopTeams() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   // Top Teams used to be pinned to a hardcoded regulation, so it silently
   // disagreed with the Dashboard selector. It now follows the same store.
   const FORMAT: Format = useDashboardStore((s) => s.format);
@@ -75,38 +106,23 @@ export function TopTeams() {
   const dateRange = storedRange ?? defaultRange;
   const sourceFilter = useDashboardStore((s) => s.sourceFilter);
   const [teamProvider, setTeamProvider] = useState<
-    "all" | "labmaus" | "limitless" | "pokebase"
+    "all" | "official" | "labmaus" | "limitless" | "pokebase"
   >("all");
   const [pokebaseOrigin, setPokebaseOrigin] = useState<
     "all" | "community" | "tournament"
   >("all");
   const apiSource =
-    teamProvider !== "all"
-      ? teamProvider
-      : sourceFilter === "labmaus" || sourceFilter === "limitless"
-        ? sourceFilter
-        : null;
+    teamProvider === "official"
+      ? null
+      : teamProvider !== "all"
+        ? teamProvider
+        : sourceFilter === "labmaus" || sourceFilter === "limitless"
+          ? sourceFilter
+          : null;
   const qc = useQueryClient();
-  const [selectedTournament, setSelectedTournament] =
-    useState<ChampionsTournament | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<TopTeam | null>(null);
-  const [recentExpanded, setRecentExpanded] = useState(false);
-  const [recentSearch, setRecentSearch] = useState("");
-  const [debouncedRecent, setDebouncedRecent] = useState("");
-  useEffect(() => {
-    const handle = setTimeout(() => setDebouncedRecent(recentSearch.trim()), 250);
-    return () => clearTimeout(handle);
-  }, [recentSearch]);
-  const recentSearchQuery = debouncedRecent.length >= 3 ? debouncedRecent : "";
-  const { data: searchHits, isFetching: searchFetching } = useQuery({
-    queryKey: queryKeys.championsSearch(FORMAT, recentSearchQuery),
-    queryFn: () => ipc.searchChampions(recentSearchQuery, FORMAT, 40),
-    enabled: recentSearchQuery.length >= 3,
-    staleTime: 60_000,
-  });
   const [speciesFilter, setSpeciesFilter] = useState<string[]>([]);
   const [teamSearch, setTeamSearch] = useState("");
-  const [countryFilter, setCountryFilter] = useState<string[]>([]);
   const [displayLimit, setDisplayLimit] = useState<DisplayLimit>(20);
   const [fetchLimit, setFetchLimit] = useState<number>(TOP_TEAMS_DEFAULT_FETCH);
   const [isPendingDisplay, startDisplayTransition] = useTransition();
@@ -145,25 +161,58 @@ export function TopTeams() {
     queryFn: () => ipc.listPokemon(),
     staleTime: 24 * 60 * 60 * 1000,
   });
-  const { data: championsReport, isFetching: tournamentsFetching } = useQuery({
-    queryKey: queryKeys.championsReport(
-      FORMAT,
-      RECENT_EXPANDED,
-      dateRange?.from,
-      dateRange?.to,
-    ),
-    queryFn: () =>
-      ipc.listChampionsTournaments(
-        FORMAT,
-        RECENT_EXPANDED,
-        dateRange?.from,
-        dateRange?.to,
-      ),
+  const officialReport = useQuery({
+    queryKey: queryKeys.championsReport(FORMAT, 20, null, null),
+    queryFn: () => ipc.listChampionsTournaments(FORMAT, 20),
     staleTime: 30 * 60 * 1000,
+    enabled: teamProvider === "all" || teamProvider === "official",
   });
-
-  const showInitialHint = useLongLoadingHint(isLoading || isFetching);
-  const showInitialPatience = useLongLoadingHint(isLoading || isFetching, 60_000);
+  const officialEvents = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return (officialReport.data?.official_tournaments ?? [])
+      .filter(
+        (event) =>
+          event.source === "play-pokemon" &&
+          event.date &&
+          (event.end_date ?? event.date) <= today &&
+          (!dateRange?.from || event.date >= dateRange.from) &&
+          (!dateRange?.to || event.date <= dateRange.to),
+      )
+      .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""))
+      .slice(0, 4);
+  }, [officialReport.data, dateRange?.from, dateRange?.to]);
+  const officialQueries = useQueries({
+    queries: officialEvents.map((event) => ({
+      queryKey: queryKeys.officialTeams(event.name, event.date),
+      queryFn: () => ipc.getOfficialTournamentTeams(event.name, event.date),
+      staleTime: 30 * 60 * 1000,
+      enabled: teamProvider === "all" || teamProvider === "official",
+    })),
+  });
+  const officialTeams = useMemo(
+    () =>
+      officialQueries.flatMap((query) =>
+        query.data ? officialTopTeams(query.data) : [],
+      ),
+    [officialQueries],
+  );
+  const officialLoading =
+    officialReport.isLoading || officialQueries.some((query) => query.isLoading);
+  const officialFetching =
+    officialReport.isFetching || officialQueries.some((query) => query.isFetching);
+  const pageLoading = teamProvider === "official" ? officialLoading : isLoading;
+  const pageFetching = teamProvider === "official" ? officialFetching : isFetching;
+  const pageError =
+    teamProvider === "official"
+      ? officialReport.isError ||
+        (officialQueries.length > 0 &&
+          officialQueries.every((query) => query.isError))
+      : isError;
+  const showInitialHint = useLongLoadingHint(pageLoading || pageFetching);
+  const showInitialPatience = useLongLoadingHint(
+    pageLoading || pageFetching,
+    60_000,
+  );
   const showDisplayHint = useLongLoadingHint(isPendingDisplay);
   const showDisplayPatience = useLongLoadingHint(isPendingDisplay, 60_000);
   const showOpenTeamHint = useLongLoadingHint(isOpeningTeam);
@@ -171,10 +220,46 @@ export function TopTeams() {
   // Datos ya disponibles, solo queda el render del nuevo batch.
   const isRenderingTail = !isFetching && isPendingDisplay;
 
-  const teams = report?.teams ?? [];
-  const meta = report?.meta;
+  const baseTeams = report?.teams ?? [];
+  const teams =
+    teamProvider === "official"
+      ? officialTeams
+      : teamProvider === "all"
+        ? [...officialTeams.slice(0, 8), ...baseTeams]
+        : baseTeams;
+  const meta =
+    teamProvider === "official"
+      ? {
+          tournaments_analyzed: officialEvents.length,
+          battles_analyzed: officialTeams.length,
+          source: "official",
+          from_date: officialEvents.at(-1)?.date ?? null,
+          to_date: officialEvents[0]?.date ?? null,
+        }
+      : report?.meta;
+  const countryCodes = teams
+    .map((team) => team.country?.toUpperCase())
+    .filter((code): code is string => Boolean(code));
+  // The home-country default is based on the community list (or the official
+  // list when that provider is active), never on the handful of official
+  // Top 8 teams merged into "all". One Chilean top-cut team must not hide the
+  // entire community list.
+  const baseCountryCodes = baseTeams
+    .map((team) => team.country?.toUpperCase())
+    .filter((code): code is string => Boolean(code));
+  const {
+    selected: countryFilter,
+    setSelected: setCountryFilter,
+    homeCountry,
+  } = useHomeCountryFilter(
+    teamProvider === "official" ? countryCodes : baseCountryCodes,
+    3,
+  );
   const countryOptions = Array.from(
-    new Set(teams.map((tt) => tt.country).filter((c): c is string => !!c && c.length === 2)),
+    new Set([
+      ...countryCodes,
+      homeCountry,
+    ]),
   );
   const filteredTeams = teams.filter((tt) => {
     if (speciesFilter.length > 0) {
@@ -199,15 +284,6 @@ export function TopTeams() {
     displayLimit === ALL_SENTINEL ? filteredTeams.length : displayLimit;
   const visibleTeams = filteredTeams.slice(0, effectiveLimit);
 
-  const recentLimit = recentExpanded ? RECENT_EXPANDED : RECENT_INITIAL;
-  const recentQuery = recentSearch.trim().toLowerCase();
-  const filteredRecent =
-    championsReport?.tournaments.filter((tour) =>
-      recentQuery ? (tour.name ?? "").toLowerCase().includes(recentQuery) : true,
-    ) ?? [];
-  const recentTournaments = filteredRecent.slice(0, recentLimit);
-  const hasMoreRecent = filteredRecent.length > RECENT_INITIAL;
-
   const refresh = () => {
     qc.invalidateQueries({
       queryKey: queryKeys.topTeams(
@@ -219,13 +295,13 @@ export function TopTeams() {
       ),
     });
     qc.invalidateQueries({
-      queryKey: queryKeys.championsReport(
-        FORMAT,
-        RECENT_EXPANDED,
-        dateRange?.from,
-        dateRange?.to,
-      ),
+      queryKey: queryKeys.championsReport(FORMAT, 20, null, null),
     });
+    for (const event of officialEvents) {
+      qc.invalidateQueries({
+        queryKey: queryKeys.officialTeams(event.name, event.date),
+      });
+    }
   };
   const isMobile = useIsMobile();
   const ptrState = usePullToRefresh(refresh, isMobile);
@@ -286,7 +362,7 @@ export function TopTeams() {
         <div className="flex flex-wrap items-center gap-2">
           <SearchSelect<string>
             value={teamProvider}
-            options={["all", "labmaus", "limitless", "pokebase"]}
+            options={["all", "official", "labmaus", "limitless", "pokebase"]}
             onChange={(value) => setTeamProvider((value ?? "all") as typeof teamProvider)}
             getOptionLabel={(value) => t(`top_teams.provider_${value}`)}
             allowClear={false}
@@ -399,11 +475,12 @@ export function TopTeams() {
             fromDate={meta.from_date}
             toDate={meta.to_date}
             prefix={formatLabel(t, FORMAT)}
+            includeOfficial
           />
         </div>
       )}
 
-      {isLoading && (
+      {pageLoading && (
         <div
           className="card flex flex-col gap-1"
           style={{ color: "var(--text-muted)" }}
@@ -426,7 +503,7 @@ export function TopTeams() {
           )}
         </div>
       )}
-      {!isLoading && isFetching && teams.length > 0 && (
+      {!pageLoading && pageFetching && teams.length > 0 && (
         <div
           className="card flex flex-col gap-1"
           style={{ color: "var(--text-muted)" }}
@@ -449,12 +526,12 @@ export function TopTeams() {
           )}
         </div>
       )}
-      {isError && (
+      {pageError && (
         <div className="card" style={{ color: "var(--danger)" }}>
           {t("common.error")}
         </div>
       )}
-      {!isLoading && teams.length === 0 && (
+      {!pageLoading && teams.length === 0 && (
         <div className="card" style={{ color: "var(--text-muted)" }}>
           {t("common.empty")}
         </div>
@@ -532,11 +609,18 @@ export function TopTeams() {
       {!isPendingDisplay && (
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
         {visibleTeams.map((tt, idx) => (
-          <button
+          <div
             key={`${tt.tournament}-${idx}`}
-            type="button"
+            role="button"
+            tabIndex={0}
             onClick={() => startOpenTeamTransition(() => setSelectedTeam(tt))}
-            className="card space-y-3 text-left transition hover:border-[var(--accent)]"
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                startOpenTeamTransition(() => setSelectedTeam(tt));
+              }
+            }}
+            className="card cursor-pointer space-y-3 text-left transition hover:border-[var(--accent)]"
           >
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
@@ -561,44 +645,64 @@ export function TopTeams() {
                 >
                   {tt.tournament}
                 </div>
-                {tt.provider && (
+                {tt.official ? (
                   <div className="mt-1 flex flex-wrap gap-1">
                     <span
-                      className="rounded-full px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide"
+                      className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide"
                       style={{
-                        backgroundColor: "var(--accent-soft)",
-                        color: "var(--accent)",
+                        backgroundColor:
+                          "color-mix(in srgb, var(--warning) 16%, transparent)",
+                        color: "var(--warning)",
                       }}
                     >
-                      {t(`top_teams.provider_${tt.provider}`)}
+                      <BadgeCheck size={9} />
+                      {t("top_teams.official_badge")}
                     </span>
-                    {tt.community && (
+                  </div>
+                ) : (
+                  tt.provider && (
+                    <div className="mt-1 flex flex-wrap gap-1">
                       <span
-                        className="rounded-full px-1.5 py-0.5 text-[8px] uppercase tracking-wide"
+                        className="rounded-full px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide"
                         style={{
-                          backgroundColor: "var(--bg-elev-strong)",
-                          color: "var(--text-muted)",
-                        }}
-                      >
-                        {t("top_teams.origin_community")}
-                      </span>
-                    )}
-                    {tt.source_url && (
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[8px] font-medium underline-offset-2 hover:underline"
-                        style={{
-                          backgroundColor: "var(--bg-elev-strong)",
+                          backgroundColor: "var(--accent-soft)",
                           color: "var(--accent)",
                         }}
-                        onClick={() => void openExternal(tt.source_url!)}
-                        title={tt.source_url}
                       >
-                        <ExternalLink size={9} />
-                        {t("top_teams.original_source")}
-                      </button>
-                    )}
-                  </div>
+                        {t(`top_teams.provider_${tt.provider}`)}
+                      </span>
+                      {tt.community && (
+                        <span
+                          className="rounded-full px-1.5 py-0.5 text-[8px] uppercase tracking-wide"
+                          style={{
+                            backgroundColor: "var(--bg-elev-strong)",
+                            color: "var(--text-muted)",
+                          }}
+                        >
+                          {t("top_teams.origin_community")}
+                        </span>
+                      )}
+                    </div>
+                  )
+                )}
+                {tt.source_url && (
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[8px] font-medium underline-offset-2 hover:underline"
+                    style={{
+                      backgroundColor: "var(--bg-elev-strong)",
+                      color: "var(--accent)",
+                    }}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void openExternal(tt.source_url!);
+                    }}
+                    onKeyDown={(event) => event.stopPropagation()}
+                    title={tt.source_url}
+                  >
+                    <ExternalLink size={9} />
+                    {t("top_teams.original_source")}
+                  </button>
                 )}
               </div>
               <div
@@ -625,100 +729,13 @@ export function TopTeams() {
               cols={6}
               size={40}
             />
-          </button>
+          </div>
         ))}
       </div>
       )}
 
-      <section className="card">
-        <h2 className="mb-1 text-sm font-semibold" style={{ color: "var(--text)" }}>
-          {t("dashboard.recent_tournaments")}
-        </h2>
-        <p className="mb-3 text-[11px]" style={{ color: "var(--text-dim)" }}>
-          {t("dashboard.tournaments_for_format", {
-            format: formatLabel(t, FORMAT),
-          })}
-        </p>
-        {championsReport && championsReport.tournaments.length > 0 && (
-          <div className="mb-2">
-            <SearchTextInput
-              value={recentSearch}
-              onChange={setRecentSearch}
-              placeholder={t("common.filter_search_tournament")}
-            />
-          </div>
-        )}
-        {(tournamentsFetching || !championsReport) && (
-          <p className="text-xs" style={{ color: "var(--text-dim)" }}>
-            {t("common.loading")}
-          </p>
-        )}
-        {championsReport &&
-          !tournamentsFetching &&
-          championsReport.tournaments.length === 0 && (
-            <p className="text-xs" style={{ color: "var(--text-dim)" }}>
-              {t("common.empty")}
-            </p>
-          )}
-        {recentTournaments.length > 0 && (
-          <ul className="divide-y divide-[var(--border)]">
-            {recentTournaments.map((tour) => (
-              <li
-                key={tour.id}
-                className="flex items-center justify-between gap-3 py-2"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span
-                      className="truncate text-sm font-medium"
-                      style={{ color: "var(--text)" }}
-                    >
-                      {tour.name}
-                    </span>
-                    <EventSourceBadge source={tour.source ?? "limitless"} />
-                  </div>
-                  <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                    {tour.date && <span>{formatDateTime(tour.date, i18n.language)}</span>}
-                    {tour.players != null && (
-                      <span> · {tour.players} {t("dashboard.players")}</span>
-                    )}
-                    {tour.format && <span> · {tour.format}</span>}
-                  </div>
-                </div>
-                <button
-                  className="btn-ghost shrink-0 text-xs"
-                  onClick={() => setSelectedTournament(tour)}
-                >
-                  {t("dashboard.view_standings")}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {recentSearchQuery.length >= 3 && (
-          <ChampionsSearchHits
-            hits={searchHits ?? []}
-            isFetching={searchFetching}
-            onOpenTournament={setSelectedTournament}
-          />
-        )}
-        {hasMoreRecent && (
-          <div className="mt-2 flex justify-center">
-            <button
-              type="button"
-              className="btn-ghost text-xs"
-              onClick={() => setRecentExpanded((v) => !v)}
-            >
-              {recentExpanded ? t("common.see_less") : t("common.see_more")}
-            </button>
-          </div>
-        )}
-      </section>
+      <RecentTournamentsSection format={FORMAT} />
 
-      <TournamentStandingsDrawer
-        tournament={selectedTournament}
-        onClose={() => setSelectedTournament(null)}
-      />
       <TopTeamDetailModal
         team={selectedTeam}
         onClose={() => setSelectedTeam(null)}
